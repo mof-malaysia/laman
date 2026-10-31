@@ -1,0 +1,7 @@
+{
+  "extends": "@fiscal-sb/typescript-config/node.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["src", "test"]
+}

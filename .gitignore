@@ -1,0 +1,20 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+*.tsbuildinfo
+coverage
+
+# Turbo
+.turbo
+
+# Environment (each app keeps a committed .env.example)
+.env
+.env.*
+!.env.example
+
+# Agents and editors
+.claude
+.DS_Store
+*.log

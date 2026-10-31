@@ -1,0 +1,13 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  // Everything in .gitignore is skipped too.
+  "ignorePatterns": [
+    // FTDS files are installed by the shadcn CLI; keep them as the registry
+    // ships them so upgrades diff cleanly.
+    "apps/web/src/components/ui",
+    "apps/web/src/components/blocks",
+    "apps/web/src/lib/ftds",
+    "apps/web/styles/ftds.css",
+    "pnpm-lock.yaml"
+  ]
+}

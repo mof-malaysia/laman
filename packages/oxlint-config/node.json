@@ -1,0 +1,7 @@
+{
+  "extends": ["./base.json"],
+  "plugins": ["typescript", "unicorn", "oxc", "import", "node"],
+  "env": {
+    "node": true
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "extends": "@fiscal-sb/typescript-config/library.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "include": ["src"]
+}

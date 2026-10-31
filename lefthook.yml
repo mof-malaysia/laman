@@ -1,0 +1,14 @@
+# Installed by `pnpm install` (the root "prepare" script).
+pre-commit:
+  piped: true
+  jobs:
+    - name: format
+      glob: "*.{ts,tsx,js,mjs,cjs,json,jsonc,md,css,yml,yaml}"
+      # Calls the binary directly: no pnpm startup, and no pnpm version check.
+      run: node_modules/.bin/oxfmt --no-error-on-unmatched-pattern {staged_files}
+      stage_fixed: true
+    - name: check
+      # Skips commits that only touch docs or styles. Turbo's cache skips
+      # unchanged packages (it hashes the working tree, not just what's staged).
+      glob: "*.{ts,tsx,js,mjs,cjs,json,jsonc,yaml}"
+      run: pnpm run check --output-logs=errors-only

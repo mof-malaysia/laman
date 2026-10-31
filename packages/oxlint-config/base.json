@@ -1,0 +1,15 @@
+{
+  "plugins": ["typescript", "unicorn", "oxc", "import"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "env": {
+    "es2024": true
+  },
+  "rules": {
+    "typescript/consistent-type-imports": "error",
+    "no-console": ["warn", { "allow": ["warn", "error"] }]
+  },
+  "ignorePatterns": ["dist/**", "coverage/**"]
+}

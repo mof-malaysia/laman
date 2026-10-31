@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "./base.json",
+  "compilerOptions": {
+    "lib": ["es2024", "dom", "dom.iterable"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    // FTDS components (installed by shadcn) don't mark type-only imports;
+    // Oxlint's consistent-type-imports still enforces it for your own code.
+    "verbatimModuleSyntax": false,
+    "noEmit": true
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "fiscal-sb",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "check-types": "turbo run check-types",
+    "test": "turbo run test",
+    "check": "turbo run lint check-types test",
+    "verify": "turbo run lint check-types test build",
+    "prepare": "lefthook install || echo \"Skipped git hooks: no git repository\"",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check"
+  },
+  "devDependencies": {
+    "lefthook": "catalog:",
+    "oxfmt": "catalog:",
+    "turbo": "catalog:",
+    "typescript": "catalog:"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@12.16.1",
+  "createFtApp": {
+    "version": "0.1.2"
+  }
+}
