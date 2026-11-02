@@ -18,3 +18,10 @@ coverage
 .claude
 .DS_Store
 *.log
+
+# Site builder state (database, media, published site)
+data/
+.impeccable/*
+
+# Astro generated types
+.astro

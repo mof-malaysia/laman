@@ -1,0 +1,53 @@
+{
+  "name": "@fiscal-sb/admin",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "rsbuild build",
+    "dev": "rsbuild dev",
+    "preview": "rsbuild preview",
+    "check-types": "tsc --noEmit",
+    "lint": "oxlint",
+    "test": "rstest run"
+  },
+  "dependencies": {
+    "@base-ui/react": "^1.9.0",
+    "@dnd-kit/core": "catalog:",
+    "@dnd-kit/sortable": "catalog:",
+    "@dnd-kit/utilities": "catalog:",
+    "@fiscal-sb/blocks": "workspace:*",
+    "@fiscal-sb/contracts": "workspace:*",
+    "@fontsource-variable/inter": "catalog:",
+    "@tanstack/react-query": "catalog:",
+    "@tanstack/react-router": "catalog:",
+    "@tanstack/react-table": "catalog:",
+    "@tiptap/pm": "catalog:",
+    "@tiptap/react": "catalog:",
+    "@tiptap/starter-kit": "catalog:",
+    "class-variance-authority": "catalog:",
+    "cmdk": "catalog:",
+    "ky": "catalog:",
+    "mitt": "^3.0.1",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "tailwind-merge": "catalog:",
+    "tw-animate-css": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@fiscal-sb/oxlint-config": "workspace:*",
+    "@fiscal-sb/typescript-config": "workspace:*",
+    "@rsbuild/core": "catalog:",
+    "@rsbuild/plugin-react": "catalog:",
+    "@rstest/adapter-rsbuild": "catalog:",
+    "@rstest/core": "catalog:",
+    "@tailwindcss/postcss": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "happy-dom": "catalog:",
+    "oxlint": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:"
+  }
+}

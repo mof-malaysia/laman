@@ -1,0 +1,49 @@
+{
+  "name": "@fiscal-sb/server",
+  "version": "0.0.0",
+  "private": true,
+  "bin": {
+    "site-builder": "./dist/cli.js"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsx watch --clear-screen=false src/index.ts",
+    "start": "node dist/index.js",
+    "check-types": "tsc --noEmit",
+    "lint": "oxlint",
+    "test": "rstest run",
+    "cli": "tsx src/cli.ts",
+    "scale": "tsx scripts/scale.ts"
+  },
+  "dependencies": {
+    "@fastify/cors": "catalog:",
+    "@fastify/multipart": "catalog:",
+    "@fastify/static": "catalog:",
+    "@fastify/swagger": "catalog:",
+    "@fiscal-sb/blocks": "workspace:*",
+    "@fiscal-sb/contracts": "workspace:*",
+    "@fiscal-sb/renderer": "workspace:*",
+    "@scalar/fastify-api-reference": "catalog:",
+    "better-sqlite3": "catalog:",
+    "fastify": "catalog:",
+    "isbot": "catalog:",
+    "kysely": "catalog:",
+    "light-my-request": "catalog:",
+    "maxmind": "catalog:",
+    "pagefind": "catalog:",
+    "sharp": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@fiscal-sb/oxlint-config": "workspace:*",
+    "@fiscal-sb/typescript-config": "workspace:*",
+    "@rstest/core": "catalog:",
+    "@types/better-sqlite3": "catalog:",
+    "@types/node": "catalog:",
+    "oxlint": "catalog:",
+    "pino-pretty": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  }
+}

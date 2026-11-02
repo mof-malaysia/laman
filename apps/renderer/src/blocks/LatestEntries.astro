@@ -1,0 +1,49 @@
+---
+/** The newest few entries of a listing page, with a link to see them all (FTDS NewsList). */
+import type { BlockOf, EntryItem } from "@fiscal-sb/blocks";
+import NewsList from "@/components/blocks/news-list.astro";
+import { isoDay } from "./date";
+import Field from "./Field.astro";
+
+type Props = {
+  block: BlockOf<"latestEntries">;
+  edit: boolean;
+  lang: "ms" | "en";
+  latest?: Record<string, { path: string; items: EntryItem[] }>;
+};
+const { block, edit, lang, latest } = Astro.props;
+const p = block.props;
+const source = p.listing ? latest?.[p.listing] : undefined;
+const items = (source?.items ?? [])
+  .filter((item) => !p.category || item.categorySlug === p.category)
+  .slice(0, Number(p.count))
+  .map((item) => ({
+    title: item.title,
+    href: item.href,
+    date: isoDay(item.date),
+    ...(item.category && { category: item.category }),
+    ...(p.style !== "compact" && item.summary && { summary: item.summary }),
+    ...(p.style === "grid" && item.image && { image: item.image }),
+  }));
+const viewAll = source && p.seeAll ? { label: p.seeAll, href: p.category ? `${source.path === "/" ? "" : source.path}/kategori/${p.category}` : source.path } : undefined;
+---
+
+{
+  items.length > 0 ? (
+    <NewsList items={items} layout={p.style} lang={lang} {...(viewAll && { viewAll })}>
+      {(p.title || edit) && (
+        <Field slot="title" name="title" edit={edit} placeholder="Tajuk">
+          {p.title}
+        </Field>
+      )}
+    </NewsList>
+  ) : (
+    edit && (
+      <section class="bg-bg-white">
+        <p class="bg-bg-washed text-txt-black-700 mx-auto my-12 max-w-[70ch] rounded-md p-6 text-center">
+          {p.listing ? "Belum ada entri yang diterbitkan dalam penyenaraian ini." : "Pilih halaman penyenaraian di panel."}
+        </p>
+      </section>
+    )
+  )
+}

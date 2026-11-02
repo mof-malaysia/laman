@@ -19,7 +19,8 @@
     "lint": "oxlint"
   },
   "dependencies": {
-    "valibot": "catalog:"
+    "@fiscal-sb/blocks": "workspace:*",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@fiscal-sb/oxlint-config": "workspace:*",

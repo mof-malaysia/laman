@@ -4,10 +4,14 @@
   "ignorePatterns": [
     // FTDS files are installed by the shadcn CLI; keep them as the registry
     // ships them so upgrades diff cleanly.
-    "apps/web/src/components/ui",
-    "apps/web/src/components/blocks",
-    "apps/web/src/lib/ftds",
-    "apps/web/styles/ftds.css",
+    "apps/admin/src/components/ui",
+    "apps/admin/src/components/blocks",
+    "apps/admin/src/lib/ftds",
+    "apps/admin/styles/ftds.css",
+    "apps/renderer/src/components/ui",
+    "apps/renderer/src/components/blocks",
+    "apps/renderer/src/lib/ftds",
+    "apps/renderer/styles/ftds.css",
     "pnpm-lock.yaml"
   ]
 }

@@ -1,0 +1,25 @@
+---
+import type { BlockOf } from "@fiscal-sb/blocks";
+import CtaBand from "@/components/blocks/cta-band.astro";
+import { action } from "./action";
+import Field from "./Field.astro";
+
+type Props = { block: BlockOf<"ctaBand">; edit: boolean };
+const { block, edit } = Astro.props;
+const p = block.props;
+---
+
+<CtaBand
+  tone={p.tone}
+  primaryAction={action(p.primaryAction)}
+  secondaryAction={action(p.secondaryAction)}
+>
+  <Field slot="title" name="title" edit={edit} placeholder="Title">{p.title}</Field>
+  {
+    (edit || p.description) && (
+      <Field slot="description" name="description" edit={edit} placeholder="Description">
+        {p.description}
+      </Field>
+    )
+  }
+</CtaBand>

@@ -1,0 +1,32 @@
+{
+  "name": "@fiscal-sb/blocks",
+  "version": "0.0.0",
+  "private": true,
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput",
+    "check-types": "tsc --noEmit",
+    "lint": "oxlint",
+    "test": "rstest run"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@fiscal-sb/oxlint-config": "workspace:*",
+    "@fiscal-sb/typescript-config": "workspace:*",
+    "@rstest/core": "catalog:",
+    "oxlint": "catalog:",
+    "typescript": "catalog:"
+  }
+}

@@ -1,0 +1,62 @@
+---
+/**
+ * The block-to-component map: every registry type renders through one of
+ * these wrappers around its FTDS component. In edit mode each block is
+ * wrapped in a `data-ftds-block` element the editor selects and reorders.
+ */
+import type { Block, EntryItem, ListingRender, Locale, MediaInfo, SiteContext } from "@fiscal-sb/blocks";
+import Callout from "./Callout.astro";
+import Contact from "./Contact.astro";
+import CtaBand from "./CtaBand.astro";
+import EntryList from "./EntryList.astro";
+import Faq from "./Faq.astro";
+import FeatureGrid from "./FeatureGrid.astro";
+import Hero from "./Hero.astro";
+import Image from "./Image.astro";
+import LatestEntries from "./LatestEntries.astro";
+import LinkList from "./LinkList.astro";
+import Prose from "./Prose.astro";
+
+type Props = {
+  block: Block;
+  edit: boolean;
+  lang: Locale;
+  media: Record<string, MediaInfo>;
+  site: SiteContext;
+  listing?: ListingRender | undefined;
+  latest?: Record<string, { path: string; items: EntryItem[] }> | undefined;
+};
+const { block, edit, lang, media, site, listing, latest } = Astro.props;
+---
+
+{
+  edit ? (
+    <div data-ftds-block={block.id} data-ftds-type={block.type}>
+      {block.type === "hero" && <Hero block={block} edit />}
+      {block.type === "prose" && <Prose block={block} edit />}
+      {block.type === "image" && <Image block={block} edit media={media} />}
+      {block.type === "featureGrid" && <FeatureGrid block={block} edit lang={lang} />}
+      {block.type === "ctaBand" && <CtaBand block={block} edit />}
+      {block.type === "callout" && <Callout block={block} edit lang={lang} />}
+      {block.type === "linkList" && <LinkList block={block} edit media={media} />}
+      {block.type === "faq" && <Faq block={block} edit lang={lang} />}
+      {block.type === "contact" && <Contact block={block} edit lang={lang} site={site} />}
+      {block.type === "entryList" && <EntryList block={block} edit lang={lang} listing={listing} />}
+      {block.type === "latestEntries" && <LatestEntries block={block} edit lang={lang} latest={latest} />}
+    </div>
+  ) : (
+    <>
+      {block.type === "hero" && <Hero block={block} edit={false} />}
+      {block.type === "prose" && <Prose block={block} edit={false} />}
+      {block.type === "image" && <Image block={block} edit={false} media={media} />}
+      {block.type === "featureGrid" && <FeatureGrid block={block} edit={false} lang={lang} />}
+      {block.type === "ctaBand" && <CtaBand block={block} edit={false} />}
+      {block.type === "callout" && <Callout block={block} edit={false} lang={lang} />}
+      {block.type === "linkList" && <LinkList block={block} edit={false} media={media} />}
+      {block.type === "faq" && <Faq block={block} edit={false} lang={lang} />}
+      {block.type === "contact" && <Contact block={block} edit={false} lang={lang} site={site} />}
+      {block.type === "entryList" && <EntryList block={block} edit={false} lang={lang} listing={listing} />}
+      {block.type === "latestEntries" && <LatestEntries block={block} edit={false} lang={lang} latest={latest} />}
+    </>
+  )
+}

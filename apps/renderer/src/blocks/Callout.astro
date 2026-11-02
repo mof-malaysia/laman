@@ -1,0 +1,20 @@
+---
+import type { BlockOf } from "@fiscal-sb/blocks";
+import Callout from "@/components/ui/callout.astro";
+import Field from "./Field.astro";
+
+type Props = { block: BlockOf<"callout">; edit: boolean; lang: "ms" | "en" };
+const { block, edit, lang } = Astro.props;
+const p = block.props;
+---
+
+<div class="mx-auto w-full max-w-[1280px] px-4 py-6 md:px-6">
+  <Callout variant={p.variant} lang={lang}>
+    <Field slot="title" name="title" edit={edit} placeholder="Title">{p.title}</Field>
+    {
+      (edit || p.body) && (
+        <Field name="body" edit={edit} placeholder="Text">{p.body}</Field>
+      )
+    }
+  </Callout>
+</div>

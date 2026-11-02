@@ -1,0 +1,31 @@
+---
+import type { BlockOf } from "@fiscal-sb/blocks";
+import Hero from "@/components/blocks/hero.astro";
+import Tag from "@/components/ui/tag.astro";
+import { action } from "./action";
+import Field from "./Field.astro";
+
+type Props = { block: BlockOf<"hero">; edit: boolean };
+const { block, edit } = Astro.props;
+const p = block.props;
+// Each optional part is passed as a slot only when it shows: an empty slot
+// would still replace the component's own markup for it.
+---
+
+<Hero primaryAction={action(p.primaryAction)} secondaryAction={action(p.secondaryAction)}>
+  {
+    (edit || p.eyebrow) && (
+      <Tag slot="eyebrow" variant="primary" size="medium">
+        <Field name="eyebrow" edit={edit} placeholder="Eyebrow">{p.eyebrow}</Field>
+      </Tag>
+    )
+  }
+  <Field slot="title" name="title" edit={edit} placeholder="Title">{p.title}</Field>
+  {
+    (edit || p.description) && (
+      <Field slot="description" name="description" edit={edit} placeholder="Description">
+        {p.description}
+      </Field>
+    )
+  }
+</Hero>

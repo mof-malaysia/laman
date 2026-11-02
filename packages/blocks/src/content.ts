@@ -1,0 +1,277 @@
+/** Pages: a title and a tree (for now, a list) of blocks, per language. */
+import { z } from "zod";
+import type { featureIcons } from "./blocks/feature-grid.js";
+import { Block } from "./registry.js";
+import type { Ramp } from "./theme.js";
+
+export const locales = ["ms", "en"] as const;
+export const Locale = z.enum(locales);
+export type Locale = z.infer<typeof Locale>;
+/** BM is the default language of every site. */
+export const defaultLocale: Locale = "ms";
+
+/** Site search's page and its index, at the root of the published site. */
+export const SEARCH_PATH = "/carian";
+export const SEARCH_INDEX_DIR = "pagefind";
+
+export const PageContent = z.object({
+  title: z.string().max(160),
+  /** The meta description: search results and link previews. */
+  description: z.string().max(160).optional(),
+  blocks: z.array(Block).max(100),
+});
+export type PageContent = z.infer<typeof PageContent>;
+
+export const RedirectStatus = z.union([z.literal(301), z.literal(302)]);
+export type RedirectStatus = z.infer<typeof RedirectStatus>;
+
+/**
+ * Sends visitors of a page somewhere else: another page (by id, so it follows
+ * renames and moves) or another website. 301 for good, 302 for a while.
+ */
+export const PageRedirect = z.discriminatedUnion("to", [
+  z.object({ to: z.literal("page"), pageId: z.uuid(), status: RedirectStatus }),
+  z.object({
+    to: z.literal("url"),
+    url: z.url({ protocol: /^https$/, error: "Enter a web address starting with https://" }),
+    status: RedirectStatus,
+  }),
+]);
+export type PageRedirect = z.infer<typeof PageRedirect>;
+
+/** How search engines treat the page, in every language. */
+export const PageSeo = z.object({
+  noindex: z.boolean().optional(),
+  /** false leaves the page out of sitemap.xml. */
+  sitemap: z.boolean().optional(),
+});
+export type PageSeo = z.infer<typeof PageSeo>;
+
+/**
+ * The fixed fields of an entry (an article or notice under a listing page).
+ * They're part of its draft, so they publish and roll back with it.
+ */
+export const EntryFields = z.object({
+  /** When it goes live; a future time schedules it. */
+  publishAt: z.iso.datetime({ offset: true }),
+  /** One of the listing's category slugs. */
+  category: z.string().max(80).optional(),
+  /** Used on the listing, in search results and in RSS. */
+  summary: z.string().max(200).optional(),
+  cover: z.object({ mediaId: z.uuid(), alt: z.string().max(250).optional() }).optional(),
+  /** Shown first in the listing. */
+  pinned: z.boolean().optional(),
+});
+export type EntryFields = z.infer<typeof EntryFields>;
+
+/** A listing page's settings: its entries' categories, addresses, starting blocks and feed. */
+export const ListingSettings = z.object({
+  categories: z
+    .array(
+      z.object({
+        slug: z
+          .string()
+          .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use lower-case letters, numbers and hyphens"),
+        name: z.string().trim().min(1).max(60),
+      }),
+    )
+    .max(30),
+  /** "slug": /berita/tajuk. "year": /berita/2026/tajuk. New entries only. */
+  addressPattern: z.enum(["slug", "year"]),
+  /** The block types a new entry starts with. */
+  startingBlocks: z.array(z.string()).max(10),
+  rss: z.boolean(),
+});
+export type ListingSettings = z.infer<typeof ListingSettings>;
+
+export const defaultListingSettings = (): ListingSettings => ({
+  categories: [],
+  addressPattern: "slug",
+  startingBlocks: ["prose"],
+  rss: true,
+});
+
+/**
+ * A page's draft or published revision: its content in each language (BM is
+ * required; EN is optional) and the settings that publish with it.
+ */
+export const PageDocument = z.object({
+  ms: PageContent,
+  en: PageContent.optional(),
+  seo: PageSeo.optional(),
+  redirect: PageRedirect.nullable().optional(),
+  /** Entries only. */
+  entry: EntryFields.optional(),
+});
+export type PageDocument = z.infer<typeof PageDocument>;
+
+/** One level of a page's address: its parent's path, then "/", then this. */
+export const Slug = z
+  .string()
+  .min(1, "Enter an address for the page")
+  .max(80)
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use only lower-case letters, numbers and hyphens");
+
+/** A slug from a title: "Soalan Lazim (FAQ)" → "soalan-lazim-faq". */
+export function slugify(title: string): string {
+  return title
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80)
+    .replace(/-+$/, "");
+}
+
+export const RenderMode = z.enum(["edit", "preview", "publish"]);
+export type RenderMode = z.infer<typeof RenderMode>;
+
+/** A resolved link: page targets are already paths. */
+export type SiteLink = {
+  label: string;
+  href: string;
+  description?: string;
+  icon?: (typeof featureIcons)[number];
+};
+
+/** A navbar item: a link, or a dropdown in one of three styles. */
+export type SiteNavItem = {
+  label: string;
+  href?: string;
+  /** List and Described dropdowns. */
+  children?: SiteLink[];
+  /** Grouped dropdowns. */
+  groups?: { title: string; links: SiteLink[] }[];
+  columns?: 1 | 2 | 3;
+  feature?: {
+    href: string;
+    title: string;
+    description?: string;
+    eyebrow?: string;
+    linkLabel?: string;
+  };
+  footer?: { label: string; href: string };
+};
+
+/** The site around every page, from the settings and navigation. */
+export type SiteContext = {
+  name: string;
+  /** The masthead and footer owner. */
+  agency: string;
+  logo?: { src: string; alt: string };
+  favicon?: string;
+  socialImage?: string;
+  nav: SiteNavItem[];
+  /** Only when it shows on this page, now. */
+  announcement?: {
+    tag: string;
+    variant: "primary" | "warning" | "danger" | "success" | "default";
+    message: string;
+    link?: { label: string; href: string };
+  };
+  footer: { title: string; links: { label: string; href: string }[] }[];
+  contact: { address: string; phone: string; email: string; hours: string };
+  social: { platform: string; url: string }[];
+  phase?: { phase: "alpha" | "beta"; feedbackUrl?: string };
+  /** Ask search engines to leave the whole site out. */
+  hideSite?: boolean;
+  /** Site search is on: the navbar links to SEARCH_PATH. */
+  search?: true;
+  /** SITE_URL, for canonical and social links. */
+  url?: string;
+  /** Count visitors: the layout writes the analytics beacon into pages it publishes. */
+  analytics?: boolean;
+  /** The site's colours: FTDS Blue unless the agency chose its own. */
+  theme: { primary: Ramp };
+};
+
+/** A media file as the renderer needs it: where it is, its alt text and its sizes. */
+export type MediaInfo = {
+  url: string;
+  alt: string;
+  /** Who made it, shown under the image. */
+  credit: string;
+  /** For downloads: the file's name, MIME type and size in bytes. */
+  filename: string;
+  type: string;
+  size: number;
+  width: number | null;
+  height: number | null;
+  /** Narrower copies for srcset, smallest first. */
+  variants: { url: string; width: number }[];
+};
+
+/** Every media id in a value: block media fields and settings alike. */
+export function mediaIdsOf(value: unknown, out = new Set<string>()): Set<string> {
+  if (Array.isArray(value)) for (const item of value) mediaIdsOf(item, out);
+  else if (value && typeof value === "object")
+    for (const [key, item] of Object.entries(value)) {
+      if (key === "mediaId" && typeof item === "string") out.add(item);
+      else mediaIdsOf(item, out);
+    }
+  return out;
+}
+
+/** One entry as a listing shows it. */
+export type EntryItem = {
+  title: string;
+  href: string;
+  /** ISO date-time it was published at. */
+  date: string;
+  category?: string;
+  /** The category's address, for filtering. */
+  categorySlug?: string;
+  summary?: string;
+  image?: string;
+  pinned?: boolean;
+};
+
+/** The entries an entry list shows on this page of its listing. */
+export type ListingRender = {
+  path: string;
+  categories: { slug: string; name: string; href: string }[];
+  /** The category this page filters by, if any. */
+  category?: string;
+  items: EntryItem[];
+  page: number;
+  pages: number;
+  rss?: string;
+};
+
+/** What an entry's article layout draws above its blocks. */
+export type EntryRender = {
+  date: string;
+  /** Its listing's title: the collection site search files it under. */
+  collection: string;
+  category?: string;
+  cover?: { src: string; alt: string };
+  breadcrumb: { label: string; href?: string }[];
+};
+
+/** What the renderer is given for one page. */
+export type RenderInput = {
+  mode: RenderMode;
+  locale: Locale;
+  /** The page's id, for its analytics. */
+  pageId?: string;
+  /** Path of the page on the published site, e.g. "/" or "/perkhidmatan". */
+  path: string;
+  page: PageContent;
+  site: SiteContext;
+  /** Ask search engines not to index the page. Never indexed outside "publish". */
+  noindex?: boolean;
+  /** The media the page uses, by id. */
+  media?: Record<string, MediaInfo>;
+  /** A listing page: the entries its entry list shows. */
+  listing?: ListingRender;
+  /** An entry: its article header. */
+  entry?: EntryRender;
+  /** Latest entries blocks: the newest entries of each listing they name, by its page id. */
+  latest?: Record<string, { path: string; items: EntryItem[] }>;
+  /** The SEARCH_PATH page: the search form and its results, instead of blocks. */
+  searchPage?: { filters: boolean };
+};
+
+/** Path on the published site for the slugs from the home page down: [] is the home page. */
+export const pathOf = (slugs: string[]) => (slugs.length ? `/${slugs.join("/")}` : "/");

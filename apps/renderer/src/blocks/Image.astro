@@ -1,0 +1,53 @@
+---
+/**
+ * A picture from the media library: a responsive img with its narrower WebP
+ * copies, the block's caption and the file's credit. Alt text is the block's
+ * override, else the library's. With no file chosen it shows only on the canvas.
+ */
+import type { BlockOf, MediaInfo } from "@fiscal-sb/blocks";
+import { clx } from "@/lib/ftds/utils";
+import Field from "./Field.astro";
+
+type Props = { block: BlockOf<"image">; edit: boolean; media: Record<string, MediaInfo> };
+const { block, edit, media } = Astro.props;
+const p = block.props;
+const info = p.image ? media[p.image.mediaId] : undefined;
+const alt = p.image?.alt ?? info?.alt ?? "";
+const maxWidth = { content: "max-w-[70ch]", wide: "max-w-[1280px]", full: "max-w-none" }[p.width];
+const srcset = info?.variants.map((v) => `${v.url} ${v.width}w`).join(", ");
+const sizes = { content: "(min-width: 768px) 70ch, 100vw", wide: "(min-width: 1280px) 1280px, 100vw", full: "100vw" }[p.width];
+---
+
+{
+  (info || edit) && (
+    <section class="bg-bg-white">
+      <figure class={clx("mx-auto w-full py-8", p.width === "full" ? "" : "px-4 md:px-6", maxWidth)}>
+        {info ? (
+          <img
+            src={info.url}
+            srcset={srcset || undefined}
+            sizes={srcset ? sizes : undefined}
+            alt={alt}
+            width={info.width ?? undefined}
+            height={info.height ?? undefined}
+            loading="lazy"
+            decoding="async"
+            class={clx("block h-auto w-full", p.width !== "full" && "rounded-md")}
+          />
+        ) : (
+          <div class="bg-bg-washed text-txt-black-700 text-body-sm flex aspect-video items-center justify-center rounded-md">
+            Pilih imej dari Media
+          </div>
+        )}
+        {(p.caption || info?.credit || edit) && (
+          <figcaption class="text-txt-black-700 text-body-sm mt-3 flex flex-wrap gap-x-2">
+            {(p.caption || edit) && (
+              <Field name="caption" edit={edit} placeholder="Kapsyen">{p.caption}</Field>
+            )}
+            {info?.credit && <span class="text-txt-black-500">Kredit: {info.credit}</span>}
+          </figcaption>
+        )}
+      </figure>
+    </section>
+  )
+}

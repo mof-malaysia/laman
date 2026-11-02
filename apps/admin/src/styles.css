@@ -1,0 +1,33 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "../styles/ftds.css";
+
+/* Inter is self-hosted (@fontsource-variable/inter, imported in index.tsx),
+   so the app makes no third-party font requests. */
+@theme {
+  --font-body: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* The admin is light only, whatever the OS prefers: no dark tokens, light native controls. */
+:root {
+  color-scheme: light;
+}
+
+/* FTDS sizes every element by inheriting box-sizing from its parent. A
+   <details> puts its content in the browser's own content-box wrapper, so
+   without this the fields in an open list item come out wider than 100%. */
+@layer base {
+  details > * {
+    box-sizing: border-box;
+  }
+}
+
+/* FTDS's toast viewport is a fixed box in the bottom-right corner even when
+   it holds no toast, so it swallowed clicks on whatever sits there (a
+   drawer's footer buttons). The toasts themselves take pointer events. */
+@layer base {
+  [role="region"].z-toast {
+    pointer-events: none;
+  }
+}

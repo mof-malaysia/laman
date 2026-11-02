@@ -1,6 +1,8 @@
-# Fiscal Sb
+# Site Builder
 
-A React SPA and a Fastify api in one Turborepo monorepo.
+A self-hosted website builder for agency sites, built on FTDS. Editors arrange approved FTDS blocks on a live canvas, edit text in place and press Publish to write a static site. One Node process, one SQLite file. The design is in [docs/site-builder.md](docs/site-builder.md).
+
+This is the vertical slice: five blocks, one language (BM), no sign-in yet.
 
 ## Getting started
 
@@ -9,8 +11,10 @@ pnpm install
 pnpm dev
 ```
 
-- Web: http://localhost:3001
-- API: http://localhost:3000 (docs at http://localhost:3000/docs)
+- Admin and editor: http://localhost:3001/admin
+- Server: http://localhost:3000. It serves the API (`/api`, docs at `/docs`), the canvas (`/render`) and the published site at `/`.
+
+State lives in `apps/server/data/` (git-ignored): `site.db` and the published site in `public/`. A new install starts with a home page.
 
 ## Scripts
 
@@ -25,17 +29,23 @@ pnpm dev
 | `pnpm check`       | Lint, type check and test: what the pre-commit hook runs |
 | `pnpm verify`      | `check` plus build                                       |
 
+The server's CLI runs the same code: `pnpm --filter @fiscal-sb/server cli migrate` creates or upgrades the database, and `… cli publish` rebuilds the published site.
+
 ## Configuration
 
-The api reads environment variables, validated in `apps/api/src/env.ts`:
+The server reads environment variables, validated in `apps/server/src/env.ts`:
 
-| Variable      | Default     | Meaning                                                             |
-| ------------- | ----------- | ------------------------------------------------------------------- |
-| `PORT`        | `3000`      | Port to listen on                                                   |
-| `HOST`        | `127.0.0.1` | Interface to bind (`0.0.0.0` in Docker)                             |
-| `LOG_LEVEL`   | `info`      | Pino log level                                                      |
-| `CORS_ORIGIN` | (none)      | Comma-separated origins allowed to call the api from another origin |
-| `WEB_DIST`    | (none)      | Folder with the built SPA to serve; set in the Docker image         |
+| Variable      | Default         | Meaning                                                             |
+| ------------- | --------------- | ------------------------------------------------------------------- |
+| `PORT`        | `3000`          | Port to listen on                                                   |
+| `HOST`        | `127.0.0.1`     | Interface to bind (`0.0.0.0` in Docker)                             |
+| `LOG_LEVEL`   | `info`          | Pino log level                                                      |
+| `DATA_DIR`    | `./data`        | All state: `site.db` and the published site in `public/`            |
+| `ADMIN_DIST`  | `../admin/dist` | The built admin app, served at `/admin`                             |
+| `SITE_URL`    | (none)          | Public address of the published site; enables `sitemap.xml`         |
+| `CORS_ORIGIN` | (none)          | Comma-separated origins allowed to call the API from another origin |
+
+In development, the admin's dev server reads `ADMIN_PORT` (default `3001`) and `SERVER_URL` (default `http://127.0.0.1:3000`).
 
 ## Checks
 

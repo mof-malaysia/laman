@@ -1,0 +1,50 @@
+---
+/**
+ * The only route. The server rewrites every render request to this path and
+ * passes the page in `Astro.locals.render`; without it there is nothing to show.
+ */
+import Block from "@/blocks/Block.astro";
+import { longDate } from "@/blocks/date";
+import PageIntro from "@/components/blocks/page-intro.astro";
+import Site from "@/layouts/Site.astro";
+import SearchPage from "@/search/SearchPage.astro";
+
+const input = Astro.locals.render;
+if (!input) return new Response(null, { status: 404 });
+const edit = input.mode === "edit";
+---
+
+<Site input={input}>
+  {input.searchPage && <SearchPage input={input} />}
+  {
+    /* An entry's article header comes from its fixed fields, so every article looks the same. */
+    input.entry && (
+      <PageIntro
+        breadcrumb={input.entry.breadcrumb}
+        title={input.page.title}
+        meta={[longDate(input.entry.date)]}
+        width="article"
+        lang={input.locale}
+        data-ftds-entry-header
+      >
+        {input.entry.category && <span slot="eyebrow">{input.entry.category}</span>}
+        {input.entry.cover && (
+          <img slot="media" src={input.entry.cover.src} alt={input.entry.cover.alt} class="h-auto w-full rounded-md" />
+        )}
+      </PageIntro>
+    )
+  }
+  {
+    input.page.blocks.map((block) => (
+      <Block
+        block={block}
+        edit={edit}
+        lang={input.locale}
+        media={input.media ?? {}}
+        site={input.site}
+        listing={input.listing}
+        latest={input.latest}
+      />
+    ))
+  }
+</Site>

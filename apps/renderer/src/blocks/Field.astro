@@ -1,0 +1,18 @@
+---
+/**
+ * A text field of a block. In edit mode it is wrapped in a span the editor
+ * finds by `data-ftds-field` and edits in place; otherwise it is the text alone.
+ */
+type Props = { name: string; edit: boolean; placeholder?: string };
+const { name, edit, placeholder } = Astro.props;
+---
+
+{
+  edit ? (
+    <span data-ftds-field={name} data-placeholder={placeholder}>
+      <slot />
+    </span>
+  ) : (
+    <slot />
+  )
+}

@@ -1,0 +1,275 @@
+---
+/**
+ * The site around every page, from the site settings and navigation:
+ * masthead, phase banner, navbar (links and the three dropdown styles),
+ * the announcement bar under it, the page, and the footer with the
+ * agency's contact details and social links.
+ */
+import "@fontsource-variable/inter";
+import "@/styles/global.css";
+import { rampCss, type RenderInput, SEARCH_PATH } from "@fiscal-sb/blocks";
+import { longDate } from "@/blocks/date";
+import { featureIconComponents } from "@/blocks/icons";
+import AnnounceBar from "@/components/ui/announce-bar.astro";
+import Facebook from "@/components/ui/icons/facebook.astro";
+import Instagram from "@/components/ui/icons/instagram.astro";
+import Linkedin from "@/components/ui/icons/linkedin.astro";
+import Tiktok from "@/components/ui/icons/tiktok.astro";
+import TwitterX from "@/components/ui/icons/twitter-x.astro";
+import Youtube from "@/components/ui/icons/youtube.astro";
+import Link from "@/components/ui/link.astro";
+import Masthead from "@/components/ui/masthead.astro";
+import Navbar from "@/components/ui/navbar.astro";
+import type { NavbarItem } from "@/components/ui/navbar-menu.astro";
+import Button from "@/components/ui/button.astro";
+import Search from "@/components/ui/icons/search.astro";
+import PhaseBanner from "@/components/ui/phase-banner.astro";
+import SiteFooter from "@/components/ui/site-footer.astro";
+import Skiplink from "@/components/ui/skiplink.astro";
+
+type Props = { input: RenderInput };
+const { input } = Astro.props;
+const { site, page, locale: lang } = input;
+const title = page.title ? `${page.title} | ${site.name}` : site.name;
+const noindex = input.mode !== "publish" || input.noindex || site.hideSite;
+
+/** The current section: the item whose link (or one of whose links) is this page or above it. */
+const within = (href: string) =>
+  href === "/" ? input.path === "/" : input.path === href || input.path.startsWith(`${href}/`);
+const icon = (name?: keyof typeof featureIconComponents) =>
+  name ? featureIconComponents[name] : undefined;
+const items: NavbarItem[] = site.nav.map((item) => {
+  const links = [...(item.children ?? []), ...(item.groups ?? []).flatMap((g) => g.links)];
+  const link = (l: (typeof links)[number]) => ({
+    label: l.label,
+    href: l.href,
+    current: l.href === input.path,
+    ...(l.description && { description: l.description }),
+    ...(l.icon && { icon: icon(l.icon) }),
+  });
+  return {
+    label: item.label,
+    ...(item.href && { href: item.href }),
+    current: item.href ? within(item.href) : links.some((l) => within(l.href)),
+    ...(item.children && { children: item.children.map(link) }),
+    ...(item.groups && { groups: item.groups.map((g) => ({ title: g.title, links: g.links.map(link) })) }),
+    ...(item.columns && { columns: item.columns }),
+    ...(item.feature && { feature: item.feature }),
+    ...(item.footer && { footer: item.footer }),
+  };
+});
+
+const socialIcons = {
+  facebook: Facebook,
+  x: TwitterX,
+  instagram: Instagram,
+  youtube: Youtube,
+  tiktok: Tiktok,
+  linkedin: Linkedin,
+} as const;
+const socialNames = { facebook: "Facebook", x: "X", instagram: "Instagram", youtube: "YouTube", tiktok: "TikTok", linkedin: "LinkedIn" } as const;
+const { contact } = site;
+const owner = site.agency || site.name;
+const canonical = site.url ? site.url.replace(/\/$/, "") + input.path : undefined;
+const description = page.description;
+
+/**
+ * What site search files the page under: an entry by its listing and
+ * category, any other page as "Halaman". Commas split Pagefind's values.
+ */
+const plain = (value: string) => value.replaceAll(",", " ").trim();
+const collection = input.entry?.collection || (input.listing ? page.title : "Halaman");
+const searchFilters = [
+  `koleksi:${plain(collection)}`,
+  ...(input.entry?.category ? [`kategori:${plain(input.entry.category)}`] : []),
+].join(", ");
+---
+
+<!doctype html>
+<html lang={lang} data-ftds-mode={input.mode === "publish" ? undefined : input.mode}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex" />}
+    {site.favicon && <link rel="icon" href={site.favicon} />}
+    {canonical && input.mode === "publish" && <link rel="canonical" href={canonical} />}
+    <meta property="og:title" content={page.title || site.name} />
+    <meta property="og:site_name" content={site.name} />
+    {description && <meta property="og:description" content={description} />}
+    {site.socialImage && <meta property="og:image" content={(site.url?.replace(/\/$/, "") ?? "") + site.socialImage} />}
+    {
+      /* The site's colours, over ftds.css's primitives; html:root outranks its :root wherever Astro puts it. */
+      <style is:inline id="site-theme" set:html={`html:root{${rampCss(site.theme.primary)}}`} />
+    }
+  </head>
+  <body class="bg-bg-white text-txt-black-900 font-body">
+    <Skiplink href="#main" lang={lang} />
+    <Masthead lang={lang} />
+    {
+      site.phase && (
+        <PhaseBanner phase={site.phase.phase === "alpha" ? "Alfa" : "Beta"} lang={lang}>
+          Ini ialah perkhidmatan baharu.
+          {site.phase.feedbackUrl && (
+            <>
+              {" "}
+              <Link href={site.phase.feedbackUrl} primary class="font-medium">
+                Maklum balas anda
+              </Link>{" "}
+              akan membantu kami menambah baiknya.
+            </>
+          )}
+        </PhaseBanner>
+      )
+    }
+    <Navbar brand={{ title: site.name, href: "/", ...(site.logo && { logo: site.logo }) }} items={items} lang={lang}>
+      {
+        site.search && (
+          <Button slot="actions" href={SEARCH_PATH} variant="default-ghost" aria-current={input.path === SEARCH_PATH ? "page" : undefined}>
+            <Search aria-hidden="true" />
+            Cari
+          </Button>
+        )
+      }
+    </Navbar>
+    {/* Always there, so the announcement editor's preview can swap the bar in and out. */}
+    <div data-announcement>
+      {
+        site.announcement && (
+          <AnnounceBar tag={site.announcement.tag} tagVariant={site.announcement.variant}>
+            <p>
+              {site.announcement.message}
+              {site.announcement.link && (
+                <>
+                  {" "}
+                  <Link href={site.announcement.link.href} primary>
+                    {site.announcement.link.label}
+                  </Link>
+                </>
+              )}
+            </p>
+          </AnnounceBar>
+        )
+      }
+    </div>
+    {/* The publisher decides which pages go in the index; every published page says how to file it. */}
+    <main id="main" tabindex="-1" data-pagefind-body={input.mode === "publish" ? "" : undefined}>
+      {
+        input.mode === "publish" && (
+          <div hidden data-pagefind-filter={searchFilters} data-pagefind-meta={input.entry ? `date:${longDate(input.entry.date)}` : undefined} />
+        )
+      }
+      <slot />
+    </main>
+    <SiteFooter logoTitle={owner} groups={site.footer}>
+      {site.logo && <img slot="logo" src={site.logo.src} alt="" height="36" class="h-9 w-auto" />}
+      {contact.address && <p class="whitespace-pre-line">{contact.address}</p>}
+      {
+        (contact.phone || contact.email || contact.hours) && (
+          <ul class="m-0 flex list-none flex-col gap-1 p-0">
+            {contact.phone && (
+              <li>
+                Tel: <Link href={`tel:${contact.phone.replace(/[^\d+]/g, "")}`}>{contact.phone}</Link>
+              </li>
+            )}
+            {contact.email && (
+              <li>
+                E-mel: <Link href={`mailto:${contact.email}`}>{contact.email}</Link>
+              </li>
+            )}
+            {contact.hours && <li class="whitespace-pre-line">{contact.hours}</li>}
+          </ul>
+        )
+      }
+      {
+        site.social.length > 0 && (
+          <ul class="m-0 flex list-none gap-3 p-0" aria-label="Media sosial">
+            {site.social.map((s) => {
+              const Icon = socialIcons[s.platform as keyof typeof socialIcons];
+              const name = socialNames[s.platform as keyof typeof socialNames] ?? s.platform;
+              return (
+                <li>
+                  <a href={s.url} class="text-txt-black-700 hover:text-txt-black-900 focus-ring flex rounded-xs" rel="me">
+                    {Icon && <Icon class="size-5" aria-hidden="true" />}
+                    <span class="sr-only">{name}</span>
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        )
+      }
+    </SiteFooter>
+    {
+      /*
+       * Analytics (docs/analytics.md): a view on load, how long the page was
+       * visible when it's hidden, and clicks on files and other sites. Inline,
+       * so there's no script file for a filter list to match, and nothing is
+       * stored in the browser.
+       */
+      input.mode === "publish" && site.analytics && (
+        <script is:inline data-page={input.pageId}>
+          (() => {
+            // Framed (the admin's thumbnail of the live site), automated or asked not to: not a visit.
+            if (window.top !== window || navigator.globalPrivacyControl || navigator.webdriver) return;
+            const page = document.currentScript?.dataset.page;
+            const path = location.pathname;
+            const send = (body) => {
+              try {
+                navigator.sendBeacon("/_v", JSON.stringify(body));
+              } catch {}
+            };
+            const id = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+            let referrer;
+            try {
+              const from = new URL(document.referrer);
+              if (from.host !== location.host) referrer = from.href;
+            } catch {}
+            const query = new URLSearchParams(location.search);
+            const utm = {};
+            for (const key of ["source", "medium", "campaign"]) {
+              const value = query.get(`utm_${key}`);
+              if (value) utm[key] = value;
+            }
+            send({
+              type: "view",
+              id,
+              path,
+              ...(page && { page }),
+              ...(referrer && { referrer }),
+              screen: screen.width,
+              language: navigator.language,
+              ...(Object.keys(utm).length && { utm }),
+            });
+            let shown = document.visibilityState === "visible" ? Date.now() : 0;
+            const leave = () => {
+              if (!shown) return;
+              send({ type: "leave", id, visible: Date.now() - shown });
+              shown = 0;
+            };
+            addEventListener("visibilitychange", () => {
+              if (document.visibilityState === "hidden") leave();
+              else shown = Date.now();
+            });
+            addEventListener("pagehide", leave);
+            const file = /\.(pdf|docx?|xlsx?|pptx?|odt|ods|odp|csv|txt|zip|rar|7z|epub)$/i;
+            addEventListener(
+              "click",
+              (event) => {
+                const link = event.target instanceof Element && event.target.closest("a[href]");
+                if (!link) return;
+                const to = new URL(link.href, location.href);
+                if (to.protocol !== "http:" && to.protocol !== "https:") return;
+                if (to.host !== location.host) send({ type: "outbound", path, ...(page && { page }), target: to.host });
+                else if (to.pathname.startsWith("/media/") || file.test(to.pathname))
+                  send({ type: "download", path, ...(page && { page }), target: to.pathname });
+              },
+              true,
+            );
+          })();
+        </script>
+      )
+    }
+  </body>
+</html>

@@ -17,7 +17,8 @@
     "dev": {
       "dependsOn": ["^build"],
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "passThroughEnv": ["PORT", "HOST", "ADMIN_PORT", "SERVER_URL", "DATA_DIR", "LOG_LEVEL"]
     }
   }
 }

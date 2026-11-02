@@ -1,0 +1,81 @@
+---
+/**
+ * Links and files. PDFs become FTDS DownloadList rows (type and size in the
+ * link's name); every other item is a link with an optional description.
+ */
+import type { BlockOf, MediaInfo } from "@fiscal-sb/blocks";
+import DownloadList from "@/components/blocks/download-list.astro";
+import ArrowForward from "@/components/ui/icons/arrow-forward.astro";
+import Field from "./Field.astro";
+import { fileKind, fileSize } from "./format";
+
+type Props = { block: BlockOf<"linkList">; edit: boolean; media: Record<string, MediaInfo> };
+const { block, edit, media } = Astro.props;
+const p = block.props;
+const resolved = p.items.map((item) => {
+  const file = item.file ? media[item.file.mediaId] : undefined;
+  return { ...item, file, href: file?.url ?? item.href ?? "" };
+});
+const downloads = resolved.filter((i) => i.file?.type === "application/pdf");
+const links = resolved.filter((i) => i.file?.type !== "application/pdf" && i.href);
+---
+
+<section class="bg-bg-white">
+  <div class="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-4 py-12 md:px-6 md:py-16">
+    {
+      (p.title || p.description || edit) && (
+        <div class="flex max-w-[70ch] flex-col gap-2">
+          {(p.title || edit) && (
+            <h2 class="text-headline font-semibold">
+              <Field name="title" edit={edit} placeholder="Tajuk">{p.title}</Field>
+            </h2>
+          )}
+          {(p.description || edit) && (
+            <p class="text-txt-black-700 text-body-lg">
+              <Field name="description" edit={edit} placeholder="Penerangan">{p.description}</Field>
+            </p>
+          )}
+        </div>
+      )
+    }
+    {
+      links.length > 0 && (
+        <ul class="divide-otl-gray-200 m-0 flex max-w-[70ch] list-none flex-col divide-y p-0">
+          {links.map((item) => (
+            <li class="py-3">
+              <a href={item.href} class="group focus-ring flex items-start gap-3 rounded-xs">
+                <span class="flex flex-1 flex-col gap-1">
+                  <span class="text-txt-primary text-body-lg font-medium underline-offset-[3px] group-hover:underline">
+                    {item.label}
+                    {item.file && (
+                      <span class="text-txt-black-700 text-body-sm font-normal">
+                        {" "}({fileKind(item.file.type)}, {fileSize(item.file.size)})
+                      </span>
+                    )}
+                  </span>
+                  {item.description && <span class="text-txt-black-700 text-body-sm">{item.description}</span>}
+                </span>
+                <ArrowForward class="text-txt-primary mt-1 size-5 shrink-0" aria-hidden="true" />
+              </a>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+    {
+      downloads.length > 0 && (
+        <DownloadList
+          flush
+          width="article"
+          files={downloads.map((item) => ({
+            title: item.label,
+            href: item.href,
+            type: "pdf" as const,
+            size: item.file ? fileSize(item.file.size) : undefined,
+            description: item.description,
+          }))}
+        />
+      )
+    }
+  </div>
+</section>

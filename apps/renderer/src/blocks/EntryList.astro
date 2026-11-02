@@ -1,0 +1,78 @@
+---
+/**
+ * A listing page's entries: FTDS NewsList (cards or a compact list), a
+ * category filter as links to each category's page, a Pager over the
+ * listing's pages, and its RSS feed.
+ */
+import type { BlockOf, ListingRender } from "@fiscal-sb/blocks";
+import NewsList from "@/components/blocks/news-list.astro";
+import Pager from "@/components/ui/pager.astro";
+import RSS from "@/components/ui/icons/rss.astro";
+import { isoDay } from "./date";
+import { listingHref } from "./listing";
+
+type Props = { block: BlockOf<"entryList">; edit: boolean; lang: "ms" | "en"; listing?: ListingRender };
+const { block, edit, lang, listing } = Astro.props;
+const p = block.props;
+const items = (listing?.items ?? []).map((item) => ({
+  title: item.title,
+  href: item.href,
+  date: p.showDate ? isoDay(item.date) : "",
+  ...(item.category && { category: item.category }),
+  ...(p.showSummary && item.summary && { summary: item.summary }),
+  ...(p.style === "cards" && item.image && { image: item.image }),
+}));
+const base = listing?.path ?? "/";
+---
+
+<section class="bg-bg-white">
+  <div class="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-4 py-8 md:px-6">
+    {
+      p.categoryFilter && listing && listing.categories.length > 0 && (
+        <nav aria-label="Kategori" class="flex flex-wrap gap-2">
+          {[{ name: "Semua", href: base, slug: undefined }, ...listing.categories].map((c) => {
+            const current = (c.slug ?? undefined) === listing.category;
+            return (
+              <a
+                href={c.href}
+                aria-current={current ? "page" : undefined}
+                class:list={[
+                  "focus-ring text-label-md rounded-full px-3 py-1",
+                  current ? "bg-bg-primary-600 text-txt-white" : "bg-bg-washed text-txt-black-900 hover:bg-bg-washed-active",
+                ]}
+              >
+                {c.name}
+              </a>
+            );
+          })}
+        </nav>
+      )
+    }
+    {
+      items.length > 0 ? (
+        <NewsList items={items} layout={p.style === "cards" ? "grid" : "list"} lang={lang} title="">
+          {listing && listing.pages > 1 && (
+            <Pager
+              current={listing.page}
+              total={listing.pages}
+              href={(n: number) => listingHref(base, n, listing.category)}
+              firstHref={listingHref(base, 1, listing.category)}
+              lang={lang}
+            />
+          )}
+        </NewsList>
+      ) : (
+        <p class="bg-bg-washed text-txt-black-700 rounded-md p-6">
+          {edit && !listing ? "Entri muncul di sini." : p.emptyText}
+        </p>
+      )
+    }
+    {
+      listing?.rss && (
+        <a href={listing.rss} class="text-txt-primary focus-ring text-body-sm flex w-fit items-center gap-1 rounded-xs underline">
+          <RSS class="size-4" aria-hidden="true" /> Langgan suapan RSS
+        </a>
+      )
+    }
+  </div>
+</section>

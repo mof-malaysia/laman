@@ -1,0 +1,39 @@
+{
+  "name": "@fiscal-sb/renderer",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./entry.d.ts",
+      "default": "./dist/server/entry.mjs"
+    },
+    "./paths": {
+      "types": "./paths.d.ts",
+      "default": "./paths.mjs"
+    }
+  },
+  "scripts": {
+    "build": "astro build",
+    "check-types": "tsc --noEmit",
+    "lint": "oxlint"
+  },
+  "dependencies": {
+    "@astrojs/node": "catalog:",
+    "@fiscal-sb/blocks": "workspace:*",
+    "@fontsource-variable/inter": "catalog:",
+    "astro": "catalog:",
+    "class-variance-authority": "^0.7.1",
+    "tailwind-merge": "^3.7.0",
+    "tw-animate-css": "catalog:"
+  },
+  "devDependencies": {
+    "@fiscal-sb/oxlint-config": "workspace:*",
+    "@fiscal-sb/typescript-config": "workspace:*",
+    "@tailwindcss/vite": "catalog:",
+    "@types/node": "catalog:",
+    "oxlint": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:"
+  }
+}

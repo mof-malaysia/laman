@@ -1,0 +1,39 @@
+---
+import type { BlockOf } from "@fiscal-sb/blocks";
+import FeatureGrid from "@/components/blocks/feature-grid.astro";
+import Field from "./Field.astro";
+import { featureIconComponents as icons } from "./icons";
+
+type Props = { block: BlockOf<"featureGrid">; edit: boolean; lang: "ms" | "en" };
+const { block, edit, lang } = Astro.props;
+const p = block.props;
+
+
+const features = p.features.map((feature) => ({
+  icon: feature.icon && icons[feature.icon],
+  title: feature.title,
+  description: feature.description,
+  href: feature.href || undefined,
+}));
+---
+
+<FeatureGrid
+  features={features}
+  columns={p.columns === "2" ? 2 : 3}
+  surface={p.surface}
+  tone={p.tone}
+  lang={lang}
+>
+  {
+    (edit || p.title) && (
+      <Field slot="title" name="title" edit={edit} placeholder="Title">{p.title}</Field>
+    )
+  }
+  {
+    (edit || p.description) && (
+      <Field slot="description" name="description" edit={edit} placeholder="Description">
+        {p.description}
+      </Field>
+    )
+  }
+</FeatureGrid>
