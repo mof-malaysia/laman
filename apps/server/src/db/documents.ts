@@ -34,7 +34,7 @@ export const siteDocSchemas = {
 export type StoredDocument = {
   /** Names the list in check failures and in `rewriteDocuments`. */
   name: string;
-  table: "pages" | "revisions" | "settings" | "jobs" | "users";
+  table: "pages" | "revisions" | "settings" | "jobs" | "users" | "oauth_clients";
   /** The row's unique key. */
   key: "id" | "key";
   column: string;
@@ -102,6 +102,14 @@ export const storedDocuments: StoredDocument[] = [
     column: "payload",
     where: sql`kind = 'backup'`,
     schema: BackupPayload,
+  },
+  // Where an agent's sign-in may return to (docs/mcp.md).
+  {
+    name: "agent redirect addresses",
+    table: "oauth_clients",
+    key: "id",
+    column: "redirect_uris",
+    schema: z.array(z.string()).min(1).max(10),
   },
 ];
 

@@ -6,6 +6,7 @@ import {
   type AuditQuery,
 } from "@fiscal-sb/contracts";
 import { addDays, startOfDay } from "../analytics/db.js";
+import { actingAgent, actingConnection } from "./acting.js";
 import { pageFacts } from "../content/pages.js";
 import { type Db, now } from "../db/index.js";
 
@@ -27,7 +28,11 @@ export async function audit(db: Pick<Db, "insertInto">, event: AuditEvent) {
       user_id: event.userId,
       action: event.action,
       target: event.target ?? null,
-      detail: JSON.stringify(event.detail ?? {}),
+      // Done through an agent (docs/mcp.md): said once here, wherever the entry is written.
+      detail: JSON.stringify({
+        ...event.detail,
+        ...(actingAgent() && { agent: actingAgent(), connection: actingConnection() }),
+      }),
       ip: event.ip ?? null,
     })
     .execute();

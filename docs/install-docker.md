@@ -50,7 +50,7 @@ docker compose exec site-builder site-builder check
 
 ## 4. Backups
 
-The builder backs itself up every day at 02:00 Malaysian time, before every upgrade, and when an Admin presses **Back up now** in Settings → About. Archives land in `BACKUP_PATH` on the host:
+The builder backs itself up every day at 02:00 Malaysian time, before every upgrade, and when an Admin presses **Back up now** in Settings → Backups. Archives land in `BACKUP_PATH` on the host:
 
 ```sh
 docker compose exec site-builder site-builder backup          # one now

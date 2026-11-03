@@ -39,6 +39,7 @@ import { ChevronRightIcon } from "@/components/ui/icons/chevron-right";
 import { Input } from "@/components/ui/input";
 import {
   PageHeader,
+  PageHeaderActions,
   PageHeaderContent,
   PageHeaderDescription,
   PageHeaderTitle,
@@ -121,16 +122,34 @@ function ResultTag({ job }: { job: Job }) {
 
 export function PublishingScreen() {
   const canManage = useCan("site.manage");
+  const { lastAt } = useSiteState();
+  const siteUrl = useSiteHref("/");
   return (
-    <div className="p-surface gap-stack-lg mx-auto flex max-w-6xl flex-col">
+    // Body Compact is the admin's reading size; headings and labels set their own.
+    <div className="p-surface gap-stack-lg text-body-sm mx-auto flex max-w-6xl flex-col">
       <PageHeader>
         <PageHeaderContent>
           <PageHeaderTitle size="headline">{t("nav.publishing")}</PageHeaderTitle>
           <PageHeaderDescription>{t("publishing.intro")}</PageHeaderDescription>
         </PageHeaderContent>
+        {lastAt && (
+          <PageHeaderActions>
+            <Button
+              variant="default-outline"
+              // oxlint-disable-next-line jsx-a11y/control-has-associated-label -- labelled by the Button's children
+              render={<a href={siteUrl} target="_blank" rel="noopener" />}
+            >
+              {t("publish.view")}
+              <span className="sr-only"> {t("publish.newTab")}</span>
+            </Button>
+          </PageHeaderActions>
+        )}
       </PageHeader>
 
-      {/* Phone order: where the site stands, what's waiting, then what happened. */}
+      {/*
+        Phone order: where the site stands and what's waiting, then what happened.
+        Rebuilding is about the live site, so it sits under its history.
+      */}
       <div className="grid grid-cols-[minmax(0,1fr)] gap-x-10 gap-y-10 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
         <div className="gap-stack-lg flex flex-col">
           <section aria-labelledby="status-heading" className="gap-stack-md flex flex-col">
@@ -138,52 +157,31 @@ export function PublishingScreen() {
             <WaitingList />
           </section>
           <Scheduled />
+        </div>
+        <div className="gap-stack-lg flex flex-col">
+          <Log />
           {canManage && <Rebuild />}
         </div>
-        <Log />
       </div>
     </div>
   );
 }
 
 /**
- * Where the site stands, with when it last changed. It names the section, so
- * the waiting list under it needs no heading.
+ * Where the site stands, and when it last changed. It names the section, so
+ * the waiting list under it needs no heading, and it doesn't repeat what the
+ * list already shows (how many new pages there are, what to tick).
  */
 function SiteStatus() {
   const { state, waiting, lastAt, loaded } = useSiteState();
-  const siteUrl = useSiteHref("/");
-  // Someone who can't publish isn't asked to tick anything.
-  const canPublish = useCan("content.publish");
-  const body =
-    state === "failed"
-      ? t("publishing.status.failedBody")
-      : state === "waiting" && waiting.fresh > 0
-        ? t(canPublish ? "publishing.status.alsoFresh" : "publishing.status.alsoFreshCount", {
-            count: waiting.fresh,
-          })
-        : state === "publishedLive"
-          ? t(canPublish ? "publishing.status.freshOnly" : "publishing.status.freshCount", {
-              count: waiting.fresh,
-            })
-          : null;
-
-  if (!loaded) return <Skeleton className="h-28 w-full rounded-lg" />;
+  if (!loaded) return <Skeleton className="h-20 w-full rounded-lg" />;
   return (
-    <div className="bg-bg-washed flex flex-col gap-3 rounded-lg p-5">
+    <div className="bg-bg-washed flex flex-col gap-1 rounded-lg px-5 py-4">
       <SiteStateHeading state={state} count={waiting.count}>
-        {body}
+        {state === "failed" && t("publishing.status.failedBody")}
       </SiteStateHeading>
-      <p className="text-body-sm text-txt-black-700 border-otl-gray-200 flex flex-wrap items-center gap-x-3 gap-y-1 border-t pt-3">
-        <span title={lastAt ? formatDateTime(lastAt) : undefined}>
-          {lastAt ? t("home.lastPublished", { ago: formatAgo(lastAt) }) : t("home.neverPublished")}
-        </span>
-        {lastAt && (
-          <a href={siteUrl} target="_blank" rel="noopener" className={linkClass}>
-            {t("publish.view")}
-            <span className="sr-only"> {t("publish.newTab")}</span>
-          </a>
-        )}
+      <p className="text-txt-black-700 pl-8" title={lastAt ? formatDateTime(lastAt) : undefined}>
+        {lastAt ? t("home.lastPublished", { ago: formatAgo(lastAt) }) : t("home.neverPublished")}
       </p>
     </div>
   );
@@ -387,7 +385,7 @@ function Scheduled() {
                     {t("publishing.schedule.pagesHint")}
                   </legend>
                   {candidates.length === 0 && (
-                    <p className="text-body-sm">{t("publishing.schedule.noCandidates")}</p>
+                    <p className="m-0">{t("publishing.schedule.noCandidates")}</p>
                   )}
                   {candidates.map((page) => (
                     <Field key={page.id} name={`page-${page.id}`}>
@@ -421,7 +419,7 @@ function Scheduled() {
                   <FieldError>{error.message}</FieldError>
                 </Field>
               )}
-              <p className="text-body-sm text-txt-black-700">{t("publishing.schedule.hint")}</p>
+              <p className="text-txt-black-700">{t("publishing.schedule.hint")}</p>
               <div>
                 {/* Not the grey tone: the Details panel behind it is that grey already. */}
                 <Button type="submit" variant="primary-outline" disabled={busy}>
@@ -469,7 +467,7 @@ function Rebuild() {
       <Details>
         <DetailsTrigger>{t("publishing.rebuild.toggle")}</DetailsTrigger>
         <DetailsContent className="flex flex-col items-start gap-3">
-          <p className="text-body-sm text-txt-black-700">{t("publishing.rebuild.hint")}</p>
+          <p className="text-txt-black-700">{t("publishing.rebuild.hint")}</p>
           <Button variant="primary-outline" disabled={busy} onClick={() => setConfirming(true)}>
             {busy ? t("publishing.rebuild.busy") : t("publishing.rebuild.action")}
           </Button>
@@ -607,14 +605,11 @@ function Log() {
           {!jobs.data ? (
             <Skeleton className="h-40 w-full" />
           ) : items.length === 0 ? (
-            <p className="text-txt-black-700">{t("publishing.log.none")}</p>
+            <p className="text-txt-black-700 m-0">{t("publishing.log.none")}</p>
           ) : (
             days.map((day, i) => (
               <section key={day.label} aria-labelledby={`log-day-${i}`} className="flex flex-col">
-                <h3
-                  id={`log-day-${i}`}
-                  className="text-body-sm text-txt-black-700 mb-1 font-semibold"
-                >
+                <h3 id={`log-day-${i}`} className="text-txt-black-700 mb-1 font-medium">
                   {day.label}
                 </h3>
                 {/* A timeline: the line joins the day's publishes, the dot says how each went. */}
@@ -624,7 +619,7 @@ function Log() {
                       <span
                         aria-hidden
                         className={clx(
-                          "ring-bg-white absolute top-[19px] left-2 size-2 rounded-full ring-4",
+                          "ring-bg-white absolute top-4 left-2 size-2 rounded-full ring-4",
                           toneDot[toneOf(row.job)],
                         )}
                       />
@@ -634,20 +629,21 @@ function Log() {
                         onClick={() => setOpen(row.job.id)}
                         className="focus-ring hover:bg-bg-washed group flex w-full items-center gap-3 rounded-md py-2.5 pr-2 pl-7 text-left transition-colors duration-150 motion-reduce:transition-none"
                       >
-                        <span className="flex min-w-0 flex-1 flex-col">
+                        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                           <span className="truncate font-medium group-hover:underline">
                             {row.line}
                           </span>
-                          <span className="text-body-sm text-txt-black-700 tabular-nums">
+                          {/* Under the line, so a tag never cuts the title short. */}
+                          <span className="text-label-compact text-txt-black-700 flex flex-wrap items-center gap-x-2 gap-y-1 tabular-nums">
                             {formatTime(row.job.createdAt)}
                             {row.repeats > 1 &&
                               ` · ${t("publishing.log.times", { count: row.repeats })}`}
+                            {/* Words only where it didn't simply go live; the dot carries the rest. */}
+                            {(row.job.status !== "done" ||
+                              isUndone(row.job) ||
+                              Boolean(row.job.result?.failed)) && <ResultTag job={row.job} />}
                           </span>
                         </span>
-                        {/* Words only where it didn't simply go live; the dot carries the rest. */}
-                        {(row.job.status !== "done" ||
-                          isUndone(row.job) ||
-                          Boolean(row.job.result?.failed)) && <ResultTag job={row.job} />}
                         <ChevronRightIcon
                           aria-hidden
                           className="text-txt-black-700 size-4 shrink-0"
@@ -663,7 +659,7 @@ function Log() {
       )}
       {pages > 1 && (
         <nav aria-label={t("publishing.paging")} className="flex items-center justify-end gap-2">
-          <span className="text-body-sm text-txt-black-700 tabular-nums">
+          <span className="text-txt-black-700 tabular-nums">
             {t("media.pageOf", { page, pages })}
           </span>
           <Button

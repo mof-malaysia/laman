@@ -203,6 +203,8 @@ export const siteApi = {
   theme: () => data<ThemeDoc>(api.get("api/theme")),
   saveTheme: (draft: ThemeChoice) => saveDoc<ThemeDoc>("theme", draft),
   discardTheme: () => discardDoc<ThemeDoc>("theme"),
+  /** Throws away one site document's draft: the live copy becomes the draft again. */
+  discardDoc: (name: SiteDocName) => discardDoc<{ version: string }>(name),
   /** Makes one site document's draft live, and nothing else. */
   publishDoc: (name: SiteDocName) => data<DocPublishResult>(api.post(`api/${name}/publish`)),
 };
@@ -231,6 +233,8 @@ export const historyApi = {
     data<RevisionDetail>(api.get(`api/pages/${pageId}/revisions/${revisionId}`)),
   restore: (pageId: string, revisionId: string) =>
     data<Page>(api.post(`api/pages/${pageId}/revisions/${revisionId}/restore`)),
+  /** Throws away a page's changes; the draft is kept as a revision. */
+  discard: (pageId: string) => data<Page>(api.post(`api/pages/${pageId}/discard`)),
   trash: () => data<DeletedPage[]>(api.get("api/trash")),
   restoreDeleted: (id: string) => data<Page>(api.post(`api/trash/${id}/restore`)),
 };

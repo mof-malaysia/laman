@@ -6,6 +6,7 @@ import { HomeIcon } from "@/components/ui/icons/home";
 import { ListIcon } from "@/components/ui/icons/list";
 import { Tag } from "@/components/ui/tag";
 import { t } from "@/i18n";
+import { clx } from "@/lib/ftds/utils";
 
 /** Draft, Changed or Published, as a wash tag with words. */
 export function PageStatusTag({
@@ -76,6 +77,13 @@ export const toneDot: Record<Tone, string> = {
   danger: "bg-bg-danger-600",
 };
 
+/** The coloured dot itself. */
+export function StatusDot({ tone, className }: { tone: Tone; className?: string }) {
+  return (
+    <span aria-hidden className={clx("size-2 shrink-0 rounded-full", toneDot[tone], className)} />
+  );
+}
+
 /** The tree row's right edge: a collection's entry count, and an arrow while a redirect is on. */
 export function PageRowMeta({ page, pages }: { page: PageSummary; pages: PageSummary[] }) {
   const target = redirectTarget(page, pages);
@@ -91,7 +99,7 @@ export function PageRowMeta({ page, pages }: { page: PageSummary; pages: PageSum
       {page.kind === "listing" && (
         <span
           title={t("listing.count", { count: page.entryCount ?? 0 })}
-          className="bg-bg-washed text-txt-black-700 text-body-xs rounded-sm px-1.5 py-px tabular-nums"
+          className="bg-bg-washed text-txt-black-700 text-label-compact rounded-sm px-1.5 py-px tabular-nums"
         >
           <span aria-hidden>{page.entryCount ?? 0}</span>
           <span className="sr-only">{t("listing.count", { count: page.entryCount ?? 0 })}</span>

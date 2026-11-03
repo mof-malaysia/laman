@@ -455,7 +455,7 @@ function SnapshotPanel({ page }: { page: Page }) {
           </a>
         }
       />
-      <p className="text-body-xs text-txt-black-700">{t("detail.snapshot.hint")}</p>
+      <p className="text-label-compact text-txt-black-700">{t("detail.snapshot.hint")}</p>
     </Panel>
   );
 }
@@ -493,7 +493,9 @@ function SeoTab({ page }: { page: Page }) {
       aside={
         <Panel title={t("seo.preview")}>
           <div className="border-otl-gray-200 flex flex-col gap-1 rounded-md border p-3">
-            <span className="text-body-xs text-txt-black-700 truncate">{siteUrl + page.path}</span>
+            <span className="text-label-compact text-txt-black-700 truncate">
+              {siteUrl + page.path}
+            </span>
             <span className="text-txt-primary text-body-md truncate font-medium">
               {page.title || t("page.untitled")}
             </span>

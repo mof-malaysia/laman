@@ -13,6 +13,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useId, useRef, useState } from "react";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { StatusDot, type Tone } from "@/components/page-status";
 import { TwoFactorTag } from "@/components/two-factor-tag";
 import { Button } from "@/components/ui/button";
 import { Callout, CalloutContent, CalloutTitle } from "@/components/ui/callout";
@@ -27,15 +28,9 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldItem, FieldLabel } from "@/components/ui/field";
 import { Fieldset, FieldsetLegend } from "@/components/ui/fieldset";
+import { ChevronDownIcon } from "@/components/ui/icons/chevron-down";
 import { Input } from "@/components/ui/input";
 import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
-import {
-  PageHeader,
-  PageHeaderActions,
-  PageHeaderContent,
-  PageHeaderDescription,
-  PageHeaderTitle,
-} from "@/components/ui/page-header";
 import { Radio, RadioButton, RadioHintText, RadioItem, RadioLabel } from "@/components/ui/radio";
 import {
   Table,
@@ -46,13 +41,16 @@ import {
   TableRow,
   TableSkeleton,
 } from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
 import { Tag } from "@/components/ui/tag";
-import { t } from "@/i18n";
-import { apiError } from "@/lib/api";
-import { roleLabels, useMe, usersApi, usersQuery } from "@/lib/auth";
-import useToast from "@/lib/ftds/hooks/use-toast";
+import { type MessageKey, t } from "@/i18n";
+import { agentsApi, roleLabels, useMe, usersApi, usersQuery } from "@/lib/auth";
 import { formatAgo, formatDateTime } from "@/lib/pages";
+import { clx } from "@/lib/ftds/utils";
 import { useAction } from "@/lib/use-action";
+import { useRun } from "@/lib/use-run";
+import { PersonCell } from "./person";
+import { UsersHeader } from "./users-tabs";
 
 /** After this long without signing in, an account is flagged as possibly no longer needed. */
 const STALE_DAYS = 90;
@@ -66,6 +64,21 @@ const isStale = (person: UserSummary) =>
   person.role !== "superAdmin" &&
   daysSince(person.lastSignInAt ?? person.createdAt) >= STALE_DAYS;
 
+/** Whether an account can be used: a dot and a word, so the column scans by colour. */
+function AccountStatus({ person }: { person: UserSummary }) {
+  const [tone, label]: [Tone, MessageKey] = person.disabled
+    ? ["danger", "users.disabled"]
+    : isStale(person)
+      ? ["warning", "users.status.inactive"]
+      : ["success", "users.status.active"];
+  return (
+    <span className="flex items-center gap-2 whitespace-nowrap">
+      <StatusDot tone={tone} />
+      {t(label)}
+    </span>
+  );
+}
+
 const isExpired = (invite: Invite) => Date.parse(invite.expiresAt) <= Date.now();
 
 /** Who an invite is for, as its maker wrote it. */
@@ -73,25 +86,6 @@ const noteOf = (invite: Invite) => invite.note || t("users.noNote");
 
 /** An invite still to be made: its role and who it's for. */
 type InviteDraft = { role: AssignableRole; note: string };
-
-/** Runs an action, then refreshes `queryKey` and says `done`; says the server's reason when it fails. */
-function useRun(queryKey: readonly unknown[]) {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  return async (work: () => Promise<unknown>, done?: string) => {
-    try {
-      await work();
-      void queryClient.invalidateQueries({ queryKey });
-      if (done) toast({ variant: "success", title: done });
-    } catch (caught) {
-      toast({
-        variant: "error",
-        title: t("users.failed"),
-        description: (await apiError(caught))?.message,
-      });
-    }
-  };
-}
 
 /** "3h ago", "2 weeks ago", "4 months ago": how long it's been is what matters here. */
 function formatSince(iso: string) {
@@ -105,6 +99,14 @@ function formatSince(iso: string) {
 export function UsersScreen() {
   const me = useMe();
   const people = useQuery(usersQuery);
+  // Who has an agent connected now, so "End agent connections" shows only for them.
+  const connections = useQuery({
+    queryKey: ["agents", undefined],
+    queryFn: () => agentsApi.connections(),
+  });
+  const connected = new Set(
+    connections.data?.filter((c) => c.status === "live").map((c) => c.person.id),
+  );
   const invites = useQuery({ queryKey: ["invites"], queryFn: usersApi.invites });
   const [inviting, setInviting] = useState<InviteDraft>();
   const [shown, setShown] = useState<{ title: string; description: string; link: OneTimeLink }>();
@@ -114,15 +116,9 @@ export function UsersScreen() {
 
   return (
     <div className="p-surface gap-stack-lg mx-auto flex max-w-6xl flex-col">
-      <PageHeader>
-        <PageHeaderContent>
-          <PageHeaderTitle size="headline">{t("nav.users")}</PageHeaderTitle>
-          <PageHeaderDescription>{t("users.intro")}</PageHeaderDescription>
-        </PageHeaderContent>
-        <PageHeaderActions>
-          <Button variant="default-ghost" size="small" render={<Link to="/users/audit" />}>
-            {t("users.audit")}
-          </Button>
+      <UsersHeader
+        description={t("users.intro")}
+        actions={
           <Button
             variant="primary-fill"
             size="small"
@@ -130,8 +126,8 @@ export function UsersScreen() {
           >
             {t("users.invite")}
           </Button>
-        </PageHeaderActions>
-      </PageHeader>
+        }
+      />
 
       {stale > 0 && (
         <Callout variant="warning">
@@ -142,13 +138,14 @@ export function UsersScreen() {
 
       <div className="gap-stack-sm flex flex-col">
         <Table>
-          <TableHeader>
+          <TableHeader className="[&_th]:whitespace-nowrap">
             <TableRow>
               <TableHead>{t("users.column.name")}</TableHead>
               <TableHead>{t("users.column.role")}</TableHead>
               <TableHead>{t("users.column.status")}</TableHead>
               <TableHead>{t("users.column.twoFactor")}</TableHead>
               <TableHead>{t("users.column.lastSignIn")}</TableHead>
+              <TableHead>{t("users.column.mcp")}</TableHead>
               <TableHead>
                 <span className="sr-only">{t("dashboard.column.actions")}</span>
               </TableHead>
@@ -158,7 +155,7 @@ export function UsersScreen() {
             {!sorted
               ? [0, 1, 2].map((row) => (
                   <TableRow key={row}>
-                    {[0, 1, 2, 3, 4, 5].map((cell) => (
+                    {[0, 1, 2, 3, 4, 5, 6].map((cell) => (
                       <TableCell key={cell}>
                         <TableSkeleton />
                       </TableCell>
@@ -170,6 +167,7 @@ export function UsersScreen() {
                     key={person.id}
                     person={person}
                     self={person.id === me.id}
+                    connected={connected.has(person.id)}
                     onLink={(link) =>
                       setShown({
                         title: t("users.reset.shown.title", { name: person.displayName }),
@@ -181,7 +179,6 @@ export function UsersScreen() {
                 ))}
           </TableBody>
         </Table>
-        <p className="text-body-sm text-txt-black-700 max-w-prose">{t("users.superAdmin.note")}</p>
       </div>
 
       {invites.data && invites.data.length > 0 && (
@@ -209,19 +206,23 @@ export function UsersScreen() {
 }
 
 /** The actions behind a confirm: their messages are `users.<action>`, `.title`, `.body` and `.done`. */
-type Confirm = "disable" | "clear2fa" | "signOut";
+type Confirm = "disable" | "clear2fa" | "signOut" | "mcpOff" | "endAgents";
 
 function PersonRow({
   person,
   self,
+  connected,
   onLink,
 }: {
   person: UserSummary;
   self: boolean;
+  /** An agent is connected as them now. */
+  connected: boolean;
   onLink: (link: OneTimeLink) => void;
 }) {
   const navigate = useNavigate();
   const run = useRun(usersQuery.queryKey);
+  const queryClient = useQueryClient();
   const [confirm, setConfirm] = useState<Confirm>();
   const [changingRole, setChangingRole] = useState(false);
   // The super admin and your own account can't be changed from here.
@@ -232,37 +233,44 @@ function PersonRow({
     disable: { destructive: true, work: () => usersApi.update(person.id, { disabled: true }) },
     clear2fa: { destructive: true, work: () => usersApi.clearTwoFactor(person.id) },
     signOut: { destructive: false, work: () => usersApi.signOut(person.id) },
+    mcpOff: {
+      destructive: true,
+      work: () =>
+        usersApi
+          .update(person.id, { mcpEnabled: false })
+          .then(() => queryClient.invalidateQueries({ queryKey: ["agents"] })),
+    },
+    endAgents: {
+      destructive: true,
+      work: () =>
+        usersApi
+          .endAgents(person.id)
+          .then(() => queryClient.invalidateQueries({ queryKey: ["agents"] })),
+    },
   };
 
   return (
     <TableRow>
       <TableCell>
-        <div className="flex flex-col">
-          <span className="text-txt-black-900 font-medium">
-            {person.displayName}
-            {self && <span className="text-txt-black-500 font-normal"> {t("users.you")}</span>}
+        <PersonCell name={person.displayName} className={clx(person.disabled && "opacity-60")}>
+          <span className="text-label-compact text-txt-black-500 flex max-w-full items-center gap-1.5">
+            <span className="truncate">{person.username}</span>
+            {self && (
+              <Tag size="small" variant="primary">
+                {t("users.you")}
+              </Tag>
+            )}
           </span>
-          {person.username !== person.displayName.toLowerCase() && (
-            <span className="text-body-xs text-txt-black-500">{person.username}</span>
-          )}
-        </div>
+        </PersonCell>
       </TableCell>
-      <TableCell>{t(roleLabels[person.role])}</TableCell>
-      <TableCell>
-        {person.disabled ? (
-          <Tag size="small" variant="danger">
-            {t("users.disabled")}
-          </Tag>
-        ) : isStale(person) ? (
-          <Tag size="small" variant="warning">
-            {t("users.status.inactive")}
-          </Tag>
-        ) : (
-          t("users.status.active")
-        )}
+      <TableCell className="text-txt-black-900 whitespace-nowrap">
+        {t(roleLabels[person.role])}
       </TableCell>
       <TableCell>
-        <div className="flex items-center gap-2">
+        <AccountStatus person={person} />
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2 whitespace-nowrap">
           <TwoFactorTag on={person.twoFactor} />
           {self && !person.twoFactor && (
             <Link to="/account" className="text-body-sm text-txt-primary underline">
@@ -271,7 +279,7 @@ function PersonRow({
           )}
         </div>
       </TableCell>
-      <TableCell className="tabular-nums">
+      <TableCell className="text-txt-black-700 whitespace-nowrap tabular-nums">
         {person.lastSignInAt ? (
           <time dateTime={person.lastSignInAt} title={formatDateTime(person.lastSignInAt)}>
             {formatSince(person.lastSignInAt)}
@@ -280,7 +288,23 @@ function PersonRow({
           t("users.never")
         )}
       </TableCell>
-      <TableCell className="text-right">
+      <TableCell>
+        {/* On every row so the column reads the same; locked ones are changed elsewhere. */}
+        <Switch
+          aria-label={t("users.mcp.label", name)}
+          checked={person.mcpEnabled}
+          disabled={locked || person.disabled}
+          onCheckedChange={(on) =>
+            on
+              ? void run(
+                  () => usersApi.update(person.id, { mcpEnabled: true }),
+                  t("users.mcp.turnedOn", name),
+                )
+              : setConfirm("mcpOff")
+          }
+        />
+      </TableCell>
+      <TableCell className="text-right whitespace-nowrap">
         {self && (
           <Button variant="default-ghost" size="small" render={<Link to="/account" />}>
             {t("users.yourAccount")}
@@ -288,9 +312,10 @@ function PersonRow({
         )}
         {!locked && (
           <Menu>
-            <MenuTrigger render={<Button variant="default-ghost" size="small" />}>
+            <MenuTrigger render={<Button variant="default-outline" size="small" />}>
               {t("users.actions")}
               <span className="sr-only"> {person.displayName}</span>
+              <ChevronDownIcon aria-hidden className="size-4" />
             </MenuTrigger>
             <MenuContent>
               <MenuItem onClick={() => setChangingRole(true)}>{t("users.role.change")}</MenuItem>
@@ -303,6 +328,9 @@ function PersonRow({
                 <MenuItem onClick={() => setConfirm("clear2fa")}>{t("users.clear2fa")}</MenuItem>
               )}
               <MenuItem onClick={() => setConfirm("signOut")}>{t("users.signOut")}</MenuItem>
+              {connected && (
+                <MenuItem onClick={() => setConfirm("endAgents")}>{t("users.endAgents")}</MenuItem>
+              )}
               <MenuItem
                 onClick={() => void navigate({ to: "/users/audit", search: { userId: person.id } })}
               >

@@ -31,10 +31,12 @@ import { type DetailSearch, detailSearch } from "./pages/site/search";
 import { NewPageScreen } from "./pages/new-page/new-page-screen";
 import { type NewPageSearch, newPageSearch } from "./pages/new-page/search";
 import { AccountScreen } from "./account/account-screen";
+import { ConnectScreen, connectSearch } from "./auth/connect-screen";
 import { JoinScreen, ResetScreen } from "./auth/link-screens";
 import { CodeScreen, EnrolScreen, PasswordScreen, SignInScreen } from "./auth/sign-in-screens";
 import { meQuery, stagePaths } from "./lib/auth";
 import { queryClient } from "./lib/query";
+import { type AgentsSearch, AgentsScreen, agentsSearch } from "./users/agents-screen";
 import { type AuditSearch, AuditScreen, auditSearch } from "./users/audit-screen";
 import { UsersScreen } from "./users/users-screen";
 
@@ -89,6 +91,14 @@ const signedInRoute = createRoute({
   component: Outlet,
 });
 
+// An agent's sign-in (docs/mcp.md): after signing in, outside the shell, like signing in itself.
+const connectRoute = createRoute({
+  getParentRoute: () => signedInRoute,
+  path: "/connect",
+  validateSearch: connectSearch,
+  component: ConnectScreen,
+});
+
 // Every screen sits in the shell: rail, top bar with the open pages, status bar.
 const shellRoute = createRoute({
   getParentRoute: () => signedInRoute,
@@ -139,6 +149,8 @@ const deletedPageRoute = createRoute({
 const editorRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/pages/$id/edit",
+  // `checks`: open what the check before publishing found, as the publish list's link does.
+  validateSearch: (search): { checks?: true } => (search.checks ? { checks: true } : {}),
   component: EditorPage,
 });
 
@@ -203,6 +215,12 @@ const auditRoute = createRoute({
   validateSearch: (search): AuditSearch => auditSearch(search),
   component: AuditScreen,
 });
+const agentsRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/users/agents",
+  validateSearch: (search): AgentsSearch => agentsSearch(search),
+  component: AgentsScreen,
+});
 const accountRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/account",
@@ -215,6 +233,7 @@ const routeTree = rootRoute.addChildren([
   joinRoute,
   resetRoute,
   signedInRoute.addChildren([
+    connectRoute,
     newPageRoute,
     shellRoute.addChildren([
       dashboardRoute,
@@ -232,6 +251,7 @@ const routeTree = rootRoute.addChildren([
       settingsRoute,
       usersRoute,
       auditRoute,
+      agentsRoute,
       accountRoute,
       editorRoute,
     ]),

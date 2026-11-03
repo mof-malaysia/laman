@@ -1,5 +1,17 @@
 // Rstest Snapshot v1
 
+exports[`stored document schemas > agent redirect addresses 1`] = `
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "items": {
+    "type": "string",
+  },
+  "maxItems": 10,
+  "minItems": 1,
+  "type": "array",
+}
+`;
+
 exports[`stored document schemas > announcement 1`] = `
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",

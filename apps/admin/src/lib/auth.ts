@@ -5,7 +5,12 @@
  * hides what someone can't use.
  */
 import type {
+  AgentConnection,
   AssignableRole,
+  ConsentBody,
+  ConsentInfo,
+  ConsentRequest,
+  ConsentResult,
   AuditEntry,
   AuditQuery,
   Invite,
@@ -42,6 +47,9 @@ export const authApi = {
   recoveryCodes: (code: string) =>
     data<{ codes: string[] }>(api.post("api/auth/recovery-codes", { json: { code } })),
   rename: (displayName: string) => data<Me>(api.patch("api/auth/me", { json: { displayName } })),
+  /** The super admin's own MCP access; everyone else's is set on Users. */
+  setMcpAccess: (mcpEnabled: boolean) =>
+    data<Me>(api.patch("api/auth/me", { json: { mcpEnabled } })),
   link: (token: string) => data<LinkInfo>(api.post("api/auth/link", { json: { token } })),
   join: (body: { token: string; username: string; displayName: string; password: string }) =>
     data<Me>(api.post("api/auth/join", { json: body })),
@@ -63,6 +71,9 @@ export const usersApi = {
   signOut: async (id: string) => {
     await api.post(`api/users/${id}/sign-out`);
   },
+  endAgents: async (id: string) => {
+    await api.post(`api/users/${id}/end-agents`);
+  },
   invites: () => data<Invite[]>(api.get("api/users/invites")),
   invite: (role: AssignableRole, note: string) =>
     data<OneTimeLink>(api.post("api/users/invites", { json: { role, note } })),
@@ -71,6 +82,22 @@ export const usersApi = {
   },
   audit: (query: z.input<typeof AuditQuery>) =>
     data<AuditEntry[]>(api.get("api/audit", { searchParams: queryParams(query) })),
+};
+
+/** Connecting an agent over MCP: the consent screen's request and answer (docs/mcp.md). */
+export const agentsApi = {
+  consent: (request: ConsentRequest) =>
+    data<ConsentInfo>(api.get("api/agents/consent", { searchParams: queryParams(request) })),
+  answer: (body: ConsentBody) =>
+    data<ConsentResult>(api.post("api/agents/consent", { json: body })),
+  connections: (userId?: string) =>
+    data<AgentConnection[]>(
+      api.get("api/agents/connections", { searchParams: queryParams({ userId }) }),
+    ),
+  mine: () => data<AgentConnection[]>(api.get("api/agents/mine")),
+  end: async (id: string) => {
+    await api.delete(`api/agents/connections/${id}`);
+  },
 };
 
 /** Builder security: whether everyone must use two-factor. */

@@ -81,17 +81,7 @@ export async function signedInApp(options: AppOptions, role: Role = "superAdmin"
 }
 
 /** A file as a multipart upload, for `inject`: `{ payload, headers }`. */
-export function multipartFile(filename: string, bytes: Buffer) {
-  const boundary = "----sitebuilder";
-  const payload = Buffer.concat([
-    Buffer.from(
-      `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: application/octet-stream\r\n\r\n`,
-    ),
-    bytes,
-    Buffer.from(`\r\n--${boundary}--\r\n`),
-  ]);
-  return { payload, headers: { "content-type": `multipart/form-data; boundary=${boundary}` } };
-}
+export { multipartFile } from "../src/multipart.js";
 
 /**
  * `hours` from now as the admin's date pickers send it: Malaysian time with

@@ -46,7 +46,7 @@ export function PageFrame({
           <span className="bg-bg-washed-active size-2 rounded-full" />
           <span className="bg-bg-washed-active size-2 rounded-full" />
         </span>
-        <span className="bg-bg-white text-txt-black-700 text-body-xs flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 py-0.5">
+        <span className="bg-bg-white text-txt-black-700 text-label-compact flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 py-0.5">
           <GlobeIcon aria-hidden className="size-3.5 shrink-0" />
           <span className="truncate font-mono">{path}</span>
         </span>

@@ -7,20 +7,23 @@
  * so they go with whatever is published.
  */
 import type { PageCheck, WaitingItem } from "@fiscal-sb/contracts";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { type ReactNode, useId, useState } from "react";
 import { linkClass } from "@/components/text-link";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { stops, useChecksOf } from "@/components/page-checks";
+import { PageCheckList, checksLabel, stops, useChecksOf } from "@/components/page-checks";
+import { Details, DetailsContent, DetailsTrigger } from "@/components/ui/details";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Panel, PanelBody, PanelTitle } from "@/components/ui/panel";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldItem, FieldLabel } from "@/components/ui/field";
 import { locale, type MessageKey, t } from "@/i18n";
-import { siteApi } from "@/lib/api";
+import { historyApi, siteApi } from "@/lib/api";
 import { useCan } from "@/lib/auth";
-import { formatDateTime } from "@/lib/pages";
+import { useRun } from "@/lib/use-run";
+import { formatDateTime, useRefreshPages } from "@/lib/pages";
 import { clx } from "@/lib/ftds/utils";
 import { docName, isNewPage, usePublish, useSiteHref, useWaiting } from "@/lib/publish";
 
@@ -61,14 +64,111 @@ function Review({ item, onNavigate }: { item: WaitingItem; onNavigate?: () => vo
   );
 }
 
-/** A page's checks under its name: what stops it, or how many things to look at. */
-function ChecksNote({ checks }: { checks: PageCheck[] | undefined }) {
-  if (!checks?.length) return null;
-  const stopped = stops(checks);
+/** A change to something already live: what Discard can put back. */
+type LiveChange = Exclude<WaitingItem, { kind: "media" }>;
+
+/**
+ * Rejects a change rather than publishing it: the draft goes back to what's
+ * live. Only for changes to live things; a page that was never published has
+ * nothing to go back to, and is deleted from Pages instead.
+ */
+function Discard({ item }: { item: LiveChange }) {
+  const queryClient = useQueryClient();
+  const refreshPages = useRefreshPages();
+  // The checks follow the draft, so they're refreshed after either kind.
+  const run = useRun(["checks"]);
+  const [confirming, setConfirming] = useState(false);
+  const name = itemName(item);
+  const discard = async () => {
+    if (item.kind === "page") {
+      await historyApi.discard(item.id);
+      await refreshPages(item.id);
+    } else {
+      await siteApi.discardDoc(item.kind);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["summary"] }),
+        queryClient.invalidateQueries({ queryKey: [item.kind] }),
+      ]);
+    }
+  };
   return (
-    <span className={clx("text-body-sm", stopped ? "text-txt-danger" : "text-txt-warning")}>
-      {stopped ? t("checks.stoppedRow") : t("checks.warningsRow", { count: checks.length })}
+    <>
+      <button
+        type="button"
+        className={clx(linkClass, "text-txt-danger")}
+        onClick={() => setConfirming(true)}
+      >
+        {t("waiting.discard")}
+        <span className="sr-only"> {name}</span>
+      </button>
+      {confirming && (
+        <ConfirmDialog
+          open
+          onOpenChange={setConfirming}
+          title={t("waiting.discard.title", { name })}
+          description={t(item.kind === "page" ? "waiting.discard.page" : "waiting.discard.doc")}
+          confirm={t("waiting.discard.confirm")}
+          destructive
+          onConfirm={() => void run(discard, t("waiting.discard.done", { name }))}
+        />
+      )}
+    </>
+  );
+}
+
+/** Review, and Discard for a change to something live. */
+function Actions({
+  item,
+  onNavigate,
+}: {
+  item: WaitingItem;
+  onNavigate?: (() => void) | undefined;
+}) {
+  const canEdit = useCan("content.edit");
+  return (
+    <span className="flex shrink-0 items-center gap-3">
+      <Review item={item} {...(onNavigate && { onNavigate })} />
+      {canEdit && !isNewPage(item) && item.kind !== "media" && <Discard item={item} />}
     </span>
+  );
+}
+
+/**
+ * "4 things to check", opening in place to say what each one is and how to fix
+ * it, with the way into the editor where the checks stay open.
+ */
+function ChecksNote({
+  pageId,
+  checks,
+  onNavigate,
+}: {
+  pageId: string;
+  checks: PageCheck[];
+  onNavigate?: (() => void) | undefined;
+}) {
+  return (
+    <Details>
+      <DetailsTrigger
+        className={clx(
+          "text-label-compact",
+          stops(checks) ? "text-txt-danger" : "text-txt-warning",
+        )}
+      >
+        {checksLabel(checks)}
+      </DetailsTrigger>
+      <DetailsContent className="flex flex-col items-start gap-3">
+        <PageCheckList checks={checks} />
+        <Link
+          to="/pages/$id/edit"
+          params={{ id: pageId }}
+          search={{ checks: true }}
+          className={linkClass}
+          onClick={onNavigate}
+        >
+          {t("checks.fixInEditor")}
+        </Link>
+      </DetailsContent>
+    </Details>
   );
 }
 
@@ -90,56 +190,56 @@ function Row({
   checks?: PageCheck[] | undefined;
 }) {
   const meta = useId();
-  const stopped = stops(checks);
   const description = [
     item.kind === "page"
-      ? `${item.path} · ${t("waiting.saved", { date: formatDateTime(item.updatedAt) })}`
+      ? t("waiting.saved", { date: formatDateTime(item.updatedAt) })
       : t("waiting.doc"),
     "editedBy" in item && item.editedBy && t("waiting.by", { name: item.editedBy }),
   ]
     .filter(Boolean)
     .join(" · ");
-  // The address, save time and checks: under the name, and the checkbox's description.
+  // The save time and who saved it: under the name, and the checkbox's description.
   const details = (
-    <>
-      <span className="text-body-sm text-txt-black-700 truncate">{description}</span>
-      <ChecksNote checks={checks} />
-    </>
+    <span id={meta} className="text-label-compact text-txt-black-500 max-w-full truncate">
+      {description}
+      {checks?.length ? <span className="sr-only">. {checksLabel(checks)}</span> : null}
+    </span>
   );
-  if (readOnly)
-    return (
-      <li className="flex items-start gap-3 py-2">
-        <span className="flex min-w-0 flex-1 flex-col items-start">
-          <span className="text-body-md truncate font-medium">{itemName(item)}</span>
+  const name = readOnly ? (
+    <span className="flex min-w-0 flex-1 flex-col items-start">
+      <span className="max-w-full truncate font-medium">{itemName(item)}</span>
+      {details}
+    </span>
+  ) : (
+    <Field name={`waiting-${key(item)}`} className="min-w-0 flex-1">
+      <FieldItem>
+        {/* The name is the title; the save time is its description. */}
+        <Checkbox
+          checked={checked}
+          disabled={stops(checks)}
+          onCheckedChange={onChecked}
+          aria-describedby={meta}
+        />
+        <span className="flex min-w-0 flex-col items-start">
+          <FieldLabel className="truncate text-left font-medium">{itemName(item)}</FieldLabel>
           {details}
         </span>
-        <span className="text-body-sm shrink-0 pt-0.5">
-          <Review item={item} {...(onNavigate && { onNavigate })} />
-        </span>
-      </li>
-    );
+      </FieldItem>
+    </Field>
+  );
   return (
-    <li className="flex items-start gap-3 py-2">
-      <Field name={`waiting-${key(item)}`} className="min-w-0 flex-1">
-        <FieldItem>
-          {/* The name is the title; the address and save time are its description. */}
-          <Checkbox
-            checked={checked}
-            disabled={stopped}
-            onCheckedChange={onChecked}
-            aria-describedby={meta}
-          />
-          <span className="flex min-w-0 flex-col items-start">
-            <FieldLabel className="truncate text-left font-medium">{itemName(item)}</FieldLabel>
-            <span id={meta} className="flex flex-col items-start">
-              {details}
-            </span>
-          </span>
-        </FieldItem>
-      </Field>
-      <span className="text-body-sm shrink-0 pt-0.5">
-        <Review item={item} {...(onNavigate && { onNavigate })} />
-      </span>
+    <li className="flex flex-col gap-1 py-2">
+      <div className="flex items-start gap-3">
+        {name}
+        <Actions item={item} onNavigate={onNavigate} />
+      </div>
+      {/* Under the row, not in the checkbox's label, so opening them never ticks it;
+          lined up with the name, past the checkbox. */}
+      {item.kind === "page" && checks?.length ? (
+        <div className={readOnly ? undefined : "pl-7"}>
+          <ChecksNote pageId={item.id} checks={checks} onNavigate={onNavigate} />
+        </div>
+      ) : null}
     </li>
   );
 }
@@ -156,9 +256,11 @@ function MediaRow({
     <li className="flex items-start gap-3 py-2">
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-medium">{itemName(item)}</span>
-        <span className="text-body-sm text-txt-black-700 truncate">{t("waiting.mediaHint")}</span>
+        <span className="text-label-compact text-txt-black-500 truncate">
+          {t("waiting.mediaHint")}
+        </span>
       </span>
-      <span className="text-body-sm shrink-0 pt-0.5">
+      <span className="shrink-0">
         <Review item={item} {...(onNavigate && { onNavigate })} />
       </span>
     </li>
@@ -218,15 +320,11 @@ export function WaitingList({ onNavigate }: { onNavigate?: () => void }) {
     return (
       <section aria-labelledby={id}>
         <div className="flex items-baseline justify-between gap-3">
-          <h3 id={id} className="text-body-sm text-txt-black-700 font-semibold">
+          <h3 id={id} className="text-txt-black-700 font-medium">
             {t(title)}
           </h3>
           {canPublish && items.length > 1 && (
-            <button
-              type="button"
-              className={clx("text-body-sm", linkClass)}
-              onClick={() => setAll(items, !all)}
-            >
+            <button type="button" className={linkClass} onClick={() => setAll(items, !all)}>
               {t(all ? "waiting.untickAll" : "waiting.tickAll")}
               <span className="sr-only"> {t(title)}</span>
             </button>
@@ -259,7 +357,7 @@ export function WaitingList({ onNavigate }: { onNavigate?: () => void }) {
       : t("waiting.publish", { count });
 
   return (
-    <div className="gap-stack-sm flex flex-col">
+    <div className="gap-stack-sm text-body-sm flex flex-col">
       {/* The outcome, where Publish was pressed; read out when it arrives. */}
       <div aria-live={outcome.status === "failed" ? "assertive" : "polite"}>
         {outcome.status === "live" && (
@@ -281,7 +379,7 @@ export function WaitingList({ onNavigate }: { onNavigate?: () => void }) {
           <Outcome variant="danger" title={t("outcome.failed.title")}>
             <p>{t("outcome.failed.body")}</p>
             {outcome.error && (
-              <p className="text-body-sm text-txt-black-700">
+              <p className="text-txt-black-700">
                 {t("outcome.failed.reason", { reason: outcome.error })}
               </p>
             )}
@@ -303,7 +401,7 @@ export function WaitingList({ onNavigate }: { onNavigate?: () => void }) {
           <Skeleton className="h-10 w-full" />
         </output>
       ) : waiting.items.length === 0 ? (
-        outcome.status !== "live" && <p className="text-txt-black-700">{t("waiting.none")}</p>
+        outcome.status !== "live" && <p className="text-txt-black-700 m-0">{t("waiting.none")}</p>
       ) : (
         <>
           {group(
@@ -313,7 +411,7 @@ export function WaitingList({ onNavigate }: { onNavigate?: () => void }) {
           )}
           {files.length > 0 && (
             <section aria-labelledby="waiting-media">
-              <h3 id="waiting-media" className="text-body-sm text-txt-black-700 font-semibold">
+              <h3 id="waiting-media" className="text-txt-black-700 font-medium">
                 {t("waiting.media")}
               </h3>
               <ul className="divide-otl-gray-200 m-0 list-none divide-y p-0">
@@ -327,10 +425,11 @@ export function WaitingList({ onNavigate }: { onNavigate?: () => void }) {
         </>
       )}
       {waiting.items.length > 0 && !canPublish && (
-        <p className="text-body-sm text-txt-black-700">{t("waiting.byManager")}</p>
+        <p className="text-txt-black-700 m-0">{t("waiting.byManager")}</p>
       )}
       {waiting.items.length > 0 && canPublish && outcome.status !== "failed" && (
-        <div className="flex flex-wrap items-center gap-3">
+        // Stays in reach while a long list scrolls under it.
+        <div className="bg-bg-white border-otl-gray-200 sticky bottom-0 flex flex-wrap items-center gap-3 border-t py-3">
           <Button
             variant="primary-fill"
             disabled={busy || count === 0}
@@ -339,7 +438,7 @@ export function WaitingList({ onNavigate }: { onNavigate?: () => void }) {
             {busy ? t("publish.busy") : label}
           </Button>
           {count === 0 && !busy && (
-            <span className="text-body-sm text-txt-black-700">{t("waiting.pickSome")}</span>
+            <span className="text-txt-black-700">{t("waiting.pickSome")}</span>
           )}
         </div>
       )}

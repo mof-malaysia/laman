@@ -386,7 +386,7 @@ function Shades({ ramp, seedStep }: { ramp: Ramp; seedStep: RampStep | null | un
               style={{ background: rgb(ramp, step) }}
               title={rgbToHex(ramp[step])}
             />
-            <span className="text-body-xs text-txt-black-500 tabular-nums">{step}</span>
+            <span className="text-label-compact text-txt-black-500 tabular-nums">{step}</span>
           </li>
         ))}
       </ol>

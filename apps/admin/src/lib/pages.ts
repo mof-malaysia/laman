@@ -12,10 +12,13 @@ export function useSummary() {
   return useQuery({
     queryKey: ["summary"],
     queryFn: siteApi.summary,
-    // Quickly while a publish runs or images process, so the status bar follows.
+    // Quickly while a publish or backup runs or images process, so the status bar follows.
     refetchInterval: (query) => {
       const latest = query.state.data?.publishes[0];
-      const busy = (latest && isActive(latest)) || (query.state.data?.media.processing ?? 0) > 0;
+      const busy =
+        (latest && isActive(latest)) ||
+        (query.state.data?.media.processing ?? 0) > 0 ||
+        query.state.data?.backup.running;
       return busy ? 1000 : 15_000;
     },
   });
@@ -102,9 +105,10 @@ const dayDate = new Intl.DateTimeFormat(locale(), {
 export const formatDayDate = (iso: string) => dayDate.format(new Date(iso));
 
 /** "5m ago", "3h ago", "2d ago"; a date after a week. */
-export function formatAgo(iso: string) {
+/** `inline` for use mid-sentence ("Backed up just now"). */
+export function formatAgo(iso: string, { inline = false } = {}) {
   const minutes = Math.floor((Date.now() - Date.parse(iso)) / 60_000);
-  if (minutes < 1) return t("ago.now");
+  if (minutes < 1) return t(inline ? "ago.nowInline" : "ago.now");
   if (minutes < 60) return t("ago.minutes", { count: minutes });
   if (minutes < 24 * 60) return t("ago.hours", { count: Math.floor(minutes / 60) });
   if (minutes < 7 * 24 * 60) return t("ago.days", { count: Math.floor(minutes / 1440) });

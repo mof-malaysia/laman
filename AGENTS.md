@@ -1,6 +1,6 @@
 # Working on fiscal-sb
 
-A Turborepo monorepo, scaffolded by create-ft-app 0.1.2, holding the FTDS Site Builder: the design is in `docs/site-builder.md`. This file is what you need to change it safely.
+A Turborepo monorepo, scaffolded by create-ft-app 0.1.2, holding Laman, the FTDS site builder: the design is in `docs/site-builder.md`. This file is what you need to change it safely.
 
 ## Run it
 
@@ -12,7 +12,7 @@ pnpm dev                         # every app in watch mode
 pnpm build                       # every package, into git-ignored dist/ folders
 ```
 
-- `pnpm dev` runs the server on :3000 and the admin on :3001/admin. The admin dev server proxies `/api`, `/render`, `/_astro`, `/media`, `/healthz`, `/docs`, `/openapi.json`, `/pagefind` and `/carian` to the server, so the browser sees one origin, as it does when the server serves the built admin. The published site is at :3000/.
+- `pnpm dev` runs the server on :3000 and the admin on :3001/admin. The admin dev server proxies `/api`, `/render`, `/_astro`, `/media`, `/healthz`, `/docs`, `/openapi.json`, `/pagefind` and `/carian` to the server, so the browser sees one origin, as it does when the server serves the built admin. The published site is at :3000/. Connect MCP agents to :3001 in development: it proxies `/mcp`, `/oauth`, `/api/agents` and the OAuth `/.well-known` documents keeping its own Host, which the server writes its OAuth addresses from (`docs/mcp.md`).
 - **The renderer is built, not watched.** The server imports `apps/renderer/dist`; after changing anything in `apps/renderer`, run `pnpm --filter @fiscal-sb/renderer build` (the dev server picks it up).
 - **Settings are environment variables**, validated at boot in `apps/server/src/env.ts`; the server refuses to start with a clear message when one is wrong. Local values go in `apps/server/.env` (git-ignored; `.env.example` lists them all).
 - **State is `DATA_DIR`** (`apps/server/data/` in development, git-ignored): `site.db` (SQLite, WAL) and `public/`, the published site. Delete the folder to start again; a new database starts with a home page.
@@ -47,6 +47,7 @@ pnpm build                       # every package, into git-ignored dist/ folders
 - **Contract changes go everywhere at once:** the schema in `packages/contracts` or `packages/blocks`, the server route that uses it, and the admin code that reads it. The server turns the same Zod schemas into its OpenAPI document.
 - **Only the API writes.** The admin changes content through `/api`; the canvas (`/render`) only reads.
 - **Analytics live in their own database** (`DATA_DIR/analytics.db`, migrations in `apps/server/src/analytics/db.ts`). `POST /_v` is the one builder path the public site calls; it always answers 204. Nothing that identifies a visitor across days is stored: see `docs/analytics.md` before changing what's collected.
+- **Agents use the API, not their own code paths.** An MCP tool (`apps/server/src/agents/tools.ts`) declares a permission like a route and does its work through `ctx.api`, which calls `/api` in-process as the officer with a one-time ticket, so the route's checks, validation, draft conflicts and audit apply. Never give a tool its own write path. See `docs/mcp.md`.
 - **Every `/api` route declares who may use it:** `config: { access: "public" | "signedIn" | <permission> }`, with permissions and roles in `packages/contracts/src/auth.ts`. The server won't start with an `/api` route that doesn't. Hide what a role can't do in the admin with `useCan(permission)`; the server's check is what counts. See `docs/auth.md`.
 - **A new install needs `SUPER_ADMIN_USERNAME` and `SUPER_ADMIN_PASSWORD`** to seed the first account; the server refuses to start without a super admin. Tests build the app signed in with `signedInApp` (`apps/server/test/helpers.ts`).
 - **Drafts are saved from a version.** A page's `draftVersion` and a site document's `version` go back as the save's `base`, so someone else's save in between is refused (409 `draft_conflict`) rather than overwritten; the admin's page and site-document saves already send it. A new drafted document gets the same check (`conflictWith` in `apps/server/src/content/versions.ts`; a site document saves through `writeDraft` in `content/site.ts`). See `docs/site-builder.md` § Request flows.

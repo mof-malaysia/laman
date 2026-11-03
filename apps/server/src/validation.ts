@@ -32,11 +32,14 @@ export function useZod(app: FastifyInstance) {
   app.setSerializerCompiler(() => (data) => JSON.stringify(data));
 }
 
-function toOpenApi(schema: unknown, io: "input" | "output"): unknown {
-  if (!isZod(schema)) return schema;
+/** A Zod schema as JSON Schema, as the OpenAPI document and agents' tools show it. */
+export function jsonSchemaOf(schema: z.ZodType, io: "input" | "output" = "input") {
   const { $schema: _, ...json } = z.toJSONSchema(schema, { io, unrepresentable: "any" });
   return json;
 }
+
+const toOpenApi = (schema: unknown, io: "input" | "output"): unknown =>
+  isZod(schema) ? jsonSchemaOf(schema, io) : schema;
 
 /** `transform` for @fastify/swagger: Zod schemas in, JSON Schema out. */
 export function openApiTransform({ schema, url }: { schema: FastifySchema; url: string }) {

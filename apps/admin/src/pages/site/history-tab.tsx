@@ -67,7 +67,11 @@ export function HistoryTab({ page }: { page: Page }) {
   const events: ActivityEvent[] = revisions.data.map((revision) => ({
     id: revision.id,
     kind: revision.kind === "published" ? "decision" : "document",
-    actor: { name: t("history.someone") },
+    actor: {
+      name: revision.via
+        ? t("agents.through", { name: revision.by ?? t("history.someone"), agent: revision.via })
+        : (revision.by ?? t("history.someone")),
+    },
     action: (
       <span className="inline-flex flex-wrap items-center gap-2">
         {revision.kind === "published" ? t("history.published") : t("history.draftSaved")}

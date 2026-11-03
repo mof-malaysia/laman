@@ -13,7 +13,7 @@ import { HttpError } from "../errors.js";
 import { syncPageUsage } from "./media.js";
 import { readDoc } from "./site.js";
 import { Tree, loadTree } from "./tree.js";
-import { actingUser } from "../auth/acting.js";
+import { actingAgent, actingUser } from "../auth/acting.js";
 
 /** Saves within this long of the last draft revision update it instead of adding one. */
 const SESSION_MS = 10 * 60 * 1000;
@@ -33,7 +33,7 @@ export async function recordDraft(
 ) {
   const last = await db
     .selectFrom("revisions")
-    .select(["id", "kind", "created_at", "content", "created_by"])
+    .select(["id", "kind", "created_at", "content", "created_by", "created_via"])
     .where("page_id", "=", pageId)
     .orderBy("created_at", "desc")
     .limit(1)
@@ -44,6 +44,7 @@ export async function recordDraft(
     last?.kind === "draft" &&
     last.content === replaced &&
     last.created_by === actingUser() &&
+    last.created_via === actingAgent() &&
     Date.now() - Date.parse(last.created_at) < SESSION_MS
   ) {
     await db
@@ -62,6 +63,7 @@ export async function recordDraft(
       created_at: now(),
       kind: "draft",
       created_by: actingUser(),
+      created_via: actingAgent(),
     })
     .execute();
   await pruneRevisions(db, pageId);
@@ -126,6 +128,7 @@ export async function listRevisions(db: Db, pageId: string): Promise<Revision[]>
       "revisions.created_at",
       "revisions.content",
       "users.display_name as by",
+      "revisions.created_via as via",
     ])
     .where("page_id", "=", pageId)
     .orderBy("revisions.created_at", "asc")
@@ -140,6 +143,7 @@ export async function listRevisions(db: Db, pageId: string): Promise<Revision[]>
       blocksChanged: blocksChanged(previous, content),
       live: row.id === page.published_revision_id,
       by: row.by,
+      via: row.via,
     };
     previous = content;
     return revision;
@@ -192,6 +196,7 @@ export async function restoreRevision(db: Db, pageId: string, revisionId: string
         created_at: now(),
         kind: "draft",
         created_by: actingUser(),
+        created_via: actingAgent(),
       })
       .execute();
     await trx
@@ -201,6 +206,28 @@ export async function restoreRevision(db: Db, pageId: string, revisionId: string
       .execute();
     await syncPageUsage(trx, pageId);
   });
+}
+
+/**
+ * Throws away a page's unpublished changes: the live version becomes the draft
+ * again. Through `restoreRevision`, so the discarded draft is kept in the
+ * page's history and can be restored.
+ */
+export async function discardPageDraft(db: Db, pageId: string) {
+  const page = await db
+    .selectFrom("pages")
+    .select("published_revision_id")
+    .where("id", "=", pageId)
+    .where("deleted_at", "is", null)
+    .executeTakeFirst();
+  if (!page) throw new HttpError(404, "page_not_found", "No page with that id");
+  if (!page.published_revision_id)
+    throw new HttpError(
+      409,
+      "never_published",
+      "This page has never been published, so there is no live version to go back to",
+    );
+  await restoreRevision(db, pageId, page.published_revision_id);
 }
 
 /** Every page row, deleted or not, so a deleted page's old path can be worked out. */

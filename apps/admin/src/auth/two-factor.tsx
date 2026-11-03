@@ -71,7 +71,7 @@ export function TwoFactorSetup({ onDone }: { onDone: (me: Me) => void }) {
       <div className="border-otl-gray-200 flex flex-col items-center gap-3 rounded-md border p-4">
         <QrCode text={setup.data.uri} />
         <div className="text-center">
-          <p className="text-body-xs text-txt-black-700">{t("auth.enrol.typeInstead")}</p>
+          <p className="text-label-compact text-txt-black-700">{t("auth.enrol.typeInstead")}</p>
           <code className="text-body-sm text-txt-black-900 font-mono tracking-wide break-all">
             {grouped(setup.data.secret)}
           </code>

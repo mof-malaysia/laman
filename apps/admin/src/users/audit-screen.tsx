@@ -3,20 +3,13 @@
  * newest first, 50 at a time. Kept for a year. Each entry says what it was
  * about, by name, and can be downloaded as CSV for an inquiry.
  */
-import { AUDIT_PAGE, AuditAction, type AuditEntry, type SiteDocName } from "@fiscal-sb/contracts";
+import { AUDIT_PAGE, AuditAction, type AuditEntry } from "@fiscal-sb/contracts";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import {
-  PageHeader,
-  PageHeaderActions,
-  PageHeaderContent,
-  PageHeaderDescription,
-  PageHeaderTitle,
-} from "@/components/ui/page-header";
 import { Select } from "@/components/ui/select";
 import {
   Table,
@@ -27,13 +20,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { type MessageKey, t } from "@/i18n";
-import { roleLabels, usersApi, usersQuery } from "@/lib/auth";
+import { t } from "@/i18n";
+import { usersApi, usersQuery } from "@/lib/auth";
 import useToast from "@/lib/ftds/hooks/use-toast";
 import { formatDateTime } from "@/lib/pages";
-import { docName } from "@/lib/publish";
+import { AgentTag, agentOf, describe, lookedOnly, nextBefore } from "./audit-entry";
+import { ANY, PersonFilter } from "./person";
+import { UsersHeader } from "./users-tabs";
 
-const ANY = "any";
 /** Entries a download asks for at once: the most the server gives. */
 const DOWNLOAD_PAGE = 1000;
 
@@ -78,10 +72,13 @@ const actionGroups = {
   pageRestored: "site",
   backupStarted: "site",
   backupRestored: "site",
-} as const satisfies Record<AuditAction, "access" | "people" | "site">;
+  agentConnected: "agents",
+  agentRevoked: "agents",
+  agentToolCall: "agents",
+} as const satisfies Record<AuditAction, "access" | "people" | "site" | "agents">;
 
 const actionOptions = () =>
-  (["access", "people", "site"] as const).flatMap((group) =>
+  (["access", "people", "site", "agents"] as const).flatMap((group) =>
     AuditAction.options
       .filter((action) => actionGroups[action] === group)
       .map((action) => ({
@@ -90,10 +87,6 @@ const actionOptions = () =>
         group: t(`audit.group.${group}`),
       })),
   );
-
-/** The next page starts before the last entry, unless this one wasn't full. */
-const nextBefore = (page: AuditEntry[], size: number) =>
-  page.length === size ? page.at(-1)?.id : undefined;
 
 export function AuditScreen() {
   const filter = useSearch({ strict: false }) as AuditSearch;
@@ -138,15 +131,9 @@ export function AuditScreen() {
 
   return (
     <div className="p-surface gap-stack-lg mx-auto flex max-w-6xl flex-col">
-      <PageHeader>
-        <PageHeaderContent>
-          <PageHeaderTitle size="headline">{t("users.audit")}</PageHeaderTitle>
-          <PageHeaderDescription>{t("audit.intro")}</PageHeaderDescription>
-        </PageHeaderContent>
-        <PageHeaderActions>
-          <Button variant="default-ghost" size="small" render={<Link to="/users" />}>
-            {t("audit.back")}
-          </Button>
+      <UsersHeader
+        description={t("audit.intro")}
+        actions={
           <Button
             variant="default-outline"
             size="small"
@@ -155,20 +142,15 @@ export function AuditScreen() {
           >
             {downloading ? t("audit.download.pending") : t("audit.download")}
           </Button>
-        </PageHeaderActions>
-      </PageHeader>
+        }
+      />
       <div className="flex flex-wrap items-end gap-3">
-        <Field name="audit-person" className="w-56">
-          <FieldLabel>{t("audit.filter.person")}</FieldLabel>
-          <Select
-            items={[
-              { value: ANY, label: t("audit.filter.anyone") },
-              ...(people.data ?? []).map((p) => ({ value: p.id, label: p.displayName })),
-            ]}
-            value={filter.userId ?? ANY}
-            onValueChange={(userId) => setFilter({ userId })}
-          />
-        </Field>
+        <PersonFilter
+          name="audit-person"
+          people={people.data ?? []}
+          value={filter.userId}
+          onChange={(userId) => setFilter({ userId })}
+        />
         <Field name="audit-action" className="w-64">
           <FieldLabel>{t("audit.filter.action")}</FieldLabel>
           <Select
@@ -209,6 +191,7 @@ export function AuditScreen() {
           <TableRow>
             <TableHead>{t("audit.column.when")}</TableHead>
             <TableHead>{t("audit.column.who")}</TableHead>
+            <TableHead>{t("audit.column.agent")}</TableHead>
             <TableHead>{t("audit.column.what")}</TableHead>
             <TableHead>{t("audit.column.address")}</TableHead>
           </TableRow>
@@ -216,7 +199,7 @@ export function AuditScreen() {
         <TableBody>
           {log.data && entries.length === 0 ? (
             <TableRow>
-              <TableEmpty colSpan={4}>
+              <TableEmpty colSpan={5}>
                 {filtered ? t("audit.empty.filtered") : t("audit.empty")}
               </TableEmpty>
             </TableRow>
@@ -227,7 +210,12 @@ export function AuditScreen() {
                   {formatDateTime(entry.at)}
                 </TableCell>
                 <TableCell>{who(entry)}</TableCell>
-                <TableCell>{describe(entry)}</TableCell>
+                <TableCell>
+                  <AgentTag agent={agentOf(entry)} />
+                </TableCell>
+                <TableCell className={lookedOnly(entry) ? "text-txt-black-500" : undefined}>
+                  {describe(entry)}
+                </TableCell>
                 <TableCell className="text-txt-black-500 tabular-nums">{entry.ip ?? "—"}</TableCell>
               </TableRow>
             ))
@@ -248,84 +236,11 @@ export function AuditScreen() {
   );
 }
 
-/** The person, or, with no one signed in, the server or an unknown visitor. */
+/** The person; with no one signed in, the server or an unknown visitor. The agent has its own column. */
 function who(entry: AuditEntry) {
   if (entry.user) return entry.user.displayName;
   if (entry.action === "signInFailed") return t("audit.unknown");
   return entry.detail.cli ? t("audit.cli") : t("audit.system");
-}
-
-const text = (value: unknown) => (typeof value === "string" ? value : "");
-const role = (value: unknown) =>
-  typeof value === "string" && value in roleLabels
-    ? t(roleLabels[value as keyof typeof roleLabels])
-    : "";
-
-/** The action, what it was about by name, and what changed when the log kept it. */
-function describe(entry: AuditEntry) {
-  const { action, target, detail, names } = entry;
-  const label = t(`audit.action.${action}` satisfies MessageKey);
-  const labelled = (about: string | null | undefined) => (about ? `${label}: ${about}` : label);
-  const name = (target && names[target]) || "";
-  /** A site document's name, or a page's title. */
-  const about = (id: string) =>
-    id in docName ? t(docName[id as SiteDocName]) : names[id] || t("audit.detail.aPage");
-
-  switch (action) {
-    case "userChanged": {
-      if (detail.seeded) return t("audit.detail.seeded");
-      const subject = name || t("audit.detail.anAccount");
-      const changes = [
-        detail.role !== undefined &&
-          (detail.roleBefore
-            ? t("audit.detail.roleFrom", {
-                name: subject,
-                from: role(detail.roleBefore),
-                to: role(detail.role),
-              })
-            : t("audit.detail.role", { name: subject, to: role(detail.role) })),
-        typeof detail.disabled === "boolean" &&
-          t(detail.disabled ? "audit.detail.disabled" : "audit.detail.enabled", { name: subject }),
-        typeof detail.displayName === "string" &&
-          t("audit.detail.renamed", { to: detail.displayName }),
-      ].filter(Boolean);
-      return changes.length ? changes.join(". ") : label;
-    }
-    case "inviteMade":
-    case "inviteRevoked":
-      return labelled(`${text(detail.note) || t("users.noNote")} (${role(detail.role)})`);
-    case "inviteUsed":
-      return detail.role ? t("audit.detail.joined", { role: role(detail.role) }) : label;
-    case "securityChanged":
-      return detail.requireTwoFactor ? t("audit.detail.require2fa") : t("audit.detail.allow2fa");
-    case "signInFailed":
-      return labelled(target);
-    case "published": {
-      const chosen = [
-        ...(Array.isArray(detail.pageIds) ? detail.pageIds : []),
-        ...(Array.isArray(detail.docs) ? detail.docs : []),
-      ].filter((id): id is string => typeof id === "string");
-      const what = (target ? [target] : chosen).map(about);
-      const list = what.length ? what.join(", ") : t("audit.detail.everything");
-      return detail.runAt
-        ? t("audit.detail.scheduled", { when: formatDateTime(text(detail.runAt)), what: list })
-        : labelled(list);
-    }
-    case "backupStarted":
-      return label;
-    case "backupRestored":
-      return t("audit.detail.restoredBackup", {
-        when: formatDateTime(text(detail.createdAt)),
-      });
-    case "unpublished":
-    case "publishUndone":
-    case "pageDeleted":
-    case "pageRestored":
-      return labelled(name);
-    default:
-      // About someone else: an account action on a person.
-      return labelled(target !== entry.user?.id ? name : "");
-  }
 }
 
 const csvCell = (value: string) => `"${value.replaceAll('"', '""')}"`;
@@ -335,10 +250,11 @@ function toCsv(entries: AuditEntry[]) {
   const header = [
     t("audit.column.when"),
     t("audit.column.who"),
+    t("audit.column.agent"),
     t("audit.column.what"),
     t("audit.column.address"),
   ];
-  const rows = entries.map((e) => [e.at, who(e), describe(e), e.ip ?? ""]);
+  const rows = entries.map((e) => [e.at, who(e), agentOf(e), describe(e), e.ip ?? ""]);
   return [header, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n");
 }
 

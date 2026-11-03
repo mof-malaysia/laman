@@ -73,6 +73,7 @@ import { UploadDialog } from "@/media/upload-dialog";
 import { type NavPart, navParts } from "@/site/navigation-screen";
 import { ShellContext, type ShellActions } from "./context";
 import { OpenPageDialog } from "./open-page-dialog";
+import { usersPages } from "@/users/users-tabs";
 import { PublishState, SiteInfo, WaitingDrawer } from "./site-status";
 
 type Section = { to: string; label: MessageKey; combo: string; icon: ReactNode };
@@ -277,8 +278,8 @@ function AdminSidebar({ active }: { active: Section }) {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <UserMenu active={account === active} />
+          <SiteInfo />
         </SidebarMenu>
-        <SiteInfo />
       </SidebarFooter>
     </Sidebar>
   );
@@ -327,10 +328,10 @@ function SearchTrigger() {
   );
 }
 
-/** The section, or Pages › the selected page's title (Pages › listing › title for an entry). */
 /** Screens below a section's own: the breadcrumb leads back to the section. */
-const subScreens = [{ to: "/users/audit", label: "users.audit" }] as const;
+const subScreens = usersPages.filter((page) => page.to !== "/users");
 
+/** The section, or Pages › the selected page's title (Pages › listing › title for an entry). */
 function TopBarBreadcrumb({ section }: { section: Section }) {
   const pages = usePages();
   const matchRoute = useMatchRoute();

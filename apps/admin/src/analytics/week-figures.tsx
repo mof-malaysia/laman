@@ -22,7 +22,7 @@ export function WeekFigures() {
   return (
     <section aria-labelledby="week-figures" className="flex flex-col gap-3">
       <div className="flex items-baseline justify-between gap-3">
-        <h2 id="week-figures" className="text-label-md text-txt-black-900 font-semibold">
+        <h2 id="week-figures" className="text-title text-txt-black-900 font-semibold">
           {t("dashboard.analytics.title")}
         </h2>
         <Link to="/analytics" search={{ range: "7d" }} className={linkClass}>

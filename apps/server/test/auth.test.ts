@@ -8,6 +8,7 @@ import { buildApp } from "../src/app.js";
 import { codeFor, stepAt } from "../src/auth/totp.js";
 import { loadEnv } from "../src/env.js";
 import { type App, SUPER_ADMIN, sessionCookie, testApp } from "./helpers.js";
+import { localDay } from "../src/analytics/db.js";
 
 let dataDir: string;
 let app: App;
@@ -646,7 +647,8 @@ describe("roles", () => {
   it("filters the log by day", async () => {
     const admin = await as("admin");
     await admin.call({ method: "POST", url: "/api/users/invites", payload: { role: "editor" } });
-    const today = new Date().toISOString().slice(0, 10);
+    // The filter reads days in local time, so today is the local date, not UTC's.
+    const today = localDay(Date.now()).day;
     const count = async (query: string) =>
       (await admin.call({ url: `/api/audit?${query}` })).json().data.length as number;
     expect(await count(`from=${today}&to=${today}`)).toBeGreaterThan(0);

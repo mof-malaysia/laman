@@ -6,7 +6,7 @@
  * /render, /media, /docs and /openapi.json need a finished sign-in too; the
  * published site, /_v and /healthz don't.
  */
-import { can, type Permission, type SessionStage } from "@fiscal-sb/contracts";
+import { can, type Permission, type Role, type SessionStage } from "@fiscal-sb/contracts";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { Db } from "../db/index.js";
 import { HttpError } from "../errors.js";
@@ -15,6 +15,8 @@ import { audit, type AuditEvent } from "./audit.js";
 import { type Session, sessionOf } from "./sessions.js";
 import type { User } from "./users.js";
 import { decodedPath, guardedPath } from "../paths.js";
+import type { Connection } from "../agents/connections.js";
+import { redeemTicket } from "../agents/tickets.js";
 
 export type Access = "public" | "signedIn" | Permission;
 
@@ -26,6 +28,8 @@ declare module "fastify" {
   }
   interface FastifyRequest {
     auth?: { user: User; session: Session };
+    /** The agent connection a tool call came through (docs/mcp.md); unset for the admin. */
+    agent?: Connection;
     /** What `audited` recorded: written to the audit log if the request succeeds. */
     auditEvent?: Omit<AuditEvent, "userId" | "ip">;
   }
@@ -67,6 +71,10 @@ function checkSameOrigin(request: FastifyRequest) {
   );
 }
 
+/** Whether `role` passes `access`: the rule routes and agents' tools share. */
+export const allows = (role: Role, access: Access) =>
+  access === "public" || access === "signedIn" || can(role, access);
+
 export const signedOut = () => new HttpError(401, "signed_out", "Sign in to continue.");
 
 /** The signed-in person and their session, for handlers whose route requires one. */
@@ -82,6 +90,27 @@ export function audited(request: FastifyRequest, event: Omit<AuditEvent, "userId
   request.auditEvent = event;
 }
 
+/** Routes that act on the browser session itself, which an agent's stand-in session isn't. */
+const guardedSessionPath = /^\/api\/auth\//;
+
+/**
+ * A tool call's stand-in for a session: a finished sign-in, named for its
+ * connection. It never reaches the routes that act on sessions (/api/auth/).
+ */
+const agentSession = (user: User, connection: Connection) => ({
+  user,
+  session: {
+    id: `agent:${connection.id}`,
+    token_hash: "",
+    user_id: user.id,
+    stage: "full",
+    created_at: connection.createdAt,
+    last_seen_at: new Date().toISOString(),
+    ip: "",
+    user_agent: connection.clientName,
+  } satisfies Session,
+});
+
 export function useGuard(app: FastifyInstance, db: Db) {
   // Caught at boot, so a route can't ship without saying who may use it.
   app.addHook("onRoute", (route) => {
@@ -95,10 +124,20 @@ export function useGuard(app: FastifyInstance, db: Db) {
     if (!isGuarded(request)) return;
     if (unsafe.has(request.method)) checkSameOrigin(request);
 
-    const auth = await sessionOf(db, request);
+    const ticket = redeemTicket(request);
+    // Signing in, passwords, two-factor and sessions belong to a browser's own session.
+    if (ticket && guardedSessionPath.test(request.routeOptions.url ?? ""))
+      throw new HttpError(403, "forbidden", "Agents can't use sign-in and account routes.");
+    if (ticket) request.agent = ticket.connection;
+    const auth = ticket
+      ? agentSession(ticket.user, ticket.connection)
+      : await sessionOf(db, request);
     if (auth) {
       request.auth = auth;
-      actAs(auth.user.id);
+      actAs(
+        auth.user.id,
+        request.agent ? { name: request.agent.clientName, connection: request.agent.id } : null,
+      );
     }
 
     const config = request.routeOptions.config;
@@ -115,7 +154,7 @@ export function useGuard(app: FastifyInstance, db: Db) {
       throw new HttpError(401, "sign_in_incomplete", "Finish signing in to continue.", {
         stage: request.auth.session.stage,
       });
-    if (access !== "signedIn" && !can(request.auth.user.role, access))
+    if (!allows(request.auth.user.role, access))
       throw new HttpError(403, "forbidden", "Your role can't do this.", { needs: access });
   });
 

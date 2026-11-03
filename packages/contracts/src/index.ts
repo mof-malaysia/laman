@@ -14,6 +14,7 @@ import {
 import { z } from "zod";
 import { SiteDocName, savable } from "./site.js";
 
+export * from "./agents.js";
 export * from "./analytics.js";
 export * from "./auth.js";
 export * from "./preferences.js";
@@ -325,6 +326,16 @@ export const WaitingItem = z.discriminatedUnion("kind", [
 ]);
 export type WaitingItem = z.infer<typeof WaitingItem>;
 
+/** An archive in BACKUP_DIR. `file` is what `site-builder restore` takes. */
+export const BackupArchive = z.object({
+  file: z.string(),
+  at: z.string(),
+  bytes: z.number().int(),
+  /** Made before an upgrade: the database without media. */
+  dbOnly: z.boolean(),
+});
+export type BackupArchive = z.infer<typeof BackupArchive>;
+
 /** The dashboard and the status bar. */
 export const Summary = z.object({
   pages: z.object({
@@ -360,9 +371,13 @@ export const Summary = z.object({
     sameDisk: z.boolean(),
     /** The daily backup's Malaysian time (`HH:MM`), or null when it's off. */
     schedule: z.string().nullable(),
-    /** The newest archive in the folder. */
-    last: z.object({ at: z.string(), bytes: z.number().int(), dbOnly: z.boolean() }).nullable(),
-    /** The daily backup is on, and the newest archive is over 2 days old. */
+    /** When the daily backup next runs, or null when it's off. */
+    next: z.string().nullable(),
+    /** The newest full archive (database and media): what a restore after a disk failure would use. */
+    last: BackupArchive.nullable(),
+    /** Every archive in the folder, newest first: full ones and the database-only ones upgrades make. */
+    archives: z.array(BackupArchive),
+    /** The newest full archive is over 2 days old. */
     stale: z.boolean(),
     /** A backup job that failed after the newest archive was made. */
     failed: z.object({ at: z.string(), error: z.string() }).nullable(),
@@ -516,6 +531,8 @@ export const Revision = z.object({
   live: z.boolean(),
   /** Who saved or published it; null before there were accounts. */
   by: z.string().nullable(),
+  /** The agent they did it through (docs/mcp.md); null when done in the admin. */
+  via: z.string().nullable(),
 });
 export type Revision = z.infer<typeof Revision>;
 

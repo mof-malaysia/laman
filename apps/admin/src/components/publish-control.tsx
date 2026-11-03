@@ -6,7 +6,7 @@
  */
 import type { Job } from "@fiscal-sb/contracts";
 import { type ReactNode, useState } from "react";
-import { type Tone, toneDot } from "@/components/page-status";
+import { StatusDot, type Tone } from "@/components/page-status";
 import { Link } from "@tanstack/react-router";
 import { linkClass } from "@/components/text-link";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -198,7 +198,7 @@ export function PublishControl({
             />
           }
         >
-          <span aria-hidden className={clx("size-2 shrink-0 rounded-full", toneDot[line.tone])} />
+          <StatusDot tone={line.tone} />
           <span className="truncate">{line.text}</span>
         </TooltipTrigger>
         <TooltipContent>

@@ -16,7 +16,7 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { WeekFigures } from "@/analytics/week-figures";
 import { PageFrame } from "@/components/page-frame";
-import { PageKindIcon, PageStatusTag } from "@/components/page-status";
+import { PageStatusTag } from "@/components/page-status";
 import { SiteStateHeading, useSiteState } from "@/components/site-state";
 import { linkClass } from "@/components/text-link";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,7 @@ import {
 import { type MessageKey, t } from "@/i18n";
 import { mediaQuery } from "@/lib/api";
 import { clx } from "@/lib/ftds/utils";
+import { backupHealth } from "@/lib/backups";
 import { formatAgo, formatDateTime, previewHref, usePages, useSummary } from "@/lib/pages";
 import { siteDocQuery, siteHref, useAnnouncementDoc } from "@/lib/publish";
 
@@ -71,7 +72,8 @@ export function DashboardPage() {
   const unfinished = setupLeft > 0;
 
   return (
-    <div className="p-surface mx-auto flex max-w-6xl flex-col gap-8">
+    // Body Compact is the admin's reading size; headings and labels set their own.
+    <div className="p-surface text-body-sm mx-auto flex max-w-6xl flex-col gap-8">
       <Identity settings={settings.data} failed={settingsFailed} summary={data} />
 
       {(pagesFailed || settingsFailed) && (
@@ -99,7 +101,12 @@ export function DashboardPage() {
         */}
         <div className="gap-stack-md flex flex-col lg:col-start-1 lg:row-start-1">
           {data ? (
-            <SiteStatus live={live} announcing={announcing} setupLeft={setupLeft} />
+            <SiteStatus
+              live={live}
+              announcing={announcing}
+              setupLeft={setupLeft}
+              backup={data.backup}
+            />
           ) : (
             <Skeleton className="h-44 w-full rounded-lg" />
           )}
@@ -180,7 +187,7 @@ function Identity({
       ) : identity ? (
         <span
           aria-hidden
-          className="bg-bg-primary-600 text-txt-white grid size-12 shrink-0 place-content-center rounded-md text-xl font-semibold"
+          className="bg-bg-primary-600 text-txt-white text-title grid size-12 shrink-0 place-content-center rounded-md font-semibold"
         >
           {identity.siteName.trim().charAt(0).toUpperCase()}
         </span>
@@ -226,11 +233,13 @@ function SiteStatus({
   live,
   announcing,
   setupLeft,
+  backup,
 }: {
   live: boolean | undefined;
   announcing: Announcement | undefined;
   /** Setup tasks not yet done, listed in full under "Finish setting up your site". */
   setupLeft: number;
+  backup: Summary["backup"];
 }) {
   const { state, waiting, lastAt } = useSiteState(live);
   const { fresh } = waiting;
@@ -281,7 +290,7 @@ function SiteStatus({
           {/* After a failure this still says when the site last changed: the version visitors see. */}
           <span className="text-txt-black-700" title={lastAt && formatDateTime(lastAt)}>
             {lastAt
-              ? t("home.lastPublished", { ago: formatAgo(lastAt) })
+              ? t("home.lastPublished", { ago: formatAgo(lastAt, { inline: true }) })
               : t("home.neverPublished")}
           </span>
         </li>
@@ -292,6 +301,7 @@ function SiteStatus({
             </a>
           </li>
         )}
+        <BackupLine backup={backup} className={rowClass} />
         {announcing && (
           <li className={rowClass}>
             <Tag size="small" variant="warning">
@@ -309,6 +319,32 @@ function SiteStatus({
         )}
       </ul>
     </section>
+  );
+}
+
+/** Whether there's a recent backup: quiet when there is, a tag and a way there when not. */
+function BackupLine({ backup, className }: { backup: Summary["backup"]; className: string }) {
+  const health = backupHealth(backup);
+  const see = (
+    <Link to="/settings" search={{ section: "backups" }} className={linkClass}>
+      {t("home.backup.see")}
+    </Link>
+  );
+  if (health === "ok")
+    return (
+      <li className={className}>
+        <span className="text-txt-black-700" title={formatDateTime(backup.last!.at)}>
+          {t("home.backup.ok", { ago: formatAgo(backup.last!.at, { inline: true }) })}
+        </span>
+      </li>
+    );
+  return (
+    <li className={className}>
+      <Tag size="small" variant={health === "failed" ? "danger" : "warning"}>
+        {t(`home.backup.${health}`)}
+      </Tag>
+      {see}
+    </li>
   );
 }
 
@@ -357,7 +393,7 @@ function SiteThumbnail({
           </a>
         }
       />
-      <figcaption className="text-body-sm text-txt-black-700">
+      <figcaption className="text-label-compact text-txt-black-700">
         {live && lastDone
           ? t("home.thumbnail.liveSince", {
               date: formatDateTime(lastDone.finishedAt ?? lastDone.createdAt),
@@ -484,7 +520,7 @@ function RecentEdits({
   className?: string;
 }) {
   return (
-    <section aria-labelledby="edits-heading" className={clx("flex flex-col gap-4", className)}>
+    <section aria-labelledby="edits-heading" className={clx("flex flex-col gap-2", className)}>
       <h2 id="edits-heading" className="text-title font-semibold">
         {t("dashboard.edits.title")}
       </h2>
@@ -493,36 +529,23 @@ function RecentEdits({
       ) : pages.length === 0 ? (
         <p className="text-txt-black-700">{t("home.edits.none")}</p>
       ) : (
-        // Each row is one quiet link, washed on hover like the setup list beside it,
-        // so the setup tasks keep the only blue links on the screen.
-        <ul className="m-0 flex list-none flex-col gap-1 p-0">
+        // One line a page: its title as a link, whether it's live, and when. The
+        // status and time sit in fixed spots on the right, so the column scans down.
+        <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
           {pages.slice(0, 6).map((page) => (
-            <li key={page.id}>
-              <Link
-                to="/pages/$id"
-                params={{ id: page.id }}
-                className="focus-ring hover:bg-bg-washed flex items-start gap-3 rounded-md px-3 py-2 transition-colors duration-150 motion-reduce:transition-none"
+            <li key={page.id} className="flex items-center gap-2">
+              <span className="min-w-0 flex-1 truncate">
+                <Link to="/pages/$id" params={{ id: page.id }} className={linkClass}>
+                  {page.title || t("page.untitled")}
+                </Link>
+              </span>
+              <PageStatusTag status={page.status} />
+              <span
+                className="text-label-compact text-txt-black-500 w-16 shrink-0 text-right tabular-nums"
+                title={formatDateTime(page.updatedAt)}
               >
-                <PageKindIcon
-                  page={page}
-                  aria-hidden
-                  className="text-txt-black-500 mt-0.5 size-5 shrink-0"
-                />
-                <span className="flex min-w-0 flex-1 flex-col gap-1">
-                  <span className="text-txt-black-900 truncate font-medium">
-                    {page.title || t("page.untitled")}
-                  </span>
-                  <span className="text-body-sm text-txt-black-500 flex min-w-0 items-center gap-2">
-                    <PageStatusTag status={page.status} />
-                    <span className="truncate">
-                      <span title={formatDateTime(page.updatedAt)}>
-                        {formatAgo(page.updatedAt)}
-                      </span>
-                      {` · ${page.path}`}
-                    </span>
-                  </span>
-                </span>
-              </Link>
+                {formatAgo(page.updatedAt)}
+              </span>
             </li>
           ))}
         </ul>

@@ -3,11 +3,12 @@
  * password, two-factor and sessions. See docs/auth.md.
  */
 import { randomUUID } from "node:crypto";
-import type { SessionStage } from "@fiscal-sb/contracts";
+import { can, type SessionStage } from "@fiscal-sb/contracts";
 import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { audit } from "../auth/audit.js";
-import { authOf, userOf } from "../auth/guard.js";
+import { setMcpAccess } from "../agents/connections.js";
+import { audited, authOf, userOf } from "../auth/guard.js";
 import { parseAgent } from "../analytics/agent.js";
 import { assertStrongPassword, dummyHash, hashPassword, verifyPassword } from "../auth/password.js";
 import {
@@ -24,11 +25,11 @@ import { getUser, securitySettings, toMe, type User, userByUsername } from "../a
 import { readDoc } from "../content/site.js";
 import {
   CodeBody,
-  DisplayName,
   envelope,
   JoinBody,
   LinkInfo,
   Me,
+  MePatch,
   PasswordBody,
   RecoveryCodes,
   ResetBody,
@@ -246,25 +247,34 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     async (request) => ({ data: toMe(authOf(request).user, authOf(request).session.stage) }),
   );
 
-  app.patch<{ Body: { displayName: string } }>(
+  app.patch<{ Body: MePatch }>(
     "/auth/me",
     {
       config: { access: "signedIn" },
       schema: {
-        summary: "Change your display name",
-        description: "The name history and the user menu show.",
+        summary: "Change your own account",
+        description:
+          "Your display name, which history and the user menu show. And, for the super admin, whose account nobody else changes, your own MCP access: turning it off ends your agents' connections. Everyone else's is set on Users.",
         tags,
-        body: z.object({ displayName: DisplayName }),
+        body: MePatch,
         response: { 200: envelope(Me) },
       },
     },
     async (request) => {
       const user = userOf(request);
-      await db
-        .updateTable("users")
-        .set({ display_name: request.body.displayName })
-        .where("id", "=", user.id)
-        .execute();
+      const { displayName, mcpEnabled } = request.body;
+      if (displayName !== undefined)
+        await db
+          .updateTable("users")
+          .set({ display_name: displayName })
+          .where("id", "=", user.id)
+          .execute();
+      if (mcpEnabled !== undefined && mcpEnabled !== Boolean(user.mcp_enabled)) {
+        if (!can(user.role, "security.manage"))
+          throw new HttpError(403, "forbidden", "Ask an Admin to change your MCP access.");
+        await setMcpAccess(db, user.id, mcpEnabled, user.id);
+        audited(request, { action: "userChanged", target: user.id, detail: { mcpEnabled } });
+      }
       return { data: toMe((await getUser(db, user.id))!, authOf(request).session.stage) };
     },
   );

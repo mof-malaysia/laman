@@ -169,6 +169,9 @@ export async function executedMigrations(db: Kysely<unknown>) {
 }
 
 export const now = () => new Date().toISOString();
+/** `ms` before and after now, as stored. */
+export const ago = (ms: number) => new Date(Date.now() - ms).toISOString();
+export const later = (ms: number) => new Date(Date.now() + ms).toISOString();
 
 /**
  * A time as stored: UTC, so times compare as text in SQL. The API takes

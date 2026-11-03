@@ -657,7 +657,7 @@ function TrySearch({
                 </Tag>
               )}
               <span className="text-body-md text-txt-primary font-semibold">{f.title}</span>
-              <span className="text-body-xs text-txt-black-500">{f.url}</span>
+              <span className="text-label-compact text-txt-black-500">{f.url}</span>
               {f.excerpt && <Excerpt html={f.excerpt} />}
             </li>
           ))}

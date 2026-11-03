@@ -20,8 +20,11 @@ export const guardedPath = under(signedIn);
 export const builderPath = under(["admin", ...signedIn]);
 /** The API reference, which runs an inline script of its own. */
 export const docsPath = under(docs);
+/** Where agents sign in and connect (docs/mcp.md): each checks its own credentials. */
+const agents = ["mcp", "oauth"];
+
 /** Paths the server answers itself; everything else is a file of the published site. */
-export const ownPath = under(["admin", "_astro", "healthz", "_v", ...signedIn]);
+export const ownPath = under(["admin", "_astro", "healthz", "_v", ...agents, ...signedIn]);
 
 /** The path as the router reads it: "/%61pi" is "/api". Undecodable paths stay as they are. */
 export function decodedPath(url: string) {

@@ -27,6 +27,15 @@ const EnvSchema = z.object({
   BACKUP_KEEP_WEEKLY: z.coerce.number().int().min(0).max(520).default(4),
   /** Folder with the built admin app, served at /admin. */
   ADMIN_DIST: z.string().default("../admin/dist"),
+  /**
+   * The builder's own public address ("https://builder.agensi.gov.my"), which
+   * agents sign in against (docs/mcp.md). Without it, each request's own
+   * address is used, which behind a proxy needs TRUST_PROXY to be right.
+   */
+  BUILDER_URL: z
+    .url()
+    .optional()
+    .transform((url) => url?.replace(/\/+$/, "")),
   /** Public address of the published site, for the sitemap. Without it no sitemap is written. */
   SITE_URL: z.url().optional(),
   /** Largest file the media library accepts, in megabytes. */

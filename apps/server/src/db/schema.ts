@@ -38,6 +38,8 @@ export type RevisionsTable = {
   kind: Generated<"published" | "draft">;
   created_at: string;
   created_by: Generated<string | null>;
+  /** The agent it was made through (docs/mcp.md); null when made in the admin. */
+  created_via: Generated<string | null>;
 };
 
 export type SettingsTable = {
@@ -137,6 +139,43 @@ export type UsersTable = {
   last_sign_in_at: string | null;
   created_at: string;
   created_by: string | null;
+  /** 1: may connect agents over MCP. */
+  mcp_enabled: Generated<number>;
+};
+
+/** A client that registered itself for OAuth (RFC 7591): Claude Desktop, Codex. */
+export type OauthClientsTable = {
+  id: string;
+  /** As the client named itself; shown on the consent screen and the Agents list. */
+  name: string;
+  /** JSON array: the only addresses an authorization may return to. */
+  redirect_uris: string;
+  created_at: string;
+  ip: Generated<string>;
+};
+
+/**
+ * An agent an officer allowed: one consent, and the tokens it holds now. Only
+ * their SHA-256 is stored. Revoking clears the hashes and sets `revoked_at`.
+ */
+export type AgentConnectionsTable = {
+  id: string;
+  user_id: string;
+  client_id: string;
+  access_hash: string | null;
+  access_expires_at: string | null;
+  refresh_hash: string | null;
+  /** The refresh token before the last refresh: seen again, the connection was copied and ends. */
+  previous_refresh_hash: string | null;
+  created_at: string;
+  last_used_at: string;
+  /** A week after consent, however busy. */
+  expires_at: string;
+  revoked_at: string | null;
+  /** Who revoked it; null when the builder did (a reused refresh token, MCP access turned off). */
+  revoked_by: string | null;
+  ip: Generated<string>;
+  user_agent: Generated<string>;
 };
 
 export type SessionsTable = {
@@ -192,6 +231,8 @@ export type Database = {
   tokens: TokensTable;
   recovery_codes: RecoveryCodesTable;
   audit_log: AuditLogTable;
+  oauth_clients: OauthClientsTable;
+  agent_connections: AgentConnectionsTable;
   media: MediaTable;
   media_usage: MediaUsageTable;
   pages: PagesTable;

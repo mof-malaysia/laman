@@ -377,7 +377,7 @@ function KindStep({
                 <span className="text-txt-black-700 text-body-sm">
                   {t(`newPage.kind.${id}.body`)}
                 </span>
-                <span className="text-txt-black-500 text-body-xs">
+                <span className="text-txt-black-500 text-label-compact">
                   {t(`newPage.kind.${id}.examples`)}
                 </span>
               </span>
@@ -472,7 +472,7 @@ function PlaceStep({
                     title: page.title || t("page.untitled"),
                   })}
                 </span>
-                <span className="text-txt-black-500 text-body-xs truncate">
+                <span className="text-txt-black-500 text-label-compact truncate">
                   {childPath(page.path, "…")}
                 </span>
               </span>
@@ -684,7 +684,7 @@ function TemplatePreview({
         <span className="text-txt-black-700 text-body-sm font-semibold">
           {t("newPage.preview")}
         </span>
-        <span className="text-txt-black-500 text-body-xs">{t("newPage.previewHint")}</span>
+        <span className="text-txt-black-500 text-label-compact">{t("newPage.previewHint")}</span>
       </div>
       {src && (
         <PageFrame

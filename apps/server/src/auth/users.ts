@@ -2,6 +2,7 @@
 import { randomUUID } from "node:crypto";
 import {
   AdminPreferences,
+  can,
   type Me,
   permissionsOf,
   type SecuritySettings,
@@ -22,6 +23,16 @@ import { hashPassword, weakPassword } from "./password.js";
 
 export type User = Selectable<UsersTable>;
 
+/**
+ * Whether `asker` may change `target`'s account from Users: someone with
+ * users.manage, for anyone but the super admin and themselves. Your own
+ * account is changed from Account.
+ */
+export const managesAccount = (
+  asker: Pick<User, "id" | "role">,
+  target: Pick<User, "id" | "role">,
+) => can(asker.role, "users.manage") && target.role !== "superAdmin" && target.id !== asker.id;
+
 export const getUser = (db: Db, id: string) =>
   db.selectFrom("users").selectAll().where("id", "=", id).executeTakeFirst();
 
@@ -37,6 +48,7 @@ export const toMe = (user: User, stage: SessionStage): Me => ({
   twoFactor: Boolean(user.totp_enrolled_at),
   stage,
   language: preferencesOf(user).language,
+  mcpEnabled: Boolean(user.mcp_enabled),
 });
 
 export const toSummary = (user: User): UserSummary => ({
@@ -48,6 +60,7 @@ export const toSummary = (user: User): UserSummary => ({
   disabled: Boolean(user.disabled_at),
   lastSignInAt: user.last_sign_in_at,
   createdAt: user.created_at,
+  mcpEnabled: Boolean(user.mcp_enabled),
 });
 
 export async function securitySettings(db: Db): Promise<SecuritySettings> {

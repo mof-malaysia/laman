@@ -266,7 +266,7 @@ data/
 
 ## Backup and restore
 
-Built in `apps/server/src/backup.ts`. Backups run from the command line, every day inside the server, before every upgrade, and from the admin (**Back up now** in Settings → About, for Admins and up). Restore is command-line only: it replaces every account, and it needs the server stopped.
+Built in `apps/server/src/backup.ts`. Backups run from the command line, every day inside the server, before every upgrade, and from the admin (**Back up now** in Settings → Backups, for Admins and up). Restore is command-line only: it replaces every account, and it needs the server stopped.
 
 ### What gets backed up
 

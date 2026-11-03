@@ -7,7 +7,7 @@ import { randomUUID } from "node:crypto";
 import type { SessionStage } from "@fiscal-sb/contracts";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import type { Selectable } from "kysely";
-import { type Db, now } from "../db/index.js";
+import { ago, type Db, now } from "../db/index.js";
 import type { SessionsTable } from "../db/schema.js";
 import { hashToken, newToken } from "./tokens.js";
 import type { User } from "./users.js";
@@ -52,6 +52,10 @@ export function setCookie(request: FastifyRequest, reply: FastifyReply, token: s
   reply.header("set-cookie", parts.join("; "));
 }
 
+/** The client's user agent, as sessions and agent connections keep it. */
+export const userAgentOf = (request: FastifyRequest) =>
+  (request.headers["user-agent"] ?? "").slice(0, 300);
+
 /** A new session for `user` at `stage`; returns the cookie's token. */
 export async function startSession(
   db: Db,
@@ -71,7 +75,7 @@ export async function startSession(
       created_at: at,
       last_seen_at: at,
       ip: request.ip,
-      user_agent: (request.headers["user-agent"] ?? "").slice(0, 300),
+      user_agent: userAgentOf(request),
     })
     .execute();
   return token;
@@ -156,8 +160,6 @@ export async function endSessions(db: Pick<Db, "deleteFrom">, userId: string, ke
   if (keep) q = q.where("id", "!=", keep);
   await q.execute();
 }
-
-const ago = (ms: number) => new Date(Date.now() - ms).toISOString();
 
 /** Sessions expire lazily on use; this clears the ones nobody came back to. ISO times compare as text. */
 export async function purgeSessions(db: Db) {

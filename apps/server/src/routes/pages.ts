@@ -50,6 +50,7 @@ import {
   unpublishPage,
 } from "../content/pages.js";
 import {
+  discardPageDraft,
   getRevision,
   listDeleted,
   listRevisions,
@@ -484,6 +485,25 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request) => {
       await restoreRevision(db, request.params.id, request.params.revisionId);
+      return { data: await getPage(db, request.params.id) };
+    },
+  );
+
+  app.post<{ Params: PageParams }>(
+    "/pages/:id/discard",
+    {
+      config: { access: "content.edit" },
+      schema: {
+        summary: "Discard a page's changes",
+        description:
+          "The live version becomes the draft again. The discarded draft is kept as a revision, so it can be restored. Refused (409 `never_published`) for a page that has never been live.",
+        tags: ["history"],
+        params: PageParams,
+        response: { 200: envelope(Page) },
+      },
+    },
+    async (request) => {
+      await discardPageDraft(db, request.params.id);
       return { data: await getPage(db, request.params.id) };
     },
   );

@@ -208,7 +208,7 @@ export function EntriesTab({ listing }: { listing: Page }) {
             }}
           />
         )}
-        <span className="text-body-xs text-txt-black-500 ml-auto flex items-center gap-1">
+        <span className="text-label-compact text-txt-black-500 ml-auto flex items-center gap-1">
           <Kbd combo="j" /> <Kbd combo="k" /> {t("listing.keys.move")} · <Kbd combo="o" />{" "}
           {t("listing.keys.open")} · <Kbd combo="e" /> {t("listing.keys.edit")}
         </span>

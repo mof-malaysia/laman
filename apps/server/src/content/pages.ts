@@ -40,7 +40,7 @@ import { conflictError, conflictWith, versionOf } from "./versions.js";
 import { syncPageUsage } from "./media.js";
 import { addRedirect } from "./redirects.js";
 import { type Tree, loadTree } from "./tree.js";
-import { actingUser } from "../auth/acting.js";
+import { actingAgent, actingUser } from "../auth/acting.js";
 
 type Row = Selectable<PagesTable> & {
   published_content: string | null;
@@ -403,6 +403,7 @@ export async function publishDraft(db: Db, id: string): Promise<PublishSwap> {
         content: page.draft,
         created_at: now(),
         created_by: actingUser(),
+        created_via: actingAgent(),
       })
       .execute();
     await trx

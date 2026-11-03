@@ -31,11 +31,15 @@ import { useGuard } from "./auth/guard.js";
 import { useSecurityHeaders } from "./headers.js";
 import { purgeSessions } from "./auth/sessions.js";
 import { seedSuperAdmin } from "./auth/users.js";
+import { purgeConnections } from "./agents/connections.js";
+import { agentRoutes } from "./routes/agents.js";
 import { analyticsRoutes, collectRoutes } from "./routes/analytics.js";
 import { authRoutes } from "./routes/auth.js";
 import { backupRoutes } from "./routes/backups.js";
 import { healthRoutes } from "./routes/health.js";
 import { jobRoutes } from "./routes/jobs.js";
+import { mcpRoutes } from "./routes/mcp.js";
+import { oauthRoutes } from "./routes/oauth.js";
 import { mediaRoutes } from "./routes/media.js";
 import { pageRoutes } from "./routes/pages.js";
 import { renderRoutes } from "./routes/render.js";
@@ -50,6 +54,8 @@ declare module "fastify" {
     db: Db;
     jobs: Jobs;
     analytics: { db: AnalyticsDb; collector: Collector };
+    /** BUILDER_URL: the address agents sign in against, when it's set. */
+    builderUrl: string | undefined;
   }
 }
 
@@ -144,6 +150,7 @@ export async function buildApp(options: AppOptions) {
   await seedIfEmpty(db);
   await seedSuperAdmin(db, env);
   await purgeSessions(db);
+  await purgeConnections(db);
   await pruneAudit(db);
   await purgeDeleted(db);
   await purgeDeletedMedia(db, dataDir);
@@ -203,6 +210,7 @@ export async function buildApp(options: AppOptions) {
     retentionDays: async () => (await readDoc(db, "settings", "published")).analytics.retentionDays,
   });
   app.decorate("db", db);
+  app.decorate("builderUrl", env.BUILDER_URL);
   app.decorate("jobs", jobs);
   app.decorate("analytics", { db: analyticsDb, collector });
   if (options.runJobs ?? true)
@@ -233,7 +241,7 @@ export async function buildApp(options: AppOptions) {
     });
 
   await app.register(swagger, {
-    openapi: { info: { title: "Site Builder API", version: "0.0.0" } },
+    openapi: { info: { title: "Laman API", version: "0.0.0" } },
     transform: openApiTransform,
   });
 
@@ -265,6 +273,9 @@ export async function buildApp(options: AppOptions) {
     });
     await builder.register(renderRoutes, { prefix: "/render", publicDir });
     await builder.register(analyticsRoutes, { prefix: "/api" });
+    await builder.register(agentRoutes, { prefix: "/api" });
+    await builder.register(oauthRoutes);
+    await builder.register(mcpRoutes, { maxUploadBytes: maxBytes });
     if (hasAdmin)
       await builder.register(fastifyStatic, {
         root: adminDist,

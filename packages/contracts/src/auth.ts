@@ -77,8 +77,17 @@ export const Me = z.object({
   stage: SessionStage,
   /** Their admin language, so the admin starts in it without asking again. */
   language: AdminLanguage,
+  /** May connect agents over MCP (docs/mcp.md). */
+  mcpEnabled: z.boolean(),
 });
 export type Me = z.infer<typeof Me>;
+
+/** Changes to your own account. MCP access is the super admin's to set here (docs/mcp.md). */
+export const MePatch = z.object({
+  displayName: DisplayName.optional(),
+  mcpEnabled: z.boolean().optional(),
+});
+export type MePatch = z.infer<typeof MePatch>;
 
 export const SignInBody = z.object({
   username: z.string().trim().toLowerCase(),
@@ -129,6 +138,8 @@ export const UserSummary = z.object({
   disabled: z.boolean(),
   lastSignInAt: z.string().nullable(),
   createdAt: z.string(),
+  /** May connect AI agents over MCP (docs/mcp.md). */
+  mcpEnabled: z.boolean(),
 });
 export type UserSummary = z.infer<typeof UserSummary>;
 
@@ -136,6 +147,8 @@ export const UserPatch = z.object({
   role: AssignableRole.optional(),
   displayName: DisplayName.optional(),
   disabled: z.boolean().optional(),
+  /** Turning it off ends their agents' connections. */
+  mcpEnabled: z.boolean().optional(),
 });
 export type UserPatch = z.infer<typeof UserPatch>;
 
@@ -194,6 +207,12 @@ export const AuditAction = z.enum([
   "pageRestored",
   "backupStarted",
   "backupRestored",
+  /** An officer allowed an agent (docs/mcp.md). */
+  "agentConnected",
+  /** A connection ended: revoked, or its refresh token was used twice. */
+  "agentRevoked",
+  /** One MCP tool call: the tool and its outcome, never its arguments. */
+  "agentToolCall",
 ]);
 export type AuditAction = z.infer<typeof AuditAction>;
 

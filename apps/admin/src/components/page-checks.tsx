@@ -33,6 +33,16 @@ export const useChecksOf = (ids: string[]) =>
 export const stops = (checks: PageCheck[] | undefined) =>
   Boolean(checks?.some((check) => check.severity === "block"));
 
+/** The checks in a few words: what stops the page, or how many to look at. */
+export const checksLabel = (checks: PageCheck[]) =>
+  stops(checks) ? t("checks.stoppedRow") : t("checks.warningsRow", { count: checks.length });
+
+/** What the checks mean for publishing: the first one stops it, or they can be published past. */
+export const checksDescription = (checks: PageCheck[]) =>
+  stops(checks)
+    ? t("checks.review.stopped")
+    : t("checks.review.warnings", { count: checks.length });
+
 /** The list, with "Show" beside a check in a block when there's somewhere to show it. */
 export function PageCheckList({
   checks,

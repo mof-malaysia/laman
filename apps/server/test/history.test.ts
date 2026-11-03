@@ -74,6 +74,31 @@ describe("history", () => {
     expect(after.filter((r: { kind: string }) => r.kind === "published")).toHaveLength(1);
   });
 
+  it("discards a page's changes back to the live version, keeping them in history", async () => {
+    const page = await create("Buang", "buang");
+    // Never live: nothing to go back to.
+    const refused = await call("POST", `/api/pages/${page.id}/discard`);
+    expect(refused.statusCode).toBe(409);
+    expect(refused.json().error.code).toBe("never_published");
+
+    await call("POST", `/api/pages/${page.id}/publish`);
+    await work();
+    await setTitle(page.id, "Buang ini");
+    const before = (await call("GET", "/api/pages")).json().data;
+    expect(before.find((p: { id: string }) => p.id === page.id).status).toBe("changed");
+
+    const discarded = await call("POST", `/api/pages/${page.id}/discard`);
+    expect(discarded.statusCode).toBe(200);
+    expect(discarded.json().data.title).toBe("Buang");
+    const after = (await call("GET", "/api/pages")).json().data;
+    expect(after.find((p: { id: string }) => p.id === page.id).status).toBe("published");
+    // The thrown-away draft is a revision, so it can be restored.
+    const revisions = (await call("GET", `/api/pages/${page.id}/revisions`)).json().data;
+    const kept = revisions.find((r: { kind: string }) => r.kind === "draft");
+    const detail = (await call("GET", `/api/pages/${page.id}/revisions/${kept.id}`)).json().data;
+    expect(detail.content.ms.title).toBe("Buang ini");
+  });
+
   it("restores deleted pages with their child pages", async () => {
     const parent = await create("Induk", "induk");
     await create("Anak", "anak", parent.id);

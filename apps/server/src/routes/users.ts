@@ -8,6 +8,7 @@ import type { FastifyPluginAsync, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { listAudit } from "../auth/audit.js";
 import { audited, userOf } from "../auth/guard.js";
+import { endConnections, setMcpAccess } from "../agents/connections.js";
 import { endSessions } from "../auth/sessions.js";
 import { hashToken, newToken } from "../auth/tokens.js";
 import {
@@ -114,7 +115,7 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
       schema: {
         summary: "Change someone's role, name or access",
         description:
-          "A new role or disabling the account signs them out everywhere. Accounts are disabled, never deleted, so history keeps their name.",
+          "A new role or disabling the account signs them out everywhere. Accounts are disabled, never deleted, so history keeps their name. Turning off MCP access, or disabling the account, ends their agents' connections.",
         tags,
         params: UserParams,
         body: UserPatch,
@@ -123,7 +124,7 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request) => {
       const target = await other(request, request.params.id);
-      const { role, displayName, disabled } = request.body;
+      const { role, displayName, disabled, mcpEnabled } = request.body;
       const changes = {
         ...(role !== undefined && role !== target.role && { role }),
         ...(displayName !== undefined &&
@@ -133,9 +134,14 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
         ...(disabled !== undefined &&
           disabled !== Boolean(target.disabled_at) && { disabled_at: disabled ? now() : null }),
       };
-      if (Object.keys(changes).length) {
-        await db.updateTable("users").set(changes).where("id", "=", target.id).execute();
+      const mcpChanged = mcpEnabled !== undefined && mcpEnabled !== Boolean(target.mcp_enabled);
+      if (Object.keys(changes).length || mcpChanged) {
+        if (Object.keys(changes).length)
+          await db.updateTable("users").set(changes).where("id", "=", target.id).execute();
         if (changes.role || changes.disabled_at) await endSessions(db, target.id);
+        // A new role applies to agents at their next call; no access, or no account, ends them.
+        if (mcpChanged) await setMcpAccess(db, target.id, mcpEnabled, userOf(request).id);
+        if (changes.disabled_at) await endConnections(db, target.id, userOf(request).id);
         audited(request, {
           action: "userChanged",
           target: target.id,
@@ -143,6 +149,7 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
             ...(changes.role && { role: changes.role, roleBefore: target.role }),
             ...(changes.display_name && { displayName: changes.display_name }),
             ...("disabled_at" in changes && { disabled: Boolean(changes.disabled_at) }),
+            ...(mcpChanged && { mcpEnabled }),
           },
         });
       }
@@ -217,6 +224,26 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
       const target = await other(request, request.params.id);
       await endSessions(db, target.id);
       audited(request, { action: "userSignedOut", target: target.id });
+      return reply.status(204).send();
+    },
+  );
+
+  app.post<{ Params: { id: string } }>(
+    "/users/:id/end-agents",
+    {
+      config: { access: "users.manage" },
+      schema: {
+        summary: "End someone's agent connections",
+        description:
+          "Every live agent connection of theirs stops working; they can connect again while they have MCP access.",
+        tags,
+        params: UserParams,
+        response: { 204: z.null() },
+      },
+    },
+    async (request, reply) => {
+      const target = await other(request, request.params.id);
+      await endConnections(db, target.id, userOf(request).id);
       return reply.status(204).send();
     },
   );

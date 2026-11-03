@@ -26,8 +26,9 @@ beforeEach(async () => {
 });
 afterEach(() => rm(dir, { recursive: true, force: true }));
 
-/** The next build's migrations: this one's, and one more. */
-const next = { ...migrations, "0002_next": { up: async () => {} } };
+/** This build's last migration, and the next build's migrations: this one's, and one more. */
+const latest = Object.keys(migrations).at(-1)!;
+const next = { ...migrations, "9000_next": { up: async () => {} } };
 
 const addPage = (db: Kysely<unknown>, draft: unknown) =>
   sql`insert into pages (id, parent_id, slug, position, draft, created_at, updated_at)
@@ -52,7 +53,7 @@ describe("upgrading site.db", () => {
     await oldDatabase([valid]);
     const db = await openDatabase(path, next);
     await db.destroy();
-    expect(readdirSync(join(dir, "upgrade"))).toEqual(["site-0001_baseline-to-0002_next.db"]);
+    expect(readdirSync(join(dir, "upgrade"))).toEqual([`site-${latest}-to-9000_next.db`]);
   });
 
   it("refuses content that fails its schema, and puts the database back as it was", async () => {
@@ -61,7 +62,7 @@ describe("upgrading site.db", () => {
       () => undefined,
       (e: unknown) => e as Error,
     );
-    expect(error?.message).toMatch(/put back as it was \(at migration 0001_baseline\)/);
+    expect(error?.message).toContain(`put back as it was (at migration ${latest})`);
     expect(error?.message).toMatch(/1 stored documents don't match/);
     expect(error?.message).toMatch(/page drafts .*: ms\.blocks\.0/);
     expect(readFileSync(path).equals(original)).toBe(true);
@@ -70,14 +71,16 @@ describe("upgrading site.db", () => {
   });
 
   it("takes on a database a development build made before the baseline", async () => {
-    await oldDatabase([valid]);
+    // Made to the baseline's schema, as the squashed development migrations left it.
     const { db } = openSqlite<unknown>(path);
+    await migrate(db, { "0001_baseline": migrations["0001_baseline"]! });
+    await addPage(db, valid);
     await sql`delete from kysely_migration`.execute(db);
     for (const name of beforeBaseline)
       await sql`insert into kysely_migration (name, timestamp) values (${name}, '')`.execute(db);
     await db.destroy();
     const adopted = (await openDatabase(path)) as Kysely<unknown>;
-    expect(await executedMigrations(adopted)).toEqual(["0001_baseline"]);
+    expect(await executedMigrations(adopted)).toEqual(Object.keys(migrations));
     const { rows } = await sql<{ n: number }>`select count(*) as n from pages`.execute(adopted);
     expect(rows[0]?.n).toBe(1);
     await adopted.destroy();

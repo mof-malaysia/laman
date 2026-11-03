@@ -156,7 +156,7 @@ function TrashList({
             )}
           </h2>
         </div>
-        <p className="text-body-xs text-txt-black-500">{t("trash.kept")}</p>
+        <p className="text-label-compact text-txt-black-500">{t("trash.kept")}</p>
       </div>
       <ul
         aria-label={t("trash.label")}
@@ -198,21 +198,21 @@ function TrashRow({ page, selected }: { page: DeletedPage; selected: boolean }) 
         </span>
         {page.children > 0 && (
           <span
-            className="text-body-xs text-txt-black-500 tabular-nums"
+            className="text-label-compact text-txt-black-500 tabular-nums"
             title={t("trash.children", { count: page.children })}
           >
             {t("trash.more", { count: page.children })}
           </span>
         )}
         {left <= WARN_DAYS ? (
-          <span className="text-body-xs text-txt-warning shrink-0">
+          <span className="text-label-compact text-txt-warning shrink-0">
             {t("trash.daysLeft", { count: left })}
           </span>
         ) : (
           <time
             dateTime={page.deletedAt}
             title={formatDateTime(page.deletedAt)}
-            className="text-body-xs text-txt-black-500 shrink-0 tabular-nums"
+            className="text-label-compact text-txt-black-500 shrink-0 tabular-nums"
           >
             {formatAgo(page.deletedAt)}
           </time>

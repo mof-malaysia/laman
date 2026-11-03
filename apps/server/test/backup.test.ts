@@ -163,7 +163,7 @@ describe("backups", () => {
   it("backs up the database before an upgrade migrates it", async () => {
     const path = join(dataDir, "site.db");
     await (await openDatabase(path)).destroy();
-    const next = { ...migrations, "0002_next": { up: async () => undefined } };
+    const next = { ...migrations, "9000_next": { up: async () => undefined } };
     const db = await openDatabase(path, next, {
       beforeMigrate: (snapshot) =>
         makeBackup({ dataDir, backupDir, keep, database: snapshot, dbOnly: true }),
@@ -173,7 +173,7 @@ describe("backups", () => {
     expect(backup?.dbOnly).toBe(true);
     // Made on the old version, so this build's restore upgrades it again.
     expect((await verifyBackup(join(backupDir, backup!.file), root)).migration).toBe(
-      "0001_baseline",
+      Object.keys(migrations).at(-1),
     );
   });
 
@@ -220,6 +220,25 @@ describe("backups", () => {
     await app.jobs.idle();
     await app.close();
     expect(await listBackups(backupDir)).toHaveLength(1);
+  });
+
+  it("counts only full archives as backed up, and says when the newest is old", async () => {
+    const app = await boot();
+    const status = async () =>
+      (await app.inject({ method: "GET", url: "/api/summary" })).json().data.backup;
+    expect(await status()).toMatchObject({ last: null, archives: [], stale: false });
+    expect(Date.parse((await status()).next)).toBeGreaterThan(Date.now());
+
+    await mkdir(backupDir, { recursive: true });
+    const day = 86_400_000;
+    await writeFile(join(backupDir, name(new Date(Date.now() - 3 * day))), "");
+    // An upgrade's database-only archive is newer, but leaves the media out.
+    await writeFile(join(backupDir, name(new Date(Date.now() - day), "-db")), "");
+    const old = await status();
+    expect(old.archives.map((a: { dbOnly: boolean }) => a.dbOnly)).toEqual([true, false]);
+    expect(old.last.dbOnly).toBe(false);
+    expect(old.stale).toBe(true);
+    await app.close();
   });
 
   it("schedules the daily backup in Malaysian time", () => {

@@ -4,7 +4,8 @@ import { pluginReact } from "@rsbuild/plugin-react";
 export default defineConfig({
   plugins: [pluginReact()],
   html: {
-    title: "Site Builder",
+    title: "Laman",
+    favicon: "./src/assets/favicon.svg",
   },
   server: {
     // The server serves the built admin at /admin, so it lives there in development too.
@@ -14,6 +15,21 @@ export default defineConfig({
     // The published site is at the server's own address in development.
     port: Number(process.env.ADMIN_PORT ?? 3001),
     proxy: [
+      {
+        // Agents (docs/mcp.md) connect to this address in development. The
+        // server writes its OAuth endpoints and issuer from the Host it's
+        // sent, so these keep this one: the consent screen is here, not on
+        // the server's port. First, so /api/agents isn't taken by /api.
+        pathFilter: [
+          "/api/agents",
+          "/mcp",
+          "/oauth",
+          "/.well-known/oauth-authorization-server",
+          "/.well-known/oauth-protected-resource",
+        ],
+        target: process.env.SERVER_URL ?? "http://127.0.0.1:3000",
+        changeOrigin: false,
+      },
       {
         pathFilter: [
           "/api",

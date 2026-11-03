@@ -205,6 +205,68 @@ export const migrations: Record<string, Migration> = {
         where deleted_at is null`.execute(db);
     },
   },
+  // Agents over MCP (docs/mcp.md): who may connect, the OAuth clients that
+  // registered, and each connection an officer allowed.
+  "0002_agents": {
+    async up(db: Kysely<unknown>) {
+      await db.schema
+        .alterTable("users")
+        .addColumn("mcp_enabled", "integer", (c) => c.notNull().defaultTo(sql`0`))
+        .execute();
+      // "Aisyah via Claude" in a page's history.
+      await db.schema.alterTable("revisions").addColumn("created_via", "text").execute();
+      await db.schema
+        .createTable("oauth_clients")
+        .addColumn("id", "text", (c) => c.primaryKey())
+        .addColumn("name", "text", (c) => c.notNull())
+        .addColumn("redirect_uris", "text", (c) => c.notNull())
+        .addColumn("created_at", "text", (c) => c.notNull())
+        .addColumn("ip", "text", (c) => c.notNull().defaultTo(""))
+        .execute();
+      await db.schema
+        .createTable("agent_connections")
+        .addColumn("id", "text", (c) => c.primaryKey())
+        .addColumn("user_id", "text", (c) => c.notNull().references("users.id"))
+        .addColumn("client_id", "text", (c) =>
+          c.notNull().references("oauth_clients.id").onDelete("cascade"),
+        )
+        .addColumn("access_hash", "text")
+        .addColumn("access_expires_at", "text")
+        .addColumn("refresh_hash", "text")
+        .addColumn("previous_refresh_hash", "text")
+        .addColumn("created_at", "text", (c) => c.notNull())
+        .addColumn("last_used_at", "text", (c) => c.notNull())
+        .addColumn("expires_at", "text", (c) => c.notNull())
+        .addColumn("revoked_at", "text")
+        .addColumn("revoked_by", "text")
+        .addColumn("ip", "text", (c) => c.notNull().defaultTo(""))
+        .addColumn("user_agent", "text", (c) => c.notNull().defaultTo(""))
+        .execute();
+      for (const [name, column] of [
+        ["agent_connections_access", "access_hash"],
+        ["agent_connections_refresh", "refresh_hash"],
+        ["agent_connections_previous", "previous_refresh_hash"],
+      ] as const)
+        await db.schema.createIndex(name).on("agent_connections").column(column).unique().execute();
+      await db.schema
+        .createIndex("agent_connections_user")
+        .on("agent_connections")
+        .columns(["user_id", "created_at"])
+        .execute();
+      // Clearing out clients nobody allowed, at start.
+      await db.schema
+        .createIndex("agent_connections_client")
+        .on("agent_connections")
+        .column("client_id")
+        .execute();
+      // One row per tool call makes the log long: the Agents screen reads it by action, newest first.
+      await db.schema
+        .createIndex("audit_log_action_at")
+        .on("audit_log")
+        .columns(["action", "at"])
+        .execute();
+    },
+  },
 };
 
 /** Runs `list` (site.db's by default) up to the latest. */

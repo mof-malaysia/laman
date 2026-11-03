@@ -1,4 +1,8 @@
-# Site Builder
+<p align="center">
+  <img src="docs/logo.svg" alt="Laman logo" width="88" height="88">
+</p>
+
+<h1 align="center">Laman</h1>
 
 A self-hosted website builder for agency sites, built on FTDS. Editors arrange approved FTDS blocks on a live canvas, edit text in place and press Publish to write a static site. One Node process, one SQLite file. The design is in [docs/site-builder.md](docs/site-builder.md).
 

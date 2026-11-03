@@ -30,6 +30,7 @@ import { Fieldset, FieldsetLegend } from "@/components/ui/fieldset";
 import { CheckShieldIcon } from "@/components/ui/icons/check-shield";
 import { ClockIcon } from "@/components/ui/icons/clock";
 import { EyeShowIcon } from "@/components/ui/icons/eye-show";
+import { FolderIcon } from "@/components/ui/icons/folder";
 import { GlobeIcon } from "@/components/ui/icons/globe";
 import { GovtOfficeIcon } from "@/components/ui/icons/govt-office";
 import { InfoIcon } from "@/components/ui/icons/info";
@@ -49,7 +50,6 @@ import {
 import { Radio, RadioButton, RadioHintText, RadioItem, RadioLabel } from "@/components/ui/radio";
 import { Select } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Switch } from "@/components/ui/switch";
 import {
   SummaryList,
   SummaryListBody,
@@ -60,11 +60,13 @@ import {
 import { TextArea } from "@/components/ui/textarea";
 import { currentLanguage, type MessageKey, t } from "@/i18n";
 import { siteDocQuery } from "@/lib/publish";
-import { apiError, preferencesApi, siteApi, waitForJob } from "@/lib/api";
+import { apiError, preferencesApi, siteApi } from "@/lib/api";
 import { securityApi, useCan, useMe } from "@/lib/auth";
 import useToast from "@/lib/ftds/hooks/use-toast";
-import { formatDateTime, useSummary } from "@/lib/pages";
+import { useSummary } from "@/lib/pages";
+import { SwitchSetting } from "@/components/switch-setting";
 import { MediaField } from "@/editor/media-field";
+import { BackupsSection } from "./backups-section";
 import { formatBytes } from "@/media/format";
 
 /** Sections of the settings document: each saves into its draft. */
@@ -79,7 +81,13 @@ const documentSections = [
 ] as const satisfies readonly (keyof SiteSettings)[];
 type DocumentSection = (typeof documentSections)[number];
 
-export const settingsSections = [...documentSections, "language", "security", "about"] as const;
+export const settingsSections = [
+  ...documentSections,
+  "language",
+  "security",
+  "backups",
+  "about",
+] as const;
 export type SettingsSectionId = (typeof settingsSections)[number];
 
 /** Sections that aren't part of the settings document, so they show without it. */
@@ -89,6 +97,7 @@ const panels: Record<
 > = {
   language: LanguageSection,
   security: SecuritySection,
+  backups: BackupsSection,
   about: About,
 };
 
@@ -102,6 +111,7 @@ const sectionLabels: Record<SettingsSectionId, MessageKey> = {
   analytics: "settings.analytics",
   language: "settings.language",
   security: "settings.security",
+  backups: "settings.backups",
   about: "settings.about",
 };
 
@@ -116,6 +126,7 @@ const sectionIcons: Record<SettingsSectionId, ReactNode> = {
   analytics: <EyeShowIcon />,
   language: <GlobeIcon />,
   security: <CheckShieldIcon />,
+  backups: <FolderIcon />,
   about: <SettingIcon />,
 };
 
@@ -171,7 +182,8 @@ export function SettingsScreen() {
           <PageHeaderTitle size="headline">{t("nav.settings")}</PageHeaderTitle>
           <PageHeaderDescription>{t("settings.intro")}</PageHeaderDescription>
         </PageHeaderContent>
-        {doc.data && (
+        {/* Sections outside the settings document have nothing here to publish. */}
+        {doc.data && !Panel && (
           <PageHeaderActions>
             {doc.data.changed && !dirty && (
               <Button variant="default-ghost" size="small" onClick={() => setDiscarding(true)}>
@@ -843,18 +855,14 @@ function SecuritySection() {
       title={t("settings.security")}
       description={t("settings.security.description")}
     >
-      <div className="gap-stack-md flex max-w-2xl flex-col">
-        <Field name="requireTwoFactor">
-          <FieldItem>
-            <Switch
-              checked={on}
-              disabled={!security.data || (!on && !me.twoFactor)}
-              onCheckedChange={(checked) => (checked ? setConfirming(true) : void save(false))}
-            />
-            <FieldLabel>{t("settings.security.require")}</FieldLabel>
-          </FieldItem>
-          <FieldDescription>{t("settings.security.requireHint")}</FieldDescription>
-        </Field>
+      <div className="gap-stack-md flex flex-col">
+        <SwitchSetting
+          title={t("settings.security.require")}
+          description={t("settings.security.requireHint")}
+          checked={on}
+          disabled={!security.data || (!on && !me.twoFactor)}
+          onCheckedChange={(checked) => (checked ? setConfirming(true) : void save(false))}
+        />
         {!me.twoFactor && !on && (
           <Callout variant="info">
             <CalloutTitle>{t("settings.security.yoursFirst")}</CalloutTitle>
@@ -878,102 +886,29 @@ function SecuritySection() {
   );
 }
 
-/** This installation, and its backups: how the last went, and a backup now. Restore is the CLI's. */
+/** This installation: its version and where it keeps the site. Backups have their own section. */
 function About() {
-  const summary = useSummary();
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  const canBackUp = useCan("site.manage");
-  const site = summary.data?.site;
-  const backup = summary.data?.backup;
-
-  const backUp = async () => {
-    try {
-      const job = await siteApi.backUp();
-      // Shows "Backing up…" until it's done.
-      void queryClient.invalidateQueries({ queryKey: ["summary"] });
-      const done = await waitForJob(job);
-      await queryClient.invalidateQueries({ queryKey: ["summary"] });
-      toast(
-        done.status === "failed"
-          ? { variant: "error", title: t("settings.about.failed"), description: done.error ?? "" }
-          : { variant: "success", title: t("settings.about.backedUp") },
-      );
-    } catch (caught) {
-      toast({
-        variant: "error",
-        title: t("settings.about.backUpFailed"),
-        description: (await apiError(caught))?.message,
-      });
-    }
-  };
-
-  const last = backup?.last;
-  const lastText = last
-    ? t(last.dbOnly ? "settings.about.lastBackupDb" : "settings.about.lastBackup", {
-        when: formatDateTime(last.at),
-        size: formatBytes(last.bytes),
-      })
-    : t("settings.about.never");
-  const rows: [MessageKey, ReactNode][] =
-    site && backup
-      ? [
-          ["settings.about.version", site.version],
-          ["settings.about.dataDir", <code key="dir">{site.dataDir}</code>],
-          ["settings.about.database", formatBytes(site.databaseBytes)],
-          ["settings.about.backup", lastText],
-          [
-            "settings.about.schedule",
-            backup.schedule
-              ? t("settings.about.scheduleAt", { time: backup.schedule })
-              : t("settings.about.scheduleOff"),
-          ],
-          ["settings.about.backupDir", <code key="backups">{backup.dir}</code>],
-        ]
-      : [];
+  const site = useSummary().data?.site;
+  // The server's paths are for whoever runs it.
+  const canManage = useCan("site.manage");
+  const rows: [MessageKey, ReactNode][] = site
+    ? [
+        ["settings.about.version", site.version],
+        ...(canManage
+          ? ([
+              [
+                "settings.about.dataDir",
+                <code key="dir" className="break-all">
+                  {site.dataDir}
+                </code>,
+              ],
+            ] as [MessageKey, ReactNode][])
+          : []),
+        ["settings.about.database", formatBytes(site.databaseBytes)],
+      ]
+    : [];
   return (
-    <SettingsSection
-      title={t("settings.about")}
-      description={t("settings.about.description")}
-      footer={
-        canBackUp && (
-          <div className="mt-stack-lg gap-stack-sm flex flex-col items-start">
-            <Button
-              type="button"
-              variant="default-outline"
-              disabled={!backup || backup.running}
-              onClick={() => void backUp()}
-            >
-              {backup?.running ? t("settings.about.backingUp") : t("settings.about.backUp")}
-            </Button>
-            <p className="text-body-sm text-txt-black-700 m-0">{t("settings.about.restore")}</p>
-          </div>
-        )
-      }
-    >
-      {backup?.failed && (
-        <Callout variant="danger">
-          <CalloutTitle>{t("settings.about.failed")}</CalloutTitle>
-          <CalloutContent>
-            {t("settings.about.failedAt", {
-              when: formatDateTime(backup.failed.at),
-              error: backup.failed.error,
-            })}
-          </CalloutContent>
-        </Callout>
-      )}
-      {backup?.stale && !backup.failed && (
-        <Callout variant="warning">
-          <CalloutTitle>{t("settings.about.stale")}</CalloutTitle>
-          <CalloutContent>{t("settings.about.staleBody")}</CalloutContent>
-        </Callout>
-      )}
-      {backup?.sameDisk && (
-        <Callout variant="warning">
-          <CalloutTitle>{t("settings.about.sameDisk")}</CalloutTitle>
-          <CalloutContent>{t("settings.about.sameDiskBody")}</CalloutContent>
-        </Callout>
-      )}
+    <SettingsSection title={t("settings.about")} description={t("settings.about.description")}>
       <SummaryList>
         <SummaryListBody>
           {rows.map(([label, value]) => (

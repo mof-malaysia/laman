@@ -44,12 +44,14 @@ export function MediaField({
       <>
         <span className="text-body-sm truncate font-medium">{media.data.filename}</span>
         {alt ? (
-          <span className="text-body-xs text-txt-black-700 line-clamp-2">
+          <span className="text-label-compact text-txt-black-700 line-clamp-2">
             {t("media.field.alt", { alt })}
             {value.alt && ` ${t("media.field.ownAlt")}`}
           </span>
         ) : media.data.decorative ? (
-          <span className="text-body-xs text-txt-black-700">{t("media.field.decorative")}</span>
+          <span className="text-label-compact text-txt-black-700">
+            {t("media.field.decorative")}
+          </span>
         ) : (
           <Tag size="small" variant="warning" className="self-start">
             {t("media.noAlt")}

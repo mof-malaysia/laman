@@ -5,7 +5,7 @@
 import { type BlockType, type PageDocument, blockDefinition, blocksFor } from "@fiscal-sb/blocks";
 import type { DraftConflict, Page } from "@fiscal-sb/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useParams } from "@tanstack/react-router";
+import { Link, useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
 import { redirectTarget } from "@/components/page-status";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,15 @@ import { Callout, CalloutTitle } from "@/components/ui/callout";
 import { DesktopIcon } from "@/components/ui/icons/desktop";
 import { ArrowBackIcon } from "@/components/ui/icons/arrow-back";
 import { EyeShowIcon } from "@/components/ui/icons/eye-show";
+import { WarningCircleIcon } from "@/components/ui/icons/warning-circle";
+import {
+  Drawer,
+  DrawerBody,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import { MobileIcon } from "@/components/ui/icons/mobile";
 import { RedoIcon } from "@/components/ui/icons/redo";
 import { TabletIcon } from "@/components/ui/icons/tablet";
@@ -26,7 +35,14 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useSidebar } from "@/components/ui/app-shell";
 import { t } from "@/i18n";
 import { ConflictDialog } from "@/components/conflict-dialog";
-import { PageCheckList, checksKey, stops, usePageChecks } from "@/components/page-checks";
+import {
+  PageCheckList,
+  checksDescription,
+  checksKey,
+  checksLabel,
+  stops,
+  usePageChecks,
+} from "@/components/page-checks";
 import { apiError, conflictOf, pagesApi, statusOf } from "@/lib/api";
 import { useMe } from "@/lib/auth";
 import { localDrafts } from "@/lib/local-drafts";
@@ -264,6 +280,23 @@ function Editor({ page, onReload }: { page: Page; onReload: () => Promise<void> 
   // Checked as saved: each save refreshes it, and Publish shows it first.
   const checks = usePageChecks(page.id);
   const stopped = stops(checks.data);
+  // What the checks found, on hand while editing; open on arrival from the publish list.
+  // Open while the address says so, as the publish list's link does: closing it
+  // drops `?checks`, so a reload or Back doesn't bring it back.
+  const showChecks = (useSearch({ strict: false }) as { checks?: boolean }).checks === true;
+  const navigate = useNavigate();
+  const setShowChecks = (open: boolean) =>
+    void navigate({
+      to: "/pages/$id/edit",
+      params: { id: page.id },
+      search: open ? { checks: true } : {},
+      replace: true,
+    });
+  /** Selects the block a check is about, then closes whatever listed it. */
+  const showCheck = (close: () => void) => (blockId: string) => {
+    dispatch({ type: "select", id: blockId });
+    close();
+  };
   const pages = usePages();
   const [width, setWidth] = useState<CanvasWidth>("desktop");
   const [zoom, setZoom] = useState<CanvasZoom>("fit");
@@ -437,19 +470,11 @@ function Editor({ page, onReload }: { page: Page; onReload: () => Promise<void> 
         checks.data?.length
           ? {
               title: t("checks.review.title"),
-              description: stopped
-                ? t("checks.review.stopped")
-                : t("checks.review.warnings", { count: checks.data.length }),
+              description: checksDescription(checks.data),
               blocked: stopped,
               confirm: t("checks.publishAnyway"),
               renderBody: (close) => (
-                <PageCheckList
-                  checks={checks.data}
-                  onShow={(blockId) => {
-                    dispatch({ type: "select", id: blockId });
-                    close();
-                  }}
-                />
+                <PageCheckList checks={checks.data} onShow={showCheck(close)} />
               ),
             }
           : undefined
@@ -632,6 +657,17 @@ function Editor({ page, onReload }: { page: Page; onReload: () => Promise<void> 
           </ToggleGroup>
         </div>
         <span className="flex-1" />
+        {checks.data && checks.data.length > 0 && (
+          <Button
+            variant="default-ghost"
+            size="small"
+            aria-haspopup="dialog"
+            onClick={() => setShowChecks(true)}
+          >
+            <WarningCircleIcon className={stopped ? "text-txt-danger" : "text-txt-warning"} />
+            {checksLabel(checks.data)}
+          </Button>
+        )}
         <Button
           variant="default-ghost"
           size="small"
@@ -646,6 +682,19 @@ function Editor({ page, onReload }: { page: Page; onReload: () => Promise<void> 
         {publishControl}
       </div>
       {stoppedNotice || keptNotice}
+      {checks.data?.length ? (
+        <Drawer side="right" open={showChecks} onOpenChange={setShowChecks}>
+          <DrawerContent className="w-full sm:max-w-md">
+            <DrawerHeader>
+              <DrawerTitle>{t("checks.review.title")}</DrawerTitle>
+              <DrawerDescription>{checksDescription(checks.data)}</DrawerDescription>
+            </DrawerHeader>
+            <DrawerBody>
+              <PageCheckList checks={checks.data} onShow={showCheck(() => setShowChecks(false))} />
+            </DrawerBody>
+          </DrawerContent>
+        </Drawer>
+      ) : null}
       {/* On a phone: no canvas. The list of blocks, then one block's fields (or the page's) at a time. */}
       {wide ? (
         <div className="flex min-h-0 flex-1">
