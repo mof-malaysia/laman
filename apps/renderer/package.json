@@ -2,6 +2,12 @@
   "name": "@fiscal-sb/renderer",
   "version": "0.0.0",
   "private": true,
+  "files": [
+    "dist",
+    "paths.mjs",
+    "entry.d.ts",
+    "paths.d.ts"
+  ],
   "type": "module",
   "exports": {
     ".": {
@@ -22,6 +28,7 @@
     "@astrojs/node": "catalog:",
     "@fiscal-sb/blocks": "workspace:*",
     "@fontsource-variable/inter": "catalog:",
+    "@oddbird/popover-polyfill": "catalog:",
     "astro": "catalog:",
     "class-variance-authority": "^0.7.1",
     "tailwind-merge": "^3.7.0",

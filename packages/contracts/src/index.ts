@@ -12,9 +12,10 @@ import {
   templateIds,
 } from "@fiscal-sb/blocks";
 import { z } from "zod";
-import { SiteDocName } from "./site.js";
+import { SiteDocName, savable } from "./site.js";
 
 export * from "./analytics.js";
+export * from "./auth.js";
 export * from "./preferences.js";
 export * from "./site.js";
 
@@ -58,11 +59,15 @@ export const PageSummary = z.object({
   publishedAt: z.string().nullable(),
   /** The draft differs from the published revision (or was never published). */
   hasUnpublishedChanges: z.boolean(),
+  /** Who last saved the draft; null before there were accounts. */
+  editedBy: z.string().nullable(),
 });
 export type PageSummary = z.infer<typeof PageSummary>;
 
 export const Page = PageSummary.extend({
   draft: PageDocument,
+  /** Changes whenever the draft does: send it back as a save's `base`. */
+  draftVersion: z.string(),
 });
 export type Page = z.infer<typeof Page>;
 
@@ -78,8 +83,61 @@ export const CreatePageBody = z.object({
 });
 export type CreatePageBody = z.input<typeof CreatePageBody>;
 
-export const SaveDraftBody = z.object({ draft: PageDocument });
+/**
+ * `base` is the `draftVersion` the edit started from. When someone else has
+ * saved since, the save is refused with 409 `draft_conflict` (`DraftConflict`
+ * in `details`) instead of overwriting them; without it, the save always wins.
+ */
+export const SaveDraftBody = savable(PageDocument);
 export type SaveDraftBody = z.infer<typeof SaveDraftBody>;
+
+/**
+ * The `details` of a 409 `draft_conflict`: who saved the draft in between,
+ * when, and its version now, to save from to replace it ("keep mine").
+ */
+export const DraftConflict = z.object({
+  by: z.string().nullable(),
+  at: z.string().nullable(),
+  version: z.string(),
+});
+export type DraftConflict = z.infer<typeof DraftConflict>;
+
+/** What the check before publishing looks at (`GET /pages/checks`): see docs/site-builder.md § Checks before publishing. */
+export const PageCheckCode = z.enum([
+  "noHeading",
+  "altMissing",
+  "altFilename",
+  "linkNotLive",
+  "linkMissing",
+  "placeholder",
+  "vagueLink",
+]);
+export type PageCheckCode = z.infer<typeof PageCheckCode>;
+
+export const PageCheck = z.object({
+  code: PageCheckCode,
+  /** `block` stops the page going live until it's fixed; `warn` can be published past. */
+  severity: z.enum(["block", "warn"]),
+  /** The block it's in, so the editor can select it; null for the page as a whole. */
+  blockId: z.string().nullable(),
+  /** What it's about, as the page has it: the alt text, the address, the link or leftover text. */
+  subject: z.string().optional(),
+});
+export type PageCheck = z.infer<typeof PageCheck>;
+
+/** Each page's checks, by id. */
+export const PageChecks = z.record(z.string(), z.array(PageCheck));
+export type PageChecks = z.infer<typeof PageChecks>;
+
+/** The pages to check: ids separated by commas, up to 200. */
+export const PageChecksQuery = z.object({
+  ids: z
+    .string()
+    .regex(
+      /^[0-9a-f-]{36}(,[0-9a-f-]{36}){0,199}$/,
+      "Give up to 200 page ids, separated by commas",
+    ),
+});
 
 /** An address that a change moves from one path to another. */
 export const PathChange = z.object({
@@ -159,6 +217,8 @@ export const Job = z.object({
   result: z.record(z.string(), z.number()).nullable(),
   createdAt: z.string(),
   finishedAt: z.string().nullable(),
+  /** Who queued it; null for the builder's own jobs. */
+  createdBy: z.string().nullable(),
 });
 export type Job = z.infer<typeof Job>;
 
@@ -204,6 +264,8 @@ export const PublishTrigger = z.enum([
   "retry",
   "undo",
   "rebuild",
+  /** Queued by a restore, so the site matches the restored content. */
+  "restore",
 ]);
 export type PublishTrigger = z.infer<typeof PublishTrigger>;
 
@@ -231,6 +293,10 @@ export const PublishPayload = z.object({
 });
 export type PublishPayload = z.infer<typeof PublishPayload>;
 
+/** A backup job: the daily one, one someone asked for, or a failed one tried again. */
+export const BackupPayload = z.object({ trigger: z.enum(["scheduled", "manual", "retry"]) });
+export type BackupPayload = z.infer<typeof BackupPayload>;
+
 /** Whether a publish can still be put back: it finished, made pages live, and wasn't undone. */
 export const canUndo = (job: Job) => {
   const payload = job.payload as PublishPayload;
@@ -251,8 +317,9 @@ export const WaitingItem = z.discriminatedUnion("kind", [
     /** Never published: listed, but left out of "Publish all" unless chosen. */
     new: z.boolean(),
     updatedAt: z.string(),
+    editedBy: z.string().nullable(),
   }),
-  z.object({ kind: SiteDocName }),
+  z.object({ kind: SiteDocName, editedBy: z.string().nullable() }),
   /** A file replaced since the last publish: any publish takes it live. */
   z.object({ kind: z.literal("media"), id: Id, filename: z.string(), replacedAt: z.string() }),
 ]);
@@ -285,6 +352,22 @@ export const Summary = z.object({
     dataDir: z.string(),
     /** site.db and its WAL, in bytes. */
     databaseBytes: z.number().int(),
+  }),
+  backup: z.object({
+    /** BACKUP_DIR. */
+    dir: z.string(),
+    /** BACKUP_DIR isn't set, so backups are on the site's own disk. */
+    sameDisk: z.boolean(),
+    /** The daily backup's Malaysian time (`HH:MM`), or null when it's off. */
+    schedule: z.string().nullable(),
+    /** The newest archive in the folder. */
+    last: z.object({ at: z.string(), bytes: z.number().int(), dbOnly: z.boolean() }).nullable(),
+    /** The daily backup is on, and the newest archive is over 2 days old. */
+    stale: z.boolean(),
+    /** A backup job that failed after the newest archive was made. */
+    failed: z.object({ at: z.string(), error: z.string() }).nullable(),
+    /** A backup is queued or running now. */
+    running: z.boolean(),
   }),
 });
 export type Summary = z.infer<typeof Summary>;
@@ -431,6 +514,8 @@ export const Revision = z.object({
   blocksChanged: z.number().int(),
   /** The revision that is live now. */
   live: z.boolean(),
+  /** Who saved or published it; null before there were accounts. */
+  by: z.string().nullable(),
 });
 export type Revision = z.infer<typeof Revision>;
 

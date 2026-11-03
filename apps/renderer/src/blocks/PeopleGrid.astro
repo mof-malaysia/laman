@@ -1,0 +1,36 @@
+---
+/** Leadership or a team, in FTDS PeopleGrid. Photos are decorative (the name is beside them), so a small copy is enough. */
+import type { BlockOf, MediaInfo } from "@fiscal-sb/blocks";
+import PeopleGrid from "@/components/blocks/people-grid.astro";
+import Field from "./Field.astro";
+import { atLeast } from "./media";
+
+type Props = { block: BlockOf<"peopleGrid">; edit: boolean; media: Record<string, MediaInfo> };
+const { block, edit, media } = Astro.props;
+const p = block.props;
+const people = p.people.map((person) => {
+  const photo = person.photo && media[person.photo.mediaId];
+  return {
+    name: person.name,
+    role: person.role,
+    photo: photo ? atLeast(photo, 320) : undefined,
+    bio: person.bio,
+    href: person.href || undefined,
+  };
+});
+---
+
+<PeopleGrid people={people} featured={Number(p.featured)} tone={p.tone}>
+  {
+    (edit || p.title) && (
+      <Field slot="title" name="title" edit={edit} placeholder="Tajuk">{p.title}</Field>
+    )
+  }
+  {
+    (edit || p.description) && (
+      <Field slot="description" name="description" edit={edit} placeholder="Penerangan">
+        {p.description}
+      </Field>
+    )
+  }
+</PeopleGrid>

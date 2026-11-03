@@ -1,0 +1,24 @@
+---
+/** A passage set apart, in FTDS InsetText, in the reading column like the text around it. */
+import type { BlockOf } from "@fiscal-sb/blocks";
+import InsetText from "@/components/ui/inset-text.astro";
+import Field from "./Field.astro";
+import TextColumn from "./TextColumn.astro";
+
+type Props = { block: BlockOf<"insetText">; edit: boolean };
+const { block, edit } = Astro.props;
+const p = block.props;
+---
+
+<TextColumn tight>
+    <InsetText class="max-w-[70ch]">
+      <Field name="text" edit={edit} placeholder="Teks">{p.text}</Field>
+      {
+        (edit || p.author) && (
+          <Field slot="author" name="author" edit={edit} placeholder="Siapa yang berkata">
+            {p.author}
+          </Field>
+        )
+      }
+    </InsetText>
+</TextColumn>

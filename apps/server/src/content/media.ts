@@ -20,6 +20,7 @@ import type { Database, MediaTable } from "../db/schema.js";
 import { HttpError } from "../errors.js";
 import { TRASH_DAYS } from "./history.js";
 import { Tree } from "./tree.js";
+import { actingUser } from "../auth/acting.js";
 
 /** Widths of the copies made for srcset; only those narrower than the original. */
 export const VARIANT_WIDTHS = [480, 960, 1600] as const;
@@ -44,25 +45,83 @@ export function detectType(bytes: Buffer): Detected | null {
   return null;
 }
 
+/** Elements that can run code or pull in other documents, whatever their namespace prefix. */
+const svgActive = new Set([
+  "script",
+  "foreignobject",
+  "iframe",
+  "embed",
+  "object",
+  "audio",
+  "video",
+  "handler",
+  "listener",
+]);
+/** Animation elements, which can set a link to javascript: after the file is checked. */
+const svgAnimation = new Set(["set", "animate", "animatemotion", "animatetransform"]);
+const linkAttribute = new Set(["href", "src", "from", "to", "values"]);
+const entities: Record<string, string> = {
+  colon: ":",
+  tab: "\t",
+  newline: "\n",
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  apos: "'",
+};
+
+/** An attribute value as the browser reads it: entities decoded, spaces and controls gone. */
+const linkValue = (value: string) =>
+  value
+    .replace(/&#x([0-9a-f]+);?/gi, (_, hex: string) =>
+      String.fromCodePoint(Number.parseInt(hex, 16)),
+    )
+    .replace(/&#(\d+);?/g, (_, dec: string) => String.fromCodePoint(Number(dec)))
+    .replace(/&([a-z]+);/gi, (match, name: string) => entities[name.toLowerCase()] ?? match)
+    // oxlint-disable-next-line no-control-regex -- browsers ignore these inside a URL scheme
+    .replace(/[\s\u0000-\u001f]/g, "")
+    .toLowerCase();
+
+/** A data: URL that is only a raster picture, which can't run anything. */
+const rasterData = /^data:image\/(png|jpe?g|gif|webp);/;
+
 /**
- * Removes what can run code from an SVG: scripts, foreign HTML, event
- * handlers and javascript: or data: links. It is served from the site's own
- * origin, so this matters.
+ * Why an SVG can't be accepted, or undefined when it can. It is served from
+ * the builder's own origin, so anything that could run code there is
+ * refused outright rather than cleaned: scripts and foreign content under
+ * any namespace prefix, event handlers, javascript: and similar links
+ * (entity-encoded too), animations that change a link, and DTD entities.
  */
-export function sanitizeSvg(svg: string): string {
-  return svg
-    .replace(/<!DOCTYPE[\s\S]*?>/gi, "")
-    .replace(/<(script|foreignObject|iframe|embed|object|audio|video)\b[\s\S]*?<\/\1\s*>/gi, "")
-    .replace(/<(script|foreignObject|iframe|embed|object|audio|video)\b[^>]*\/?>/gi, "")
-    .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "")
-    .replace(
-      /\s(href|xlink:href|src)\s*=\s*("\s*(javascript|data|vbscript):[^"]*"|'\s*(javascript|data|vbscript):[^']*')/gi,
-      "",
-    );
+export function svgProblem(svg: string): string | undefined {
+  if (/<!ENTITY/i.test(svg) || /<!DOCTYPE[^>]*\[/i.test(svg)) return "entities";
+  for (const [, name = ""] of svg.matchAll(/<\s*(?:[\w.-]+:)?([\w.-]+)/g)) {
+    const local = name.toLowerCase();
+    if (svgActive.has(local)) return `the <${local}> element`;
+    if (svgAnimation.has(local) && /attributeName\s*=\s*["']?\s*(?:[\w.-]+:)?href/i.test(svg))
+      return "an animation that changes a link";
+  }
+  for (const [, attribute = "", ...quoted] of svg.matchAll(
+    /\s([\w.:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/g,
+  )) {
+    const local = (attribute.split(":").at(-1) ?? "").toLowerCase();
+    if (local.startsWith("on")) return `the ${attribute} handler`;
+    if (!linkAttribute.has(local)) continue;
+    const value = linkValue(quoted.find((v) => v !== undefined) ?? "");
+    if (
+      /^(javascript|vbscript):/.test(value) ||
+      (value.startsWith("data:") && !rasterData.test(value))
+    )
+      return "a link that runs code";
+  }
+  return undefined;
 }
 
-const dirOf = (dataDir: string, id: string) => join(dataDir, "media", id);
-const previousDirOf = (dataDir: string, id: string) => join(dataDir, "media-previous", id);
+/** The library's folders in DATA_DIR: each file's own, and the one before its last replace. */
+export const MEDIA_DIR = "media";
+export const PREVIOUS_DIR = "media-previous";
+const dirOf = (dataDir: string, id: string) => join(dataDir, MEDIA_DIR, id);
+const previousDirOf = (dataDir: string, id: string) => join(dataDir, PREVIOUS_DIR, id);
 /**
  * A file's address. A replaced file keeps its name, so its addresses carry
  * when it was replaced: browsers (the admin's and visitors') then fetch the
@@ -288,6 +347,18 @@ export async function waitingMedia(db: Db): Promise<WaitingItem[]> {
   }));
 }
 
+/** A raster image re-encoded in its own format without metadata; as it was if sharp can't read it. */
+async function withoutMetadata(bytes: Buffer) {
+  const { default: sharp } = await import("sharp");
+  try {
+    const image = sharp(bytes).rotate();
+    const { format } = await image.metadata();
+    return await (format === "jpeg" ? image.jpeg({ quality: 92 }) : image).toBuffer();
+  } catch {
+    return bytes;
+  }
+}
+
 /** Width and height of an image, when sharp can read them. */
 async function dimensions(bytes: Buffer) {
   const { default: sharp } = await import("sharp");
@@ -322,13 +393,23 @@ function check(upload: Upload, maxBytes: number) {
 /** Checks and stores a file; raster images then wait for their variants. */
 async function store(dataDir: string, id: string, upload: Upload, maxBytes: number) {
   const detected = check(upload, maxBytes);
-  let bytes = upload.bytes;
-  if (detected.ext === "svg") bytes = Buffer.from(sanitizeSvg(bytes.toString("utf8")));
+  if (detected.ext === "svg") {
+    const problem = svgProblem(upload.bytes.toString("utf8"));
+    if (problem)
+      throw new HttpError(
+        415,
+        "svg_not_allowed",
+        `This SVG has ${problem}, which could run code on the site. Export it again as a plain SVG, or upload a PNG.`,
+      );
+  }
+  const raster = detected.kind === "image" && detected.ext !== "svg";
+  // Photos carry EXIF (where it was taken, the camera's owner): the original
+  // is published too, so it's rewritten without it, upright.
+  const bytes = raster ? await withoutMetadata(upload.bytes) : upload.bytes;
   const dir = dirOf(dataDir, id);
   await rm(dir, { recursive: true, force: true });
   await mkdir(dir, { recursive: true });
   await writeFile(join(dir, `original.${detected.ext}`), bytes);
-  const raster = detected.kind === "image" && detected.ext !== "svg";
   const size = detected.kind === "image" ? await dimensions(bytes) : { width: null, height: null };
   return { ...detected, bytes, raster, ...size };
 }
@@ -346,6 +427,7 @@ export async function createMedia(
     .insertInto("media")
     .values({
       id,
+      created_by: actingUser(),
       filename: upload.filename.slice(0, 200) || `file.${file.ext}`,
       type: file.type,
       ext: file.ext,
@@ -391,7 +473,7 @@ export async function replaceMedia(
   const time = now();
   const previousDir = previousDirOf(dataDir, id);
   await rm(previousDir, { recursive: true, force: true });
-  await mkdir(join(dataDir, "media-previous"), { recursive: true });
+  await mkdir(join(dataDir, PREVIOUS_DIR), { recursive: true });
   await rename(dirOf(dataDir, id), previousDir).catch(() => undefined);
   const file = await store(dataDir, id, upload, maxBytes);
   await db
@@ -679,7 +761,7 @@ export async function mediaTotals(db: Db) {
 
 /** The media folders of `ids`, for the publisher to copy. */
 export async function mediaFolders(dataDir: string, ids: Set<string>) {
-  const root = join(dataDir, "media");
+  const root = join(dataDir, MEDIA_DIR);
   const present = await readdir(root).catch(() => [] as string[]);
   const out: string[] = [];
   for (const id of present)

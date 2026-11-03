@@ -18,28 +18,36 @@ import {
 
 /** The beacon. Always 204, so a page (or anyone else) learns nothing from it. */
 export const collectRoutes: FastifyPluginAsync = async (app) => {
-  app.post("/_v", { bodyLimit: 4096, schema: { hide: true } }, async (request, reply) => {
-    reply.header("cache-control", "no-store");
-    const { collector } = app.analytics;
-    const visitor = {
-      ip: request.ip,
-      userAgent: request.headers["user-agent"] ?? "",
-      host: request.hostname.toLowerCase(),
-      gpc: request.headers["sec-gpc"] === "1",
-    };
-    const origin = request.headers.origin ?? request.headers.referer;
-    if (!collector.allowed(visitor, origin)) return reply.code(204).send();
-    let body: unknown = request.body;
-    if (typeof body === "string")
-      try {
-        body = JSON.parse(body);
-      } catch {
-        return reply.code(204).send();
-      }
-    const beacon = Beacon.safeParse(body);
-    if (beacon.success) await collector.accept(beacon.data, visitor);
-    return reply.code(204).send();
-  });
+  app.post(
+    "/_v",
+    {
+      config: { access: "public" },
+      bodyLimit: 4096,
+      schema: { hide: true },
+    },
+    async (request, reply) => {
+      reply.header("cache-control", "no-store");
+      const { collector } = app.analytics;
+      const visitor = {
+        ip: request.ip,
+        userAgent: request.headers["user-agent"] ?? "",
+        host: request.hostname.toLowerCase(),
+        gpc: request.headers["sec-gpc"] === "1",
+      };
+      const origin = request.headers.origin ?? request.headers.referer;
+      if (!collector.allowed(visitor, origin)) return reply.code(204).send();
+      let body: unknown = request.body;
+      if (typeof body === "string")
+        try {
+          body = JSON.parse(body);
+        } catch {
+          return reply.code(204).send();
+        }
+      const beacon = Beacon.safeParse(body);
+      if (beacon.success) await collector.accept(beacon.data, visitor);
+      return reply.code(204).send();
+    },
+  );
 };
 
 export const analyticsRoutes: FastifyPluginAsync = async (app) => {
@@ -49,6 +57,7 @@ export const analyticsRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: z.infer<typeof AnalyticsQuery> }>(
     "/analytics/summary",
     {
+      config: { access: "signedIn" },
       schema: {
         summary: "Analytics totals and series",
         description:
@@ -67,6 +76,7 @@ export const analyticsRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: z.infer<typeof BreakdownQuery> }>(
     "/analytics/breakdown",
     {
+      config: { access: "signedIn" },
       schema: {
         summary: "Analytics top list",
         description:
@@ -85,6 +95,7 @@ export const analyticsRoutes: FastifyPluginAsync = async (app) => {
   app.get(
     "/analytics/status",
     {
+      config: { access: "signedIn" },
       schema: {
         summary: "Analytics status",
         description:

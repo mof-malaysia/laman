@@ -11,10 +11,8 @@ import { paragraphs } from "./rich-text.js";
 export type Template = {
   name: string;
   description: string;
-  /** Makes the template a collection (a listing page, set up for dated entries): what one
-      entry is called ("" for the person to name), and its starting categories. */
-  /** Present on collection templates: the categories a new collection starts with. */
-  listing?: { categories?: { slug: string; name: string }[] };
+  /** Present on collection templates: the categories a new collection starts with, and the blocks its entries start with. */
+  listing?: { categories?: { slug: string; name: string }[]; startingBlocks?: BlockType[] };
   /** The blocks a new page starts with, given its title. */
   blocks: (title: string) => Block[];
 };
@@ -28,16 +26,13 @@ function block<T extends BlockType>(type: T, props: Record<string, unknown> = {}
 export const templates = {
   blank: {
     name: "Blank",
-    description: "A heading with the page title, then a text block.",
-    blocks: (title) => [
-      block("hero", { title, description: "", primaryAction: undefined }),
-      block("prose"),
-    ],
+    description: "A page intro with the page title, then a text block.",
+    blocks: (title) => [block("pageIntro", { title, description: undefined }), block("prose")],
   },
   utama: {
     name: "Utama",
     description:
-      "A home page: a hero, the agency's services, a notice and a closing call to action.",
+      "A home page: a hero, the agency's top services, a notice and a closing call to action.",
     blocks: (title) => [
       block("hero", {
         eyebrow: "Selamat datang",
@@ -46,7 +41,7 @@ export const templates = {
         primaryAction: { label: "Lihat perkhidmatan", href: "/perkhidmatan" },
         secondaryAction: { label: "Hubungi kami", href: "/hubungi" },
       }),
-      block("featureGrid"),
+      block("serviceHighlights"),
       block("callout"),
       block("ctaBand"),
     ],
@@ -54,12 +49,11 @@ export const templates = {
   perkhidmatan: {
     name: "Perkhidmatan",
     description:
-      "A service page: what it is and who can apply, forms and links, questions, then how to start.",
+      "A service page: what it is, who can apply, how to apply, forms, questions, then how to start.",
     blocks: (title) => [
-      block("hero", {
+      block("pageIntro", {
         title,
         description: "Terangkan perkhidmatan ini dalam satu atau dua ayat.",
-        primaryAction: { label: "Mohon sekarang", href: "/" },
       }),
       block("prose", {
         body: {
@@ -68,19 +62,16 @@ export const templates = {
             {
               type: "heading",
               attrs: { level: 2 },
-              content: [{ type: "text", text: "Siapa yang layak" }],
+              content: [{ type: "text", text: "Tentang perkhidmatan ini" }],
             },
-            ...paragraphs("Terangkan syarat kelayakan di sini.").content,
-            {
-              type: "heading",
-              attrs: { level: 2 },
-              content: [{ type: "text", text: "Dokumen yang diperlukan" }],
-            },
-            ...paragraphs("Senaraikan dokumen yang perlu disediakan.").content,
+            ...paragraphs("Terangkan apa yang orang ramai dapat daripada perkhidmatan ini.")
+              .content,
           ],
         },
       }),
-      block("linkList", { title: "Borang dan panduan" }),
+      block("eligibility"),
+      block("steps", { action: { label: "Mohon sekarang", href: "/" } }),
+      block("downloadList", { title: "Borang dan panduan" }),
       block("faq"),
       block("ctaBand", { title: "Sedia untuk memohon?" }),
     ],
@@ -90,10 +81,9 @@ export const templates = {
     description:
       "A contact page: how to reach the agency, from the site settings, and common questions.",
     blocks: (title) => [
-      block("hero", {
+      block("pageIntro", {
         title,
         description: "Kami sedia membantu. Pilih cara yang paling mudah untuk anda.",
-        primaryAction: undefined,
       }),
       block("contact", { title: "Saluran perhubungan" }),
       block("faq", { title: "Sebelum anda menghubungi kami" }),
@@ -104,10 +94,7 @@ export const templates = {
     description:
       "A heading, then the entries, newest first. For anything you add to over time: circulars, publications, job vacancies.",
     listing: {},
-    blocks: (title) => [
-      block("hero", { title, description: "", primaryAction: undefined }),
-      block("entryList"),
-    ],
+    blocks: (title) => [block("pageIntro", { title, description: undefined }), block("entryList")],
   },
   berita: {
     name: "Berita",
@@ -119,11 +106,7 @@ export const templates = {
       ],
     },
     blocks: (title) => [
-      block("hero", {
-        title,
-        description: "Berita dan kenyataan media terkini.",
-        primaryAction: undefined,
-      }),
+      block("pageIntro", { title, description: "Berita dan kenyataan media terkini." }),
       block("entryList"),
     ],
   },
@@ -132,11 +115,7 @@ export const templates = {
     description: "Notices for the public: closures, changes to services, reminders.",
     listing: {},
     blocks: (title) => [
-      block("hero", {
-        title,
-        description: "Makluman terkini untuk orang ramai.",
-        primaryAction: undefined,
-      }),
+      block("pageIntro", { title, description: "Makluman terkini untuk orang ramai." }),
       block("entryList", { style: "list" }),
     ],
   },
@@ -150,12 +129,18 @@ export const templates = {
       ],
     },
     blocks: (title) => [
-      block("hero", {
-        title,
-        description: "Tender dan sebut harga yang sedang dibuka.",
-        primaryAction: undefined,
-      }),
+      block("pageIntro", { title, description: "Tender dan sebut harga yang sedang dibuka." }),
       block("entryList", { style: "list", emptyText: "Tiada tender dibuka buat masa ini." }),
+    ],
+  },
+  acara: {
+    name: "Acara",
+    description:
+      "Events: briefings, workshops, open days. Each entry starts with its date, venue, registration and programme.",
+    listing: { startingBlocks: ["eventDetails"] },
+    blocks: (title) => [
+      block("pageIntro", { title, description: "Taklimat, bengkel dan hari terbuka kami." }),
+      block("entryList", { style: "cards", emptyText: "Belum ada acara lagi." }),
     ],
   },
 } satisfies Record<string, Template>;
@@ -177,11 +162,7 @@ export const templateKind = (id: TemplateId): TemplateKind =>
 export const templatesFor = (kind: TemplateKind): TemplateId[] =>
   templateIds.filter((id) => templateKind(id) === kind);
 
-/** A new collection's settings: the defaults, with its template's categories. */
+/** A new collection's settings: the defaults, with what its template sets (categories, starting blocks). */
 export function collectionSettings(id: TemplateId | undefined): ListingSettings {
-  const listing = id && templateById(id).listing;
-  return {
-    ...defaultListingSettings(),
-    ...(listing && listing.categories && { categories: listing.categories }),
-  };
+  return { ...defaultListingSettings(), ...(id && templateById(id).listing) };
 }

@@ -7,11 +7,13 @@
 import type { Job } from "@fiscal-sb/contracts";
 import { type ReactNode, useState } from "react";
 import { type Tone, toneDot } from "@/components/page-status";
+import { Link } from "@tanstack/react-router";
 import { linkClass } from "@/components/text-link";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { t } from "@/i18n";
+import { useCan } from "@/lib/auth";
 import { clx } from "@/lib/ftds/utils";
 import { formatDateTime, formatTime } from "@/lib/pages";
 import {
@@ -22,7 +24,29 @@ import {
   useSiteHref,
 } from "@/lib/publish";
 
-export type SaveState = "saved" | "unsaved" | "saving" | "retrying" | "invalid";
+export type SaveState =
+  | "saved"
+  | "unsaved"
+  | "saving"
+  | "retrying"
+  | "invalid"
+  /** Someone else saved since: the conflict dialog asks which to keep. */
+  | "conflict"
+  /** The sign-in ran out: saving carries on after signing in again. */
+  | "signedOut"
+  /** No longer allowed to edit it, or it was deleted: nothing more is saved. */
+  | "forbidden"
+  | "gone";
+
+/** Save states that stop the work reaching the server, said in red. */
+const notSaving: ReadonlySet<SaveState> = new Set([
+  "retrying",
+  "invalid",
+  "conflict",
+  "signedOut",
+  "forbidden",
+  "gone",
+]);
 
 type Key = Parameters<typeof t>[0];
 
@@ -32,6 +56,10 @@ const saveText: Record<SaveState, Key> = {
   unsaved: "save.unsaved",
   retrying: "save.retrying",
   invalid: "save.invalid",
+  conflict: "save.conflict",
+  signedOut: "save.signedOut",
+  forbidden: "save.forbidden",
+  gone: "save.gone",
 };
 
 const liveText: Record<LiveState, Key> = {
@@ -41,25 +69,46 @@ const liveText: Record<LiveState, Key> = {
   scheduled: "live.scheduled",
 };
 
+/** What a finished publish skipped: this page, how many others, or nothing. */
+type Skipped = "this" | number;
+
+function skippedBy(outcome: PublishOutcome, pageId: string | undefined): Skipped {
+  const skipped = outcome.status === "live" ? (outcome.skipped ?? []) : [];
+  return pageId && skipped.some((page) => page.pageId === pageId) ? "this" : skipped.length;
+}
+
 function statusLine(
   outcome: PublishOutcome,
   live: LiveState,
   save: SaveState,
+  skipped: Skipped,
 ): { tone: Tone; text: string } {
   if (outcome.status === "publishing") return { tone: "neutral", text: t("publish.busy") };
   if (outcome.status === "failed")
     return {
       tone: "danger",
-      text: outcome.reason === "save" ? t("publish.saveFailed") : t("publish.failedHere"),
+      text:
+        outcome.reason !== "save"
+          ? t("publish.failedHere")
+          : notSaving.has(save)
+            ? t(saveText[save])
+            : t("publish.saveFailed"),
     };
-  if (outcome.status === "live")
+  if (outcome.status === "live") {
+    if (skipped === "this") return { tone: "danger", text: t("publish.thisSkipped") };
+    if (skipped)
+      return {
+        tone: "warning",
+        text: t("publish.liveSkipped", { time: formatTime(outcome.at), count: skipped }),
+      };
     return { tone: "success", text: t("publish.liveAt", { time: formatTime(outcome.at) }) };
+  }
   if (outcome.status === "scheduled")
     return {
       tone: "neutral",
       text: t("publish.scheduledFor", { time: formatDateTime(outcome.at) }),
     };
-  if (save === "retrying" || save === "invalid") return { tone: "danger", text: t(saveText[save]) };
+  if (notSaving.has(save)) return { tone: "danger", text: t(saveText[save]) };
   const state = t(liveText[live]);
   if (save !== "saved") return { tone: "neutral", text: `${t(saveText[save])} · ${state}` };
   return {
@@ -77,6 +126,7 @@ export function PublishControl({
   onPublish,
   beforePublish,
   viewPath,
+  pageId,
   disabled,
   review,
 }: {
@@ -92,10 +142,25 @@ export function PublishControl({
   beforePublish?: () => Promise<unknown>;
   /** Where to see the result on the site, such as the page's path. */
   viewPath?: string | undefined;
+  /** The page being published, so a publish that couldn't build it says so. */
+  pageId?: string | undefined;
   disabled?: boolean;
   /** What publishing will change, shown in a confirmation before it happens. */
   /** With `blocked`, the confirmation says what's wrong and can't be confirmed. */
-  review?: { title: string; description: string; body: ReactNode; blocked?: boolean } | undefined;
+  /**
+   * `renderBody` instead of `body` gets a way to close the review, to take the
+   * officer to what needs fixing; `confirm` renames Publish.
+   */
+  review?:
+    | {
+        title: string;
+        description: string;
+        body?: ReactNode;
+        renderBody?: (close: () => void) => ReactNode;
+        blocked?: boolean;
+        confirm?: string;
+      }
+    | undefined;
 }) {
   const [reviewing, setReviewing] = useState(false);
   const { outcome: last, publish } = usePublish(async () => {
@@ -111,7 +176,9 @@ export function PublishControl({
   const outcome: PublishOutcome =
     last.status === "live" && live !== "live" ? { status: "idle" } : last;
 
-  const line = statusLine(outcome, live, save);
+  const canPublish = useCan("content.publish");
+  const skipped = skippedBy(outcome, pageId);
+  const line = statusLine(outcome, live, save, skipped);
   const busy = outcome.status === "publishing";
   const nothingToPublish = live === "live" && save === "saved" && outcome.status !== "failed";
 
@@ -140,7 +207,12 @@ export function PublishControl({
           {!savedAt && !detail && t(liveText[live])}
         </TooltipContent>
       </Tooltip>
-      {outcome.status === "live" && viewPath !== undefined && (
+      {skipped !== 0 && (
+        <Link to="/publishing" className={clx("text-body-sm shrink-0", linkClass)}>
+          {t("publish.seeWhy")}
+        </Link>
+      )}
+      {outcome.status === "live" && skipped === 0 && viewPath !== undefined && (
         <a
           href={href}
           target="_blank"
@@ -151,7 +223,12 @@ export function PublishControl({
           <span className="sr-only"> {t("publish.newTab")}</span>
         </a>
       )}
-      {nothingToPublish ? (
+      {!canPublish ? (
+        // Editors save; a Content Manager publishes from Publishing.
+        live !== "live" && (
+          <span className="text-body-sm text-txt-black-500 shrink-0">{t("publish.byManager")}</span>
+        )
+      ) : nothingToPublish ? (
         // A disabled button takes no pointer events, so the tooltip sits on a wrapper. The
         // status beside it says the same in words for keyboard and screen reader users.
         <Tooltip>
@@ -179,11 +256,11 @@ export function PublishControl({
           onOpenChange={setReviewing}
           title={review.title}
           description={review.description}
-          confirm={label}
+          confirm={review.confirm ?? label}
           onConfirm={() => void publish()}
           blocked={review.blocked}
         >
-          {review.body}
+          {review.renderBody?.(() => setReviewing(false)) ?? review.body}
         </ConfirmDialog>
       )}
     </div>

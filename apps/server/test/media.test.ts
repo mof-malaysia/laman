@@ -1,14 +1,14 @@
-import { access, mkdtemp, readFile, rm } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "@rstest/core";
 import sharp from "sharp";
-import { buildApp } from "../src/app.js";
-import { detectType, sanitizeSvg } from "../src/content/media.js";
+import { type App, multipartFile, signedInApp } from "./helpers.js";
+import { detectType, svgProblem } from "../src/content/media.js";
 import { loadEnv } from "../src/env.js";
 
 let dataDir: string;
-let app: Awaited<ReturnType<typeof buildApp>>;
+let app: App;
 
 beforeAll(async () => {
   dataDir = await mkdtemp(join(tmpdir(), "site-builder-media-"));
@@ -19,7 +19,7 @@ beforeAll(async () => {
     ADMIN_DIST: join(dataDir, "none"),
     MEDIA_MAX_MB: "1",
   });
-  app = await buildApp({ env, databasePath: ":memory:", runJobs: false });
+  app = await signedInApp({ env, databasePath: ":memory:", runJobs: false });
 });
 afterAll(async () => {
   await app.close();
@@ -27,20 +27,8 @@ afterAll(async () => {
 });
 
 /** A multipart/form-data body with one file. */
-function form(filename: string, bytes: Buffer) {
-  const boundary = "----sitebuilder";
-  const payload = Buffer.concat([
-    Buffer.from(
-      `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: application/octet-stream\r\n\r\n`,
-    ),
-    bytes,
-    Buffer.from(`\r\n--${boundary}--\r\n`),
-  ]);
-  return { payload, headers: { "content-type": `multipart/form-data; boundary=${boundary}` } };
-}
-
 const upload = (filename: string, bytes: Buffer) =>
-  app.inject({ method: "POST", url: "/api/media", ...form(filename, bytes) });
+  app.inject({ method: "POST", url: "/api/media", ...multipartFile(filename, bytes) });
 
 const png = (width: number) =>
   sharp({ create: { width, height: 400, channels: 3, background: "#1f6feb" } })
@@ -52,6 +40,8 @@ const work = async () => {
   await app.jobs.idle();
 };
 
+const svg = (body: string) => `<svg xmlns="http://www.w3.org/2000/svg">${body}</svg>`;
+
 describe("media", () => {
   it("knows files by their bytes, not their names", async () => {
     expect(detectType(await png(10))?.type).toBe("image/png");
@@ -62,11 +52,33 @@ describe("media", () => {
     expect(detectType(Buffer.from("<html><script>"))).toBeNull();
   });
 
-  it("strips scripts and handlers from SVG", () => {
-    const clean = sanitizeSvg(
-      '<svg onload="alert(1)"><script>alert(2)</script><a href="javascript:x"><rect/></a><foreignObject><p/></foreignObject></svg>',
-    );
-    expect(clean).toBe("<svg><a><rect/></a></svg>");
+  it("refuses SVG that could run code, however it's written", () => {
+    for (const unsafe of [
+      svg("<script>alert(1)</script>"),
+      svg('<s:script xmlns:s="http://www.w3.org/2000/svg">alert(1)</s:script>'),
+      '<svg onload="alert(1)"></svg>',
+      svg('<rect x:onclick="alert(1)"/>'),
+      svg('<a href="javascript:alert(1)"><rect/></a>'),
+      svg('<a xlink:href="&#106;avascript:alert(1)"><rect/></a>'),
+      svg('<a href="&#x6A;ava&Tab;script&colon;alert(1)"><rect/></a>'),
+      svg('<a href=" JAVASCRIPT:alert(1)"><rect/></a>'),
+      svg('<a><set attributeName="href" to="javascript:alert(1)"/><rect/></a>'),
+      svg('<image href="data:image/svg+xml;base64,PHN2Zz4="/>'),
+      svg("<foreignObject><p>hi</p></foreignObject>"),
+      '<!DOCTYPE svg [<!ENTITY x "y">]><svg>&x;</svg>',
+    ])
+      expect(svgProblem(unsafe), unsafe).toBeDefined();
+  });
+
+  it("accepts an ordinary SVG logo", () => {
+    const logo = `<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 10 10">
+  <title>Logo agensi</title><defs><linearGradient id="g"><stop offset="0"/></linearGradient></defs>
+  <a href="https://www.malaysia.gov.my"><rect fill="url(#g)" width="10" height="10"/></a>
+  <use xlink:href="#g"/><image href="data:image/png;base64,iVBORw0KGgo="/>
+  <animate attributeName="opacity" values="0;1" dur="1s"/>
+</svg>`;
+    expect(svgProblem(logo)).toBeUndefined();
   });
 
   it("uploads an image, then makes narrower copies in a job", async () => {
@@ -94,6 +106,9 @@ describe("media", () => {
       Buffer.concat([Buffer.from("%PDF-1.7\n"), Buffer.alloc(1.2 * 1024 * 1024)]),
     );
     expect(big.statusCode).toBe(413);
+    const script = await upload("logo.svg", Buffer.from(svg("<script>alert(1)</script>")));
+    expect(script.statusCode).toBe(415);
+    expect(script.json().error.code).toBe("svg_not_allowed");
   });
 
   it("tracks where a file is used, refuses to delete it, and publishes it", async () => {
@@ -135,6 +150,26 @@ describe("media", () => {
     await access(join(dataDir, "public", "media", id, "original.png"));
     const html = await readFile(join(dataDir, "public", "index.html"), "utf8");
     expect(html).toContain(`srcset="/media/${id}/w`);
+
+    // A visitor (no session) gets the published copy, and nothing unpublished.
+    const visitor = { cookie: "" };
+    const seen = await app.inject({ url: `/media/${id}/original.png`, headers: visitor });
+    expect(seen.statusCode).toBe(200);
+    // A file only in the library.
+    await mkdir(join(dataDir, "media", "unpublished"), { recursive: true });
+    await writeFile(join(dataDir, "media", "unpublished", "original.png"), await png(100));
+    const unpublishedUrl = "/media/unpublished/original.png";
+    expect((await app.inject({ url: unpublishedUrl, headers: visitor })).statusCode).toBe(404);
+    expect((await app.inject({ url: unpublishedUrl })).statusCode).toBe(200);
+    expect(
+      (await app.inject({ url: `/media/../site.db`, headers: visitor })).statusCode,
+    ).toBeGreaterThanOrEqual(400);
+
+    // CSS a page was published with stays after an upgrade renames the builder's own.
+    await writeFile(join(dataDir, "public", "_astro", "before-upgrade.css"), "a{}");
+    const css = await app.inject({ url: "/_astro/before-upgrade.css", headers: visitor });
+    expect(css.statusCode).toBe(200);
+    expect(css.headers["cache-control"]).toContain("immutable");
   });
 
   it("moves unused files to Recently deleted, and brings them back", async () => {
@@ -184,7 +219,7 @@ describe("media", () => {
     const res = await app.inject({
       method: "PUT",
       url: `/api/media/${used.id}/file`,
-      ...form("logo-baru.png", await png(500)),
+      ...multipartFile("logo-baru.png", await png(500)),
     });
     expect(res.statusCode).toBe(200);
     const replaced = res.json().data;
@@ -241,5 +276,30 @@ describe("media", () => {
     await app.inject({ method: "DELETE", url: `/api/pages/${page.id}` });
     const detail = (await app.inject({ method: "GET", url: `/api/media/${used.id}` })).json().data;
     expect(detail.usedOn).toContainEqual(expect.objectContaining({ id: page.id, deleted: true }));
+  });
+
+  it("serves SVG and other files so they can't run code on the builder's origin", async () => {
+    const { id, url } = (
+      await upload("logo.svg", Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>'))
+    ).json().data;
+    expect(id).toBeDefined();
+    const file = await app.inject({ method: "GET", url });
+    expect(file.statusCode).toBe(200);
+    expect(file.headers["content-security-policy"]).toContain("sandbox");
+    expect(file.headers["x-content-type-options"]).toBe("nosniff");
+  });
+
+  it("publishes photos without where they were taken", async () => {
+    const photo = await sharp({
+      create: { width: 300, height: 200, channels: 3, background: "#888" },
+    })
+      .withExif({ IFD0: { Artist: "Pegawai", Copyright: "Agensi" }, IFD3: { GPSLatitudeRef: "N" } })
+      .jpeg()
+      .toBuffer();
+    expect((await sharp(photo).metadata()).exif).toBeDefined();
+    const { id } = (await upload("lokasi.jpg", photo)).json().data;
+    const stored = await readFile(join(dataDir, "media", id, "original.jpg"));
+    expect((await sharp(stored).metadata()).exif).toBeUndefined();
+    await app.inject({ method: "DELETE", url: `/api/media/${id}` });
   });
 });

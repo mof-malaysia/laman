@@ -1,14 +1,18 @@
 ---
 import type { BlockOf } from "@fiscal-sb/blocks";
+import Button from "@/components/ui/button.astro";
 import Callout from "@/components/ui/callout.astro";
+import { action } from "./action";
 import Field from "./Field.astro";
+import TextColumn from "./TextColumn.astro";
 
 type Props = { block: BlockOf<"callout">; edit: boolean; lang: "ms" | "en" };
 const { block, edit, lang } = Astro.props;
 const p = block.props;
+const link = action(p.action);
 ---
 
-<div class="mx-auto w-full max-w-[1280px] px-4 py-6 md:px-6">
+<TextColumn tight>
   <Callout variant={p.variant} lang={lang}>
     <Field slot="title" name="title" edit={edit} placeholder="Title">{p.title}</Field>
     {
@@ -16,5 +20,12 @@ const p = block.props;
         <Field name="body" edit={edit} placeholder="Text">{p.body}</Field>
       )
     }
+    {
+      link && (
+        <Button slot="actions" variant="default-outline" size="small" href={link.href}>
+          {link.label}
+        </Button>
+      )
+    }
   </Callout>
-</div>
+</TextColumn>

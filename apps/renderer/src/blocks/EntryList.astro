@@ -8,6 +8,7 @@ import type { BlockOf, ListingRender } from "@fiscal-sb/blocks";
 import NewsList from "@/components/blocks/news-list.astro";
 import Pager from "@/components/ui/pager.astro";
 import RSS from "@/components/ui/icons/rss.astro";
+import { band_cva } from "@/components/ui/section.variants";
 import { isoDay } from "./date";
 import { listingHref } from "./listing";
 
@@ -25,7 +26,7 @@ const items = (listing?.items ?? []).map((item) => ({
 const base = listing?.path ?? "/";
 ---
 
-<section class="bg-bg-white">
+<section class={band_cva({ tone: p.tone })}>
   <div class="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-4 py-8 md:px-6">
     {
       p.categoryFilter && listing && listing.categories.length > 0 && (
@@ -50,7 +51,7 @@ const base = listing?.path ?? "/";
     }
     {
       items.length > 0 ? (
-        <NewsList items={items} layout={p.style === "cards" ? "grid" : "list"} lang={lang} title="">
+        <NewsList items={items} layout={p.style === "cards" ? "grid" : "list"} tone={p.tone} lang={lang} title="">
           {listing && listing.pages > 1 && (
             <Pager
               current={listing.page}

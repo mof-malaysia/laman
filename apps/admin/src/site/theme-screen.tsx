@@ -18,12 +18,13 @@ import {
   type ThemePreset,
   themePresets,
 } from "@fiscal-sb/blocks";
-import type { ThemeChoice, ThemeDoc } from "@fiscal-sb/contracts";
+import type { SiteTheme, ThemeChoice, ThemeDoc } from "@fiscal-sb/contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import { useId, useMemo, useState } from "react";
 import { card } from "@/components/card";
 import { PaletteIcon } from "@/components/palette-icon";
 import { PublishControl } from "@/components/publish-control";
+import { useDocConflict } from "@/components/conflict-dialog";
 import { DiscardEditsDialog, PutBackPrevious, useLeaveGuard } from "@/components/unsaved-edits";
 import { Button } from "@/components/ui/button";
 import { Callout, CalloutTitle } from "@/components/ui/callout";
@@ -128,6 +129,10 @@ function Editor({ doc }: { doc: ThemeDoc }) {
     setLastHex(code);
   };
   const leaveGuard = useLeaveGuard(dirty, t("theme.leave.body"));
+  const conflict = useDocConflict<SiteTheme>("theme", {
+    onLoad: load,
+    retry: () => save(),
+  });
 
   const save = async () => {
     setSaving(true);
@@ -136,6 +141,10 @@ function Editor({ doc }: { doc: ThemeDoc }) {
       queryClient.setQueryData(["theme"], next);
       load(next.draft);
       void queryClient.invalidateQueries({ queryKey: ["summary"] });
+    } catch (caught) {
+      // Stops a publish that saves first, and asks which to keep.
+      await conflict.handle(caught);
+      throw caught;
     } finally {
       setSaving(false);
     }
@@ -185,7 +194,7 @@ function Editor({ doc }: { doc: ThemeDoc }) {
         )}
         <PublishControl
           live={doc.changed ? "changed" : "live"}
-          save={saving ? "saving" : dirty ? "unsaved" : "saved"}
+          save={conflict.saveState(saving, dirty)}
           label={t("theme.publish")}
           beforePublish={dirty ? save : undefined}
           onPublish={() => siteApi.publishDoc("theme")}
@@ -266,6 +275,7 @@ function Editor({ doc }: { doc: ThemeDoc }) {
         onDiscard={() => load(doc.draft)}
       />
       {leaveGuard}
+      {conflict.dialog}
     </div>
   );
 }

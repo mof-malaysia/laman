@@ -19,6 +19,7 @@ export const image = defineBlock({
         full: "Full width",
       })
       .default("content"),
+    tone: field.tone(),
   }),
   defaults: { width: "content" },
 });

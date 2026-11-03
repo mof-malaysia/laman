@@ -20,13 +20,15 @@ import {
   slugify,
 } from "@fiscal-sb/blocks";
 import type { EntrySummary, ListingDetail, PageStatus } from "@fiscal-sb/contracts";
+import { sql } from "kysely";
+import { parseStored } from "../db/documents.js";
 import type { Db } from "../db/index.js";
 import { now } from "../db/index.js";
 import { HttpError } from "../errors.js";
 import { mediaInfo } from "./media.js";
 import { type Loads, once } from "./loads.js";
 import { createPage, getPage, listPages, saveDraft } from "./pages.js";
-import { treeOf } from "./tree.js";
+import { breadcrumbOf, pageTitles, treeOf } from "./tree.js";
 
 type Scope = "draft" | "published";
 
@@ -47,10 +49,10 @@ export async function listingSettings(db: Db, id: string): Promise<ListingSettin
 const listingSettingsOf = (db: Db, id: string, loads?: Loads) =>
   once(loads, `listing:${id}`, () => listingSettings(db, id));
 
-/** A listing's stored settings, or the defaults when they're missing or out of date. */
+/** A listing's stored settings, or the defaults when it has none. */
 export function parseListingSettings(stored: string | null): ListingSettings {
-  const parsed = ListingSettings.safeParse(stored ? JSON.parse(stored) : undefined);
-  return parsed.success ? parsed.data : defaultListingSettings();
+  const value: unknown = stored ? JSON.parse(stored) : undefined;
+  return parseStored(ListingSettings, value, "listing settings") ?? defaultListingSettings();
 }
 
 export async function getListing(db: Db, id: string): Promise<ListingDetail> {
@@ -184,7 +186,7 @@ export async function listEntries(
     .toSorted(
       (a, b) =>
         Number(Boolean(b.entry.pinned)) - Number(Boolean(a.entry.pinned)) ||
-        b.entry.publishAt.localeCompare(a.entry.publishAt),
+        Date.parse(b.entry.publishAt) - Date.parse(a.entry.publishAt),
     );
   const start = (query.page - 1) * query.pageSize;
   return { items: items.slice(start, start + query.pageSize), total: items.length };
@@ -206,6 +208,7 @@ function entryItems(
         .selectFrom("pages")
         .leftJoin("revisions", "revisions.id", "pages.published_revision_id")
         .select(["pages.id", "pages.draft", "revisions.content"])
+        .select(sql<number>`pages.rowid`.as("seq"))
         .where("pages.parent_id", "=", listingId)
         .where("pages.kind", "=", "entry")
         .where("pages.deleted_at", "is", null)
@@ -221,7 +224,7 @@ function entryItems(
       if (!doc.entry || doc.redirect) return [];
       if (scope === "published" && Date.parse(doc.entry.publishAt) > at) return [];
       if (category && doc.entry.category !== category) return [];
-      return [{ id: row.id, doc, entry: doc.entry }];
+      return [{ id: row.id, seq: row.seq, doc, entry: doc.entry }];
     });
     const covers = await mediaInfo(
       db,
@@ -232,7 +235,10 @@ function entryItems(
       .toSorted(
         (a, b) =>
           Number(Boolean(b.entry.pinned)) - Number(Boolean(a.entry.pinned)) ||
-          b.entry.publishAt.localeCompare(a.entry.publishAt),
+          // As times, not text: an entry dated "…+08:00" isn't later than one in UTC.
+          Date.parse(b.entry.publishAt) - Date.parse(a.entry.publishAt) ||
+          // Entries dated to the same instant: the one made last first, so the order never varies.
+          b.seq - a.seq,
       )
       .map(({ id, doc, entry }) => {
         const cover = entry.cover && covers[entry.cover.mediaId];
@@ -340,32 +346,21 @@ export async function entryRender(
     .executeTakeFirst();
   if (!page?.parent_id) return undefined;
   const parentId = page.parent_id;
-  const draftOf = (id: string) =>
-    once(loads, `draft:${id}`, () =>
-      db.selectFrom("pages").select("draft").where("id", "=", id).executeTakeFirst(),
-    );
-  const [tree, listing, settings] = await Promise.all([
-    treeOf(db, loads),
-    draftOf(parentId),
+  const [titles, settings, breadcrumb] = await Promise.all([
+    pageTitles(db, loads),
     listingSettingsOf(db, parentId, loads).catch(() => defaultListingSettings()),
+    breadcrumbOf(db, { id: pageId, parentId }, doc.ms.title, loads),
   ]);
   const cover =
     doc.entry.cover && (await mediaInfo(db, [doc.entry.cover]))[doc.entry.cover.mediaId];
   const category =
     doc.entry.category && settings.categories.find((c) => c.slug === doc.entry?.category)?.name;
-  const home = tree.home;
-  const homeTitle = home ? ((await draftOf(home.id))?.draft ?? "") : "";
-  const collection = listing ? (JSON.parse(listing.draft) as PageDocument).ms.title : "";
   return {
     date: doc.entry.publishAt,
-    collection,
+    collection: titles.get(parentId) ?? "",
     ...(category && { category }),
     ...(cover && { cover: { src: cover.url, alt: doc.entry.cover?.alt ?? cover.alt } }),
-    breadcrumb: [
-      { label: homeTitle ? (JSON.parse(homeTitle) as PageDocument).ms.title : "Utama", href: "/" },
-      { label: collection, href: tree.path(parentId) },
-      { label: doc.ms.title },
-    ],
+    breadcrumb: breadcrumb ?? [],
   };
 }
 

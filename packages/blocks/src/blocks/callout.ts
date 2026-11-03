@@ -20,6 +20,7 @@ export const callout = defineBlock({
       .default("info"),
     title: field.text("Title", { max: 120, inline: true }),
     body: field.textarea("Text", { max: 600, inline: true }).optional(),
+    action: field.action("Link under the message").optional(),
   }),
   defaults: {
     variant: "info",

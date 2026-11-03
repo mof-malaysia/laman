@@ -1,0 +1,17 @@
+---
+/**
+ * The page's text column, for blocks that read as part of the text: Text,
+ * Callout, Inset text, Details. `tight` is for the short ones set between
+ * paragraphs, so they don't open a gap a section's padding would.
+ */
+import { clx } from "@/lib/ftds/utils";
+
+type Props = { tight?: boolean };
+const { tight = false } = Astro.props;
+---
+
+<section class="bg-bg-white">
+  <div class={clx("mx-auto w-full max-w-[1280px] px-4 md:px-6", tight ? "py-6" : "py-12 md:py-16")}>
+    <slot />
+  </div>
+</section>

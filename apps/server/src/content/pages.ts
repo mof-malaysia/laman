@@ -8,7 +8,9 @@ import { randomUUID } from "node:crypto";
 import {
   type Block,
   type EntryFields,
-  type PageDocument,
+  PageDocument,
+  linksOf,
+  withDefaults,
   type PageRedirect,
   type TemplateId,
   collectionSettings,
@@ -19,6 +21,7 @@ import {
 } from "@fiscal-sb/blocks";
 import type {
   DeletePreview,
+  DraftConflict,
   MoveResult,
   Page,
   PageRef,
@@ -27,18 +30,22 @@ import type {
   PathChange,
   PublishSwap,
 } from "@fiscal-sb/contracts";
-import { type Db, now } from "../db/index.js";
+import { type Db, now, utc } from "../db/index.js";
 import { type Selectable, sql } from "kysely";
 import type { PagesTable } from "../db/schema.js";
 import { HttpError } from "../errors.js";
 import { recordDraft } from "./history.js";
+import { readDoc } from "./site.js";
+import { conflictError, conflictWith, versionOf } from "./versions.js";
 import { syncPageUsage } from "./media.js";
 import { addRedirect } from "./redirects.js";
 import { type Tree, loadTree } from "./tree.js";
+import { actingUser } from "../auth/acting.js";
 
 type Row = Selectable<PagesTable> & {
   published_content: string | null;
   published_at: string | null;
+  edited_by: string | null;
 };
 
 const columns = [
@@ -55,14 +62,17 @@ const columns = [
   "pages.kind",
   "pages.listing",
   "pages.publish_at",
+  "pages.updated_by",
   "revisions.content as published_content",
   "revisions.created_at as published_at",
+  "editor.display_name as edited_by",
 ] as const;
 
 const select = (db: Db) =>
   db
     .selectFrom("pages")
     .leftJoin("revisions", "revisions.id", "pages.published_revision_id")
+    .leftJoin("users as editor", "editor.id", "pages.updated_by")
     .select(columns)
     .where("pages.deleted_at", "is", null);
 
@@ -83,7 +93,8 @@ function statusOf(row: Row): PageStatus {
   return row.published_content === row.draft ? "published" : "changed";
 }
 
-function toPage(row: Row, tree: Tree, entryCount?: number): Page {
+/** A page with its draft; only `getPage` adds the draft's version, which lists don't need. */
+function toPage(row: Row, tree: Tree, entryCount?: number): Omit<Page, "draftVersion"> {
   const draft = JSON.parse(row.draft) as PageDocument;
   return {
     id: row.id,
@@ -101,11 +112,12 @@ function toPage(row: Row, tree: Tree, entryCount?: number): Page {
     updatedAt: row.updated_at,
     publishedAt: row.published_at,
     hasUnpublishedChanges: row.published_content !== row.draft,
+    editedBy: row.edited_by,
     draft,
   };
 }
 
-export function toSummary(page: Page): PageSummary {
+export function toSummary(page: Omit<Page, "draftVersion">): PageSummary {
   const { draft, ...summary } = page;
   void draft;
   return summary;
@@ -163,7 +175,12 @@ export async function getPage(db: Db, id: string): Promise<Page> {
           .where("deleted_at", "is", null)
           .executeTakeFirst()
       : undefined;
-  return toPage(row, tree, Number(count?.n ?? 0));
+  const page = toPage(row, tree, Number(count?.n ?? 0));
+  return {
+    ...page,
+    draft: withDefaults(PageDocument, page.draft),
+    draftVersion: versionOf(row.draft),
+  };
 }
 
 const slugTaken = () =>
@@ -235,11 +252,12 @@ export async function createPage(
       published_revision_id: null,
       created_at: time,
       updated_at: time,
+      updated_by: actingUser(),
       deleted_at: null,
       template: input.template ?? null,
       kind,
       listing: listing && JSON.stringify(listing),
-      publish_at: input.entry?.publishAt ?? null,
+      publish_at: input.entry ? utc(input.entry.publishAt) : null,
     })
     .execute();
   await syncPageUsage(db, id);
@@ -313,22 +331,56 @@ async function kindOf(db: Db, id: string) {
   return row?.kind;
 }
 
-export async function saveDraft(db: Db, id: string, draft: PageDocument): Promise<Page> {
+/**
+ * Saves the draft. With `base` (the `draftVersion` the edit started from), a
+ * draft someone else saved since is never overwritten: the save is refused
+ * with 409 `draft_conflict`, and the refused copy is kept in the history.
+ */
+export async function saveDraft(
+  db: Db,
+  id: string,
+  draft: PageDocument,
+  base?: string,
+): Promise<Page> {
   await checkRedirect(db, id, draft.redirect);
   const kind = await checkKind(db, id, draft);
-  const result = await db
-    .updateTable("pages")
-    .set({
-      draft: JSON.stringify(draft),
-      updated_at: now(),
-      ...(kind === "entry" && { publish_at: draft.entry?.publishAt ?? null }),
-    })
-    .where("id", "=", id)
-    .where("deleted_at", "is", null)
-    .executeTakeFirst();
-  if (result.numUpdatedRows === 0n) throw notFound();
+  const json = JSON.stringify(draft);
+  // Read, checked and written in one transaction, so two saves can't both pass the check.
+  const result: { conflict: DraftConflict } | { replaced: string } = await db
+    .transaction()
+    .execute(async (trx) => {
+      const current = await trx
+        .selectFrom("pages")
+        .leftJoin("users as editor", "editor.id", "pages.updated_by")
+        .select(["pages.draft", "pages.updated_at", "editor.display_name"])
+        .where("pages.id", "=", id)
+        .where("pages.deleted_at", "is", null)
+        .executeTakeFirst();
+      if (!current) throw notFound();
+      const conflict = conflictWith(base, current.draft, {
+        by: current.display_name,
+        at: current.updated_at,
+      });
+      if (conflict) return { conflict };
+      await trx
+        .updateTable("pages")
+        .set({
+          draft: json,
+          updated_at: now(),
+          updated_by: actingUser(),
+          ...(kind === "entry" && { publish_at: draft.entry ? utc(draft.entry.publishAt) : null }),
+        })
+        .where("id", "=", id)
+        .execute();
+      return { replaced: current.draft };
+    });
+  if ("conflict" in result) {
+    await recordDraft(db, id, json, null);
+    throw conflictError(result.conflict);
+  }
+  const { replaced } = result;
   await syncPageUsage(db, id);
-  await recordDraft(db, id, JSON.stringify(draft));
+  await recordDraft(db, id, json, replaced);
   return getPage(db, id);
 }
 
@@ -345,7 +397,13 @@ export async function publishDraft(db: Db, id: string): Promise<PublishSwap> {
     const revisionId = randomUUID();
     await trx
       .insertInto("revisions")
-      .values({ id: revisionId, page_id: id, content: page.draft, created_at: now() })
+      .values({
+        id: revisionId,
+        page_id: id,
+        content: page.draft,
+        created_at: now(),
+        created_by: actingUser(),
+      })
       .execute();
     await trx
       .updateTable("pages")
@@ -374,7 +432,7 @@ export async function publishPages(db: Db, ids: string[]): Promise<PublishSwap[]
 }
 
 /** Titles and publish state of some pages, by id. */
-async function pageFacts(db: Db, ids: string[]) {
+export async function pageFacts(db: Db, ids: string[]) {
   if (!ids.length) return new Map<string, { title: string; published: boolean }>();
   const rows = await db
     .selectFrom("pages")
@@ -625,18 +683,19 @@ export async function unpublishPage(
   return getPage(db, id);
 }
 
-/** Every href in a draft: block links and rich-text links alike. */
-function hrefsOf(value: unknown, out: string[] = []): string[] {
-  if (Array.isArray(value)) for (const item of value) hrefsOf(item, out);
-  else if (value && typeof value === "object")
-    for (const [key, item] of Object.entries(value)) {
-      if (key === "href" && typeof item === "string") out.push(item);
-      else hrefsOf(item, out);
-    }
+/** Every page a navbar links to by id: its links and its dropdowns' links alike. */
+function linkedPageIds(value: unknown, out = new Set<string>()): Set<string> {
+  if (Array.isArray(value)) for (const item of value) linkedPageIds(item, out);
+  else if (value && typeof value === "object") {
+    const link = value as { kind?: unknown; pageId?: unknown };
+    if (link.kind === "page" && typeof link.pageId === "string") out.add(link.pageId);
+    for (const item of Object.values(value)) linkedPageIds(item, out);
+  }
   return out;
 }
 
-const sitePath = (href: string) => {
+/** A link's address on this site, without query, fragment or trailing slash; undefined for others. */
+export const sitePath = (href: string) => {
   if (!href.startsWith("/")) return undefined;
   return href.split(/[?#]/)[0]?.replace(/(.)\/+$/, "$1");
 };
@@ -660,6 +719,14 @@ export async function deletePreview(db: Db, id: string): Promise<DeletePreview> 
   });
   const inSubtree = new Set(subtree);
   const byId = new Map(rows.map((r) => [r.id, r]));
+  // The navbar as drafted and as live (or the default, never saved): either is a place it would leave.
+  const navbar = linkedPageIds(
+    (
+      await Promise.all(
+        (["draft", "published"] as const).map((scope) => readDoc(db, "navigation", scope)),
+      )
+    ).map((nav) => nav.navbar),
+  );
   return {
     published: byId.get(id)?.published_revision_id != null,
     descendants: subtree.slice(1).flatMap((pageId) => {
@@ -669,13 +736,13 @@ export async function deletePreview(db: Db, id: string): Promise<DeletePreview> 
     linkedFrom: rows
       .filter((row) => !inSubtree.has(row.id))
       .filter((row) =>
-        hrefsOf(JSON.parse(row.draft)).some((href) => {
+        linksOf(JSON.parse(row.draft)).some(({ href }) => {
           const path = sitePath(href);
           return path !== undefined && paths.has(path);
         }),
       )
       .map(ref),
-    inNavbar: node.parent_id === tree.home?.id,
+    inNavbar: subtree.some((pageId) => navbar.has(pageId)),
   };
 }
 

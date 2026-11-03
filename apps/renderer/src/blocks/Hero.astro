@@ -1,18 +1,36 @@
 ---
-import type { BlockOf } from "@fiscal-sb/blocks";
+/**
+ * The hero: FTDS Hero with the block's layout, tone and picture. Split and
+ * image layouts need a picture; without one the hero is drawn stacked, and
+ * the canvas shows where the picture goes. The picture is the page's largest
+ * paint, so it loads eagerly at high priority.
+ */
+import type { BlockOf, MediaInfo } from "@fiscal-sb/blocks";
 import Hero from "@/components/blocks/hero.astro";
 import Tag from "@/components/ui/tag.astro";
 import { action } from "./action";
 import Field from "./Field.astro";
+import LibraryImage from "./LibraryImage.astro";
+import MediaPlaceholder from "./MediaPlaceholder.astro";
 
-type Props = { block: BlockOf<"hero">; edit: boolean };
-const { block, edit } = Astro.props;
+type Props = { block: BlockOf<"hero">; edit: boolean; media: Record<string, MediaInfo> };
+const { block, edit, media } = Astro.props;
 const p = block.props;
+const pictured = p.layout !== "stacked";
+const info = pictured && p.media ? media[p.media.mediaId] : undefined;
+const sizes = p.layout === "image" ? "100vw" : "(min-width: 1024px) 50vw, 100vw";
 // Each optional part is passed as a slot only when it shows: an empty slot
 // would still replace the component's own markup for it.
 ---
 
-<Hero primaryAction={action(p.primaryAction)} secondaryAction={action(p.secondaryAction)}>
+<Hero
+  layout={p.layout}
+  align={p.align}
+  mediaPosition={p.mediaPosition}
+  tone={p.tone}
+  primaryAction={action(p.primaryAction)}
+  secondaryAction={action(p.secondaryAction)}
+>
   {
     (edit || p.eyebrow) && (
       <Tag slot="eyebrow" variant="primary" size="medium">
@@ -26,6 +44,23 @@ const p = block.props;
       <Field slot="description" name="description" edit={edit} placeholder="Description">
         {p.description}
       </Field>
+    )
+  }
+  {
+    (edit || p.footnote) && (
+      <Field slot="footnote" name="footnote" edit={edit} placeholder="Line under the actions">
+        {p.footnote}
+      </Field>
+    )
+  }
+  {
+    info ? (
+      <LibraryImage slot="media" info={info} alt={p.media?.alt} sizes={sizes} eager />
+    ) : (
+      pictured &&
+      edit && (
+        <MediaPlaceholder slot="media" label="Pilih gambar dari Media" />
+      )
     )
   }
 </Hero>

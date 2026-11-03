@@ -312,7 +312,7 @@ The screen is a `SplitPane`: the editor on the left, and on the right a live pre
   - "Hide the whole site from search engines"
   - Sitemap on or off
 - **Publishing:** the scheduled publish default, and the number of revisions to keep per page.
-- **About:** version, data folder, database size, last backup ("Not set up yet" until backups arrive).
+- **About:** version, data folder, database size, and backups: the last one (when and how big), the daily time, the folder, a warning when the last one failed, when there's been none for 2 days, or when the folder is on the site's own disk, and **Back up now** (Admin and up). Restoring is command-line only.
 
 Like navigation, site settings are drafted and go live at the next publish, so the preview and the published site never disagree mid-edit.
 

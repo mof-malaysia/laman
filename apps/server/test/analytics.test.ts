@@ -4,11 +4,11 @@ import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "@rstest/core";
 import { parseAgent } from "../src/analytics/agent.js";
 import { localDay } from "../src/analytics/db.js";
-import { buildApp } from "../src/app.js";
+import { type App, signedInApp } from "./helpers.js";
 import { loadEnv } from "../src/env.js";
 
 let dataDir: string;
-let app: Awaited<ReturnType<typeof buildApp>>;
+let app: App;
 
 beforeAll(async () => {
   dataDir = await mkdtemp(join(tmpdir(), "site-builder-analytics-"));
@@ -19,7 +19,7 @@ beforeAll(async () => {
     ADMIN_DIST: join(dataDir, "none"),
     TRUST_PROXY: "true",
   });
-  app = await buildApp({ env, databasePath: ":memory:", runJobs: false });
+  app = await signedInApp({ env, databasePath: ":memory:", runJobs: false });
 });
 afterAll(async () => {
   await app.close();

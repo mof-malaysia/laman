@@ -4,9 +4,9 @@
  * the preview and the published site never disagree mid-edit. Publishing
  * shows what will change first, and what was live before can be put back.
  * The Publishing defaults and analytics retention change the admin, not the
- * site, so they apply on save. So does the admin's language, which isn't
- * part of the settings at all: it's the admin preferences, one set for the
- * whole site until there are users.
+ * site, so they apply on save. So do the admin's language, which isn't
+ * part of the settings at all (it's each person's own preference), and
+ * Security, which only the super admin sees.
  */
 import {
   AdminLanguage,
@@ -15,17 +15,19 @@ import {
   socialPlatforms,
 } from "@fiscal-sb/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useSearch } from "@tanstack/react-router";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useId, useState } from "react";
 import { SettingsLayout, SettingsRow, SettingsSection } from "@/components/blocks/settings-layout";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { PublishControl } from "@/components/publish-control";
+import { useDocConflict } from "@/components/conflict-dialog";
 import { PutBackPrevious, useLeaveGuard } from "@/components/unsaved-edits";
 import { Button } from "@/components/ui/button";
 import { Callout, CalloutContent, CalloutTitle } from "@/components/ui/callout";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldDescription, FieldError, FieldItem, FieldLabel } from "@/components/ui/field";
 import { Fieldset, FieldsetLegend } from "@/components/ui/fieldset";
+import { CheckShieldIcon } from "@/components/ui/icons/check-shield";
 import { ClockIcon } from "@/components/ui/icons/clock";
 import { EyeShowIcon } from "@/components/ui/icons/eye-show";
 import { GlobeIcon } from "@/components/ui/icons/globe";
@@ -47,6 +49,7 @@ import {
 import { Radio, RadioButton, RadioHintText, RadioItem, RadioLabel } from "@/components/ui/radio";
 import { Select } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import {
   SummaryList,
   SummaryListBody,
@@ -57,9 +60,10 @@ import {
 import { TextArea } from "@/components/ui/textarea";
 import { currentLanguage, type MessageKey, t } from "@/i18n";
 import { siteDocQuery } from "@/lib/publish";
-import { apiError, preferencesApi, siteApi } from "@/lib/api";
+import { apiError, preferencesApi, siteApi, waitForJob } from "@/lib/api";
+import { securityApi, useCan, useMe } from "@/lib/auth";
 import useToast from "@/lib/ftds/hooks/use-toast";
-import { useSummary } from "@/lib/pages";
+import { formatDateTime, useSummary } from "@/lib/pages";
 import { MediaField } from "@/editor/media-field";
 import { formatBytes } from "@/media/format";
 
@@ -75,7 +79,7 @@ const documentSections = [
 ] as const satisfies readonly (keyof SiteSettings)[];
 type DocumentSection = (typeof documentSections)[number];
 
-export const settingsSections = [...documentSections, "language", "about"] as const;
+export const settingsSections = [...documentSections, "language", "security", "about"] as const;
 export type SettingsSectionId = (typeof settingsSections)[number];
 
 /** Sections that aren't part of the settings document, so they show without it. */
@@ -84,6 +88,7 @@ const panels: Record<
   (props: { onDirtyChange: (dirty: boolean) => void }) => ReactNode
 > = {
   language: LanguageSection,
+  security: SecuritySection,
   about: About,
 };
 
@@ -96,6 +101,7 @@ const sectionLabels: Record<SettingsSectionId, MessageKey> = {
   publishing: "settings.publishing",
   analytics: "settings.analytics",
   language: "settings.language",
+  security: "settings.security",
   about: "settings.about",
 };
 
@@ -109,11 +115,17 @@ const sectionIcons: Record<SettingsSectionId, ReactNode> = {
   publishing: <ClockIcon />,
   analytics: <EyeShowIcon />,
   language: <GlobeIcon />,
+  security: <CheckShieldIcon />,
   about: <SettingIcon />,
 };
 
 export function SettingsScreen() {
-  const { section = "identity" } = useSearch({ strict: false }) as { section?: SettingsSectionId };
+  const canSecure = useCan("security.manage");
+  const shown = settingsSections.filter((id) => id !== "security" || canSecure);
+  const { section: asked = "identity" } = useSearch({ strict: false }) as {
+    section?: SettingsSectionId;
+  };
+  const section = shown.includes(asked) ? asked : "identity";
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -183,7 +195,7 @@ export function SettingsScreen() {
         )}
       </PageHeader>
       <SettingsLayout
-        items={settingsSections.map((id) => ({
+        items={shown.map((id) => ({
           id,
           label: t(sectionLabels[id]),
           icon: sectionIcons[id],
@@ -263,6 +275,12 @@ function SectionForm<S extends DocumentSection>({
     );
   };
   const issue = (path: string) => issues.get(`draft.${section}.${path}`);
+  // Saves the whole document, this section from the form and the rest as stored: keeping
+  // mine after a conflict saves over theirs only in this section.
+  const conflict = useDocConflict<SiteSettings>("settings", {
+    onLoad: (latest) => setValue(latest[section]),
+    retry: () => write(),
+  });
 
   const write = async () => {
     setPending(true);
@@ -274,6 +292,7 @@ function SectionForm<S extends DocumentSection>({
       void queryClient.invalidateQueries({ queryKey: ["summary"] });
       setSaved(true);
     } catch (caught) {
+      if (await conflict.handle(caught)) return;
       const body = await apiError(caught);
       setIssues(new Map(body?.details?.map((d) => [d.path, d.message]) ?? []));
       setError(
@@ -320,6 +339,7 @@ function SectionForm<S extends DocumentSection>({
           {renderFields(section, value, set, issue)}
         </div>
       </SettingsSection>
+      {conflict.dialog}
       <ConfirmDialog
         open={pruning !== null}
         onOpenChange={(open) => !open && setPruning(null)}
@@ -793,19 +813,167 @@ function LanguageSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
   );
 }
 
+/** Builder security, for the super admin: whether everyone must use two-factor. Applies on change. */
+function SecuritySection() {
+  const me = useMe();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const security = useQuery({ queryKey: ["security"], queryFn: securityApi.get });
+  const [confirming, setConfirming] = useState(false);
+  const on = security.data?.requireTwoFactor ?? false;
+
+  const save = async (requireTwoFactor: boolean) => {
+    try {
+      queryClient.setQueryData(["security"], await securityApi.save({ requireTwoFactor }));
+      toast({
+        variant: "success",
+        title: requireTwoFactor ? t("settings.security.onDone") : t("settings.security.offDone"),
+      });
+    } catch (caught) {
+      toast({
+        variant: "error",
+        title: t("settings.security.failed"),
+        description: (await apiError(caught))?.message,
+      });
+    }
+  };
+
+  return (
+    <SettingsSection
+      title={t("settings.security")}
+      description={t("settings.security.description")}
+    >
+      <div className="gap-stack-md flex max-w-2xl flex-col">
+        <Field name="requireTwoFactor">
+          <FieldItem>
+            <Switch
+              checked={on}
+              disabled={!security.data || (!on && !me.twoFactor)}
+              onCheckedChange={(checked) => (checked ? setConfirming(true) : void save(false))}
+            />
+            <FieldLabel>{t("settings.security.require")}</FieldLabel>
+          </FieldItem>
+          <FieldDescription>{t("settings.security.requireHint")}</FieldDescription>
+        </Field>
+        {!me.twoFactor && !on && (
+          <Callout variant="info">
+            <CalloutTitle>{t("settings.security.yoursFirst")}</CalloutTitle>
+            <CalloutContent>
+              <Link to="/account" className="text-txt-primary underline">
+                {t("settings.security.toAccount")}
+              </Link>
+            </CalloutContent>
+          </Callout>
+        )}
+      </div>
+      <ConfirmDialog
+        open={confirming}
+        onOpenChange={setConfirming}
+        title={t("settings.security.confirm.title")}
+        description={t("settings.security.confirm.body")}
+        confirm={t("settings.security.confirm.yes")}
+        onConfirm={() => void save(true)}
+      />
+    </SettingsSection>
+  );
+}
+
+/** This installation, and its backups: how the last went, and a backup now. Restore is the CLI's. */
 function About() {
   const summary = useSummary();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const canBackUp = useCan("site.manage");
   const site = summary.data?.site;
-  const rows: [MessageKey, ReactNode][] = site
-    ? [
-        ["settings.about.version", site.version],
-        ["settings.about.dataDir", <code key="dir">{site.dataDir}</code>],
-        ["settings.about.database", formatBytes(site.databaseBytes)],
-        ["settings.about.backup", t("settings.about.noBackup")],
-      ]
-    : [];
+  const backup = summary.data?.backup;
+
+  const backUp = async () => {
+    try {
+      const job = await siteApi.backUp();
+      // Shows "Backing up…" until it's done.
+      void queryClient.invalidateQueries({ queryKey: ["summary"] });
+      const done = await waitForJob(job);
+      await queryClient.invalidateQueries({ queryKey: ["summary"] });
+      toast(
+        done.status === "failed"
+          ? { variant: "error", title: t("settings.about.failed"), description: done.error ?? "" }
+          : { variant: "success", title: t("settings.about.backedUp") },
+      );
+    } catch (caught) {
+      toast({
+        variant: "error",
+        title: t("settings.about.backUpFailed"),
+        description: (await apiError(caught))?.message,
+      });
+    }
+  };
+
+  const last = backup?.last;
+  const lastText = last
+    ? t(last.dbOnly ? "settings.about.lastBackupDb" : "settings.about.lastBackup", {
+        when: formatDateTime(last.at),
+        size: formatBytes(last.bytes),
+      })
+    : t("settings.about.never");
+  const rows: [MessageKey, ReactNode][] =
+    site && backup
+      ? [
+          ["settings.about.version", site.version],
+          ["settings.about.dataDir", <code key="dir">{site.dataDir}</code>],
+          ["settings.about.database", formatBytes(site.databaseBytes)],
+          ["settings.about.backup", lastText],
+          [
+            "settings.about.schedule",
+            backup.schedule
+              ? t("settings.about.scheduleAt", { time: backup.schedule })
+              : t("settings.about.scheduleOff"),
+          ],
+          ["settings.about.backupDir", <code key="backups">{backup.dir}</code>],
+        ]
+      : [];
   return (
-    <SettingsSection title={t("settings.about")} description={t("settings.about.description")}>
+    <SettingsSection
+      title={t("settings.about")}
+      description={t("settings.about.description")}
+      footer={
+        canBackUp && (
+          <div className="mt-stack-lg gap-stack-sm flex flex-col items-start">
+            <Button
+              type="button"
+              variant="default-outline"
+              disabled={!backup || backup.running}
+              onClick={() => void backUp()}
+            >
+              {backup?.running ? t("settings.about.backingUp") : t("settings.about.backUp")}
+            </Button>
+            <p className="text-body-sm text-txt-black-700 m-0">{t("settings.about.restore")}</p>
+          </div>
+        )
+      }
+    >
+      {backup?.failed && (
+        <Callout variant="danger">
+          <CalloutTitle>{t("settings.about.failed")}</CalloutTitle>
+          <CalloutContent>
+            {t("settings.about.failedAt", {
+              when: formatDateTime(backup.failed.at),
+              error: backup.failed.error,
+            })}
+          </CalloutContent>
+        </Callout>
+      )}
+      {backup?.stale && !backup.failed && (
+        <Callout variant="warning">
+          <CalloutTitle>{t("settings.about.stale")}</CalloutTitle>
+          <CalloutContent>{t("settings.about.staleBody")}</CalloutContent>
+        </Callout>
+      )}
+      {backup?.sameDisk && (
+        <Callout variant="warning">
+          <CalloutTitle>{t("settings.about.sameDisk")}</CalloutTitle>
+          <CalloutContent>{t("settings.about.sameDiskBody")}</CalloutContent>
+        </Callout>
+      )}
       <SummaryList>
         <SummaryListBody>
           {rows.map(([label, value]) => (

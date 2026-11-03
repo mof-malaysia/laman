@@ -55,15 +55,25 @@ export const renderRoutes: FastifyPluginAsync<{ publicDir: string }> = async (
 
   // The published home page, under /render so the admin reaches it on every
   // setup (in development its proxy doesn't pass the site's root through).
-  app.get("/live", { schema: { hide: true } }, async (_request, reply) => {
-    if (!existsSync(join(publicDir, "index.html")))
-      throw new HttpError(404, "not_published", "Nothing is published yet");
-    return reply.header("cache-control", "no-store").sendFile("index.html", publicDir);
-  });
+  app.get(
+    "/live",
+    {
+      config: { access: "signedIn" },
+      schema: { hide: true },
+    },
+    async (_request, reply) => {
+      if (!existsSync(join(publicDir, "index.html")))
+        throw new HttpError(404, "not_published", "Nothing is published yet");
+      return reply.header("cache-control", "no-store").sendFile("index.html", publicDir);
+    },
+  );
 
   app.get<{ Params: PageParams; Querystring: z.infer<typeof RenderQuery> }>(
     "/pages/:id",
-    { schema: { hide: true, params: PageParams, querystring: RenderQuery } },
+    {
+      config: { access: "signedIn" },
+      schema: { hide: true, params: PageParams, querystring: RenderQuery },
+    },
     async (request, reply) => {
       const page = await getPage(db, request.params.id);
       const { mode, locale } = request.query;
@@ -86,7 +96,10 @@ export const renderRoutes: FastifyPluginAsync<{ publicDir: string }> = async (
   // A deleted page's last draft, so it can be looked at before it's restored.
   app.get<{ Params: PageParams }>(
     "/trash/:id",
-    { schema: { hide: true, params: PageParams } },
+    {
+      config: { access: "signedIn" },
+      schema: { hide: true, params: PageParams },
+    },
     async (request, reply) => {
       const page = await getDeleted(db, request.params.id);
       // A deleted listing has no live settings to look up, and its entries went with it.
@@ -120,7 +133,10 @@ export const renderRoutes: FastifyPluginAsync<{ publicDir: string }> = async (
   // Unsaved content from the editor, so the canvas updates before the save lands.
   app.post<{ Params: PageParams; Body: z.infer<typeof RenderBody> }>(
     "/pages/:id",
-    { schema: { hide: true, params: PageParams, body: RenderBody } },
+    {
+      config: { access: "signedIn" },
+      schema: { hide: true, params: PageParams, body: RenderBody },
+    },
     async (request, reply) => {
       const page = await getPage(db, request.params.id);
       const { mode, locale, entry } = request.body;
@@ -145,6 +161,7 @@ export const renderRoutes: FastifyPluginAsync<{ publicDir: string }> = async (
   app.post<{ Params: PageParams; Body: SiteDraft }>(
     "/pages/:id/site",
     {
+      config: { access: "signedIn" },
       schema: {
         hide: true,
         params: PageParams,
@@ -175,7 +192,10 @@ export const renderRoutes: FastifyPluginAsync<{ publicDir: string }> = async (
   // A template as a new page would start, before it exists: the new-page flow's preview.
   app.get<{ Params: z.infer<typeof TemplateParams>; Querystring: z.infer<typeof TemplateQuery> }>(
     "/templates/:template",
-    { schema: { hide: true, params: TemplateParams, querystring: TemplateQuery } },
+    {
+      config: { access: "signedIn" },
+      schema: { hide: true, params: TemplateParams, querystring: TemplateQuery },
+    },
     async (request, reply) => {
       const id = request.params.template;
       const template = templateById(id);

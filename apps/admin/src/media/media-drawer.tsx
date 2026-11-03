@@ -46,6 +46,7 @@ import {
 import { TextArea } from "@/components/ui/textarea";
 import { t } from "@/i18n";
 import { UploadError, apiError, mediaApi, mediaQuery } from "@/lib/api";
+import { useCan } from "@/lib/auth";
 import useToast from "@/lib/ftds/hooks/use-toast";
 import { formatDate, formatDateTime } from "@/lib/pages";
 import { ACCEPT, formatBytes, looksLikePlaceholder, typeName } from "./format";
@@ -198,6 +199,7 @@ function FileDetails({
     setSaving(false);
   };
 
+  const canPublish = useCan("content.publish");
   const replace = async (file: File) => {
     setPending(null);
     setReplacing(0);
@@ -317,13 +319,15 @@ function FileDetails({
                           time: formatDateTime(media.previous.replacedAt),
                           name: media.previous.filename,
                         })}{" "}
-                    <button
-                      type="button"
-                      className={`${linkClass} cursor-pointer`}
-                      onClick={() => setPuttingBack(true)}
-                    >
-                      {t("media.previous.restoreShort")}
-                    </button>
+                    {canPublish && (
+                      <button
+                        type="button"
+                        className={`${linkClass} cursor-pointer`}
+                        onClick={() => setPuttingBack(true)}
+                      >
+                        {t("media.previous.restoreShort")}
+                      </button>
+                    )}
                   </>
                 ) : (
                   t("media.uploadedOn", { time: formatDateTime(media.createdAt) })
@@ -340,15 +344,18 @@ function FileDetails({
                   e.target.value = "";
                 }}
               />
-              <Button
-                variant="default-outline"
-                size="small"
-                className="shrink-0"
-                disabled={replacing !== null}
-                onClick={() => fileInput.current?.click()}
-              >
-                {t("media.replace")}
-              </Button>
+              {/* A replaced file is live at once, so it's a Content Manager's call. */}
+              {canPublish && (
+                <Button
+                  variant="default-outline"
+                  size="small"
+                  className="shrink-0"
+                  disabled={replacing !== null}
+                  onClick={() => fileInput.current?.click()}
+                >
+                  {t("media.replace")}
+                </Button>
+              )}
             </div>
           )}
         </section>

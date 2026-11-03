@@ -2,15 +2,24 @@
 /** Questions and rich-text answers in FTDS Faq; each answer fills its item's slot. */
 import { type BlockOf, richTextToHtml } from "@fiscal-sb/blocks";
 import Faq from "@/components/blocks/faq.astro";
+import Link from "@/components/ui/link.astro";
+import { action } from "./action";
 import Field from "./Field.astro";
 
 type Props = { block: BlockOf<"faq">; edit: boolean; lang: "ms" | "en" };
 const { block, edit, lang } = Astro.props;
 const p = block.props;
 const items = p.items.map((item, i) => ({ value: `faq-${i}`, question: item.question }));
+const contactLink = action(p.contactLink);
 ---
 
-<Faq items={items} tone={p.tone} lang={lang}>
+<Faq
+  items={items}
+  tone={p.tone}
+  multiple={p.multiple}
+  defaultOpen={p.openFirst ? "faq-0" : undefined}
+  lang={lang}
+>
   {
     (p.title || edit) && (
       <Field slot="title" name="title" edit={edit} placeholder="Tajuk">
@@ -23,6 +32,19 @@ const items = p.items.map((item, i) => ({ value: `faq-${i}`, question: item.ques
       <Field slot="description" name="description" edit={edit} placeholder="Pengenalan">
         {p.description}
       </Field>
+    )
+  }
+  {
+    (edit || p.contactText || contactLink) && (
+      <Fragment slot="contact">
+        <Field name="contactText" edit={edit} placeholder="Masih perlukan bantuan?">{p.contactText}</Field>
+        {contactLink && (
+          <>
+            {" "}
+            <Link href={contactLink.href} primary>{contactLink.label}</Link>
+          </>
+        )}
+      </Fragment>
     )
   }
   {p.items.map((item, i) => <Fragment slot={`faq-${i}`} set:html={richTextToHtml(item.answer)} />)}

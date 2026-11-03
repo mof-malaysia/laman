@@ -15,6 +15,7 @@ import {
   useSearch,
 } from "@tanstack/react-router";
 import { type ReactNode, useMemo, useState } from "react";
+import { SignInAgain } from "@/auth/sign-in-again";
 import {
   AppShell,
   AppShellHeader,
@@ -48,12 +49,24 @@ import { HomeIcon } from "@/components/ui/icons/home";
 import { MegaphoneIcon } from "@/components/ui/icons/megaphone";
 import { QuestionCircleIcon } from "@/components/ui/icons/question-circle";
 import { SearchIcon } from "@/components/ui/icons/search";
+import { BrandMark } from "@/components/brand-mark";
 import { PaletteIcon } from "@/components/palette-icon";
 import { SettingIcon } from "@/components/ui/icons/setting";
+import { UserIcon } from "@/components/ui/icons/user";
+import { UserGroupIcon } from "@/components/ui/icons/user-group";
+import {
+  Menu,
+  MenuContent,
+  MenuItem,
+  MenuLinkItem,
+  MenuSeparator,
+  MenuTrigger,
+} from "@/components/ui/menu";
 import { Kbd } from "@/components/ui/kbd";
 import { ShortcutProvider, useCommands, useShortcutActions } from "@/components/ui/shortcuts";
 import { type MessageKey, t } from "@/i18n";
 import { pagesApi } from "@/lib/api";
+import { roleLabels, signOut, useCan, useMe } from "@/lib/auth";
 import { usePages } from "@/lib/pages";
 import { useAnnouncementDoc } from "@/lib/publish";
 import { UploadDialog } from "@/media/upload-dialog";
@@ -112,10 +125,15 @@ const settings: Section = {
   icon: <SettingIcon />,
 };
 
+/** For Admins: people, invites and the audit log. */
+const users: Section = { to: "/users", label: "nav.users", combo: "g w", icon: <UserGroupIcon /> };
+
+const account: Section = { to: "/account", label: "nav.account", combo: "g y", icon: <UserIcon /> };
+
 function sectionOf(pathname: string): Section {
   const path = pathname.replace(/^\/admin/, "") || "/";
   return (
-    [...sections, settings].find(
+    [...sections, settings, users, account].find(
       (s) => s.to !== "/" && (path === s.to || path.startsWith(`${s.to}/`)),
     ) ?? dashboard
   );
@@ -187,18 +205,47 @@ function NavigationItem({ active }: { active: boolean }) {
   );
 }
 
+/** Who's signed in, with Account and Sign out. */
+function UserMenu({ active }: { active: boolean }) {
+  const me = useMe();
+  return (
+    <SidebarMenuItem>
+      <Menu>
+        <MenuTrigger
+          render={
+            <SidebarMenuButton
+              isActive={active}
+              tooltip={me.displayName}
+              className="h-auto py-1.5"
+            />
+          }
+        >
+          <UserIcon />
+          <span className="flex min-w-0 flex-col text-left leading-tight">
+            <span className="truncate">{me.displayName}</span>
+            <span className="text-body-2xs text-txt-black-500 truncate">
+              {t(roleLabels[me.role])}
+            </span>
+          </span>
+        </MenuTrigger>
+        <MenuContent side="right" align="end">
+          <MenuLinkItem render={<Link to="/account" />}>{t("nav.account")}</MenuLinkItem>
+          <MenuSeparator />
+          <MenuItem onClick={signOut}>{t("shell.signOut")}</MenuItem>
+        </MenuContent>
+      </Menu>
+    </SidebarMenuItem>
+  );
+}
+
 function AdminSidebar({ active }: { active: Section }) {
   const { openCheatSheet } = useShortcutActions();
+  const canManagePeople = useCan("users.manage");
   return (
     <Sidebar label={t("shell.sidebar")}>
       <SidebarHeader>
         <Link to="/" className="focus-ring flex min-w-0 items-center gap-2 rounded-md no-underline">
-          <span
-            aria-hidden
-            className="bg-bg-primary-600 text-txt-white text-label-md grid size-7 shrink-0 place-content-center rounded-md font-semibold"
-          >
-            {t("shell.brand")}
-          </span>
+          <BrandMark />
           <span className="text-label-md text-txt-black-900 truncate font-semibold group-data-[collapsible=icon]/sidebar:sr-only">
             {t("app.name")}
           </span>
@@ -222,12 +269,14 @@ function AdminSidebar({ active }: { active: Section }) {
       <SidebarFooter>
         <SidebarMenu>
           <NavItem section={settings} active={settings === active} />
+          {canManagePeople && <NavItem section={users} active={users === active} />}
           <SidebarMenuItem>
             <SidebarMenuButton onClick={openCheatSheet} tooltip={t("nav.shortcuts")}>
               <QuestionCircleIcon />
               <span>{t("nav.shortcuts")}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
+          <UserMenu active={account === active} />
         </SidebarMenu>
         <SiteInfo />
       </SidebarFooter>
@@ -239,8 +288,9 @@ function AdminSidebar({ active }: { active: Section }) {
 function NavigationCommands({ active }: { active: Section }) {
   const navigate = useNavigate();
   const group = t("shell.navigationGroup");
+  const canManagePeople = useCan("users.manage");
   useCommands([
-    ...[...sections, settings].map((section) => ({
+    ...[...sections, settings, ...(canManagePeople ? [users] : []), account].map((section) => ({
       id: `nav.${section.to}`,
       title: t("shell.goTo", { label: t(section.label) }),
       group,
@@ -278,9 +328,14 @@ function SearchTrigger() {
 }
 
 /** The section, or Pages › the selected page's title (Pages › listing › title for an entry). */
+/** Screens below a section's own: the breadcrumb leads back to the section. */
+const subScreens = [{ to: "/users/audit", label: "users.audit" }] as const;
+
 function TopBarBreadcrumb({ section }: { section: Section }) {
   const pages = usePages();
-  const match = useMatchRoute()({ to: "/pages/$id", fuzzy: true });
+  const matchRoute = useMatchRoute();
+  const match = matchRoute({ to: "/pages/$id", fuzzy: true });
+  const sub = subScreens.find((screen) => matchRoute({ to: screen.to }));
   const id = match ? match.id : undefined;
   const inTree = pages.data?.find((p) => p.id === id);
   // Entries aren't in the tree list; their own page query has them.
@@ -292,33 +347,46 @@ function TopBarBreadcrumb({ section }: { section: Section }) {
   const page = inTree ?? entry.data;
   const listing =
     page?.kind === "entry" ? pages.data?.find((p) => p.id === page.parentId) : undefined;
+
+  if (page)
+    return (
+      <Breadcrumb>
+        <BreadcrumbItem>
+          <BreadcrumbLink render={<Link to="/pages" />}>{t("nav.pages")}</BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+        {listing && (
+          <>
+            <BreadcrumbItem>
+              <BreadcrumbLink render={<Link to="/pages/$id" params={{ id: listing.id }} />}>
+                {listing.title}
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+          </>
+        )}
+        <BreadcrumbItem>
+          <BreadcrumbPage>{page.title || t("page.untitled")}</BreadcrumbPage>
+        </BreadcrumbItem>
+      </Breadcrumb>
+    );
+  if (sub)
+    return (
+      <Breadcrumb>
+        <BreadcrumbItem>
+          <BreadcrumbLink render={<Link to={section.to} />}>{t(section.label)}</BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+        <BreadcrumbItem>
+          <BreadcrumbPage>{t(sub.label)}</BreadcrumbPage>
+        </BreadcrumbItem>
+      </Breadcrumb>
+    );
   return (
     <Breadcrumb>
-      {page ? (
-        <>
-          <BreadcrumbItem>
-            <BreadcrumbLink render={<Link to="/pages" />}>{t("nav.pages")}</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          {listing && (
-            <>
-              <BreadcrumbItem>
-                <BreadcrumbLink render={<Link to="/pages/$id" params={{ id: listing.id }} />}>
-                  {listing.title}
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-            </>
-          )}
-          <BreadcrumbItem>
-            <BreadcrumbPage>{page.title || t("page.untitled")}</BreadcrumbPage>
-          </BreadcrumbItem>
-        </>
-      ) : (
-        <BreadcrumbItem>
-          <BreadcrumbPage>{t(section.label)}</BreadcrumbPage>
-        </BreadcrumbItem>
-      )}
+      <BreadcrumbItem>
+        <BreadcrumbPage>{t(section.label)}</BreadcrumbPage>
+      </BreadcrumbItem>
     </Breadcrumb>
   );
 }
@@ -408,6 +476,7 @@ export function AdminShell() {
           dropped={upload.files}
           onOpenChange={(open) => setUpload((state) => ({ ...state, open }))}
         />
+        <SignInAgain />
       </ShellContext.Provider>
     </ShortcutProvider>
   );

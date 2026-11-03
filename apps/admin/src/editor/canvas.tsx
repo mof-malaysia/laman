@@ -15,6 +15,9 @@ export type CanvasWidth = "desktop" | "tablet" | "mobile";
 export type CanvasZoom = "fit" | "100";
 export type BlockAction = "up" | "down" | "duplicate" | "delete" | "panel";
 
+/** The smallest Fit zoom: 16 px body text shows at 12 px, the least that's readable. */
+const MIN_FIT = 0.75;
+
 export const canvasWidths: Record<CanvasWidth, number> = {
   desktop: 1280,
   tablet: 768,
@@ -298,7 +301,10 @@ export function Canvas(props: CanvasProps) {
   }, [renderVersion, pageId]);
 
   const pixels = canvasWidths[width];
-  const scale = zoom === "fit" && available > 0 ? Math.min(1, (available - 24) / pixels) : 1;
+  // Fit shrinks the page to the column, but never below MIN_FIT, so text stays readable;
+  // past that the canvas scrolls sideways.
+  const scale =
+    zoom === "fit" && available > 0 ? Math.max(MIN_FIT, Math.min(1, (available - 24) / pixels)) : 1;
   useLayoutEffect(() => {
     ui.current = 1 / scale;
     // A frame that hasn't loaded yet has a document with no root element.

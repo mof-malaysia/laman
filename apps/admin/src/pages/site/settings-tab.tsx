@@ -27,6 +27,7 @@ import { Toggle } from "@/components/ui/toggle";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 import { type MessageKey, t } from "@/i18n";
 import { apiError, listingApi, pagesApi } from "@/lib/api";
+import { useCan } from "@/lib/auth";
 import useToast from "@/lib/ftds/hooks/use-toast";
 import { isHome, subtreeIds, useRefreshPages } from "@/lib/pages";
 import { PathChanges } from "./move";
@@ -137,6 +138,19 @@ export function SettingsTab({
     ) : (
       form
     );
+  // Moving, unpublishing and deleting a page on the site change it at once: a Content Manager's call.
+  const canPublish = useCan("content.publish");
+  const liveOr = (id: "move" | "unpublish" | "delete", form: ReactNode) =>
+    homeOr(
+      id,
+      !canPublish && page.status !== "draft" ? (
+        <Section {...row(id)} danger={id === "delete"}>
+          <Note message="settings.byManager" />
+        </Section>
+      ) : (
+        form
+      ),
+    );
   return (
     <div className="flex max-w-5xl flex-col gap-6">
       <SectionList>
@@ -150,15 +164,15 @@ export function SettingsTab({
         <DuplicateForm row={row("duplicate")} page={page} pages={pages} />
         {/* An entry stays in its collection, so it has nothing to move. */}
         {page.kind !== "entry" &&
-          homeOr("move", <MoveForm key={page.path} row={row("move")} page={page} pages={pages} />)}
+          liveOr("move", <MoveForm key={page.path} row={row("move")} page={page} pages={pages} />)}
       </SectionList>
       <section aria-labelledby="settings-danger" className="flex flex-col gap-2">
         <h2 id="settings-danger" className="text-label-sm text-txt-danger font-medium">
           {t("settings.danger")}
         </h2>
         <SectionList danger>
-          {homeOr("unpublish", <UnpublishForm row={row("unpublish")} page={page} pages={pages} />)}
-          {homeOr("delete", <DeleteAction row={row("delete")} page={page} pages={pages} />)}
+          {liveOr("unpublish", <UnpublishForm row={row("unpublish")} page={page} pages={pages} />)}
+          {liveOr("delete", <DeleteAction row={row("delete")} page={page} pages={pages} />)}
         </SectionList>
       </section>
     </div>

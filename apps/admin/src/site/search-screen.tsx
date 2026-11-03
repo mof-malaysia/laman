@@ -14,6 +14,7 @@ import { type FormEvent, useId, useMemo, useRef, useState } from "react";
 import { card } from "@/components/card";
 import { PagePicker } from "@/components/page-picker";
 import { PublishControl } from "@/components/publish-control";
+import { useDocConflict } from "@/components/conflict-dialog";
 import { DiscardEditsDialog, PutBackPrevious, useLeaveGuard } from "@/components/unsaved-edits";
 import { Button } from "@/components/ui/button";
 import { Callout, CalloutTitle } from "@/components/ui/callout";
@@ -137,6 +138,7 @@ function Editor({ doc }: { doc: SearchDoc }) {
     setShowAll(false);
   };
   const leaveGuard = useLeaveGuard(dirty, t("search.leave.body"));
+  const conflict = useDocConflict<SiteSearch>("search", { onLoad: load, retry: () => save() });
 
   const save = async () => {
     if (local.size) {
@@ -151,6 +153,8 @@ function Editor({ doc }: { doc: SearchDoc }) {
       load(next.draft);
       void queryClient.invalidateQueries({ queryKey: ["summary"] });
     } catch (caught) {
+      // Stops a publish that saves first, and asks which to keep.
+      if (await conflict.handle(caught)) throw caught;
       const body = await apiError(caught);
       setServerIssues(
         new Map(body?.details?.map((d) => [d.path.replace(/^draft\./, ""), d.message])),
@@ -207,7 +211,7 @@ function Editor({ doc }: { doc: SearchDoc }) {
         )}
         <PublishControl
           live={doc.changed ? "changed" : "live"}
-          save={saving ? "saving" : dirty ? "unsaved" : "saved"}
+          save={conflict.saveState(saving, dirty)}
           label={t("search.publish")}
           beforePublish={dirty ? save : undefined}
           viewPath={draft.on ? "/carian" : "/"}
@@ -311,6 +315,7 @@ function Editor({ doc }: { doc: SearchDoc }) {
         onDiscard={() => load(doc.draft)}
       />
       {leaveGuard}
+      {conflict.dialog}
     </div>
   );
 }

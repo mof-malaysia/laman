@@ -30,7 +30,7 @@ const viewAll = source && p.seeAll ? { label: p.seeAll, href: p.category ? `${so
 
 {
   items.length > 0 ? (
-    <NewsList items={items} layout={p.style} lang={lang} {...(viewAll && { viewAll })}>
+    <NewsList items={items} layout={p.style} tone={p.tone} lang={lang} {...(viewAll && { viewAll })}>
       {(p.title || edit) && (
         <Field slot="title" name="title" edit={edit} placeholder="Tajuk">
           {p.title}

@@ -1,6 +1,7 @@
 ---
 import { type BlockOf, richTextToHtml } from "@fiscal-sb/blocks";
 import Prose from "@/components/ui/prose.astro";
+import TextColumn from "./TextColumn.astro";
 
 type Props = { block: BlockOf<"prose">; edit: boolean };
 const { block } = Astro.props;
@@ -8,8 +9,6 @@ const { block } = Astro.props;
 const html = richTextToHtml(block.props.body);
 ---
 
-<section class="bg-bg-white">
-  <div class="mx-auto w-full max-w-[1280px] px-4 py-12 md:px-6 md:py-16">
+<TextColumn>
     <Prose set:html={html} />
-  </div>
-</section>
+</TextColumn>

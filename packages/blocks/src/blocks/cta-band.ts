@@ -14,9 +14,7 @@ export const ctaBand = defineBlock({
     description: field.textarea("Description", { max: 300, inline: true }).optional(),
     primaryAction: field.action("Primary action"),
     secondaryAction: field.action("Secondary action").optional(),
-    tone: field
-      .select("Background", ["well", "primary"], { well: "Well", primary: "Blue wash" })
-      .default("well"),
+    tone: field.tone(["well", "primary"]),
   }),
   defaults: {
     title: "Sedia untuk bermula?",

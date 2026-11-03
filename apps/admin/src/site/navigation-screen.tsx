@@ -50,6 +50,7 @@ import { clx } from "@/lib/ftds/utils";
 import useToast from "@/lib/ftds/hooks/use-toast";
 import { usePages } from "@/lib/pages";
 import { card } from "@/components/card";
+import { useDocConflict } from "@/components/conflict-dialog";
 import { DiscardEditsDialog, PutBackPrevious, useLeaveGuard } from "@/components/unsaved-edits";
 import { useDebounced } from "@/lib/use-debounced";
 import {
@@ -148,6 +149,13 @@ function Editor({ doc }: { doc: NavigationDoc }) {
   };
 
   const leaveGuard = useLeaveGuard(dirty, t("navigation.leave.body"));
+  const conflict = useDocConflict<Navigation>("navigation", {
+    onLoad: (latest) => {
+      setDraftState(latest);
+      setRemoved(null);
+    },
+    retry: () => save(),
+  });
 
   const save = async () => {
     if (local.size) {
@@ -174,6 +182,7 @@ function Editor({ doc }: { doc: NavigationDoc }) {
         description: t("navigation.whenLive"),
       });
     } catch (caught) {
+      if (await conflict.handle(caught)) return;
       const body = await apiError(caught);
       setServerIssues(
         new Map(body?.details?.map((d) => [d.path.replace(/^draft\./, ""), d.message]) ?? []),
@@ -366,6 +375,7 @@ function Editor({ doc }: { doc: NavigationDoc }) {
         }}
       />
       {leaveGuard}
+      {conflict.dialog}
     </>
   );
 }

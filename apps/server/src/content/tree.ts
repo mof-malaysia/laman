@@ -4,6 +4,7 @@
  * home page down, so it follows renames and moves without being stored.
  */
 import { SEARCH_INDEX_DIR, SEARCH_PATH, pathOf } from "@fiscal-sb/blocks";
+import { sql } from "kysely";
 import type { Db } from "../db/index.js";
 import { type Loads, once } from "./loads.js";
 import type { PagesTable } from "../db/schema.js";
@@ -60,6 +61,16 @@ export class Tree {
     return this.children(null).flatMap((root) => [root, ...this.descendants(root.id)]);
   }
 
+  /** The pages above `id`, from the home page down; empty for the home page. */
+  ancestors(id: string): TreeNode[] {
+    const list: TreeNode[] = [];
+    for (let node = this.get(id); node?.parent_id;) {
+      node = this.get(node.parent_id);
+      if (node) list.unshift(node);
+    }
+    return list;
+  }
+
   /** `id` is `ancestor` or somewhere under it. */
   isWithin(id: string, ancestor: string): boolean {
     for (
@@ -100,3 +111,37 @@ export async function loadTree(db: Db): Promise<Tree> {
 
 /** The tree, read once per publish when `loads` is given. */
 export const treeOf = (db: Db, loads?: Loads) => once(loads, "tree", () => loadTree(db));
+
+/** Every live page's title (its draft's), by id; read once per publish when `loads` is given. */
+export const pageTitles = (db: Db, loads?: Loads) =>
+  once(loads, "titles", async () => {
+    const rows = await db
+      .selectFrom("pages")
+      .select(["id", sql<string>`json_extract(draft, '$.ms.title')`.as("title")])
+      .where("deleted_at", "is", null)
+      .execute();
+    return new Map(rows.map((r) => [r.id, r.title]));
+  });
+
+/**
+ * The trail from the home page down to a page, by its pages' titles; the
+ * last item is the page itself, unlinked. Undefined on the home page.
+ * Entries aren't in the tree, so they name their listing as `parentId`.
+ */
+export async function breadcrumbOf(
+  db: Db,
+  page: { id: string; parentId?: string },
+  title: string,
+  loads?: Loads,
+): Promise<{ label: string; href?: string }[] | undefined> {
+  const [tree, titles] = await Promise.all([treeOf(db, loads), pageTitles(db, loads)]);
+  const parent = tree.get(page.parentId ?? tree.get(page.id)?.parent_id ?? "");
+  if (!parent) return undefined;
+  return [
+    ...[...tree.ancestors(parent.id), parent].map((node) => ({
+      label: titles.get(node.id) || (node.parent_id ? node.slug : "Utama"),
+      href: tree.path(node.id),
+    })),
+    { label: title },
+  ];
+}

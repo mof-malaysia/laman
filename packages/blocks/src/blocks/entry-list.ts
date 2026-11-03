@@ -26,6 +26,7 @@ export const entryList = defineBlock({
     emptyText: field
       .text("Text when there are no entries yet", { max: 200 })
       .default("Belum ada kandungan lagi."),
+    tone: field.tone(),
   }),
   defaults: {
     style: "list",

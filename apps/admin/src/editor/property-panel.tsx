@@ -10,6 +10,7 @@ import {
   Block as BlockSchema,
   blockDefinition,
   blockFields,
+  fieldShown,
 } from "@fiscal-sb/blocks";
 import { useId } from "react";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ import { Select } from "@/components/ui/select";
 import { TextArea } from "@/components/ui/textarea";
 import { type MessageKey, t } from "@/i18n";
 import { usePages } from "@/lib/pages";
+import { itemTitle } from "./block-meta";
 import { MediaField } from "./media-field";
 import { RichTextField } from "./rich-text-field";
 import { getAt, setAt } from "./state";
@@ -51,13 +53,6 @@ function issuesOf(block: Block): Issues {
       .map((issue) => [issue.path.slice(1).join("."), issue.message]),
   );
 }
-
-/** A list item's own title, for its collapsed row. */
-const itemTitle = (item: unknown) => {
-  const value = (item as Record<string, unknown> | undefined) ?? {};
-  const title = value.title ?? value.label ?? value.question;
-  return typeof title === "string" ? title : "";
-};
 
 /** A new, empty list item: required text fields start empty, the rest unset. */
 const emptyItem = (fields: FieldSpec[]) =>
@@ -92,20 +87,29 @@ export function PropertyPanel({ block, onChange, onRemove }: PropertyPanelProps)
           </p>
         )}
       </div>
-      {fieldGroups(fields).map(([group, list]) => (
-        <details key={group} open className="group/section border-otl-gray-200 border-t">
-          <summary className="focus-ring-inset hover:bg-bg-washed flex cursor-pointer list-none items-center justify-between px-4 py-3">
-            <h3 className="text-label-md text-txt-black-900 font-semibold">{t(group)}</h3>
-            <ChevronDownIcon
-              aria-hidden
-              className="text-txt-black-500 size-4 transition-transform group-open/section:rotate-180"
-            />
-          </summary>
-          <div className="px-4 pb-5">
-            <Fields fields={list} value={block.props} path={[]} issues={issues} set={set} />
-          </div>
-        </details>
-      ))}
+      {fieldGroups(fields.filter((f) => fieldShown(f, block.props, fields))).map(
+        ([group, list]) => (
+          <details key={group} open className="group/section border-otl-gray-200 border-t">
+            <summary className="focus-ring-inset hover:bg-bg-washed flex cursor-pointer list-none items-center justify-between px-4 py-3">
+              <h3 className="text-label-md text-txt-black-900 font-semibold">{t(group)}</h3>
+              <ChevronDownIcon
+                aria-hidden
+                className="text-txt-black-500 size-4 transition-transform group-open/section:rotate-180"
+              />
+            </summary>
+            <div className="px-4 pb-5">
+              <Fields
+                fields={list}
+                siblings={fields}
+                value={block.props}
+                path={[]}
+                issues={issues}
+                set={set}
+              />
+            </div>
+          </details>
+        ),
+      )}
       {/* Away from the title, so it isn't hit by accident. */}
       <div className="border-otl-gray-200 border-t p-4">
         <Button variant="danger-outline" size="small" onClick={onRemove}>
@@ -118,13 +122,11 @@ export function PropertyPanel({ block, onChange, onRemove }: PropertyPanelProps)
 
 /** Content first, then links styled as buttons, then how the block looks. */
 const groupOf = (field: FieldSpec): MessageKey =>
-  field.widget === "select" && field.name === "width"
+  field.widget === "select"
     ? "editor.fields.appearance"
-    : field.widget === "select"
-      ? "editor.fields.appearance"
-      : field.widget === "link"
-        ? "editor.fields.actions"
-        : "editor.fields.content";
+    : field.widget === "link"
+      ? "editor.fields.actions"
+      : "editor.fields.content";
 
 function fieldGroups(fields: FieldSpec[]): [MessageKey, FieldSpec[]][] {
   const order: MessageKey[] = [
@@ -140,25 +142,32 @@ function fieldGroups(fields: FieldSpec[]): [MessageKey, FieldSpec[]][] {
 
 type FieldsProps = {
   fields: FieldSpec[];
+  /** Every field beside these, whose values and defaults `when` reads; `fields` by default. */
+  siblings?: FieldSpec[];
   value: unknown;
   path: string[];
   issues: Issues;
   set: (path: string[], value: unknown) => void;
 };
 
-function Fields({ fields, value, path, issues, set }: FieldsProps) {
+/** The fields that show for `value`: hidden ones keep what they hold, so switching back loses nothing. */
+function Fields({ fields, siblings = fields, value, path, issues, set }: FieldsProps) {
   return (
     <div className="flex flex-col gap-4">
-      {fields.map((field) => (
-        <FieldEditor
-          key={field.name}
-          field={field}
-          value={value}
-          path={[...path, field.name]}
-          issues={issues}
-          set={set}
-        />
-      ))}
+      {fields
+        .filter((field) => fieldShown(field, value, siblings))
+        .map((field) => (
+          <div key={field.name} className="flex flex-col gap-1.5">
+            <FieldEditor
+              field={field}
+              value={value}
+              path={[...path, field.name]}
+              issues={issues}
+              set={set}
+            />
+            {field.help && <p className="text-body-sm text-txt-black-700">{field.help}</p>}
+          </div>
+        ))}
     </div>
   );
 }
@@ -209,7 +218,7 @@ function FieldEditor({ field, value: parent, path, issues, set }: FieldEditorPro
             items={field.options ?? []}
             value={(value as string | undefined) ?? ""}
             placeholder={t("editor.field.none")}
-            clearable={!field.required}
+            clearable={!field.required && field.defaultValue === undefined}
             onValueChange={(next: string) => set(path, next === "" ? undefined : next)}
           />
           <FieldError>{error}</FieldError>

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Href, field } from "../fields.js";
+import { field } from "../fields.js";
 import { defineBlock } from "../define.js";
 
 /** Icons a feature may use; the renderer maps each to its FTDS icon. */
@@ -14,22 +14,23 @@ export const featureIcons = [
   "bell",
 ] as const;
 
+/** The icon select features and services share. */
+export const featureIcon = field.select("Icon", featureIcons, {
+  money: "Money",
+  document: "Document",
+  calendar: "Calendar",
+  "user-group": "People",
+  "govt-office": "Government office",
+  globe: "Globe",
+  "check-shield": "Shield",
+  bell: "Bell",
+});
+
 const Feature = z.object({
-  icon: field
-    .select("Icon", featureIcons, {
-      money: "Money",
-      document: "Document",
-      calendar: "Calendar",
-      "user-group": "People",
-      "govt-office": "Government office",
-      globe: "Globe",
-      "check-shield": "Shield",
-      bell: "Bell",
-    })
-    .optional(),
+  icon: featureIcon.optional(),
   title: field.text("Title", { max: 80 }),
   description: field.textarea("Description", { max: 240 }).optional(),
-  href: Href.meta({ title: "Link", widget: "text" }).optional(),
+  href: field.href().optional(),
 });
 
 export const featureGrid = defineBlock({
@@ -42,13 +43,11 @@ export const featureGrid = defineBlock({
   props: z.object({
     title: field.text("Title", { max: 120, inline: true }).optional(),
     description: field.textarea("Description", { max: 300, inline: true }).optional(),
-    columns: field.select("Columns", ["2", "3"], { "2": "Two", "3": "Three" }).default("3"),
+    columns: field.columns(["2", "3"], "3"),
     surface: field
       .select("Cards", ["none", "sheet"], { none: "No card", sheet: "Card" })
       .default("none"),
-    tone: field
-      .select("Background", ["paper", "well"], { paper: "Paper", well: "Well" })
-      .default("paper"),
+    tone: field.tone(),
     features: field.list("Features", Feature, { min: 1, max: 9 }),
   }),
   defaults: {

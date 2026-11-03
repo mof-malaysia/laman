@@ -1,0 +1,52 @@
+# The site builder with Docker Compose. Settings go in .env beside this file
+# (copy .env.example). See docs/install-docker.md.
+#
+#   docker compose up -d --build                  # behind your own HTTPS proxy
+#   docker compose --profile https up -d --build  # with Caddy, which gets the certificate itself
+name: site-builder
+
+services:
+  site-builder:
+    build: .
+    image: site-builder
+    restart: unless-stopped
+    # Signals reach the server, so a stop finishes the running job and the backup lock is cleared.
+    init: true
+    env_file: .env
+    environment:
+      # Fixed by the image layout, so a stray line in .env can't move them.
+      HOST: 0.0.0.0
+      PORT: "8080"
+      DATA_DIR: /data
+      BACKUP_DIR: /backups
+      # Only a proxy reaches the container (Caddy, or one on this machine
+      # through the loopback port), from a Docker private address.
+      TRUST_PROXY: ${TRUST_PROXY:-uniquelocal}
+    volumes:
+      - data:/data
+      # A folder on the host, not a volume: host backup tools (restic) can reach
+      # it, and removing the data volume doesn't remove the backups.
+      - ${BACKUP_PATH:-./backups}:/backups
+    ports:
+      # Only this machine: a proxy on the host forwards to it.
+      - ${BIND_ADDRESS:-127.0.0.1}:${HTTP_PORT:-8080}:8080
+
+  # Optional: HTTPS on 80 and 443 for SITE_URL's host, with a certificate from Let's Encrypt.
+  caddy:
+    image: caddy:2-alpine
+    profiles: [https]
+    restart: unless-stopped
+    depends_on:
+      site-builder:
+        condition: service_healthy
+    command: caddy reverse-proxy --from ${SITE_URL:-} --to site-builder:8080
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - caddy:/data
+
+volumes:
+  data:
+  caddy:

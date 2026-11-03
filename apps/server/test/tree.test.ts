@@ -2,11 +2,11 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "@rstest/core";
-import { buildApp } from "../src/app.js";
+import { type App, signedInApp } from "./helpers.js";
 import { loadEnv } from "../src/env.js";
 
 let dataDir: string;
-let app: Awaited<ReturnType<typeof buildApp>>;
+let app: App;
 
 beforeAll(async () => {
   dataDir = await mkdtemp(join(tmpdir(), "site-builder-tree-"));
@@ -17,7 +17,7 @@ beforeAll(async () => {
     ADMIN_DIST: join(dataDir, "none"),
     SITE_URL: "https://agensi.gov.my",
   });
-  app = await buildApp({ env, databasePath: ":memory:", runJobs: false });
+  app = await signedInApp({ env, databasePath: ":memory:", runJobs: false });
 });
 afterAll(async () => {
   await app.close();
@@ -202,6 +202,27 @@ describe("page tree", () => {
     expect((await call("DELETE", `/api/pages/${parent.id}?children=lift`)).statusCode).toBe(204);
     const lifted = (await pages()).find((p) => p.id === child.id);
     expect(lifted).toMatchObject({ path: "/anak", parentId: home.id });
+  });
+
+  it("says a page is in the navbar only when the navigation links to it", async () => {
+    const top = await create("Lain-lain", "lain-lain");
+    const parent = await create("Panduan", "panduan");
+    const deep = await create("Panduan Zakat", "zakat-panduan", parent.id);
+    const preview = async (id: string) =>
+      (await call("GET", `/api/pages/${id}/delete-preview`)).json().data.inNavbar;
+    const { draft } = (await call("GET", "/api/navigation")).json().data;
+    await call("PUT", "/api/navigation", {
+      draft: {
+        ...draft,
+        navbar: [{ type: "link", label: "Zakat", target: { kind: "page", pageId: deep.id } }],
+      },
+    });
+    // Live too: until it's published, visitors see the default navbar of top-level pages.
+    await call("POST", "/api/navigation/publish");
+    // Top level but not in the navbar; deeper but linked from it (and so is its parent's subtree).
+    expect(await preview(top.id)).toBe(false);
+    expect(await preview(deep.id)).toBe(true);
+    expect(await preview(parent.id)).toBe(true);
   });
 
   it("summarises the dashboard", async () => {

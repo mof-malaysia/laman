@@ -1,0 +1,30 @@
+---
+import type { BlockOf, Locale } from "@fiscal-sb/blocks";
+import ImpactStats from "@/components/blocks/impact-stats.astro";
+import Field from "./Field.astro";
+
+type Props = { block: BlockOf<"impactStats">; edit: boolean; lang: Locale };
+const { block, edit, lang } = Astro.props;
+const p = block.props;
+const stats = p.stats.map((stat) => ({
+  value: stat.value,
+  label: stat.label,
+  period: stat.period,
+  source: stat.sourceLabel ? { label: stat.sourceLabel, href: stat.sourceHref || undefined } : undefined,
+}));
+---
+
+<ImpactStats stats={stats} columns={Number(p.columns) as 2 | 3 | 4} tone={p.tone} lang={lang}>
+  {
+    (edit || p.title) && (
+      <Field slot="title" name="title" edit={edit} placeholder="Tajuk">{p.title}</Field>
+    )
+  }
+  {
+    (edit || p.description) && (
+      <Field slot="description" name="description" edit={edit} placeholder="Pengenalan">
+        {p.description}
+      </Field>
+    )
+  }
+</ImpactStats>

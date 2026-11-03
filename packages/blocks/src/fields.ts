@@ -25,13 +25,41 @@ type Meta = {
   inline?: boolean;
   /** Option labels for a select, keyed by value. */
   optionLabels?: Record<string, string>;
-  /** What a media field accepts: images, or any file in the library. */
-  mediaKind?: "image" | "any";
+  /** What a media field accepts: images, documents, or any file in the library. */
+  mediaKind?: MediaKind;
   /** What a page field offers: any page, or listing pages only. */
   pageKind?: "any" | "listing";
+  /** Shown only when each named sibling field holds one of its values; see `panel`. */
+  when?: When;
+  /** One line under the field in the property panel. */
+  help?: string;
 };
 
+export type MediaKind = "image" | "document" | "any";
+
+/** Sibling field name to the values it must hold for a field to show, e.g. `{ layout: ["split"] }`. */
+export type When = Record<string, readonly string[]>;
+
 const meta = (m: Meta) => m;
+
+/**
+ * Adds panel behaviour to a field: `when` hides it unless its siblings hold
+ * the given values (hidden fields keep their values, and the renderer ignores
+ * them), `help` adds a line under it. Wrap the field before `.optional()` or
+ * `.default()`.
+ */
+export const panel = <T extends z.ZodType>(schema: T, extra: { when?: When; help?: string }): T =>
+  schema.meta({ ...(schema.meta() as Meta), ...extra }) as T;
+
+/** Whether a field shows, given its siblings' values (or their defaults). */
+export function fieldShown(spec: FieldSpec, siblings: unknown, specs: FieldSpec[]): boolean {
+  if (!spec.when) return true;
+  const values = (siblings ?? {}) as Record<string, unknown>;
+  return Object.entries(spec.when).every(([name, allowed]) => {
+    const value = values[name] ?? specs.find((s) => s.name === name)?.defaultValue;
+    return typeof value === "string" && allowed.includes(value);
+  });
+}
 
 /**
  * Links editors may write: site paths, anchors, web and mail addresses.
@@ -41,6 +69,12 @@ export const Href = z
   .string()
   .max(500)
   .regex(/^(\/|#|https?:\/\/|mailto:|$)/, "Start the link with /, #, https:// or mailto:");
+
+type Tone = "paper" | "well" | "primary";
+const toneLabels: Record<Tone, string> = { paper: "Paper", well: "Well", primary: "Primary wash" };
+
+type Columns = "2" | "3" | "4";
+const columnLabels: Record<Columns, string> = { "2": "Two", "3": "Three", "4": "Four" };
 
 export const field = {
   text: (title: string, options: { max?: number; inline?: boolean } = {}) =>
@@ -61,6 +95,57 @@ export const field = {
     optionLabels: Record<T[number], string>,
   ) => z.enum(options).meta(meta({ title, widget: "select", optionLabels })),
 
+  /**
+   * The band behind a block, from the FTDS tones it takes; the first is the
+   * default. "primary" is the primary wash, never a solid band.
+   */
+  tone: <const T extends readonly [Tone, ...Tone[]] = readonly ["paper", "well"]>(
+    tones: T = ["paper", "well"] as unknown as T,
+  ) =>
+    z
+      .enum(tones)
+      .meta(meta({ title: "Background", widget: "select", optionLabels: toneLabels }))
+      .default(tones[0] as T[number]),
+
+  /** Columns of cards on desktop; the renderer passes `Number(value)` to FTDS. */
+  columns: <const T extends readonly [Columns, ...Columns[]]>(counts: T, fallback: T[number]) =>
+    z
+      .enum(counts)
+      .meta(meta({ title: "Columns", widget: "select", optionLabels: columnLabels }))
+      .default(fallback),
+
+  /** Rows or a grid of cards, for FTDS list blocks. */
+  style: () =>
+    z
+      .enum(["list", "cards"])
+      .meta(
+        meta({ title: "Style", widget: "select", optionLabels: { list: "List", cards: "Cards" } }),
+      )
+      .default("list"),
+
+  /** A link: a site path, an anchor, a web or mail address (`Href`). */
+  href: (title = "Link") => Href.meta(meta({ title, widget: "text" })),
+
+  /** A map of a place: a web address on https. */
+  mapLink: (title = "Map link") =>
+    z
+      .string()
+      .max(500)
+      .regex(/^https:\/\//, "Enter a web address starting with https://")
+      .meta(meta({ title, widget: "text" })),
+
+  /** Which side a block's picture sits on, on desktop; `when` limits it to some layouts. */
+  mediaPosition: (when?: When) => {
+    const select = z.enum(["right", "left"]).meta(
+      meta({
+        title: "Picture side",
+        widget: "select",
+        optionLabels: { right: "Right", left: "Left" },
+      }),
+    );
+    return (when ? panel(select, { when }) : select).default("right");
+  },
+
   /** A link styled as a button. Rendered only when both parts are filled in. */
   action: (title: string) =>
     z
@@ -77,7 +162,7 @@ export const field = {
    * A file from the media library, by id, so replacing the file updates every
    * use. `alt` overrides the library's alt text for this use.
    */
-  media: (title: string, options: { kind?: "image" | "any" } = {}) =>
+  media: (title: string, options: { kind?: MediaKind } = {}) =>
     z
       .object({ mediaId: z.uuid(), alt: z.string().max(250).optional() })
       .meta(meta({ title, widget: "media", mediaKind: options.kind ?? "image" })),
@@ -113,8 +198,12 @@ export type FieldSpec = {
   fields?: FieldSpec[];
   minItems?: number;
   maxItems?: number;
-  mediaKind?: "image" | "any";
+  mediaKind?: MediaKind;
   pageKind?: "any" | "listing";
+  when?: When;
+  help?: string;
+  /** The schema's default, which `when` reads when the sibling is unset. */
+  defaultValue?: unknown;
 };
 
 type JsonSchema = {
@@ -123,8 +212,11 @@ type JsonSchema = {
   widget?: Widget;
   inline?: boolean;
   optionLabels?: Record<string, string>;
-  mediaKind?: "image" | "any";
+  mediaKind?: MediaKind;
   pageKind?: "any" | "listing";
+  when?: When;
+  help?: string;
+  default?: unknown;
   enum?: string[];
   properties?: Record<string, JsonSchema>;
   required?: string[];
@@ -148,6 +240,9 @@ function specsOf(object: JsonSchema): FieldSpec[] {
     if (s.maxLength !== undefined) spec.maxLength = s.maxLength;
     if (s.mediaKind) spec.mediaKind = s.mediaKind;
     if (s.pageKind) spec.pageKind = s.pageKind;
+    if (s.when) spec.when = s.when;
+    if (s.help) spec.help = s.help;
+    if (s.default !== undefined) spec.defaultValue = s.default;
     if (s.enum)
       spec.options = s.enum.map((value) => ({ value, label: s.optionLabels?.[value] ?? value }));
     if (s.widget === "link" || s.widget === "group") spec.fields = specsOf(s);

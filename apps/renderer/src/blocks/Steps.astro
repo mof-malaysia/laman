@@ -1,0 +1,30 @@
+---
+import type { BlockOf, Locale } from "@fiscal-sb/blocks";
+import Steps from "@/components/blocks/steps.astro";
+import { action } from "./action";
+import Field from "./Field.astro";
+
+type Props = { block: BlockOf<"steps">; edit: boolean; lang: Locale };
+const { block, edit, lang } = Astro.props;
+const p = block.props;
+const steps = p.steps.map((step) => ({
+  title: step.title,
+  description: step.description,
+  link: action(step.link),
+}));
+---
+
+<Steps steps={steps} action={action(p.action)} tone={p.tone} lang={lang}>
+  {
+    (edit || p.title) && (
+      <Field slot="title" name="title" edit={edit} placeholder="Cara memohon">{p.title}</Field>
+    )
+  }
+  {
+    (edit || p.description) && (
+      <Field slot="description" name="description" edit={edit} placeholder="Penerangan">
+        {p.description}
+      </Field>
+    )
+  }
+</Steps>

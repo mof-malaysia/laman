@@ -5,6 +5,9 @@
   "bin": {
     "site-builder": "./dist/cli.js"
   },
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -14,9 +17,11 @@
     "lint": "oxlint",
     "test": "rstest run",
     "cli": "tsx src/cli.ts",
-    "scale": "tsx scripts/scale.ts"
+    "scale": "tsx scripts/scale.ts",
+    "fixture": "tsx scripts/fixture.ts"
   },
   "dependencies": {
+    "@fastify/compress": "catalog:",
     "@fastify/cors": "catalog:",
     "@fastify/multipart": "catalog:",
     "@fastify/static": "catalog:",
@@ -33,6 +38,7 @@
     "maxmind": "catalog:",
     "pagefind": "catalog:",
     "sharp": "catalog:",
+    "tar": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

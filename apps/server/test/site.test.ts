@@ -2,11 +2,11 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "@rstest/core";
-import { buildApp } from "../src/app.js";
+import { type App, signedInApp } from "./helpers.js";
 import { loadEnv } from "../src/env.js";
 
 let dataDir: string;
-let app: Awaited<ReturnType<typeof buildApp>>;
+let app: App;
 
 beforeAll(async () => {
   dataDir = await mkdtemp(join(tmpdir(), "site-builder-site-"));
@@ -17,7 +17,7 @@ beforeAll(async () => {
     ADMIN_DIST: join(dataDir, "none"),
     SITE_URL: "https://agensi.gov.my",
   });
-  app = await buildApp({ env, databasePath: ":memory:", runJobs: false });
+  app = await signedInApp({ env, databasePath: ":memory:", runJobs: false });
 });
 afterAll(async () => {
   await app.close();
@@ -87,8 +87,9 @@ describe("site settings and navigation", () => {
     const preview = await call("GET", `/render/pages/${(await home()).id}`);
     expect(preview.body).toContain("Jabatan Contoh Malaysia");
     expect(await publishHome()).not.toContain("Aras 3, Putrajaya");
+    // It says who saved the draft: the signed-in super admin.
     expect((await call("GET", "/api/publish/preview")).json().data.items).toEqual([
-      { kind: "settings" },
+      { kind: "settings", editedBy: "pentadbir" },
     ]);
     const html = await publishDoc("settings");
     expect(html).toContain("Aras 3, Putrajaya");
@@ -287,7 +288,7 @@ describe("theme", () => {
     expect(doc.draft.primary["600"]).not.toEqual([250, 204, 21]);
 
     const waiting = (await call("GET", "/api/publish/preview")).json().data.items;
-    expect(waiting).toContainEqual({ kind: "theme" });
+    expect(waiting).toContainEqual(expect.objectContaining({ kind: "theme" }));
     expect(await live()).toContain("--_primary-600:37 99 235;");
     await publishDoc("theme");
     const html = await live();

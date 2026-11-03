@@ -6,6 +6,7 @@ export const jobRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: z.infer<typeof JobsQuery> }>(
     "/jobs",
     {
+      config: { access: "signedIn" },
       schema: {
         summary: "List jobs",
         description:
@@ -21,6 +22,7 @@ export const jobRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Params: { id: string } }>(
     "/jobs/:id",
     {
+      config: { access: "signedIn" },
       schema: {
         summary: "Get a job",
         description:
@@ -36,6 +38,7 @@ export const jobRoutes: FastifyPluginAsync = async (app) => {
   app.delete<{ Params: { id: string } }>(
     "/jobs/:id",
     {
+      config: { access: "content.publish" },
       schema: {
         summary: "Cancel a job",
         description: "Only a job that hasn't started, such as a scheduled publish.",
@@ -53,6 +56,7 @@ export const jobRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: { id: string } }>(
     "/jobs/:id/retry",
     {
+      config: { access: "site.manage" },
       schema: {
         summary: "Retry a failed job",
         tags: ["jobs"],

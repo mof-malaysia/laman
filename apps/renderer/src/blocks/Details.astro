@@ -1,0 +1,18 @@
+---
+/** Short help behind a link, in FTDS Details: a native <details>, so it works without JavaScript. */
+import { type BlockOf, richTextToHtml } from "@fiscal-sb/blocks";
+import Details from "@/components/ui/details.astro";
+import Field from "./Field.astro";
+import TextColumn from "./TextColumn.astro";
+
+type Props = { block: BlockOf<"details">; edit: boolean };
+const { block, edit } = Astro.props;
+const p = block.props;
+---
+
+<TextColumn tight>
+    <Details open={edit}>
+      <Field slot="summary" name="summary" edit={edit} placeholder="Soalan">{p.summary}</Field>
+      <Fragment set:html={richTextToHtml(p.body)} />
+    </Details>
+</TextColumn>

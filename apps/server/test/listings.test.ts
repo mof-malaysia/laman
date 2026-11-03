@@ -2,11 +2,11 @@ import { access, mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "@rstest/core";
-import { buildApp } from "../src/app.js";
+import { type App, signedInApp } from "./helpers.js";
 import { loadEnv } from "../src/env.js";
 
 let dataDir: string;
-let app: Awaited<ReturnType<typeof buildApp>>;
+let app: App;
 
 beforeAll(async () => {
   dataDir = await mkdtemp(join(tmpdir(), "site-builder-listings-"));
@@ -17,7 +17,7 @@ beforeAll(async () => {
     ADMIN_DIST: join(dataDir, "none"),
     SITE_URL: "https://agensi.gov.my",
   });
-  app = await buildApp({ env, databasePath: ":memory:", runJobs: false });
+  app = await signedInApp({ env, databasePath: ":memory:", runJobs: false });
 });
 afterAll(async () => {
   await app.close();
@@ -155,7 +155,8 @@ describe("listing pages and entries", () => {
     expect(
       (
         await call("PUT", `/api/pages/${home.id}/draft`, {
-          draft: { ...draft, ms: { ...draft.ms, blocks: [block] } },
+          // After the hero, which holds the page's h1.
+          draft: { ...draft, ms: { ...draft.ms, blocks: [draft.ms.blocks[0], block] } },
         })
       ).statusCode,
     ).toBe(200);
@@ -212,6 +213,19 @@ describe("listing pages and entries", () => {
       "tender",
       "sebut-harga",
     ]);
+  });
+
+  it("starts an events collection's entries with their event details", async () => {
+    const acara = (
+      await call("POST", "/api/pages", { title: "Acara", slug: "acara", template: "acara" })
+    ).json().data;
+    const entry = (
+      await call("POST", `/api/pages/${acara.id}/entries`, { title: "Taklimat Belanjawan" })
+    ).json().data;
+    expect(entry.draft.ms.blocks.map((b: { type: string }) => b.type)).toEqual(["eventDetails"]);
+    const html = (await call("GET", `/render/pages/${entry.id}`)).body;
+    expect(html).toContain("Khamis, 12 November 2026");
+    expect(html).toContain("Pendaftaran");
   });
 
   it("searches entries across every listing by title or address, in one request", async () => {

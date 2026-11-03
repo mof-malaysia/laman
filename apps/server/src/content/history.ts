@@ -13,22 +13,39 @@ import { HttpError } from "../errors.js";
 import { syncPageUsage } from "./media.js";
 import { readDoc } from "./site.js";
 import { Tree, loadTree } from "./tree.js";
+import { actingUser } from "../auth/acting.js";
 
 /** Saves within this long of the last draft revision update it instead of adding one. */
 const SESSION_MS = 10 * 60 * 1000;
 export const TRASH_DAYS = 30;
 
-/** Keeps the draft in the history: a new draft revision, or the session's current one updated. */
-export async function recordDraft(db: Db, pageId: string, content: string) {
+/**
+ * Keeps the draft in the history: a new draft revision, or the session's
+ * current one updated. `replaced` is the draft this save replaced: a run
+ * continues only the revision that holds it, so a copy kept aside (a save
+ * refused for a conflict, `replaced` null) is never written over.
+ */
+export async function recordDraft(
+  db: Db,
+  pageId: string,
+  content: string,
+  replaced: string | null,
+) {
   const last = await db
     .selectFrom("revisions")
-    .select(["id", "kind", "created_at", "content"])
+    .select(["id", "kind", "created_at", "content", "created_by"])
     .where("page_id", "=", pageId)
     .orderBy("created_at", "desc")
     .limit(1)
     .executeTakeFirst();
   if (last?.content === content) return;
-  if (last?.kind === "draft" && Date.now() - Date.parse(last.created_at) < SESSION_MS) {
+  // One person's run of saves is one revision; someone else's starts another.
+  if (
+    last?.kind === "draft" &&
+    last.content === replaced &&
+    last.created_by === actingUser() &&
+    Date.now() - Date.parse(last.created_at) < SESSION_MS
+  ) {
     await db
       .updateTable("revisions")
       .set({ content, created_at: now() })
@@ -38,7 +55,14 @@ export async function recordDraft(db: Db, pageId: string, content: string) {
   }
   await db
     .insertInto("revisions")
-    .values({ id: randomUUID(), page_id: pageId, content, created_at: now(), kind: "draft" })
+    .values({
+      id: randomUUID(),
+      page_id: pageId,
+      content,
+      created_at: now(),
+      kind: "draft",
+      created_by: actingUser(),
+    })
     .execute();
   await pruneRevisions(db, pageId);
 }
@@ -95,9 +119,16 @@ export async function listRevisions(db: Db, pageId: string): Promise<Revision[]>
   if (!page) throw new HttpError(404, "page_not_found", "No page with that id");
   const rows = await db
     .selectFrom("revisions")
-    .select(["id", "kind", "created_at", "content"])
+    .leftJoin("users", "users.id", "revisions.created_by")
+    .select([
+      "revisions.id",
+      "revisions.kind",
+      "revisions.created_at",
+      "revisions.content",
+      "users.display_name as by",
+    ])
     .where("page_id", "=", pageId)
-    .orderBy("created_at", "asc")
+    .orderBy("revisions.created_at", "asc")
     .execute();
   let previous: PageDocument | undefined;
   const out = rows.map((row) => {
@@ -108,6 +139,7 @@ export async function listRevisions(db: Db, pageId: string): Promise<Revision[]>
       createdAt: row.created_at,
       blocksChanged: blocksChanged(previous, content),
       live: row.id === page.published_revision_id,
+      by: row.by,
     };
     previous = content;
     return revision;
@@ -159,11 +191,12 @@ export async function restoreRevision(db: Db, pageId: string, revisionId: string
         content: page.draft,
         created_at: now(),
         kind: "draft",
+        created_by: actingUser(),
       })
       .execute();
     await trx
       .updateTable("pages")
-      .set({ draft: revision.content, updated_at: now() })
+      .set({ draft: revision.content, updated_at: now(), updated_by: actingUser() })
       .where("id", "=", pageId)
       .execute();
     await syncPageUsage(trx, pageId);

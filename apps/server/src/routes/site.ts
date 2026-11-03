@@ -2,15 +2,7 @@
  * Site settings, navigation, the announcement, site search and the theme: drafted documents, saved
  * here and each made live by its own publish.
  */
-import {
-  type Announcement,
-  type Navigation,
-  NavigationCheck,
-  SiteDocName,
-  type SiteSearch,
-  type SiteSettings,
-  type ThemeChoice,
-} from "@fiscal-sb/contracts";
+import { type Navigation, NavigationCheck, SiteDocName } from "@fiscal-sb/contracts";
 import type { FastifyPluginAsync } from "fastify";
 import type { z } from "zod";
 import {
@@ -48,6 +40,7 @@ import {
 import { prunePreview } from "../content/history.js";
 import type { Db } from "../db/index.js";
 import type { Jobs } from "../jobs.js";
+import { audited } from "../auth/guard.js";
 
 /**
  * The live announcement's dates each queue a rebuild, so the bar appears and
@@ -76,6 +69,7 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
   app.get(
     "/settings",
     {
+      config: { access: "signedIn" },
       schema: {
         summary: "Get the site settings",
         description:
@@ -87,9 +81,10 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
     async () => ({ data: await getSettingsDoc(db) }),
   );
 
-  app.put<{ Body: { draft: SiteSettings } }>(
+  app.put<{ Body: z.infer<typeof SaveSettingsBody> }>(
     "/settings",
     {
+      config: { access: "content.edit" },
       schema: {
         summary: "Save the site settings draft",
         tags: ["site"],
@@ -97,12 +92,15 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
         response: { 200: envelope(SettingsDoc) },
       },
     },
-    async (request) => ({ data: await saveSettingsDraft(db, request.body.draft) }),
+    async (request) => ({
+      data: await saveSettingsDraft(db, request.body.draft, request.body.base),
+    }),
   );
 
   app.get<{ Querystring: z.infer<typeof PruneQuery> }>(
     "/settings/prune-preview",
     {
+      config: { access: "signedIn" },
       schema: {
         summary: "What keeping fewer revisions would remove",
         description:
@@ -118,6 +116,7 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
   app.post(
     "/settings/discard",
     {
+      config: { access: "content.edit" },
       schema: {
         summary: "Discard settings changes",
         description: "The draft goes back to the live copy.",
@@ -134,6 +133,7 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
   app.get(
     "/navigation",
     {
+      config: { access: "signedIn" },
       schema: {
         summary: "Get the navigation",
         description:
@@ -145,9 +145,10 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
     async () => ({ data: await getNavigationDoc(db) }),
   );
 
-  app.put<{ Body: { draft: Navigation } }>(
+  app.put<{ Body: z.infer<typeof SaveNavigationBody> }>(
     "/navigation",
     {
+      config: { access: "content.edit" },
       schema: {
         summary: "Save the navigation draft",
         tags: ["site"],
@@ -155,12 +156,15 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
         response: { 200: envelope(NavigationDoc) },
       },
     },
-    async (request) => ({ data: await saveNavigationDraft(db, request.body.draft) }),
+    async (request) => ({
+      data: await saveNavigationDraft(db, request.body.draft, request.body.base),
+    }),
   );
 
   app.post<{ Body: { draft: Navigation } }>(
     "/navigation/check",
     {
+      config: { access: "signedIn" },
       schema: {
         summary: "Check an unsaved navigation",
         description:
@@ -176,6 +180,7 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
   app.post(
     "/navigation/discard",
     {
+      config: { access: "content.edit" },
       schema: {
         summary: "Discard navigation changes",
         tags: ["site"],
@@ -191,6 +196,7 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
   app.get(
     "/announcement",
     {
+      config: { access: "signedIn" },
       schema: {
         summary: "Get the announcement",
         description:
@@ -202,9 +208,10 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
     async () => ({ data: await getAnnouncementDoc(db) }),
   );
 
-  app.put<{ Body: { draft: Announcement } }>(
+  app.put<{ Body: z.infer<typeof SaveAnnouncementBody> }>(
     "/announcement",
     {
+      config: { access: "content.edit" },
       schema: {
         summary: "Save the announcement draft",
         tags: ["site"],
@@ -212,12 +219,15 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
         response: { 200: envelope(AnnouncementDoc) },
       },
     },
-    async (request) => ({ data: await saveAnnouncementDraft(db, request.body.draft) }),
+    async (request) => ({
+      data: await saveAnnouncementDraft(db, request.body.draft, request.body.base),
+    }),
   );
 
   app.post(
     "/announcement/discard",
     {
+      config: { access: "content.edit" },
       schema: {
         summary: "Discard announcement changes",
         tags: ["site"],
@@ -233,6 +243,7 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
   app.get(
     "/search",
     {
+      config: { access: "signedIn" },
       schema: {
         summary: "Get site search",
         description:
@@ -244,9 +255,10 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
     async () => ({ data: await getSearchDoc(db) }),
   );
 
-  app.put<{ Body: { draft: SiteSearch } }>(
+  app.put<{ Body: z.infer<typeof SaveSearchBody> }>(
     "/search",
     {
+      config: { access: "content.edit" },
       schema: {
         summary: "Save the site search draft",
         description: "A word pinned to more than one page stays with the first.",
@@ -255,12 +267,13 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
         response: { 200: envelope(SearchDoc) },
       },
     },
-    async (request) => ({ data: await saveSearchDraft(db, request.body.draft) }),
+    async (request) => ({ data: await saveSearchDraft(db, request.body.draft, request.body.base) }),
   );
 
   app.post(
     "/search/discard",
     {
+      config: { access: "content.edit" },
       schema: {
         summary: "Discard site search changes",
         tags: ["site"],
@@ -276,6 +289,7 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
   app.get(
     "/theme",
     {
+      config: { access: "signedIn" },
       schema: {
         summary: "Get the theme",
         description:
@@ -287,9 +301,10 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
     async () => ({ data: await getThemeDoc(db) }),
   );
 
-  app.put<{ Body: { draft: ThemeChoice } }>(
+  app.put<{ Body: z.infer<typeof SaveThemeBody> }>(
     "/theme",
     {
+      config: { access: "content.edit" },
       schema: {
         summary: "Save the theme draft",
         description:
@@ -299,12 +314,13 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
         response: { 200: envelope(ThemeDoc) },
       },
     },
-    async (request) => ({ data: await saveThemeDraft(db, request.body.draft) }),
+    async (request) => ({ data: await saveThemeDraft(db, request.body.draft, request.body.base) }),
   );
 
   app.post(
     "/theme/discard",
     {
+      config: { access: "content.edit" },
       schema: {
         summary: "Discard theme changes",
         tags: ["site"],
@@ -329,6 +345,7 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
     app.post(
       `/${name}/publish`,
       {
+        config: { access: "content.publish" },
         schema: {
           summary: `Publish the ${name}`,
           description: `Makes the ${name} draft live and queues a rebuild. Pages and the other site documents stay as they are.${
@@ -340,6 +357,9 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
           response: { 202: envelope(DocPublishResult) },
         },
       },
-      async (_request, reply) => reply.status(202).send(await publishDoc(name)),
+      async (request, reply) => {
+        audited(request, { action: "published", target: name });
+        return reply.status(202).send(await publishDoc(name));
+      },
     );
 };

@@ -1,4 +1,5 @@
 /** A media field: the chosen image (or an empty slot), its alt text, and Change or Remove. */
+import type { MediaKind } from "@fiscal-sb/blocks";
 import { useQuery } from "@tanstack/react-query";
 import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -26,7 +27,7 @@ export function MediaField({
   /** What it sits on, so its row stands out: washed on a Sheet, white on a Well. */
   surface?: "sheet" | "well";
   /** "any" also offers documents (PDFs). */
-  kind?: "image" | "any";
+  kind?: MediaKind;
   value: MediaChoice | undefined;
   required: boolean;
   error: string | undefined;

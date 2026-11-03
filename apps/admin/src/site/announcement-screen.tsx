@@ -13,6 +13,7 @@ import { type ReactNode, useId, useMemo, useRef, useState } from "react";
 import { card } from "@/components/card";
 import { PublishControl } from "@/components/publish-control";
 import { linkClass } from "@/components/text-link";
+import { useDocConflict } from "@/components/conflict-dialog";
 import { DiscardEditsDialog, PutBackPrevious, useLeaveGuard } from "@/components/unsaved-edits";
 import {
   AlertDialog,
@@ -36,6 +37,7 @@ import { SplitPane } from "@/components/ui/split-pane";
 import { Tag, type TagProps } from "@/components/ui/tag";
 import { locale, type MessageKey, t } from "@/i18n";
 import { apiError, siteApi } from "@/lib/api";
+import { useCan } from "@/lib/auth";
 import { useMediaQuery } from "@/lib/ftds/hooks/use-media-query";
 import { clx } from "@/lib/ftds/utils";
 import { useAnnouncementDoc, usePublish } from "@/lib/publish";
@@ -165,6 +167,8 @@ export function AnnouncementScreen() {
 }
 
 function Editor({ doc }: { doc: AnnouncementDoc }) {
+  // Taking the bar down publishes at once.
+  const canPublish = useCan("content.publish");
   const queryClient = useQueryClient();
   const wide = useMediaQuery("(min-width: 768px)");
   const [draft, setDraft] = useState<Announcement>(doc.draft);
@@ -191,6 +195,10 @@ function Editor({ doc }: { doc: AnnouncementDoc }) {
     setShowAll(false);
   };
   const leaveGuard = useLeaveGuard(dirty, t("announcement.leave.body"));
+  const conflict = useDocConflict<Announcement>("announcement", {
+    onLoad: load,
+    retry: () => save(),
+  });
 
   const save = async () => {
     // The review stops a publish with problems; this catches anything else that saves.
@@ -206,6 +214,8 @@ function Editor({ doc }: { doc: AnnouncementDoc }) {
       setDraft(next.draft);
       void queryClient.invalidateQueries({ queryKey: ["summary"] });
     } catch (caught) {
+      // Stops a publish that saves first, and asks which to keep.
+      if (await conflict.handle(caught)) throw caught;
       const body = await apiError(caught);
       setServerIssues(
         body?.code === "announcement_dates"
@@ -253,7 +263,7 @@ function Editor({ doc }: { doc: AnnouncementDoc }) {
         </div>
       </div>
       <div className="flex max-w-full min-w-0 flex-wrap items-center gap-2">
-        {(state.bar === "showing" || state.bar === "scheduled") && (
+        {canPublish && (state.bar === "showing" || state.bar === "scheduled") && (
           <EndNow doc={doc} onEnded={load} />
         )}
         {dirty ? (
@@ -269,7 +279,7 @@ function Editor({ doc }: { doc: AnnouncementDoc }) {
         )}
         <PublishControl
           live={doc.changed ? "changed" : "live"}
-          save={saving ? "saving" : dirty ? "unsaved" : "saved"}
+          save={conflict.saveState(saving, dirty)}
           label={t("announcement.publish")}
           beforePublish={dirty ? save : undefined}
           viewPath="/"
@@ -487,6 +497,7 @@ function Editor({ doc }: { doc: AnnouncementDoc }) {
         onDiscard={() => load(doc.draft)}
       />
       {leaveGuard}
+      {conflict.dialog}
     </div>
   );
 }

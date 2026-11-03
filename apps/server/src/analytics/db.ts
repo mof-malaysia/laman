@@ -5,8 +5,7 @@
  */
 import type { Kysely } from "kysely";
 import type { Migration } from "kysely/migration";
-import { openSqlite } from "../db/index.js";
-import { migrate } from "../db/migrations.js";
+import { openSqlite, upgrade } from "../db/index.js";
 
 export type ViewsTable = {
   /** The beacon's random id for this page load. */
@@ -63,9 +62,12 @@ export type AnalyticsDatabase = {
 
 export type AnalyticsDb = Kysely<AnalyticsDatabase>;
 
+/** The development migrations 0001_baseline replaced (docs/upgrades.md § The 1.0 baseline). */
+export const beforeBaseline = ["0001_analytics", "0002_report_indexes"];
+
 /** Never edit one that has shipped: add a new one. */
 const migrations: Record<string, Migration> = {
-  "0001_analytics": {
+  "0001_baseline": {
     async up(db: Kysely<unknown>) {
       await db.schema
         .createTable("views")
@@ -121,12 +123,7 @@ const migrations: Record<string, Migration> = {
         .addColumn("day", "text", (c) => c.primaryKey())
         .addColumn("salt", "text", (c) => c.notNull())
         .execute();
-    },
-  },
-
-  // Entry and exit pages order each visit's views; pruning deletes events by day.
-  "0002_report_indexes": {
-    async up(db: Kysely<unknown>) {
+      // Entry and exit pages order each visit's views; pruning deletes events by day.
       await db.schema.createIndex("views_visit_at").on("views").columns(["visit", "at"]).execute();
       await db.schema.createIndex("events_day").on("events").column("day").execute();
     },
@@ -135,8 +132,10 @@ const migrations: Record<string, Migration> = {
 
 /** Opens (creating if needed) analytics.db at `path` and migrates it. ":memory:" for tests. */
 export async function openAnalyticsDatabase(path: string): Promise<AnalyticsDb> {
-  const { db } = openSqlite<AnalyticsDatabase>(path);
-  await migrate(db as Kysely<unknown>, migrations);
+  const { sqlite, db } = openSqlite<AnalyticsDatabase>(path);
+  await upgrade({ sqlite, db: db as Kysely<unknown>, path }, migrations, {
+    replaced: beforeBaseline,
+  });
   return db;
 }
 

@@ -1,0 +1,22 @@
+# The image builds from a clean checkout: nothing local, nothing secret, and
+# nothing the build doesn't read, so editing docs doesn't rebuild it.
+.git
+.claude
+**/.turbo
+**/node_modules
+**/dist
+**/.astro
+**/test
+coverage
+docs
+*.md
+Dockerfile
+compose.yaml
+*.log
+.DS_Store
+
+# State and secrets never go in an image.
+apps/server/data
+backups
+**/.env
+**/.env.*

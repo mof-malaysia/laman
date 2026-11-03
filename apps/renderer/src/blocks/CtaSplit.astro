@@ -1,0 +1,42 @@
+---
+import type { BlockOf, MediaInfo } from "@fiscal-sb/blocks";
+import CtaSplit from "@/components/blocks/cta-split.astro";
+import { action } from "./action";
+import Field from "./Field.astro";
+import LibraryImage from "./LibraryImage.astro";
+import MediaPlaceholder from "./MediaPlaceholder.astro";
+
+type Props = { block: BlockOf<"ctaSplit">; edit: boolean; media: Record<string, MediaInfo> };
+const { block, edit, media } = Astro.props;
+const p = block.props;
+const info = p.media ? media[p.media.mediaId] : undefined;
+---
+
+<CtaSplit
+  points={p.points?.map((point) => point.text).filter(Boolean)}
+  primaryAction={action(p.primaryAction)}
+  secondaryAction={action(p.secondaryAction)}
+  mediaPosition={p.mediaPosition}
+  tone={p.tone}
+>
+  <Field slot="title" name="title" edit={edit} placeholder="Tajuk">{p.title}</Field>
+  {
+    (edit || p.description) && (
+      <Field slot="description" name="description" edit={edit} placeholder="Penerangan">
+        {p.description}
+      </Field>
+    )
+  }
+  {
+    info ? (
+      <LibraryImage
+        slot="media"
+        info={info}
+        alt={p.media?.alt}
+        sizes="(min-width: 1280px) 640px, (min-width: 1024px) 50vw, 100vw"
+      />
+    ) : (
+      edit && <MediaPlaceholder slot="media" label="Pilih gambar dari Media" />
+    )
+  }
+</CtaSplit>

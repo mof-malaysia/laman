@@ -11,6 +11,8 @@
 import { type RenderInput, SEARCH_INDEX_DIR, SEARCH_PATH } from "@fiscal-sb/blocks";
 import PageIntro from "@/components/blocks/page-intro.astro";
 import Button from "@/components/ui/button.astro";
+import { button_cva } from "@/components/ui/button.variants";
+import { clx } from "@/lib/ftds/utils";
 import Link from "@/components/ui/link.astro";
 import Search from "@/components/ui/icons/search.astro";
 import Tag from "@/components/ui/tag.astro";
@@ -42,10 +44,18 @@ const sections = input.site.nav.flatMap((item) => (item.href ? [{ label: item.la
           autocomplete="off"
           class="border-otl-control bg-bg-white text-txt-black-900 focus-visible:ring-fr-primary focus-visible:border-otl-primary-300 text-body-md h-(--ctl-h-md) w-full min-w-0 rounded-md border px-3 outline-none focus-visible:ring"
         />
-        <Button type="submit" size="medium">
+        {/* Not FTDS Button: it writes type="button" before the props, so a type="submit"
+            passed to it is the second attribute, which browsers ignore. */}
+        <button
+          type="submit"
+          class={clx(
+            button_cva({ variant: "primary-fill", size: "medium" }),
+            "[&_svg]:size-5 [&_svg]:shrink-0 [&_svg]:stroke-[1.5px]",
+          )}
+        >
           <Search aria-hidden="true" />
           Cari
-        </Button>
+        </button>
       </div>
     </div>
     <fieldset class="m-0 hidden flex-col gap-3 border-0 p-0" data-search-filter-set>

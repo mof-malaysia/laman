@@ -3,8 +3,8 @@
  * and the properties panel.
  */
 import { type BlockType, type PageDocument, blockDefinition, blocksFor } from "@fiscal-sb/blocks";
-import type { Page } from "@fiscal-sb/contracts";
-import { useQuery } from "@tanstack/react-query";
+import type { DraftConflict, Page } from "@fiscal-sb/contracts";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
 import { redirectTarget } from "@/components/page-status";
@@ -25,7 +25,13 @@ import { ToggleGroup } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSidebar } from "@/components/ui/app-shell";
 import { t } from "@/i18n";
-import { apiError, pagesApi } from "@/lib/api";
+import { ConflictDialog } from "@/components/conflict-dialog";
+import { PageCheckList, checksKey, stops, usePageChecks } from "@/components/page-checks";
+import { apiError, conflictOf, pagesApi, statusOf } from "@/lib/api";
+import { useMe } from "@/lib/auth";
+import { localDrafts } from "@/lib/local-drafts";
+import { sessionLost } from "@/lib/session";
+import { useStore } from "@/lib/store";
 import { useMediaQuery } from "@/lib/ftds/hooks/use-media-query";
 import { formatDateTime, previewHref, usePages, useRefreshPages } from "@/lib/pages";
 import { BlockPicker } from "./block-picker";
@@ -38,13 +44,19 @@ import type { LiveState } from "@/lib/publish";
 import { editorReducer, initialState } from "./state";
 
 export function EditorPage() {
-  const { id } = useParams({ from: "/shell/pages/$id/edit" });
+  const { id } = useParams({ from: "/signed-in/shell/pages/$id/edit" });
   // Loaded once: from here the editor owns the draft and saves it.
   const page = useQuery({
     queryKey: ["page", id],
     queryFn: () => pagesApi.get(id),
     staleTime: Infinity,
   });
+  // Loading someone else's version starts the editor again from it.
+  const [loads, setLoads] = useState(0);
+  const reload = useCallback(async () => {
+    await page.refetch();
+    setLoads((n) => n + 1);
+  }, [page]);
 
   if (page.isPending)
     return (
@@ -60,67 +72,121 @@ export function EditorPage() {
         </Callout>
       </div>
     );
-  return <Editor key={page.data.id} page={page.data} />;
+  return <Editor key={`${page.data.id}:${loads}`} page={page.data} onReload={reload} />;
 }
 
 const SAVE_DELAY_MS = 800;
 const RETRY_MS = 3000;
+const RETRY_MAX_MS = 60_000;
 
 /**
- * Saves the draft a moment after the last change, one save at a time. A
- * failed save is retried, unless the draft itself is invalid. Leaving the
- * editor saves what's left.
+ * Saves the draft a moment after the last change, one save at a time, from
+ * the version it started from, and keeps unsaved changes in this browser
+ * until they're saved. What stops saving is said, not retried: invalid
+ * fields, someone else's save in between (`conflict`), the sign-in running
+ * out (it carries on once they've signed in again), the page gone or no
+ * longer theirs to edit. Only a server that can't be reached is retried,
+ * less often each time. Leaving the editor saves what's left.
  */
 function useAutosave(page: Page, doc: PageDocument) {
   const refresh = useRefreshPages();
+  const queryClient = useQueryClient();
+  const { username } = useMe();
   const [state, setState] = useState<SaveState>("saved");
   const [savedAt, setSavedAt] = useState<string | null>(page.updatedAt);
-  const saved = useRef(doc);
+  const [conflict, setConflict] = useState<DraftConflict>();
+  // Failed tries in a row while the server can't be reached; each waits longer.
+  const [failures, setFailures] = useState(0);
+  const saved = useRef(page.draft);
+  const version = useRef(page.draftVersion);
   const latestDoc = useRef(doc);
+  const latestState = useRef(state);
   useLayoutEffect(() => {
     latestDoc.current = doc;
+    latestState.current = state;
   });
   const inFlight = useRef<Promise<unknown> | null>(null);
-  const [attempt, setAttempt] = useState(0);
+
+  const keepLocally = useCallback(() => {
+    if (latestDoc.current === saved.current) localDrafts.clear(page.id);
+    else
+      localDrafts.write(page.id, {
+        doc: latestDoc.current,
+        base: version.current,
+        at: new Date().toISOString(),
+        username,
+      });
+  }, [page.id, username]);
 
   const save = useCallback(async () => {
     while (inFlight.current) await inFlight.current;
     const draft = latestDoc.current;
-    if (draft === saved.current) return;
+    if (draft === saved.current || halted.has(latestState.current)) return;
     setState("saving");
-    const request = pagesApi.saveDraft(page.id, draft);
+    const request = pagesApi.saveDraft(page.id, draft, version.current);
     inFlight.current = request;
     try {
       const result = await request;
       saved.current = draft;
+      version.current = result.draftVersion;
+      setFailures(0);
       setSavedAt(result.updatedAt);
       setState(latestDoc.current === draft ? "saved" : "unsaved");
+      keepLocally();
       void refresh();
+      void queryClient.invalidateQueries({ queryKey: checksKey(page.id) });
     } catch (error) {
-      const body = await apiError(error);
-      if (body?.code === "validation_error") setState("invalid");
+      const [body, conflicted, status] = [
+        await apiError(error),
+        await conflictOf(error),
+        statusOf(error),
+      ];
+      if (conflicted) {
+        setConflict(conflicted);
+        setState("conflict");
+      } else if (body?.code === "validation_error") setState("invalid");
+      else if (status === 401) setState("signedOut");
+      else if (status === 403 || status === 404) setState(status === 403 ? "forbidden" : "gone");
       else {
         console.error(body ?? error);
         setState("retrying");
-        setAttempt((n) => n + 1);
+        setFailures((n) => n + 1);
       }
     } finally {
       inFlight.current = null;
     }
-  }, [page.id, refresh]);
+  }, [page.id, refresh, keepLocally, queryClient]);
 
   useEffect(() => {
     if (doc === saved.current) return;
-    setState("unsaved");
-    const timer = setTimeout(() => void save(), SAVE_DELAY_MS);
+    setState((current) => (halted.has(current) ? current : "unsaved"));
+    const timer = setTimeout(() => {
+      keepLocally();
+      void save();
+    }, SAVE_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [doc, save]);
+  }, [doc, save, keepLocally]);
+
+  // Signed out mid-save: carry on once they've signed in again (SignInAgain).
+  const lost = useStore(sessionLost);
+  const wasLost = useRef(false);
+  useEffect(() => {
+    if (lost) wasLost.current = true;
+  }, [lost]);
+  useEffect(() => {
+    if (state !== "signedOut" || lost || !wasLost.current) return;
+    wasLost.current = false;
+    void save();
+  }, [state, lost, save]);
 
   useEffect(() => {
-    if (attempt === 0) return;
-    const timer = setTimeout(() => void save(), RETRY_MS);
+    if (failures === 0) return;
+    const timer = setTimeout(
+      () => void save(),
+      Math.min(RETRY_MS * 2 ** (failures - 1), RETRY_MAX_MS),
+    );
     return () => clearTimeout(timer);
-  }, [attempt, save]);
+  }, [failures, save]);
 
   // Leaving the editor saves the rest.
   const latestSave = useRef(save);
@@ -129,8 +195,31 @@ function useAutosave(page: Page, doc: PageDocument) {
   });
   useEffect(() => () => void latestSave.current(), []);
 
-  return { state, savedAt, flush: save };
+  /** Keep mine: save again from their version, replacing it. */
+  const keepMine = useCallback(async () => {
+    if (conflict) version.current = conflict.version;
+    setConflict(undefined);
+    latestState.current = "unsaved";
+    setState("unsaved");
+    await save();
+  }, [conflict, save]);
+
+  /** For publishing: saves, and throws when what's on screen isn't saved after all. */
+  const ensureSaved = useCallback(async () => {
+    await save();
+    if (latestDoc.current !== saved.current) throw new Error(`Not saved: ${state}`);
+  }, [save, state]);
+
+  /** Saves from `base` from now on: for changes brought back from the browser. */
+  const rebase = useCallback((from: string) => {
+    version.current = from;
+  }, []);
+
+  return { state, savedAt, conflict, flush: save, ensureSaved, keepMine, rebase };
 }
+
+/** Save states that only a person can clear: nothing more is sent until they do. */
+const halted: ReadonlySet<SaveState> = new Set(["conflict", "forbidden", "gone"]);
 
 /** A listing page's entry list can move, but not go. */
 const required = (block: { type: string }) => block.type === "entryList";
@@ -160,9 +249,21 @@ function useNow() {
 
 const widthIcons = { desktop: DesktopIcon, tablet: TabletIcon, mobile: MobileIcon };
 
-function Editor({ page }: { page: Page }) {
+function Editor({ page, onReload }: { page: Page; onReload: () => Promise<void> }) {
   const [state, dispatch] = useReducer(editorReducer, page.draft, initialState);
+  const me = useMe();
+  // Changes this browser kept from last time that never reached the server.
+  const [kept, setKept] = useState(() => {
+    const local = localDrafts.read(page.id, me.username);
+    // Kept from this very version and the same as it: nothing was lost after all.
+    const same =
+      local?.base === page.draftVersion && JSON.stringify(local.doc) === JSON.stringify(page.draft);
+    return local && !same ? local : undefined;
+  });
   const autosave = useAutosave(page, state.doc);
+  // Checked as saved: each save refreshes it, and Publish shows it first.
+  const checks = usePageChecks(page.id);
+  const stopped = stops(checks.data);
   const pages = usePages();
   const [width, setWidth] = useState<CanvasWidth>("desktop");
   const [zoom, setZoom] = useState<CanvasZoom>("fit");
@@ -331,9 +432,31 @@ function Editor({ page }: { page: Page }) {
       save={autosave.state}
       savedAt={autosave.savedAt}
       detail={publishedDetail(summary)}
-      beforePublish={autosave.flush}
+      beforePublish={autosave.ensureSaved}
+      review={
+        checks.data?.length
+          ? {
+              title: t("checks.review.title"),
+              description: stopped
+                ? t("checks.review.stopped")
+                : t("checks.review.warnings", { count: checks.data.length }),
+              blocked: stopped,
+              confirm: t("checks.publishAnyway"),
+              renderBody: (close) => (
+                <PageCheckList
+                  checks={checks.data}
+                  onShow={(blockId) => {
+                    dispatch({ type: "select", id: blockId });
+                    close();
+                  }}
+                />
+              ),
+            }
+          : undefined
+      }
       onPublish={() => pagesApi.publish(page.id)}
       viewPath={summary.path}
+      pageId={page.id}
       label={
         page.kind !== "entry"
           ? t("editor.publish")
@@ -344,6 +467,42 @@ function Editor({ page }: { page: Page }) {
             : t("editor.publishEntry")
       }
     />
+  );
+  const bringBack = () => {
+    if (!kept) return;
+    // Saved from the version they started from, so a page someone has saved since asks first.
+    autosave.rebase(kept.base);
+    dispatch({ type: "setDoc", update: () => kept.doc, key: "kept", rerender: true });
+    setKept(undefined);
+  };
+  /** Nothing more can be saved here: the page is gone, or no longer theirs to edit. */
+  const stoppedNotice = (autosave.state === "forbidden" || autosave.state === "gone") && (
+    <div className="bg-bg-danger-50 flex shrink-0 items-center gap-3 px-3 py-2">
+      <p className="text-body-sm text-txt-danger flex-1">
+        {t(autosave.state === "gone" ? "editor.gone" : "editor.forbidden")}
+      </p>
+    </div>
+  );
+  /** Changes from last time, kept in this browser: bring them back, or let them go. */
+  const keptNotice = kept && (
+    <div className="bg-bg-primary-50 flex shrink-0 items-center gap-3 px-3 py-2">
+      <p className="text-body-sm text-txt-primary flex-1">
+        {t("editor.kept", { when: formatDateTime(kept.at) })}
+      </p>
+      <Button
+        variant="default-ghost"
+        size="small"
+        onClick={() => {
+          localDrafts.clear(page.id);
+          setKept(undefined);
+        }}
+      >
+        {t("editor.kept.discard")}
+      </Button>
+      <Button variant="primary-outline" size="small" onClick={bringBack}>
+        {t("editor.kept.bringBack")}
+      </Button>
+    </div>
   );
   const redirectNotice = redirect !== null && (
     <div className="bg-bg-warning-50 flex shrink-0 items-center gap-3 px-3 py-2">
@@ -403,6 +562,18 @@ function Editor({ page }: { page: Page }) {
         add(type, picker?.at);
         setPicker(null);
       }}
+    />
+  );
+  const conflictDialog = (
+    <ConflictDialog
+      conflict={autosave.conflict}
+      what={t("conflict.thisPage")}
+      keptInHistory
+      onLoadTheirs={async () => {
+        localDrafts.clear(page.id);
+        await onReload();
+      }}
+      onKeepMine={autosave.keepMine}
     />
   );
 
@@ -474,6 +645,7 @@ function Editor({ page }: { page: Page }) {
         </Button>
         {publishControl}
       </div>
+      {stoppedNotice || keptNotice}
       {/* On a phone: no canvas. The list of blocks, then one block's fields (or the page's) at a time. */}
       {wide ? (
         <div className="flex min-h-0 flex-1">
@@ -570,6 +742,7 @@ function Editor({ page }: { page: Page }) {
         </>
       )}
       {blockPicker}
+      {conflictDialog}
     </div>
   );
 }

@@ -1,4 +1,6 @@
-import type { FastifyPluginAsync } from "fastify";
+import { can } from "@fiscal-sb/contracts";
+import type { FastifyPluginAsync, FastifyRequest } from "fastify";
+import { sql } from "kysely";
 import { z } from "zod";
 import {
   CreatePageBody,
@@ -8,6 +10,8 @@ import {
   MovePageBody,
   MoveResult,
   Page,
+  PageChecks,
+  PageChecksQuery,
   PageParams,
   PageSummary,
   DocPublishResult,
@@ -52,6 +56,7 @@ import {
   restoreDeleted,
   restoreRevision,
 } from "../content/history.js";
+import { assertReady, pageChecks } from "../content/checks.js";
 import { publishChosen, undoPublish, waitingItems } from "../content/publishing.js";
 import {
   createEntry,
@@ -60,6 +65,7 @@ import {
   makeListing,
   saveListing,
 } from "../content/entries.js";
+import { audited, userOf } from "../auth/guard.js";
 import { HttpError } from "../errors.js";
 
 type CreateBody = z.output<typeof CreatePageBody>;
@@ -73,6 +79,37 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
    * publish. A rebuild already waiting reads the tree when it runs, so it
    * covers this change too: dragging five pages in a row builds once.
    */
+  /**
+   * Moving and deleting change the site at once, but only for pages on it: an
+   * Editor can rename, move or delete a page nobody has published yet (nor
+   * anything under it), and needs a Content Manager for the rest.
+   */
+  const onlyUnpublished = async (request: FastifyRequest) => {
+    const { id } = request.params as PageParams;
+    if ((request.body as { dryRun?: boolean } | undefined)?.dryRun) return;
+    if (can(userOf(request).role, "content.publish")) return;
+    // The page and everything under it, deleted or not: a restore brings back its deleted children.
+    const { rows: live } = await sql<{ id: string }>`
+      with recursive under(id) as (
+        select ${id}
+        union all
+        select pages.id from pages join under on pages.parent_id = under.id
+      )
+      select pages.id from pages join under on pages.id = under.id
+      where pages.published_revision_id is not null
+      limit 1
+    `.execute(db);
+    if (live.length)
+      throw new HttpError(
+        403,
+        "forbidden",
+        "Your role can't move or delete pages that are on the site.",
+        {
+          needs: "content.publish",
+        },
+      );
+  };
+
   const rebuild = async () => {
     const waiting = await db
       .selectFrom("jobs")
@@ -87,6 +124,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.get(
     "/pages",
     {
+      config: { access: "signedIn" },
       schema: {
         summary: "List pages",
         description:
@@ -101,6 +139,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Body: CreateBody }>(
     "/pages",
     {
+      config: { access: "content.edit" },
       schema: {
         summary: "Create a page",
         description:
@@ -121,6 +160,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Params: PageParams }>(
     "/pages/:id",
     {
+      config: { access: "signedIn" },
       schema: {
         summary: "Get a page and its draft",
         tags: ["pages"],
@@ -134,22 +174,42 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.put<{ Params: PageParams; Body: SaveDraftBody }>(
     "/pages/:id/draft",
     {
+      config: { access: "content.edit" },
       schema: {
         summary: "Save a page's draft",
         description:
-          "The draft is validated against the block registry. A redirect may not point at the page itself or at a page that redirects, and a page that others redirect to can't redirect.",
+          "The draft is validated against the block registry. A redirect may not point at the page itself or at a page that redirects, and a page that others redirect to can't redirect. With `base`, a draft someone else saved since is never overwritten: 409 `draft_conflict` says who and when, and the refused draft is kept in the page's history.",
         tags: ["pages"],
         params: PageParams,
         body: SaveDraftBody,
         response: { 200: envelope(Page) },
       },
     },
-    async (request) => ({ data: await saveDraft(db, request.params.id, request.body.draft) }),
+    async (request) => ({
+      data: await saveDraft(db, request.params.id, request.body.draft, request.body.base),
+    }),
+  );
+
+  app.get<{ Querystring: z.infer<typeof PageChecksQuery> }>(
+    "/pages/checks",
+    {
+      config: { access: "signedIn" },
+      schema: {
+        summary: "Check pages before they go live",
+        description:
+          "What in each page's draft would fail visitors (docs/site-builder.md § Checks before publishing). A `block` check stops the page being published; `warn` ones can be published past.",
+        tags: ["pages"],
+        querystring: PageChecksQuery,
+        response: { 200: envelope(PageChecks) },
+      },
+    },
+    async (request) => ({ data: await pageChecks(db, request.query.ids.split(",")) }),
   );
 
   app.post<{ Params: PageParams }>(
     "/pages/:id/publish",
     {
+      config: { access: "content.publish" },
       schema: {
         summary: "Publish a page",
         description:
@@ -160,6 +220,8 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (request, reply) => {
+      await assertReady(db, [request.params.id]);
+      audited(request, { action: "published", target: request.params.id });
       const swap = await publishDraft(db, request.params.id);
       // An entry dated in the future goes live with a publish at that time, not now.
       const page = await getPage(db, request.params.id);
@@ -184,10 +246,12 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: PageParams; Body: MoveBody }>(
     "/pages/:id/move",
     {
+      config: { access: "content.edit" },
+      preHandler: onlyUnpublished,
       schema: {
         summary: "Move or rename a page",
         description:
-          "Changes the page's parent, position among its siblings or slug, and queues a rebuild so the site follows at once. The paths of the page and everything under it follow; the response lists the ones that changed. With `redirect`, published pages' old addresses send visitors to the new ones. With `dryRun`, nothing is saved.",
+          "Changes the page's parent, position among its siblings or slug, and queues a rebuild so the site follows at once. The paths of the page and everything under it follow; the response lists the ones that changed. With `redirect`, published pages' old addresses send visitors to the new ones. With `dryRun`, nothing is saved. Moving a page that is on the site, or has one under it, needs `content.publish`.",
         tags: ["pages"],
         params: PageParams,
         body: MovePageBody,
@@ -204,6 +268,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: PageParams; Body: DuplicateBody }>(
     "/pages/:id/duplicate",
     {
+      config: { access: "content.edit" },
       schema: {
         summary: "Duplicate a page",
         description:
@@ -221,6 +286,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: PageParams; Body: UnpublishPageBody }>(
     "/pages/:id/unpublish",
     {
+      config: { access: "content.publish" },
       schema: {
         summary: "Unpublish a page",
         description:
@@ -232,6 +298,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (request) => {
+      audited(request, { action: "unpublished", target: request.params.id });
       const page = await unpublishPage(db, request.params.id, request.body);
       await rebuild();
       return { data: page };
@@ -241,6 +308,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Params: PageParams }>(
     "/pages/:id/delete-preview",
     {
+      config: { access: "signedIn" },
       schema: {
         summary: "What deleting a page would touch",
         description:
@@ -256,17 +324,20 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.delete<{ Params: PageParams; Querystring: DeletePageQuery }>(
     "/pages/:id",
     {
+      config: { access: "content.edit" },
       schema: {
         summary: "Delete a page",
         description:
-          "Soft-deletes the page: it leaves the tree and, with the rebuild it queues, the site. A page with child pages needs `children`: `delete` deletes them too, `lift` moves them up a level. `redirectTo` sends visitors of the deleted published addresses to another page.",
+          "Soft-deletes the page: it leaves the tree and, with the rebuild it queues, the site. A page with child pages needs `children`: `delete` deletes them too, `lift` moves them up a level. `redirectTo` sends visitors of the deleted published addresses to another page. Deleting a page that is on the site, or has one under it, needs `content.publish`.",
         tags: ["pages"],
         params: PageParams,
         querystring: DeletePageQuery,
         response: { 204: z.null() },
       },
+      preHandler: onlyUnpublished,
     },
     async (request, reply) => {
+      audited(request, { action: "pageDeleted", target: request.params.id });
       await deletePage(db, request.params.id, request.query);
       await rebuild();
       return reply.status(204).send();
@@ -276,6 +347,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Body: z.output<typeof PublishSiteBody> | null | undefined }>(
     "/publish",
     {
+      config: { access: "content.publish" },
       schema: {
         summary: "Publish what's waiting",
         description:
@@ -288,6 +360,15 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       const { runAt, ...chosen } = request.body ?? {};
+      // Without a choice, the pages it publishes are the live ones with newer drafts.
+      await assertReady(
+        db,
+        chosen.pageIds ??
+          (chosen.docs
+            ? []
+            : (await listPages(db)).filter((p) => p.status === "changed").map((p) => p.id)),
+      );
+      audited(request, { action: "published", detail: { ...chosen, ...(runAt && { runAt }) } });
       if (runAt) {
         if (Date.parse(runAt) <= Date.now())
           throw new HttpError(400, "run_at_past", "Choose a time in the future");
@@ -303,6 +384,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: z.infer<typeof JobParams> }>(
     "/publish/:id/undo",
     {
+      config: { access: "site.manage" },
       schema: {
         summary: "Undo a publish",
         description:
@@ -312,13 +394,16 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
         response: { 202: envelope(UndoPublishResult) },
       },
     },
-    async (request, reply) =>
-      reply.status(202).send({ data: await undoPublish(db, jobs, request.params.id) }),
+    async (request, reply) => {
+      audited(request, { action: "publishUndone", target: request.params.id });
+      return reply.status(202).send({ data: await undoPublish(db, jobs, request.params.id) });
+    },
   );
 
   app.post(
     "/publish/rebuild",
     {
+      config: { access: "site.manage" },
       schema: {
         summary: "Rebuild the whole site",
         description:
@@ -339,6 +424,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.get(
     "/publish/preview",
     {
+      config: { access: "signedIn" },
       schema: {
         summary: "What isn't live yet",
         description:
@@ -353,6 +439,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Params: PageParams }>(
     "/pages/:id/revisions",
     {
+      config: { access: "signedIn" },
       schema: {
         summary: "List a page's revisions",
         description:
@@ -368,6 +455,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Params: z.infer<typeof RevisionParams> }>(
     "/pages/:id/revisions/:revisionId",
     {
+      config: { access: "signedIn" },
       schema: {
         summary: "Get a revision",
         description: "Its content can be rendered with POST /render/pages/:id to compare it.",
@@ -384,6 +472,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: z.infer<typeof RevisionParams> }>(
     "/pages/:id/revisions/:revisionId/restore",
     {
+      config: { access: "content.edit" },
       schema: {
         summary: "Restore a revision as the draft",
         description:
@@ -402,6 +491,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.get(
     "/trash",
     {
+      config: { access: "signedIn" },
       schema: {
         summary: "Deleted pages",
         description: "Restorable for 30 days after they were deleted, then removed for good.",
@@ -415,16 +505,19 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: PageParams }>(
     "/trash/:id/restore",
     {
+      config: { access: "content.edit" },
       schema: {
         summary: "Restore a deleted page",
         description:
-          "With the child pages deleted along with it, under its old parent (or the home page if that's gone too). A taken slug gets a suffix. Pages that were live go back on the site with the rebuild it queues.",
+          "With the child pages deleted along with it, under its old parent (or the home page if that's gone too). A taken slug gets a suffix. Pages that were live go back on the site with the rebuild it queues; restoring one of those needs `content.publish`.",
         tags: ["history"],
         params: PageParams,
         response: { 200: envelope(Page) },
       },
+      preHandler: onlyUnpublished,
     },
     async (request) => {
+      audited(request, { action: "pageRestored", target: request.params.id });
       await restoreDeleted(db, request.params.id);
       await rebuild();
       return { data: await getPage(db, request.params.id) };
@@ -434,6 +527,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Params: PageParams }>(
     "/pages/:id/listing",
     {
+      config: { access: "signedIn" },
       schema: {
         summary: "Get a listing page's settings",
         description:
@@ -449,6 +543,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.put<{ Params: PageParams; Body: z.infer<typeof SaveListingBody> }>(
     "/pages/:id/listing",
     {
+      config: { access: "content.edit" },
       schema: {
         summary: "Save a listing page's settings",
         description:
@@ -465,6 +560,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: PageParams }>(
     "/pages/:id/make-listing",
     {
+      config: { access: "content.edit" },
       schema: {
         summary: "Make a page a listing page",
         description: "It keeps its blocks and gains an entry list. It can't have child pages.",
@@ -479,6 +575,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Params: PageParams; Querystring: z.output<typeof EntriesQuery> }>(
     "/pages/:id/entries",
     {
+      config: { access: "signedIn" },
       schema: {
         summary: "List a listing page's entries",
         description:
@@ -495,6 +592,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: z.output<typeof EntrySearchQuery> }>(
     "/entries",
     {
+      config: { access: "signedIn" },
       schema: {
         summary: "Search entries",
         description:
@@ -512,6 +610,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: PageParams; Body: z.infer<typeof CreateEntryBody> }>(
     "/pages/:id/entries",
     {
+      config: { access: "content.edit" },
       schema: {
         summary: "Write an entry",
         description:

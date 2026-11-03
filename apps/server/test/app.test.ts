@@ -2,11 +2,12 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "@rstest/core";
-import { buildApp } from "../src/app.js";
+import { blockTypes, newBlock } from "@fiscal-sb/blocks";
+import { type App, signedInApp } from "./helpers.js";
 import { loadEnv } from "../src/env.js";
 
 let dataDir: string;
-let app: Awaited<ReturnType<typeof buildApp>>;
+let app: App;
 
 beforeAll(async () => {
   dataDir = await mkdtemp(join(tmpdir(), "site-builder-"));
@@ -16,7 +17,7 @@ beforeAll(async () => {
     DATA_DIR: dataDir,
     ADMIN_DIST: join(dataDir, "none"),
   });
-  app = await buildApp({ env, databasePath: ":memory:", runJobs: false });
+  app = await signedInApp({ env, databasePath: ":memory:", runJobs: false });
 });
 afterAll(async () => {
   await app.close();
@@ -49,7 +50,10 @@ describe("server", () => {
     expect(res.statusCode).toBe(201);
     const page = res.json().data;
     expect(page.title).toBe("Soalan lazim");
-    expect(page.draft.ms.blocks.map((b: { type: string }) => b.type)).toEqual(["hero", "prose"]);
+    expect(page.draft.ms.blocks.map((b: { type: string }) => b.type)).toEqual([
+      "pageIntro",
+      "prose",
+    ]);
 
     const again = await app.inject({
       method: "POST",
@@ -85,6 +89,86 @@ describe("server", () => {
     const body = (await app.inject({ method: "GET", url: `/render/pages/${perkhidmatan.id}` }))
       .body;
     expect(body).toContain("Siapa yang layak memohon?");
+    // An inner page opens with a Page intro and the trail from the home page.
+    expect(body).toMatch(/<nav[^>]*aria-label="[^"]*"[^>]*>[\s\S]*href="\/"[\s\S]*Utama/);
+    expect(body).toContain("Cara memohon");
+  });
+
+  it("renders every block's defaults on the canvas and as visitors see it", async () => {
+    const { id } = await home();
+    // One page per block, so each Hero or Page intro is the page's only opening.
+    const renders = blockTypes.flatMap((type) =>
+      (["edit", "preview"] as const).map(async (mode) => {
+        const page = { title: "Utama", blocks: [newBlock(type, "b1")] };
+        const res = await app.inject({
+          method: "POST",
+          url: `/render/pages/${id}`,
+          payload: { page, mode },
+        });
+        return [type, mode, res.statusCode];
+      }),
+    );
+    for (const [type, mode, status] of await Promise.all(renders))
+      expect([type, mode, status]).toEqual([type, mode, 200]);
+  });
+
+  it("adds the FAQ's contact line and the callout's link", async () => {
+    const { id } = await home();
+    const faq = newBlock("faq", "f1");
+    const res = await app.inject({
+      method: "POST",
+      url: `/render/pages/${id}`,
+      payload: {
+        page: {
+          title: "Utama",
+          blocks: [
+            {
+              ...faq,
+              props: {
+                ...faq.props,
+                contactText: "Masih perlukan bantuan?",
+                contactLink: { label: "Hubungi kami", href: "/hubungi" },
+              },
+            },
+            {
+              id: "c1",
+              type: "callout",
+              props: { title: "Makluman", action: { label: "Semak status", href: "/semak" } },
+            },
+          ],
+        },
+      },
+    });
+    expect(res.body).toContain("Masih perlukan bantuan?");
+    expect(res.body).toMatch(/href="\/hubungi"[^>]*>\s*Hubungi kami/);
+    expect(res.body).toMatch(/href="\/semak"[^>]*>[\s\S]*?Semak status/);
+  });
+
+  it("marks links to other websites, and only those", async () => {
+    const { id } = await home();
+    const res = await app.inject({
+      method: "POST",
+      url: `/render/pages/${id}`,
+      payload: {
+        page: {
+          title: "Utama",
+          blocks: [
+            {
+              id: "l1",
+              type: "linkList",
+              props: {
+                items: [
+                  { label: "Portal MyGov", href: "https://www.malaysia.gov.my" },
+                  { label: "Soalan lazim", href: "/soalan-lazim" },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.body.match(/laman web luar/g)).toHaveLength(1);
   });
 
   it("rejects drafts that don't match the block registry", async () => {
@@ -157,6 +241,17 @@ describe("server", () => {
     expect((await app.inject({ method: "GET", url: css! })).statusCode).toBe(200);
 
     expect((await home()).hasUnpublishedChanges).toBe(false);
+
+    // Addresses the site doesn't have get its 404 page, in the site's layout.
+    const missing = await app.inject({
+      method: "GET",
+      url: "/tiada-di-sini",
+      headers: { accept: "text/html" },
+    });
+    expect(missing.statusCode).toBe(404);
+    expect(missing.body).toContain("404");
+    expect(missing.body).toContain('<meta name="robots" content="noindex"');
+    expect(missing.body).toContain('href="/"');
   });
 
   it("publishes OpenAPI-documented page operations", async () => {

@@ -19,7 +19,7 @@ const features = p.features.map((feature) => ({
 
 <FeatureGrid
   features={features}
-  columns={p.columns === "2" ? 2 : 3}
+  columns={Number(p.columns) as 2 | 3}
   surface={p.surface}
   tone={p.tone}
   lang={lang}

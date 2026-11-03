@@ -11,15 +11,17 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { buildApp } from "../src/app.js";
+import { templatesFor } from "@fiscal-sb/blocks";
 import { createEntry } from "../src/content/entries.js";
 import { publishPages } from "../src/content/pages.js";
 import { loadEnv } from "../src/env.js";
 import { publishSite } from "../src/publisher.js";
+import { signedInApp } from "../test/helpers.js";
 
 const count = Number(process.argv[2] ?? 5000);
 const dataDir = await mkdtemp(join(tmpdir(), "site-builder-scale-"));
-const app = await buildApp({
+// Signed in as the first account, as the API is for everyone else.
+const app = await signedInApp({
   env: loadEnv({
     NODE_ENV: "test",
     LOG_LEVEL: "silent",
@@ -47,7 +49,7 @@ try {
   const listing = await call("POST", "/api/pages", {
     title: "Berita",
     slug: "berita",
-    template: "berita",
+    template: templatesFor("listing")[0],
   });
   // Straight through the content functions: publishing through the API would
   // queue a rebuild per entry.

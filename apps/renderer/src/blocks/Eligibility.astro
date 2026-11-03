@@ -1,0 +1,37 @@
+---
+import type { BlockOf, Locale } from "@fiscal-sb/blocks";
+import Eligibility from "@/components/blocks/eligibility.astro";
+import Field from "./Field.astro";
+
+type Props = { block: BlockOf<"eligibility">; edit: boolean; lang: Locale };
+const { block, edit, lang } = Astro.props;
+const p = block.props;
+const exclusions = p.exclusions?.map((e) => e.text);
+---
+
+<Eligibility
+  criteria={p.criteria.map((c) => c.text)}
+  exclusions={exclusions?.length ? exclusions : undefined}
+  criteriaTitle={p.criteriaTitle || undefined}
+  exclusionsTitle={p.exclusionsTitle || undefined}
+  tone={p.tone}
+  lang={lang}
+>
+  {
+    (edit || p.title) && (
+      <Field slot="title" name="title" edit={edit} placeholder="Siapa yang layak">{p.title}</Field>
+    )
+  }
+  {
+    (edit || p.description) && (
+      <Field slot="description" name="description" edit={edit} placeholder="Penerangan">
+        {p.description}
+      </Field>
+    )
+  }
+  {
+    (edit || p.note) && (
+      <Field slot="note" name="note" edit={edit} placeholder="Nota">{p.note}</Field>
+    )
+  }
+</Eligibility>

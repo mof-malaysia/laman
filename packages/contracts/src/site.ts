@@ -210,12 +210,18 @@ export const SiteSettings = z.object({
 export type SiteSettings = z.infer<typeof SiteSettings>;
 
 /** A drafted document with its live copy. */
+/** A save of a drafted document, from the version it started from (see `SaveDraftBody`). */
+export const savable = <T extends z.ZodType>(draft: T) =>
+  z.object({ draft, base: z.string().optional() });
+
 export const drafted = <T extends z.ZodType>(doc: T) =>
   z.object({
     draft: doc,
     published: doc,
     /** The draft differs from what's live. */
     changed: z.boolean(),
+    /** Changes whenever the draft does: send it back as a save's `base` (see `SaveDraftBody`). */
+    version: z.string(),
   });
 
 export const SettingsDoc = drafted(SiteSettings).extend({
@@ -295,13 +301,13 @@ export const ThemeDoc = drafted(SiteTheme).extend({
 });
 export type ThemeDoc = z.infer<typeof ThemeDoc>;
 
-export const SaveSettingsBody = z.object({ draft: SiteSettings });
-export const SaveNavigationBody = z.object({ draft: Navigation });
+export const SaveSettingsBody = savable(SiteSettings);
+export const SaveNavigationBody = savable(Navigation);
 export const NavigationCheck = z.object({ warnings: z.array(NavWarning) });
 export type NavigationCheck = z.infer<typeof NavigationCheck>;
-export const SaveAnnouncementBody = z.object({ draft: Announcement });
-export const SaveSearchBody = z.object({ draft: SiteSearch });
-export const SaveThemeBody = z.object({ draft: ThemeChoice });
+export const SaveAnnouncementBody = savable(Announcement);
+export const SaveSearchBody = savable(SiteSearch);
+export const SaveThemeBody = savable(ThemeChoice);
 
 /** The drafted documents that aren't pages. */
 export const SiteDocName = z.enum(["settings", "navigation", "announcement", "search", "theme"]);

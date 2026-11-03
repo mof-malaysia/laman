@@ -27,6 +27,7 @@ export const latestEntries = defineBlock({
       .text("Only this category (its address, e.g. siaran-media)", { max: 80 })
       .optional(),
     seeAll: field.text("See all link text", { max: 40 }).optional(),
+    tone: field.tone(),
   }),
   defaults: { title: "Berita terkini", count: "3", style: "grid", seeAll: "Semua berita" },
 });

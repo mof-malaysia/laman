@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { field } from "../fields.js";
+import { field, panel } from "../fields.js";
 import { defineBlock } from "../define.js";
 import { RichText, paragraphs } from "../rich-text.js";
 
@@ -18,10 +18,14 @@ export const faq = defineBlock({
   props: z.object({
     title: field.text("Heading", { max: 120, inline: true }).optional(),
     description: field.textarea("Introduction", { max: 300, inline: true }).optional(),
+    contactText: panel(field.text("Still need help? line", { max: 120, inline: true }), {
+      help: "Under the introduction, with the link after it, e.g. Masih perlukan bantuan?",
+    }).optional(),
+    contactLink: field.action("Still need help? link").optional(),
     items: field.list("Questions", Question, { min: 1, max: 30 }),
-    tone: field
-      .select("Background", ["paper", "well"], { paper: "Paper", well: "Well" })
-      .default("paper"),
+    openFirst: field.toggle("Open the first answer").default(false),
+    multiple: field.toggle("Let several answers stay open").default(false),
+    tone: field.tone(),
   }),
   defaults: {
     title: "Soalan lazim",

@@ -12,6 +12,19 @@ const EnvSchema = z.object({
   CORS_ORIGIN: z.string().optional(),
   /** Holds all state: site.db, media/ and the published site in public/. */
   DATA_DIR: z.string().default("./data"),
+  /**
+   * Where backup archives go. Defaults to DATA_DIR/backups, on the site's own
+   * disk: set it to a separate mount, and copy it off the machine.
+   */
+  BACKUP_DIR: z.string().optional(),
+  /** The daily backup's Malaysian time, `HH:MM`, or `off`. */
+  BACKUP_SCHEDULE: z
+    .string()
+    .regex(/^(off|([01]\d|2[0-3]):[0-5]\d)$/, "Use a time like 02:00, or off")
+    .default("02:00"),
+  /** Archives kept: the newest of each of this many days, and of this many weeks. */
+  BACKUP_KEEP_DAILY: z.coerce.number().int().min(1).max(366).default(7),
+  BACKUP_KEEP_WEEKLY: z.coerce.number().int().min(0).max(520).default(4),
   /** Folder with the built admin app, served at /admin. */
   ADMIN_DIST: z.string().default("../admin/dist"),
   /** Public address of the published site, for the sitemap. Without it no sitemap is written. */
@@ -34,6 +47,12 @@ const EnvSchema = z.object({
     }),
   /** A MaxMind-format country database (DB-IP Lite Country, GeoLite2 Country) for analytics. */
   GEOIP_DB: z.string().optional(),
+  /**
+   * The first account, created on a boot where there's no super admin yet,
+   * then ignored: its password must be changed at first sign-in.
+   */
+  SUPER_ADMIN_USERNAME: z.string().optional(),
+  SUPER_ADMIN_PASSWORD: z.string().min(12, "Use at least 12 characters").optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

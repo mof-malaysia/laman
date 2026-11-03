@@ -14,7 +14,7 @@ import {
 import { type Db, now } from "../db/index.js";
 import { HttpError } from "../errors.js";
 import type { Jobs } from "../jobs.js";
-import { PublishError, publishSite } from "../publisher.js";
+import { publishSite } from "../publisher.js";
 import { syncPageUsage, waitingMedia } from "./media.js";
 import { listPages, publishChanged, publishPages } from "./pages.js";
 import { docChanged, promoteDrafts } from "./site.js";
@@ -110,14 +110,9 @@ export async function runPublish(
 ) {
   if (payload.trigger === "scheduled")
     await savePayload(db, jobId, { ...payload, swaps: await publishChosen(db, payload) });
-  try {
-    const { counts, log } = await publishSite({ db, ...options, full: payload.full });
-    await saveLog(db, jobId, log);
-    return counts;
-  } catch (error) {
-    if (error instanceof PublishError) await saveLog(db, jobId, error.log);
-    throw error;
-  }
+  const { counts, log } = await publishSite({ db, ...options, full: payload.full });
+  await saveLog(db, jobId, log);
+  return counts;
 }
 
 const toItem = (p: PageSummary): WaitingItem => ({
@@ -127,7 +122,19 @@ const toItem = (p: PageSummary): WaitingItem => ({
   path: p.path,
   new: p.status === "draft",
   updatedAt: p.updatedAt,
+  editedBy: p.editedBy,
 });
+
+/** Who last saved each site document's draft. */
+async function docEditors(db: Db) {
+  const rows = await db
+    .selectFrom("settings")
+    .leftJoin("users", "users.id", "settings.updated_by")
+    .select(["settings.key", "users.display_name"])
+    .where("settings.key", "like", "%.draft")
+    .execute();
+  return new Map(rows.map((r) => [r.key.replace(/\.draft$/, ""), r.display_name]));
+}
 
 /**
  * What isn't live yet: pages and entries with newer changes, then the site
@@ -135,21 +142,24 @@ const toItem = (p: PageSummary): WaitingItem => ({
  * aren't listed: they go live on their own.
  */
 export async function waitingItems(db: Db, pages?: PageSummary[]): Promise<WaitingItem[]> {
-  const [list, settings, navigation, announcement, search, theme, media] = await Promise.all([
-    pages ?? listPages(db),
-    docChanged(db, "settings"),
-    docChanged(db, "navigation"),
-    docChanged(db, "announcement"),
-    docChanged(db, "search"),
-    docChanged(db, "theme"),
-    waitingMedia(db),
-  ]);
+  const [list, settings, navigation, announcement, search, theme, media, editors] =
+    await Promise.all([
+      pages ?? listPages(db),
+      docChanged(db, "settings"),
+      docChanged(db, "navigation"),
+      docChanged(db, "announcement"),
+      docChanged(db, "search"),
+      docChanged(db, "theme"),
+      waitingMedia(db),
+      docEditors(db),
+    ]);
+  const doc = <K extends SiteDocName>(kind: K) => ({ kind, editedBy: editors.get(kind) ?? null });
   const docs: WaitingItem[] = [
-    ...(announcement ? [{ kind: "announcement" as const }] : []),
-    ...(navigation ? [{ kind: "navigation" as const }] : []),
-    ...(search ? [{ kind: "search" as const }] : []),
-    ...(theme ? [{ kind: "theme" as const }] : []),
-    ...(settings ? [{ kind: "settings" as const }] : []),
+    ...(announcement ? [doc("announcement")] : []),
+    ...(navigation ? [doc("navigation")] : []),
+    ...(search ? [doc("search")] : []),
+    ...(theme ? [doc("theme")] : []),
+    ...(settings ? [doc("settings")] : []),
   ];
   return [
     ...list.filter((p) => p.status === "changed").map(toItem),

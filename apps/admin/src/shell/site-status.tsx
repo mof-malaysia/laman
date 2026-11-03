@@ -21,6 +21,8 @@ import { clx } from "@/lib/ftds/utils";
 import { isActive } from "@/lib/api";
 import { formatShortDate, useSummary } from "@/lib/pages";
 import { useAnnouncementDoc, useWaiting } from "@/lib/publish";
+import { sessionLost } from "@/lib/session";
+import { useStore } from "@/lib/store";
 
 /** A coloured dot and its words. */
 function Status({ tone, children }: { tone: Tone; children: ReactNode }) {
@@ -75,9 +77,11 @@ export function PublishState({ onOpenWaiting }: { onOpenWaiting: () => void }) {
   const job = data?.publishes[0];
   const running = job && isActive(job);
 
+  const lost = useStore(sessionLost);
   return (
     <div className="flex min-w-0 items-center gap-1">
-      {summary.isError && <Status tone="danger">{t("status.serverDown")}</Status>}
+      {/* Signed out, the summary fails too: that's said by Sign in again, not as a server fault. */}
+      {summary.isError && !lost && <Status tone="danger">{t("status.serverDown")}</Status>}
       {announcement && announcementShowing(announcement) && (
         <Link
           to="/announcement"

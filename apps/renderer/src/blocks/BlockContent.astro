@@ -1,0 +1,64 @@
+---
+/** The block-to-component map: every registry type renders through one of these wrappers around its FTDS component. */
+import type { Block, RenderInput } from "@fiscal-sb/blocks";
+import Callout from "./Callout.astro";
+import Contact from "./Contact.astro";
+import CtaBand from "./CtaBand.astro";
+import CtaCards from "./CtaCards.astro";
+import CtaSplit from "./CtaSplit.astro";
+import Details from "./Details.astro";
+import DownloadList from "./DownloadList.astro";
+import Eligibility from "./Eligibility.astro";
+import EntryList from "./EntryList.astro";
+import EventDetails from "./EventDetails.astro";
+import Faq from "./Faq.astro";
+import FeatureGrid from "./FeatureGrid.astro";
+import Hero from "./Hero.astro";
+import Image from "./Image.astro";
+import ImpactStats from "./ImpactStats.astro";
+import InsetText from "./InsetText.astro";
+import LatestEntries from "./LatestEntries.astro";
+import LinkList from "./LinkList.astro";
+import LogoCloud from "./LogoCloud.astro";
+import PageIntro from "./PageIntro.astro";
+import PartnerGrid from "./PartnerGrid.astro";
+import PeopleGrid from "./PeopleGrid.astro";
+import Prose from "./Prose.astro";
+import ServiceHighlights from "./ServiceHighlights.astro";
+import StatsBand from "./StatsBand.astro";
+import Steps from "./Steps.astro";
+
+type Props = { block: Block; input: RenderInput };
+const { block, input } = Astro.props;
+const edit = input.mode === "edit";
+const lang = input.locale;
+const media = input.media ?? {};
+const { site, listing, latest, breadcrumb } = input;
+---
+
+{block.type === "hero" && <Hero block={block} edit={edit} media={media} />}
+{block.type === "pageIntro" && <PageIntro block={block} edit={edit} lang={lang} breadcrumb={breadcrumb} />}
+{block.type === "prose" && <Prose block={block} edit={edit} />}
+{block.type === "image" && <Image block={block} edit={edit} media={media} />}
+{block.type === "featureGrid" && <FeatureGrid block={block} edit={edit} lang={lang} />}
+{block.type === "serviceHighlights" && <ServiceHighlights block={block} edit={edit} />}
+{block.type === "steps" && <Steps block={block} edit={edit} lang={lang} />}
+{block.type === "eligibility" && <Eligibility block={block} edit={edit} lang={lang} />}
+{block.type === "ctaBand" && <CtaBand block={block} edit={edit} />}
+{block.type === "callout" && <Callout block={block} edit={edit} lang={lang} />}
+{block.type === "linkList" && <LinkList block={block} edit={edit} lang={lang} siteUrl={site.url} />}
+{block.type === "downloadList" && <DownloadList block={block} edit={edit} lang={lang} media={media} />}
+{block.type === "peopleGrid" && <PeopleGrid block={block} edit={edit} media={media} />}
+{block.type === "faq" && <Faq block={block} edit={edit} lang={lang} />}
+{block.type === "contact" && <Contact block={block} edit={edit} lang={lang} site={site} />}
+{block.type === "entryList" && <EntryList block={block} edit={edit} lang={lang} listing={listing} />}
+{block.type === "latestEntries" && <LatestEntries block={block} edit={edit} lang={lang} latest={latest} />}
+{block.type === "insetText" && <InsetText block={block} edit={edit} />}
+{block.type === "details" && <Details block={block} edit={edit} />}
+{block.type === "statsBand" && <StatsBand block={block} edit={edit} />}
+{block.type === "impactStats" && <ImpactStats block={block} edit={edit} lang={lang} />}
+{block.type === "ctaCards" && <CtaCards block={block} edit={edit} />}
+{block.type === "ctaSplit" && <CtaSplit block={block} edit={edit} media={media} />}
+{block.type === "partnerGrid" && <PartnerGrid block={block} edit={edit} lang={lang} media={media} siteUrl={site.url} />}
+{block.type === "logoCloud" && <LogoCloud block={block} edit={edit} media={media} />}
+{block.type === "eventDetails" && <EventDetails block={block} lang={lang} />}

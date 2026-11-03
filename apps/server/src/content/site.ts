@@ -7,7 +7,6 @@
  */
 import {
   ftdsPrimary,
-  type PageDocument,
   rampPasses,
   type SiteContext,
   type SiteLink,
@@ -15,41 +14,38 @@ import {
   themeOf,
 } from "@fiscal-sb/blocks";
 import {
-  Announcement,
+  type Announcement,
   type AnnouncementDoc,
   announcementShowing,
   type LinkTarget,
-  Navigation,
+  type Navigation,
   type NavigationDoc,
   type NavLink,
   type NavWarning,
   type SearchDoc,
   type SettingsDoc,
   SiteDocName,
-  SiteSearch,
-  SiteSettings,
-  SiteTheme,
+  type SiteSearch,
+  type SiteSettings,
+  type SiteTheme,
   type ThemeChoice,
   type ThemeDoc,
 } from "@fiscal-sb/contracts";
 import type { z } from "zod";
+import { parseStored, siteDocSchemas } from "../db/documents.js";
 import type { Db } from "../db/index.js";
 import { HttpError } from "../errors.js";
-import { readRow, writeRow } from "./kv.js";
+import { readRow, readStored, writeRow } from "./kv.js";
 import { type Loads, once } from "./loads.js";
 import { mediaInfo, setUsage } from "./media.js";
-import { loadTree, treeOf } from "./tree.js";
+import { conflictError, conflictWith, versionOf } from "./versions.js";
+import { loadTree, pageTitles, treeOf } from "./tree.js";
 
 type Scope = "draft" | "published";
 
-const schemas = {
-  settings: SiteSettings,
-  navigation: Navigation,
-  announcement: Announcement,
-  search: SiteSearch,
-  theme: SiteTheme,
-} as const;
-type DocOf<N extends SiteDocName> = z.infer<(typeof schemas)[N]>;
+type DocOf<N extends SiteDocName> = z.infer<(typeof siteDocSchemas)[N]>;
+const schemaOf = <N extends SiteDocName>(name: N) =>
+  siteDocSchemas[name] as unknown as z.ZodType<DocOf<N>>;
 
 /** The settings a new site starts with; the slice kept its name under "site". */
 async function defaultSettings(db: Db): Promise<SiteSettings> {
@@ -103,9 +99,12 @@ export async function readDoc<N extends SiteDocName>(
   name: N,
   scope: Scope,
 ): Promise<DocOf<N>> {
-  const value = await readRow(db, `${name}.${scope}`);
-  const parsed = value === undefined ? undefined : schemas[name].safeParse(value);
-  if (parsed?.success) return parsed.data as DocOf<N>;
+  const stored = parseStored(
+    schemaOf(name),
+    await readRow(db, `${name}.${scope}`),
+    `${name} (${scope})`,
+  );
+  if (stored) return stored;
   if (name === "announcement") return defaultAnnouncement() as DocOf<N>;
   if (name === "search") return defaultSearch() as DocOf<N>;
   if (name === "theme") return defaultTheme() as DocOf<N>;
@@ -122,26 +121,45 @@ async function titleLinks(db: Db, nav: Navigation) {
       item.label = titles.get(item.target.pageId)?.slice(0, 60) || item.label;
 }
 
-async function pageTitles(db: Db) {
-  const rows = await db
-    .selectFrom("pages")
-    .select(["id", "draft"])
-    .where("deleted_at", "is", null)
-    .execute();
-  return new Map(rows.map((r) => [r.id, (JSON.parse(r.draft) as PageDocument).ms.title]));
+async function docState<N extends SiteDocName>(db: Db, name: N) {
+  const [draft, published, stored] = await Promise.all([
+    readDoc(db, name, "draft"),
+    readDoc(db, name, "published"),
+    readStored(db, `${name}.draft`),
+  ]);
+  return {
+    draft,
+    published,
+    changed: JSON.stringify(draft) !== JSON.stringify(published),
+    version: versionOf(stored.value),
+  };
 }
 
-async function docState<N extends SiteDocName>(db: Db, name: N) {
+/**
+ * Refuses a save that started from an older draft than the stored one
+ * (versions.ts). Run in the transaction that writes, so two saves can't both pass.
+ */
+async function checkDraft(trx: Db, name: SiteDocName, base: string | undefined) {
+  if (base === undefined) return;
+  const stored = await readStored(trx, `${name}.draft`);
+  const conflict = conflictWith(base, stored.value, { by: stored.by, at: null });
+  if (conflict) throw conflictError(conflict);
+}
+
+/** Writes a document's draft from `base`, checked and written in one transaction. */
+const writeDraft = (db: Db, name: SiteDocName, value: unknown, base: string | undefined) =>
+  db.transaction().execute(async (trx) => {
+    await checkDraft(trx, name, base);
+    await writeRow(trx, `${name}.draft`, value);
+  });
+
+/** Whether a document's draft differs from what's live, without working out its warnings. */
+export async function docChanged(db: Db, name: SiteDocName) {
   const [draft, published] = await Promise.all([
     readDoc(db, name, "draft"),
     readDoc(db, name, "published"),
   ]);
-  return { draft, published, changed: JSON.stringify(draft) !== JSON.stringify(published) };
-}
-
-/** Whether a document's draft differs from what's live, without working out its warnings. */
-export async function docChanged(db: Db, name: SiteDocName) {
-  return (await docState(db, name)).changed;
+  return JSON.stringify(draft) !== JSON.stringify(published);
 }
 
 export async function getSettingsDoc(db: Db): Promise<SettingsDoc> {
@@ -152,11 +170,10 @@ export async function getSettingsDoc(db: Db): Promise<SettingsDoc> {
   return { ...state, previous };
 }
 
-/** What was live before the last publish, if it's still readable, so it can be put back. */
+/** What was live before the last publish, so it can be put back. */
 async function previousOf<N extends SiteDocName>(db: Db, name: N): Promise<DocOf<N> | null> {
   const value = await readRow(db, `${name}.previous`);
-  const parsed = value === undefined ? undefined : schemas[name].safeParse(value);
-  return parsed?.success ? (parsed.data as DocOf<N>) : null;
+  return parseStored(schemaOf(name), value, `${name} (previous)`) ?? null;
 }
 
 export async function getNavigationDoc(db: Db): Promise<NavigationDoc> {
@@ -189,7 +206,7 @@ export async function getThemeDoc(db: Db): Promise<ThemeDoc> {
 }
 
 /** Saves the choice with the ramp made from it here, so the stored ramp always passes. */
-export async function saveThemeDraft(db: Db, choice: ThemeChoice) {
+export async function saveThemeDraft(db: Db, choice: ThemeChoice, base?: string) {
   const draft: SiteTheme = themeOf(choice);
   if (!rampPasses(draft.primary))
     throw new HttpError(
@@ -197,7 +214,7 @@ export async function saveThemeDraft(db: Db, choice: ThemeChoice) {
       "theme_contrast",
       "These colours aren't readable enough for links and buttons",
     );
-  await writeRow(db, "theme.draft", draft);
+  await writeDraft(db, "theme", draft, base);
   return getThemeDoc(db);
 }
 
@@ -210,11 +227,12 @@ async function syncSettingsUsage(db: Db) {
   await setUsage(db, "settings", [draft, published]);
 }
 
-export async function saveSettingsDraft(db: Db, draft: SiteSettings): Promise<SettingsDoc> {
-  const [live, previous] = await Promise.all([
-    readDoc(db, "settings", "published"),
-    previousOf(db, "settings"),
-  ]);
+export async function saveSettingsDraft(
+  db: Db,
+  draft: SiteSettings,
+  base?: string,
+): Promise<SettingsDoc> {
+  const live = await readDoc(db, "settings", "published");
   // The publishing defaults and analytics retention change how the builder
   // works, not the site: they apply on save.
   const published: SiteSettings = {
@@ -223,25 +241,21 @@ export async function saveSettingsDraft(db: Db, draft: SiteSettings): Promise<Se
     analytics: { ...live.analytics, retentionDays: draft.analytics.retentionDays },
   };
   await db.transaction().execute(async (trx) => {
+    await checkDraft(trx, "settings", base);
     await writeRow(trx, "settings.draft", draft);
     if (JSON.stringify(live) !== JSON.stringify(published))
       await writeRow(trx, "settings.published", published);
     await setUsage(trx, "settings", [draft, published]);
   });
-  return {
-    draft,
-    published,
-    changed: JSON.stringify(draft) !== JSON.stringify(published),
-    previous,
-  };
+  return getSettingsDoc(db);
 }
 
-export async function saveNavigationDraft(db: Db, draft: Navigation) {
-  await writeRow(db, "navigation.draft", draft);
+export async function saveNavigationDraft(db: Db, draft: Navigation, base?: string) {
+  await writeDraft(db, "navigation", draft, base);
   return getNavigationDoc(db);
 }
 
-export async function saveAnnouncementDraft(db: Db, draft: Announcement) {
+export async function saveAnnouncementDraft(db: Db, draft: Announcement, base?: string) {
   const { from, until } = draft;
   if (from && until && Date.parse(until) < Date.parse(from))
     throw new HttpError(
@@ -249,11 +263,11 @@ export async function saveAnnouncementDraft(db: Db, draft: Announcement) {
       "announcement_dates",
       "The hide-after date must be after the show-from date",
     );
-  await writeRow(db, "announcement.draft", draft);
+  await writeDraft(db, "announcement", draft, base);
   return getAnnouncementDoc(db);
 }
 
-export async function saveSearchDraft(db: Db, draft: SiteSearch) {
+export async function saveSearchDraft(db: Db, draft: SiteSearch, base?: string) {
   // A word means one page: the first pin to claim it keeps it.
   const claimed = new Set<string>();
   const pins = draft.pins.flatMap((pin) => {
@@ -261,7 +275,7 @@ export async function saveSearchDraft(db: Db, draft: SiteSearch) {
     for (const term of terms) claimed.add(term);
     return terms.length ? [{ ...pin, terms }] : [];
   });
-  await writeRow(db, "search.draft", { ...draft, pins });
+  await writeDraft(db, "search", { ...draft, pins }, base);
   return getSearchDoc(db);
 }
 

@@ -25,3 +25,6 @@ data/
 
 # Astro generated types
 .astro
+
+# Backups made by docker compose (BACKUP_PATH)
+/backups/

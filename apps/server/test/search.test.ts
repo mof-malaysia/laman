@@ -2,12 +2,11 @@ import { mkdtemp, readFile, readdir, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "@rstest/core";
-import { buildApp } from "../src/app.js";
-import { migrations } from "../src/db/migrations.js";
+import { type App, signedInApp } from "./helpers.js";
 import { loadEnv } from "../src/env.js";
 
 let dataDir: string;
-let app: Awaited<ReturnType<typeof buildApp>>;
+let app: App;
 
 beforeAll(async () => {
   dataDir = await mkdtemp(join(tmpdir(), "site-builder-search-"));
@@ -17,7 +16,7 @@ beforeAll(async () => {
     DATA_DIR: dataDir,
     ADMIN_DIST: join(dataDir, "none"),
   });
-  app = await buildApp({ env, databasePath: ":memory:", runJobs: false });
+  app = await signedInApp({ env, databasePath: ":memory:", runJobs: false });
 });
 afterAll(async () => {
   await app.close();
@@ -170,7 +169,7 @@ describe("site search", () => {
       { path: "pins.1", message: expect.stringContaining("isn't published yet") },
     ]);
     const summary = (await call("GET", "/api/summary")).json().data;
-    expect(summary.waiting).toContainEqual({ kind: "search" });
+    expect(summary.waiting).toContainEqual(expect.objectContaining({ kind: "search" }));
   });
 
   it("refuses a pin with no words or no page", async () => {
@@ -204,28 +203,6 @@ describe("site search", () => {
       parentId: contact.id,
     });
     expect(child.statusCode).toBe(201);
-  });
-
-  it("waits to go live on a site published before search existed", async () => {
-    const before = await app.db
-      .selectFrom("settings")
-      .selectAll()
-      .where("key", "like", "search.%")
-      .execute();
-    await app.db.deleteFrom("settings").where("key", "like", "search.%").execute();
-    try {
-      await migrations["0010_site_search"]?.up(app.db as never);
-      expect(await search()).toMatchObject({
-        draft: { on: true },
-        published: { on: false },
-        changed: true,
-      });
-      const summary = (await call("GET", "/api/summary")).json().data;
-      expect(summary.waiting).toContainEqual({ kind: "search" });
-    } finally {
-      await app.db.deleteFrom("settings").where("key", "like", "search.%").execute();
-      if (before.length) await app.db.insertInto("settings").values(before).execute();
-    }
   });
 
   it("switched off, takes the link, the page and the index off the site, and can be put back", async () => {

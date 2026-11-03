@@ -1,20 +1,23 @@
 /**
- * The admin preferences, kept in the settings table under "preferences".
- * Not a drafted document: they change the admin, not the site, so they
- * apply on save.
+ * Each person's admin preferences, kept on their account. Not a drafted
+ * document: they change the admin, not the site, so they apply on save.
  */
 import { AdminPreferences } from "@fiscal-sb/contracts";
+import type { User } from "../auth/users.js";
+import { parseStored } from "../db/documents.js";
 import type { Db } from "../db/index.js";
-import { readRow, writeRow } from "./kv.js";
 
 const defaults: AdminPreferences = { language: "en" };
 
-export async function getPreferences(db: Db): Promise<AdminPreferences> {
-  const stored = AdminPreferences.safeParse(await readRow(db, "preferences"));
-  return stored.success ? stored.data : defaults;
-}
+/** From the account row the request already has. */
+export const preferencesOf = (user: Pick<User, "preferences">): AdminPreferences =>
+  parseStored(AdminPreferences, JSON.parse(user.preferences), "preferences") ?? defaults;
 
-export async function savePreferences(db: Db, preferences: AdminPreferences) {
-  await writeRow(db, "preferences", preferences);
+export async function savePreferences(db: Db, userId: string, preferences: AdminPreferences) {
+  await db
+    .updateTable("users")
+    .set({ preferences: JSON.stringify(preferences) })
+    .where("id", "=", userId)
+    .execute();
   return preferences;
 }

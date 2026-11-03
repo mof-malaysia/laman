@@ -1,0 +1,33 @@
+---
+import type { BlockOf } from "@fiscal-sb/blocks";
+import ServiceHighlights from "@/components/blocks/service-highlights.astro";
+import Field from "./Field.astro";
+import { featureIconComponents as icons } from "./icons";
+
+type Props = { block: BlockOf<"serviceHighlights">; edit: boolean };
+const { block, edit } = Astro.props;
+const p = block.props;
+const services = p.services.map((service) => ({
+  icon: service.icon && icons[service.icon],
+  title: service.title,
+  description: service.description,
+  href: service.href,
+  facts: service.facts?.map((f) => f.text).filter(Boolean),
+  tag: service.tag || undefined,
+}));
+---
+
+<ServiceHighlights services={services} columns={Number(p.columns) as 2 | 3} tone={p.tone}>
+  {
+    (edit || p.title) && (
+      <Field slot="title" name="title" edit={edit} placeholder="Tajuk">{p.title}</Field>
+    )
+  }
+  {
+    (edit || p.description) && (
+      <Field slot="description" name="description" edit={edit} placeholder="Penerangan">
+        {p.description}
+      </Field>
+    )
+  }
+</ServiceHighlights>

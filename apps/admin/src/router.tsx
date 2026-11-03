@@ -2,7 +2,13 @@
  * Routes, defined in code. Add a page: create it in src/pages, add a
  * createRoute() here and list it in routeTree.
  */
-import { createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
+import {
+  createRootRoute,
+  createRoute,
+  createRouter,
+  Outlet,
+  redirect,
+} from "@tanstack/react-router";
 import { EditorPage } from "./editor/editor-page";
 import { RootLayout } from "./layout";
 import { AdminShell } from "./shell/shell";
@@ -24,23 +30,75 @@ import { TrashScreen } from "./pages/site/trash-screen";
 import { type DetailSearch, detailSearch } from "./pages/site/search";
 import { NewPageScreen } from "./pages/new-page/new-page-screen";
 import { type NewPageSearch, newPageSearch } from "./pages/new-page/search";
+import { AccountScreen } from "./account/account-screen";
+import { JoinScreen, ResetScreen } from "./auth/link-screens";
+import { CodeScreen, EnrolScreen, PasswordScreen, SignInScreen } from "./auth/sign-in-screens";
+import { meQuery, stagePaths } from "./lib/auth";
+import { queryClient } from "./lib/query";
+import { type AuditSearch, AuditScreen, auditSearch } from "./users/audit-screen";
+import { UsersScreen } from "./users/users-screen";
 
 const rootRoute = createRootRoute({
   component: RootLayout,
   notFoundComponent: NotFoundPage,
-  errorComponent: ErrorPage,
+});
+
+/** Where to go once signed in: kept through each step of signing in. */
+const nextSearch = (search: Record<string, unknown>): { next?: string } =>
+  typeof search.next === "string" ? { next: search.next } : {};
+
+// Signing in and the one-time links: outside the admin, open to anyone.
+const signInRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/sign-in",
+  validateSearch: nextSearch,
+  component: SignInScreen,
+});
+// Each step after the password, at its path in `stagePaths`.
+const stepScreens = { totp: CodeScreen, password: PasswordScreen, enrol: EnrolScreen };
+const stepRoutes = (Object.keys(stepScreens) as (keyof typeof stepScreens)[]).map((stage) =>
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: stagePaths[stage],
+    validateSearch: nextSearch,
+    component: stepScreens[stage],
+  }),
+);
+const joinRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/join",
+  component: JoinScreen,
+});
+const resetRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/reset",
+  component: ResetScreen,
+});
+
+// Everything else needs a finished sign-in: without one, Sign in (or the
+// step it's at), then back here.
+const signedInRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  id: "signed-in",
+  beforeLoad: async ({ location }) => {
+    const me = await queryClient.ensureQueryData(meQuery).catch(() => undefined);
+    const next = `/admin${location.href}`;
+    if (!me) throw redirect({ to: "/sign-in", search: { next } });
+    if (me.stage !== "full") throw redirect({ to: stagePaths[me.stage], search: { next } });
+  },
+  component: Outlet,
 });
 
 // Every screen sits in the shell: rail, top bar with the open pages, status bar.
 const shellRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => signedInRoute,
   id: "shell",
   component: AdminShell,
 });
 
 // New page is a focused flow of its own, outside the shell.
 const newPageRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => signedInRoute,
   path: "/pages/new",
   validateSearch: (search): NewPageSearch => newPageSearch(search),
   component: NewPageScreen,
@@ -134,27 +192,59 @@ const settingsRoute = createRoute({
   component: SettingsScreen,
 });
 
+const usersRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/users",
+  component: UsersScreen,
+});
+const auditRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/users/audit",
+  validateSearch: (search): AuditSearch => auditSearch(search),
+  component: AuditScreen,
+});
+const accountRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/account",
+  component: AccountScreen,
+});
+
 const routeTree = rootRoute.addChildren([
-  newPageRoute,
-  shellRoute.addChildren([
-    dashboardRoute,
-    pagesRoute,
-    pageRoute,
-    trashRoute,
-    deletedPageRoute,
-    mediaRoute,
-    navigationRoute,
-    announcementRoute,
-    searchRoute,
-    themeRoute,
-    publishingRoute,
-    analyticsRoute,
-    settingsRoute,
-    editorRoute,
+  signInRoute,
+  ...stepRoutes,
+  joinRoute,
+  resetRoute,
+  signedInRoute.addChildren([
+    newPageRoute,
+    shellRoute.addChildren([
+      dashboardRoute,
+      pagesRoute,
+      pageRoute,
+      trashRoute,
+      deletedPageRoute,
+      mediaRoute,
+      navigationRoute,
+      announcementRoute,
+      searchRoute,
+      themeRoute,
+      publishingRoute,
+      analyticsRoute,
+      settingsRoute,
+      usersRoute,
+      auditRoute,
+      accountRoute,
+      editorRoute,
+    ]),
   ]),
 ]);
 
-export const router = createRouter({ routeTree, basepath: "/admin", defaultPreload: "intent" });
+export const router = createRouter({
+  routeTree,
+  basepath: "/admin",
+  defaultPreload: "intent",
+  // A screen that throws shows the error in its own place: inside the shell, the sidebar stays.
+  defaultErrorComponent: ErrorPage,
+});
 
 declare module "@tanstack/react-router" {
   interface Register {

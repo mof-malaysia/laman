@@ -1,8 +1,9 @@
-import { link, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { link, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "@rstest/core";
-import { buildApp } from "../src/app.js";
+import { type App, signedInApp } from "./helpers.js";
 import { newLoads } from "../src/content/loads.js";
 import { publishedPages } from "../src/content/pages.js";
 import { renderInputFor } from "../src/content/render-input.js";
@@ -10,7 +11,7 @@ import { loadEnv } from "../src/env.js";
 import { MANIFEST_FILE, type Manifest, readManifest } from "../src/manifest.js";
 
 let dataDir: string;
-let app: Awaited<ReturnType<typeof buildApp>>;
+let app: App;
 
 beforeAll(async () => {
   dataDir = await mkdtemp(join(tmpdir(), "site-builder-publisher-"));
@@ -21,7 +22,7 @@ beforeAll(async () => {
     ADMIN_DIST: join(dataDir, "none"),
     SITE_URL: "https://agensi.gov.my",
   });
-  app = await buildApp({ env, databasePath: ":memory:", runJobs: false });
+  app = await signedInApp({ env, databasePath: ":memory:", runJobs: false });
 });
 afterAll(async () => {
   await app.close();
@@ -106,6 +107,37 @@ describe("incremental publishing", () => {
     expect(Object.keys(outputs).some((f) => f.startsWith("_astro/"))).toBe(true);
   });
 
+  it("serves pages at their address without a slash, compressed", async () => {
+    // Compressed copies beside each page, but not beside files under 1 KB.
+    expect(existsSync(live("berita/index.html.br"))).toBe(true);
+    expect(existsSync(live("berita/index.html.gz"))).toBe(true);
+    expect(existsSync(live("redirects.json.br"))).toBe(false);
+    const page = await app.inject({
+      method: "GET",
+      url: "/berita",
+      headers: { accept: "text/html", "accept-encoding": "br, gzip" },
+    });
+    expect(page.statusCode).toBe(200);
+    expect(page.headers["content-encoding"]).toBe("br");
+    const plain = await app.inject({ method: "GET", url: "/berita/halaman/2" });
+    expect(plain.statusCode).toBe(200);
+    expect(plain.body).toContain("<html");
+    const slash = await app.inject({ method: "GET", url: "/berita/?kategori=1" });
+    expect(slash.statusCode).toBe(301);
+    expect(slash.headers.location).toBe("/berita?kategori=1");
+    // An address the site doesn't have isn't redirected anywhere.
+    expect((await app.inject({ method: "GET", url: "/tiada/" })).statusCode).toBe(404);
+    // The search index is already-compressed data: it goes out as it is, never labelled compressed.
+    const wasm = (await readdir(live("pagefind"))).find((f) => f.startsWith("wasm."))!;
+    const index = await app.inject({
+      method: "GET",
+      url: `/pagefind/${wasm}`,
+      headers: { "accept-encoding": "br, gzip" },
+    });
+    expect(index.statusCode).toBe(200);
+    expect(index.headers["content-encoding"]).toBeUndefined();
+  });
+
   it("writes nothing when nothing changed, and keeps the live files as they are", async () => {
     const before = await inode("hubungi/index.html");
     const job = await publish();
@@ -126,7 +158,8 @@ describe("incremental publishing", () => {
       props: { title: "Terkini", listing: listing.id, count: "3", style: "list", seeAll: "" },
     };
     await call("PUT", `/api/pages/${home.id}/draft`, {
-      draft: { ...homeDraft, ms: { ...homeDraft.ms, blocks: [block] } },
+      // After the hero, which holds the page's h1.
+      draft: { ...homeDraft, ms: { ...homeDraft.ms, blocks: [homeDraft.ms.blocks[0], block] } },
     });
     await call("POST", `/api/pages/${home.id}/publish`);
     await publish();
@@ -163,24 +196,52 @@ describe("incremental publishing", () => {
     expect(written(job)).not.toContain("/berita/notis-1");
   });
 
-  it("leaves the live site and its manifest alone when a page can't be written", async () => {
-    // A folder where the page's file should be, and a fingerprint saying it changed.
-    const file = "berita/notis-1/index.html";
-    await rm(live(file));
-    await mkdir(join(live(file), "blocked"), { recursive: true });
-    const m = await manifest();
-    m.outputs[file] = "stale";
-    await writeFile(live(MANIFEST_FILE), JSON.stringify(m));
-    const before = await readFile(live(MANIFEST_FILE), "utf8");
-    const job = await publish();
-    expect(job.status).toBe("failed");
+  it("publishes the rest when a page won't render, and tries that one again next time", async () => {
+    const pageBySlug = (slug: string) =>
+      app.db
+        .selectFrom("pages")
+        .select(["id", "published_revision_id"])
+        .where("slug", "=", slug)
+        .executeTakeFirstOrThrow();
+    // notis-1's live revision is one the renderer can't read, as if written by an older version.
+    const { published_revision_id: revision } = await pageBySlug("notis-1");
+    const { content } = await app.db
+      .selectFrom("revisions")
+      .select("content")
+      .where("id", "=", revision!)
+      .executeTakeFirstOrThrow();
+    const doc = JSON.parse(content);
+    const setContent = (value: unknown) =>
+      app.db
+        .updateTable("revisions")
+        .set({ content: JSON.stringify(value) })
+        .where("id", "=", revision!)
+        .execute();
+    await setContent({
+      ...doc,
+      ms: { ...doc.ms, blocks: [{ id: "bad1", type: "hero", props: null }] },
+    });
+    const keptPage = await read("berita/notis-1/index.html");
+    const keptFingerprint = (await manifest()).outputs["berita/notis-1/index.html"];
+
+    const contact = (await pageBySlug("hubungi")).id;
+    const { draft } = (await call("GET", `/api/pages/${contact}`)).json().data;
+    await call("PUT", `/api/pages/${contact}/draft`, {
+      draft: { ...draft, ms: { ...draft.ms, title: "Hubungi kami sekarang" } },
+    });
+    const job = await publish(`/api/pages/${contact}/publish`);
+    expect(job.status).toBe("done");
+    expect(job.result.failed).toBe(1);
     expect(job.log).toContainEqual(
-      expect.objectContaining({ path: "/berita/notis-1", outcome: "failed" }),
+      expect.objectContaining({ path: "/berita/notis-1", outcome: "failed", blockId: "bad1" }),
     );
-    expect(await readFile(live(MANIFEST_FILE), "utf8")).toBe(before);
-    await expect(stat(join(dataDir, "public.next"))).rejects.toThrow();
-    await rm(live(file), { recursive: true });
-    expect(written(await publish())).toEqual(["/berita/notis-1"]);
+    expect(await read("hubungi/index.html")).toContain("Hubungi kami sekarang");
+    // The live copy stays, under its old fingerprint, so the next publish tries again.
+    expect(await read("berita/notis-1/index.html")).toBe(keptPage);
+    expect((await manifest()).outputs["berita/notis-1/index.html"]).toBe(keptFingerprint);
+
+    await setContent(doc);
+    expect(written(await publish())).toContain("/berita/notis-1");
   });
 
   it("writes every page when the site around them changes", async () => {
@@ -220,6 +281,8 @@ describe("incremental publishing", () => {
     app.jobs.poke();
     await app.jobs.idle();
     await expect(stat(live("hubungi/index.html"))).rejects.toThrow();
+    // Its compressed copies go with it, and so does its folder.
+    await expect(stat(live("hubungi/index.html.br"))).rejects.toThrow();
     await expect(stat(live("hubungi"))).rejects.toThrow();
     expect((await manifest()).outputs["hubungi/index.html"]).toBeUndefined();
   });

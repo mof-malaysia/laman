@@ -1,11 +1,9 @@
-/**
- * The admin preferences: one set for the whole site until there are users,
- * then each user's own.
- */
+/** The signed-in person's admin preferences. */
 import type { AdminPreferences as Preferences } from "@fiscal-sb/contracts";
 import type { FastifyPluginAsync } from "fastify";
 import { AdminPreferences, envelope } from "../contract.js";
-import { getPreferences, savePreferences } from "../content/preferences.js";
+import { userOf } from "../auth/guard.js";
+import { preferencesOf, savePreferences } from "../content/preferences.js";
 
 export const preferenceRoutes: FastifyPluginAsync = async (app) => {
   const { db } = app;
@@ -13,27 +11,29 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
   app.get(
     "/preferences",
     {
+      config: { access: "signedIn" },
       schema: {
-        summary: "Get the admin preferences",
-        description: "The admin's language. They apply to everyone using the admin.",
+        summary: "Get your admin preferences",
+        description: "Your admin language. Each person has their own.",
         tags: ["preferences"],
         response: { 200: envelope(AdminPreferences) },
       },
     },
-    async () => ({ data: await getPreferences(db) }),
+    async (request) => ({ data: preferencesOf(userOf(request)) }),
   );
 
   app.put<{ Body: Preferences }>(
     "/preferences",
     {
+      config: { access: "signedIn" },
       schema: {
-        summary: "Save the admin preferences",
+        summary: "Save your admin preferences",
         description: "They apply on save; nothing is published.",
         tags: ["preferences"],
         body: AdminPreferences,
         response: { 200: envelope(AdminPreferences) },
       },
     },
-    async (request) => ({ data: await savePreferences(db, request.body) }),
+    async (request) => ({ data: await savePreferences(db, userOf(request).id, request.body) }),
   );
 };

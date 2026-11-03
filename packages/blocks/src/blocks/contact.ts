@@ -17,12 +17,7 @@ export const contact = defineBlock({
     title: field.text("Heading", { max: 120, inline: true }).optional(),
     description: field.textarea("Introduction", { max: 300, inline: true }).optional(),
     officeName: field.text("Office name", { max: 120 }).optional(),
-    mapUrl: z
-      .string()
-      .max(500)
-      .regex(/^https:\/\//, "Enter a web address starting with https://")
-      .meta({ title: "Map link", widget: "text" })
-      .optional(),
+    mapUrl: field.mapLink().optional(),
     overrides: field
       .group("Instead of the site settings", {
         address: field.textarea("Address", { max: 300 }).optional(),

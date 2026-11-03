@@ -5,6 +5,7 @@
  * text that differs from the library's is kept as this use's own alt.
  * Decorative is a property of the image, so it's saved to the library too.
  */
+import type { MediaKind } from "@fiscal-sb/blocks";
 import type { Media } from "@fiscal-sb/contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
@@ -40,7 +41,7 @@ export function MediaPicker({
   onChoose,
 }: {
   /** "any" also offers documents (PDFs). */
-  kind?: "image" | "any";
+  kind?: MediaKind;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   value: MediaChoice | undefined;
@@ -62,7 +63,7 @@ function Picker({
   onDone,
 }: {
   value: MediaChoice | undefined;
-  kind: "image" | "any";
+  kind: MediaKind;
   onChoose: (choice: MediaChoice) => void;
   onDone: () => void;
 }) {
@@ -70,7 +71,7 @@ function Picker({
   const [search, setSearch] = useState("");
   const media = useMediaList({
     search,
-    kind: kind === "image" ? "image" : "all",
+    kind: kind === "any" ? "all" : kind,
     page: 1,
     pageSize: 60,
   });

@@ -57,6 +57,7 @@ import { Tag } from "@/components/ui/tag";
 import { type MessageKey, t } from "@/i18n";
 import { siteDocQuery, useSiteHref } from "@/lib/publish";
 import { apiError, jobsApi, siteApi, waitForJob } from "@/lib/api";
+import { useCan } from "@/lib/auth";
 import useToast from "@/lib/ftds/hooks/use-toast";
 import { clx } from "@/lib/ftds/utils";
 import {
@@ -87,12 +88,22 @@ const triggers: Record<PublishTrigger, MessageKey> = {
   retry: "publishing.trigger.retry",
   undo: "publishing.trigger.undo",
   rebuild: "publishing.trigger.rebuild",
+  restore: "publishing.trigger.restore",
 };
 const triggerOf = (job: Job) => t(triggers[payloadOf(job).trigger ?? "manual"]);
+
+/** Pages a finished publish couldn't build, so the site kept their last version. */
+const skippedCount = (job: Job) => (job.status === "done" ? (job.result?.failed ?? 0) : 0);
 
 function ResultTag({ job }: { job: Job }) {
   if (job.status === "done" && isUndone(job))
     return <Tag size="small">{t("publishing.undone")}</Tag>;
+  if (skippedCount(job))
+    return (
+      <Tag size="small" variant="warning">
+        {t("job.doneSkipped", { count: skippedCount(job) })}
+      </Tag>
+    );
   if (job.status === "done")
     return (
       <Tag size="small" variant="success">
@@ -109,6 +120,7 @@ function ResultTag({ job }: { job: Job }) {
 }
 
 export function PublishingScreen() {
+  const canManage = useCan("site.manage");
   return (
     <div className="p-surface gap-stack-lg mx-auto flex max-w-6xl flex-col">
       <PageHeader>
@@ -126,7 +138,7 @@ export function PublishingScreen() {
             <WaitingList />
           </section>
           <Scheduled />
-          <Rebuild />
+          {canManage && <Rebuild />}
         </div>
         <Log />
       </div>
@@ -141,13 +153,19 @@ export function PublishingScreen() {
 function SiteStatus() {
   const { state, waiting, lastAt, loaded } = useSiteState();
   const siteUrl = useSiteHref("/");
+  // Someone who can't publish isn't asked to tick anything.
+  const canPublish = useCan("content.publish");
   const body =
     state === "failed"
       ? t("publishing.status.failedBody")
       : state === "waiting" && waiting.fresh > 0
-        ? t("publishing.status.alsoFresh", { count: waiting.fresh })
+        ? t(canPublish ? "publishing.status.alsoFresh" : "publishing.status.alsoFreshCount", {
+            count: waiting.fresh,
+          })
         : state === "publishedLive"
-          ? t("publishing.status.freshOnly", { count: waiting.fresh })
+          ? t(canPublish ? "publishing.status.freshOnly" : "publishing.status.freshCount", {
+              count: waiting.fresh,
+            })
           : null;
 
   if (!loaded) return <Skeleton className="h-28 w-full rounded-lg" />;
@@ -181,6 +199,7 @@ function SiteStatus() {
 const SCHEDULING_ENABLED = false;
 
 function Scheduled() {
+  const canPublish = useCan("content.publish");
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const pages = usePages();
@@ -288,15 +307,17 @@ function Scheduled() {
                   </TableCell>
                   <TableCell>{triggerOf(job)}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="default-ghost" size="small" onClick={() => void cancel(job)}>
-                      {t("common.cancel")}
-                      <span className="sr-only">
-                        {" "}
-                        {t("publishing.schedule.cancelFor", {
-                          time: formatDateTime(job.runAt ?? job.createdAt),
-                        })}
-                      </span>
-                    </Button>
+                    {canPublish && (
+                      <Button variant="default-ghost" size="small" onClick={() => void cancel(job)}>
+                        {t("common.cancel")}
+                        <span className="sr-only">
+                          {" "}
+                          {t("publishing.schedule.cancelFor", {
+                            time: formatDateTime(job.runAt ?? job.createdAt),
+                          })}
+                        </span>
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               );
@@ -305,7 +326,7 @@ function Scheduled() {
         </Table>
       )}
       {/* Few officers schedule, so the form waits behind a toggle; what's scheduled stays in view. */}
-      {SCHEDULING_ENABLED && (
+      {SCHEDULING_ENABLED && canPublish && (
         <Details>
           <DetailsTrigger>
             {upcoming.length > 0
@@ -506,6 +527,7 @@ const lines: Record<PublishTrigger, MessageKey> = {
   retry: "publishing.line.retry",
   undo: "publishing.line.undo",
   rebuild: "publishing.line.rebuild",
+  restore: "publishing.line.restore",
 };
 
 const isToday = (iso: string) => new Date(iso).toDateString() === new Date().toDateString();
@@ -543,9 +565,11 @@ function daysOf(jobs: Job[], titles: Titles) {
 const toneOf = (job: Job): Tone =>
   job.status === "failed"
     ? "danger"
-    : job.status === "done" && !isUndone(job)
-      ? "success"
-      : "neutral";
+    : skippedCount(job)
+      ? "warning"
+      : job.status === "done" && !isUndone(job)
+        ? "success"
+        : "neutral";
 
 function Log() {
   const [page, setPage] = useState(1);
@@ -621,9 +645,9 @@ function Log() {
                           </span>
                         </span>
                         {/* Words only where it didn't simply go live; the dot carries the rest. */}
-                        {(row.job.status !== "done" || isUndone(row.job)) && (
-                          <ResultTag job={row.job} />
-                        )}
+                        {(row.job.status !== "done" ||
+                          isUndone(row.job) ||
+                          Boolean(row.job.result?.failed)) && <ResultTag job={row.job} />}
                         <ChevronRightIcon
                           aria-hidden
                           className="text-txt-black-700 size-4 shrink-0"
@@ -696,7 +720,8 @@ function JobDrawer({
   const data = job.data?.id === id ? job.data : undefined;
   const failed = data?.log.filter((e) => e.outcome === "failed") ?? [];
   const swaps = data ? swapsOf(data) : [];
-  const undoable = data !== undefined && canUndo(data);
+  const canManage = useCan("site.manage");
+  const undoable = canManage && data !== undefined && canUndo(data);
   // Pages a publish left as they were: it only writes what changed.
   const unchanged = data?.result?.unchanged ?? 0;
   const [busy, setBusy] = useState<"retry" | "undo" | null>(null);
@@ -770,9 +795,13 @@ function JobDrawer({
               {isUndone(data) && (
                 <p className="text-body-sm text-txt-black-700">{t("publishing.undoneNote")}</p>
               )}
-              {data.status === "failed" && (
-                <Callout variant="danger">
-                  <CalloutTitle>{t("publishing.failedTitle")}</CalloutTitle>
+              {failed.length > 0 && (
+                <Callout variant={data.status === "failed" ? "danger" : "warning"}>
+                  <CalloutTitle>
+                    {data.status === "failed"
+                      ? t("publishing.failedTitle")
+                      : t("publishing.skippedTitle")}
+                  </CalloutTitle>
                   <CalloutContent className="flex flex-col gap-2">
                     {failed.map((entry) => (
                       <div key={entry.path} className="flex flex-col items-start gap-1">
@@ -865,7 +894,7 @@ function JobDrawer({
             </>
           )}
         </DrawerBody>
-        {data?.status === "failed" && (
+        {canManage && data?.status === "failed" && (
           <DrawerFooter>
             <Button variant="primary-fill" disabled={busy !== null} onClick={() => void retry()}>
               {busy === "retry" ? t("publish.busy") : t("publishing.retry")}

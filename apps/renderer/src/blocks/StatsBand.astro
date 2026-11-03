@@ -1,0 +1,29 @@
+---
+import type { BlockOf } from "@fiscal-sb/blocks";
+import StatsBand from "@/components/blocks/stats-band.astro";
+import Field from "./Field.astro";
+
+type Props = { block: BlockOf<"statsBand">; edit: boolean };
+const { block, edit } = Astro.props;
+const p = block.props;
+---
+
+<StatsBand stats={p.stats}>
+  {
+    (edit || p.title) && (
+      <Field slot="title" name="title" edit={edit} placeholder="Tajuk">{p.title}</Field>
+    )
+  }
+  {
+    (edit || p.description) && (
+      <Field slot="description" name="description" edit={edit} placeholder="Pengenalan">
+        {p.description}
+      </Field>
+    )
+  }
+  {
+    (edit || p.source) && (
+      <Field slot="source" name="source" edit={edit} placeholder="Sumber">{p.source}</Field>
+    )
+  }
+</StatsBand>

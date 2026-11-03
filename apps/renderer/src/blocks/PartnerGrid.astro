@@ -1,0 +1,41 @@
+---
+/** The agencies behind a service, in FTDS PartnerGrid; another website is worked out from the address. */
+import type { BlockOf, Locale, MediaInfo } from "@fiscal-sb/blocks";
+import PartnerGrid from "@/components/blocks/partner-grid.astro";
+import Field from "./Field.astro";
+import { isExternal } from "./links";
+import { atLeast } from "./media";
+
+type Props = {
+  block: BlockOf<"partnerGrid">;
+  edit: boolean;
+  lang: Locale;
+  media: Record<string, MediaInfo>;
+  siteUrl?: string | undefined;
+};
+const { block, edit, lang, media, siteUrl } = Astro.props;
+const p = block.props;
+const partners = p.partners.map((partner) => {
+  const logo = partner.logo && media[partner.logo.mediaId];
+  return {
+    ...partner,
+    logo: logo ? atLeast(logo, 160) : undefined,
+    external: isExternal(partner.href ?? "", siteUrl),
+  };
+});
+---
+
+<PartnerGrid partners={partners} columns={Number(p.columns) as 3 | 4} tone={p.tone} lang={lang}>
+  {
+    (edit || p.title) && (
+      <Field slot="title" name="title" edit={edit} placeholder="Tajuk">{p.title}</Field>
+    )
+  }
+  {
+    (edit || p.description) && (
+      <Field slot="description" name="description" edit={edit} placeholder="Pengenalan">
+        {p.description}
+      </Field>
+    )
+  }
+</PartnerGrid>

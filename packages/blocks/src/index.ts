@@ -3,6 +3,7 @@ export * from "./fields.js";
 export * from "./registry.js";
 export * from "./rich-text.js";
 export { featureIcons } from "./blocks/feature-grid.js";
-export type { BlockDefinition, BlockGroup } from "./define.js";
+export { blockIcons } from "./define.js";
+export type { BlockDefinition, BlockGroup, BlockIcon } from "./define.js";
 export * from "./templates.js";
 export * from "./theme.js";

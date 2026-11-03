@@ -6,11 +6,12 @@
  * Replaced files have no tick: every publish copies the files as they are,
  * so they go with whatever is published.
  */
-import type { SiteDocName, WaitingItem } from "@fiscal-sb/contracts";
+import type { PageCheck, WaitingItem } from "@fiscal-sb/contracts";
 import { Link } from "@tanstack/react-router";
 import { type ReactNode, useId, useState } from "react";
 import { linkClass } from "@/components/text-link";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { stops, useChecksOf } from "@/components/page-checks";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Panel, PanelBody, PanelTitle } from "@/components/ui/panel";
@@ -18,20 +19,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldItem, FieldLabel } from "@/components/ui/field";
 import { locale, type MessageKey, t } from "@/i18n";
 import { siteApi } from "@/lib/api";
+import { useCan } from "@/lib/auth";
 import { formatDateTime } from "@/lib/pages";
 import { clx } from "@/lib/ftds/utils";
-import { isNewPage, usePublish, useSiteHref, useWaiting } from "@/lib/publish";
+import { docName, isNewPage, usePublish, useSiteHref, useWaiting } from "@/lib/publish";
 
 const key = (item: WaitingItem) =>
   item.kind === "page" ? item.id : item.kind === "media" ? `media:${item.id}` : item.kind;
-
-const docName: Record<SiteDocName, MessageKey> = {
-  settings: "waiting.settings",
-  navigation: "waiting.navigation",
-  announcement: "waiting.announcement",
-  search: "waiting.search",
-  theme: "waiting.theme",
-};
 
 /** What a row is called: the page's title, the file's name, or the document's name. */
 const itemName = (item: WaitingItem) =>
@@ -67,30 +61,78 @@ function Review({ item, onNavigate }: { item: WaitingItem; onNavigate?: () => vo
   );
 }
 
+/** A page's checks under its name: what stops it, or how many things to look at. */
+function ChecksNote({ checks }: { checks: PageCheck[] | undefined }) {
+  if (!checks?.length) return null;
+  const stopped = stops(checks);
+  return (
+    <span className={clx("text-body-sm", stopped ? "text-txt-danger" : "text-txt-warning")}>
+      {stopped ? t("checks.stoppedRow") : t("checks.warningsRow", { count: checks.length })}
+    </span>
+  );
+}
+
 function Row({
   item,
   checked,
   onChecked,
   onNavigate,
+  readOnly,
+  checks,
 }: {
   item: WaitingItem;
   checked: boolean;
   onChecked: (checked: boolean) => void;
   onNavigate?: (() => void) | undefined;
+  /** For someone who can't publish: what's waiting, without ticks. */
+  readOnly?: boolean;
+  /** A page's checks before it goes live; one a check stops (`checked` is then false) can't be ticked. */
+  checks?: PageCheck[] | undefined;
 }) {
   const meta = useId();
+  const stopped = stops(checks);
+  const description = [
+    item.kind === "page"
+      ? `${item.path} · ${t("waiting.saved", { date: formatDateTime(item.updatedAt) })}`
+      : t("waiting.doc"),
+    "editedBy" in item && item.editedBy && t("waiting.by", { name: item.editedBy }),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  // The address, save time and checks: under the name, and the checkbox's description.
+  const details = (
+    <>
+      <span className="text-body-sm text-txt-black-700 truncate">{description}</span>
+      <ChecksNote checks={checks} />
+    </>
+  );
+  if (readOnly)
+    return (
+      <li className="flex items-start gap-3 py-2">
+        <span className="flex min-w-0 flex-1 flex-col items-start">
+          <span className="text-body-md truncate font-medium">{itemName(item)}</span>
+          {details}
+        </span>
+        <span className="text-body-sm shrink-0 pt-0.5">
+          <Review item={item} {...(onNavigate && { onNavigate })} />
+        </span>
+      </li>
+    );
   return (
     <li className="flex items-start gap-3 py-2">
       <Field name={`waiting-${key(item)}`} className="min-w-0 flex-1">
         <FieldItem>
           {/* The name is the title; the address and save time are its description. */}
-          <Checkbox checked={checked} onCheckedChange={onChecked} aria-describedby={meta} />
+          <Checkbox
+            checked={checked}
+            disabled={stopped}
+            onCheckedChange={onChecked}
+            aria-describedby={meta}
+          />
           <span className="flex min-w-0 flex-col items-start">
             <FieldLabel className="truncate text-left font-medium">{itemName(item)}</FieldLabel>
-            <span id={meta} className="text-body-sm text-txt-black-700 truncate">
-              {item.kind === "page"
-                ? `${item.path} · ${t("waiting.saved", { date: formatDateTime(item.updatedAt) })}`
-                : t("waiting.doc")}
+            <span id={meta} className="flex flex-col items-start">
+              {details}
             </span>
           </span>
         </FieldItem>
@@ -125,6 +167,11 @@ function MediaRow({
 
 export function WaitingList({ onNavigate }: { onNavigate?: () => void }) {
   const waiting = useWaiting();
+  const checks = useChecksOf(
+    waiting.items.flatMap((item) => (item.kind === "page" ? [item.id] : [])),
+  );
+  const checksOf = (item: WaitingItem) =>
+    item.kind === "page" ? checks.data?.[item.id] : undefined;
 
   // What the officer unticked (changes) or ticked (new pages); everything else follows the default.
   const [flipped, setFlipped] = useState<Set<string>>(new Set());
@@ -146,9 +193,12 @@ export function WaitingList({ onNavigate }: { onNavigate?: () => void }) {
       return next;
     });
   const [confirming, setConfirming] = useState(false);
+  const canPublish = useCan("content.publish");
 
   const files = waiting.items.filter((item) => item.kind === "media");
-  const chosen = waiting.items.filter((item) => item.kind !== "media" && isChecked(item));
+  // A page a check stops can't go: it keeps the officer's tick, but shows unticked and isn't sent.
+  const goes = (item: WaitingItem) => isChecked(item) && !stops(checksOf(item));
+  const chosen = waiting.items.filter((item) => item.kind !== "media" && goes(item));
   // What the last publish sent, for the outcome to name.
   const [sent, setSent] = useState<WaitingItem[]>([]);
   const { outcome, publish } = usePublish(() => {
@@ -171,7 +221,7 @@ export function WaitingList({ onNavigate }: { onNavigate?: () => void }) {
           <h3 id={id} className="text-body-sm text-txt-black-700 font-semibold">
             {t(title)}
           </h3>
-          {items.length > 1 && (
+          {canPublish && items.length > 1 && (
             <button
               type="button"
               className={clx("text-body-sm", linkClass)}
@@ -187,9 +237,11 @@ export function WaitingList({ onNavigate }: { onNavigate?: () => void }) {
             <Row
               key={key(item)}
               item={item}
-              checked={isChecked(item)}
+              checked={goes(item)}
               onChecked={() => toggle(item)}
               onNavigate={onNavigate}
+              readOnly={!canPublish}
+              checks={checksOf(item)}
             />
           ))}
         </ul>
@@ -274,7 +326,10 @@ export function WaitingList({ onNavigate }: { onNavigate?: () => void }) {
           {group("waiting-new", "waiting.new", waiting.items.filter(isNewPage))}
         </>
       )}
-      {waiting.items.length > 0 && outcome.status !== "failed" && (
+      {waiting.items.length > 0 && !canPublish && (
+        <p className="text-body-sm text-txt-black-700">{t("waiting.byManager")}</p>
+      )}
+      {waiting.items.length > 0 && canPublish && outcome.status !== "failed" && (
         <div className="flex flex-wrap items-center gap-3">
           <Button
             variant="primary-fill"

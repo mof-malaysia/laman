@@ -1,0 +1,42 @@
+---
+/** A quiet row of logos, in FTDS LogoCloud; each logo's alt text is the organisation's name. */
+import type { BlockOf, MediaInfo } from "@fiscal-sb/blocks";
+import LogoCloud from "@/components/blocks/logo-cloud.astro";
+import Field from "./Field.astro";
+import MediaPlaceholder from "./MediaPlaceholder.astro";
+import TextColumn from "./TextColumn.astro";
+import { atLeast } from "./media";
+
+type Props = { block: BlockOf<"logoCloud">; edit: boolean; media: Record<string, MediaInfo> };
+const { block, edit, media } = Astro.props;
+const p = block.props;
+const logos = p.logos.flatMap((item) => {
+  const logo = media[item.logo.mediaId];
+  if (!logo) return [];
+  return [
+    {
+      src: atLeast(logo, 240),
+      alt: item.name,
+      href: item.href,
+      width: logo.width ?? undefined,
+      height: logo.height ?? undefined,
+    },
+  ];
+});
+---
+
+{
+  logos.length > 0 ? (
+    <LogoCloud logos={logos} muted={p.muted}>
+      {(edit || p.title) && (
+        <Field slot="title" name="title" edit={edit} placeholder="Tajuk">{p.title}</Field>
+      )}
+    </LogoCloud>
+  ) : (
+    edit && (
+      <TextColumn tight>
+        <MediaPlaceholder label="Pilih logo dari Media" />
+      </TextColumn>
+    )
+  )
+}

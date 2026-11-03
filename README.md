@@ -2,9 +2,18 @@
 
 A self-hosted website builder for agency sites, built on FTDS. Editors arrange approved FTDS blocks on a live canvas, edit text in place and press Publish to write a static site. One Node process, one SQLite file. The design is in [docs/site-builder.md](docs/site-builder.md).
 
-This is the vertical slice: five blocks, one language (BM), no sign-in yet.
+## Install on a server
 
-## Getting started
+With Docker Compose, from this repository:
+
+```sh
+cp .env.example .env    # then fill it in
+docker compose --profile https up -d --build
+```
+
+That's the builder and Caddy for HTTPS; without `--profile https` it listens on `127.0.0.1:8080` for your own proxy. The full guide, with backups, restore and upgrades, is [docs/install-docker.md](docs/install-docker.md).
+
+## Develop
 
 ```sh
 pnpm install
@@ -33,17 +42,7 @@ The server's CLI runs the same code: `pnpm --filter @fiscal-sb/server cli migrat
 
 ## Configuration
 
-The server reads environment variables, validated in `apps/server/src/env.ts`:
-
-| Variable      | Default         | Meaning                                                             |
-| ------------- | --------------- | ------------------------------------------------------------------- |
-| `PORT`        | `3000`          | Port to listen on                                                   |
-| `HOST`        | `127.0.0.1`     | Interface to bind (`0.0.0.0` in Docker)                             |
-| `LOG_LEVEL`   | `info`          | Pino log level                                                      |
-| `DATA_DIR`    | `./data`        | All state: `site.db` and the published site in `public/`            |
-| `ADMIN_DIST`  | `../admin/dist` | The built admin app, served at `/admin`                             |
-| `SITE_URL`    | (none)          | Public address of the published site; enables `sitemap.xml`         |
-| `CORS_ORIGIN` | (none)          | Comma-separated origins allowed to call the API from another origin |
+The server reads environment variables, validated in `apps/server/src/env.ts`; `apps/server/.env.example` lists every one with what it does (the port, the data and backup folders, the site's address, the proxy, the first account, analytics). Locally they go in `apps/server/.env`; with Docker, in `.env` beside `compose.yaml`.
 
 In development, the admin's dev server reads `ADMIN_PORT` (default `3001`) and `SERVER_URL` (default `http://127.0.0.1:3000`).
 

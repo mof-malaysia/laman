@@ -9,6 +9,7 @@ import { mediaTotals } from "../content/media.js";
 import { listPages } from "../content/pages.js";
 import { waitingItems } from "../content/publishing.js";
 import { toJob } from "../jobs.js";
+import { type BackupOptions, backupStatus } from "./backups.js";
 import { renderHtml } from "../render.js";
 
 // src/routes and dist/routes are both two levels below package.json.
@@ -32,7 +33,8 @@ export const summaryRoutes: FastifyPluginAsync<{
   siteUrl: string | undefined;
   maxUploadBytes: number;
   dataDir: string;
-}> = async (app, { siteUrl, maxUploadBytes, dataDir }) => {
+  backup: BackupOptions;
+}> = async (app, { siteUrl, maxUploadBytes, dataDir, backup }) => {
   const { db } = app;
   let renderer = { ok: true, checkedAt: 0 };
 
@@ -67,17 +69,18 @@ export const summaryRoutes: FastifyPluginAsync<{
   app.get(
     "/summary",
     {
+      config: { access: "signedIn" },
       schema: {
         summary: "Dashboard summary",
         description:
-          "Page counts, what isn't live yet (as `GET /publish/preview`), the latest saved drafts, the last five publishes and the renderer's health.",
+          "Page counts, what isn't live yet (as `GET /publish/preview`), the latest saved drafts, the last five publishes, the renderer's health and how the last backup went.",
         tags: ["summary"],
         response: { 200: envelope(Summary) },
       },
     },
     async () => {
       const pages = await listPages(db);
-      const [jobs, waiting, ok, media] = await Promise.all([
+      const [jobs, waiting, ok, media, backups] = await Promise.all([
         db
           .selectFrom("jobs")
           .selectAll()
@@ -89,6 +92,7 @@ export const summaryRoutes: FastifyPluginAsync<{
         waitingItems(db, pages),
         rendererOk(),
         mediaTotals(db),
+        backupStatus(db, backup),
       ]);
       const publishes = jobs.map(toJob);
       return {
@@ -107,6 +111,7 @@ export const summaryRoutes: FastifyPluginAsync<{
             dataDir,
             databaseBytes: await databaseBytes(dataDir),
           },
+          backup: backups,
         },
       };
     },

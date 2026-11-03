@@ -54,7 +54,7 @@ Built (on `feat/site-builder-slice`):
 - An admin on FTDS `AppShell`: dashboard, page tree with Recently deleted, a full-screen new page flow (page or collection, then a template), page detail with live preview, the block editor (canvas, layers, property panel generated from block schemas, inline text), media library with required alt text, navigation (navbar, announcement, footer), site settings, publishing with schedules and history with restore.
 - Eleven blocks: hero, prose, feature grid, image, callout, CTA band, link list, FAQ, contact, entry list, latest entries. Pages have kinds (page, listing, entry) that limit which blocks fit.
 
-Not built yet: sign-in, users and roles, an audit log of who did what, BM/EN side by side, backups from the admin. Site search (Pagefind) is built: see Site search in `docs/site-builder.md`.
+Not built yet: BM/EN side by side. Built since: sign-in, users and roles and an audit log (`docs/auth.md`), site search (Pagefind), and backups (`docs/site-builder.md` § Backup and restore).
 
 ## Hard constraints
 
@@ -62,7 +62,7 @@ Not built yet: sign-in, users and roles, an audit log of who did what, BM/EN sid
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Hosting        | Single tenant, self-hosted by each agency. No cloud we operate. The builder should sit on an internal network or behind a VPN.                                                  |
 | Design freedom | Officers arrange approved FTDS blocks and choose preset variants. No free styling, no custom HTML, no new blocks or kinds from the admin.                                       |
-| Design system  | FTDS v0.2.0 via the shadcn registry. Gaps are built from FTDS tokens, never raw colours.                                                                                        |
+| Design system  | FTDS v0.2.2 via the shadcn registry. Gaps are built from FTDS tokens, never raw colours.                                                                                        |
 | Output         | Static HTML that keeps working when the builder is off.                                                                                                                         |
 | Languages      | Site content BM by default, EN as a second slot. Admin UI in English today.                                                                                                     |
 | Workflow       | No approval layer in the first version, to keep it simple. Not a permanent decision. Draft, published, history.                                                                 |

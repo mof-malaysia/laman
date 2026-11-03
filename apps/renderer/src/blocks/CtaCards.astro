@@ -1,0 +1,31 @@
+---
+import type { BlockOf } from "@fiscal-sb/blocks";
+import CtaCards from "@/components/blocks/cta-cards.astro";
+import { action } from "./action";
+import Field from "./Field.astro";
+import { featureIconComponents as icons } from "./icons";
+
+type Props = { block: BlockOf<"ctaCards">; edit: boolean };
+const { block, edit } = Astro.props;
+const p = block.props;
+// A way shows once its action has both a label and a link, as every block's actions do.
+const options = p.options.flatMap((option) => {
+  const link = action(option.action);
+  return link ? [{ ...option, icon: option.icon && icons[option.icon], action: link }] : [];
+});
+---
+
+<CtaCards options={options} tone={p.tone}>
+  {
+    (edit || p.title) && (
+      <Field slot="title" name="title" edit={edit} placeholder="Tajuk">{p.title}</Field>
+    )
+  }
+  {
+    (edit || p.description) && (
+      <Field slot="description" name="description" edit={edit} placeholder="Pengenalan">
+        {p.description}
+      </Field>
+    )
+  }
+</CtaCards>

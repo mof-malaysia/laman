@@ -271,5 +271,28 @@ const searchFilters = [
         </script>
       )
     }
+    <script>
+      // The navbar's dropdowns and mobile menu are popovers. Phones on Chrome or
+      // WebView before 114, and older Samsung Internet, lack the API: only they
+      // download the polyfill, which also makes `:popover-open` work in scripts.
+      if (!("popover" in HTMLElement.prototype)) void import("@oddbird/popover-polyfill");
+    </script>
+    <style is:global>
+      /* The polyfill marks an open popover with a class, not :popover-open (navbar.astro). */
+      [data-ftds-navbar-panel].\:popover-open {
+        display: flex;
+        flex-direction: column;
+      }
+      /* Open, the menu button shows the cross and says "Close" (its second icon and name). */
+      header:has([data-ftds-navbar-panel].\:popover-open) [popovertarget] > :is(svg, span):first-of-type {
+        display: none;
+      }
+      header:has([data-ftds-navbar-panel].\:popover-open) [popovertarget] > svg:nth-of-type(2) {
+        display: block;
+      }
+      header:has([data-ftds-navbar-panel].\:popover-open) [popovertarget] > span:nth-of-type(2) {
+        display: inline;
+      }
+    </style>
   </body>
 </html>

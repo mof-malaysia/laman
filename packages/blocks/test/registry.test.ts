@@ -3,6 +3,8 @@ import {
   Block,
   blockFields,
   blocks,
+  fieldShown,
+  kindIssues,
   newBlock,
   PageContent,
   richTextToHtml,
@@ -37,6 +39,57 @@ describe("block registry", () => {
 
     expect(blockFields("prose")).toEqual([
       expect.objectContaining({ name: "body", widget: "richtext" }),
+    ]);
+  });
+
+  it("shows a field only where its condition holds, reading defaults for unset siblings", () => {
+    const fields = blockFields("hero");
+    const spec = (name: string) => fields.find((f) => f.name === name)!;
+    expect(spec("media").when).toEqual({ layout: ["split", "image"] });
+    expect(spec("layout").defaultValue).toBe("stacked");
+    expect(fieldShown(spec("media"), {}, fields)).toBe(false);
+    expect(fieldShown(spec("media"), { layout: "image" }, fields)).toBe(true);
+    expect(fieldShown(spec("align"), {}, fields)).toBe(true);
+    expect(fieldShown(spec("mediaPosition"), { layout: "image" }, fields)).toBe(false);
+    expect(fieldShown(spec("title"), {}, fields)).toBe(true);
+  });
+
+  it("parses heroes saved before layouts, as stacked on Paper", () => {
+    const old = { id: "h1", type: "hero", props: { title: "Utama" } };
+    expect(Block.parse(old).props).toMatchObject({ layout: "stacked", tone: "paper" });
+  });
+
+  const layouts = ["stacked", "split", "image"] as const;
+  const tones = ["paper", "well", "primary"] as const;
+  it.each(layouts.flatMap((layout) => tones.map((tone) => [layout, tone] as const)))(
+    "a %s hero on %s passes its schema",
+    (layout, tone) => {
+      const block = newBlock("hero", "h1");
+      const props = {
+        ...block.props,
+        layout,
+        tone,
+        media: { mediaId: "0b6e6c4e-8f4f-4b8e-9a39-2f1c3d5e7a90" },
+      };
+      expect(Block.safeParse({ ...block, props }).success).toBe(true);
+    },
+  );
+
+  it("recommends one way at most", () => {
+    const block = newBlock("ctaCards", "c1");
+    const way = { title: "Dalam talian", action: { label: "Mohon", href: "/" }, recommended: true };
+    const props = { ...block.props, options: [way, way] };
+    expect(Block.safeParse({ ...block, props }).success).toBe(false);
+  });
+
+  it("allows one Hero or Page intro on a page", () => {
+    const opening = [{ type: "hero" as const }, { type: "pageIntro" as const }];
+    expect(kindIssues("page", opening)).toEqual([
+      "A page has one Hero or Page intro: it holds the page's only h1",
+    ]);
+    expect(kindIssues("page", [{ type: "pageIntro" }, { type: "prose" }])).toEqual([]);
+    expect(kindIssues("entry", [{ type: "pageIntro" }])).toEqual([
+      "A entry page can't use the Page intro block",
     ]);
   });
 

@@ -2,25 +2,26 @@
  * Writes the published site: every published revision through the renderer,
  * the redirects, the media they use, the renderer's assets, a sitemap and the
  * search index with its /carian page, into public.next, then swaps it into place. A failed build leaves the live site untouched.
+ * A page that fails to render doesn't stop the rest: it keeps its live copy
+ * (or, new, stays off the site) and the log says which block broke it.
  *
  * It's incremental: public.next starts as hard links to the live files, and
  * a file is only written again when its fingerprint (for a page, its whole
  * render input and the renderer build) differs from the one in the live
  * folder's manifest. `full` ignores the manifest and writes everything.
  */
+import { existsSync } from "node:fs";
+import { copyFile, mkdir, readFile, rename, rm, rmdir, stat, writeFile } from "node:fs/promises";
+import { promisify } from "node:util";
+import { brotliCompress, constants, gzip } from "node:zlib";
+import { basename, dirname, join } from "node:path";
 import {
-  copyFile,
-  link,
-  mkdir,
-  readdir,
-  rename,
-  rm,
-  rmdir,
-  stat,
-  writeFile,
-} from "node:fs/promises";
-import { basename, dirname, join, relative } from "node:path";
-import { type RenderInput, SEARCH_INDEX_DIR, SEARCH_PATH, mediaIdsOf } from "@fiscal-sb/blocks";
+  NOT_FOUND_FILE,
+  type RenderInput,
+  SEARCH_INDEX_DIR,
+  SEARCH_PATH,
+  mediaIdsOf,
+} from "@fiscal-sb/blocks";
 import type { PublishLogEntry } from "@fiscal-sb/contracts";
 import { mediaFolders } from "./content/media.js";
 import { publishedPages } from "./content/pages.js";
@@ -30,7 +31,9 @@ import { newLoads } from "./content/loads.js";
 import { renderInputFor } from "./content/render-input.js";
 import { readDoc, siteContext } from "./content/site.js";
 import type { Db } from "./db/index.js";
+import { inPool, linkTree } from "./files.js";
 import {
+  MANIFEST_DIR,
   MANIFEST_FILE,
   type Manifest,
   canonicalJson,
@@ -48,15 +51,6 @@ export type PublishOptions = {
   /** Write every file, ignoring what the last publish left. */
   full?: boolean | undefined;
 };
-
-/** A publish that failed, with what happened to each page. The live site is untouched. */
-export class PublishError extends Error {
-  readonly log: PublishLogEntry[];
-  constructor(message: string, log: PublishLogEntry[]) {
-    super(message);
-    this.log = log;
-  }
-}
 
 /** Renders a failing page's blocks one at a time to name the block that breaks it. */
 async function failingBlock(input: RenderInput) {
@@ -81,43 +75,43 @@ const escapeXml = (value: string) =>
     .replaceAll('"', "&quot;");
 
 /** The page file for an address, relative to the folder: "/" is index.html, "/a/b" is a/b/index.html. */
-const pageFile = (path: string) => [...path.split("/").filter(Boolean), "index.html"].join("/");
+/** Files worth sending compressed: images, fonts and the search index's fragments already are. */
+const COMPRESSIBLE = /\.(html|css|js|mjs|json|xml|svg|txt|wasm)$/;
+/** Smaller than this, compressing saves less than the bytes it costs to say so. */
+const COMPRESS_MIN_BYTES = 1024;
+/** The compressed copies written beside a file, and removed with it. */
+const COPIES = [".br", ".gz"] as const;
+const brotli = promisify(brotliCompress);
+const gzipped = promisify(gzip);
+
+/**
+ * Writes `file.br` and `file.gz` beside a text file, so the server (or a
+ * reverse proxy with `gzip_static` / `brotli_static`) sends them without
+ * compressing on every visit. Higher settings save under 1% for half again the time.
+ */
+async function precompress(file: string) {
+  const body = await readFile(file);
+  if (body.length < COMPRESS_MIN_BYTES) return;
+  const [br, gz] = await Promise.all([
+    brotli(body, { params: { [constants.BROTLI_PARAM_QUALITY]: 5 } }),
+    gzipped(body, { level: 6 }),
+  ]);
+  await Promise.all([writeFile(`${file}${COPIES[0]}`, br), writeFile(`${file}${COPIES[1]}`, gz)]);
+}
+
+/** Removes a file and its compressed copies: links into the live folder, never written through. */
+const removeWithCopies = (file: string) =>
+  Promise.all(["", ...COPIES].map((suffix) => rm(file + suffix, { force: true })));
+
+/** A page's file in the published folder: "/berita" is "berita/index.html". */
+export const pageFile = (path: string) =>
+  [...path.split("/").filter(Boolean), "index.html"].join("/");
 
 /** An address's file in a folder, from a path inside it ("berita/rss.xml"). */
 const fileIn = (root: string, file: string) => join(root, ...file.split("/"));
 
 /** The address a page file is for: the reverse of `pageFile`. */
 const addressOf = (file: string) => `/${file.replace(/(^|\/)index\.html$/, "")}`;
-
-/** Runs `task` over `items` a few at a time; waits for all of them before throwing. */
-async function inPool<T>(items: T[], task: (item: T) => Promise<unknown>, size = 16) {
-  let next = 0;
-  const worker = async () => {
-    for (let i = next++; i < items.length; i = next++) await task(items[i] as T);
-  };
-  const results = await Promise.allSettled(Array.from({ length: size }, worker));
-  const failure = results.find((r) => r.status === "rejected");
-  if (failure) throw failure.reason;
-}
-
-/**
- * `to` as a copy of `from` made of hard links: no file is copied, so it's
- * quick and costs no disk. Folders first, then the links, a few at a time so
- * a large site neither waits on each one nor runs out of file handles.
- */
-async function linkTree(from: string, to: string) {
-  const entries = await readdir(from, { recursive: true, withFileTypes: true });
-  const target = (e: (typeof entries)[number]) => join(to, relative(from, e.parentPath), e.name);
-  await mkdir(to, { recursive: true });
-  await inPool(
-    entries.filter((e) => e.isDirectory()),
-    (e) => mkdir(target(e), { recursive: true }),
-  );
-  await inPool(
-    entries.filter((e) => !e.isDirectory()),
-    (e) => link(join(e.parentPath, e.name), target(e)),
-  );
-}
 
 /** Removes `dir` and the folders above it while they're empty, up to `root`. */
 async function pruneEmpty(root: string, dir: string) {
@@ -168,6 +162,8 @@ export async function publishSite({ db, dataDir, siteUrl, full = false }: Publis
   await mkdir(next, { recursive: true });
   const previous = base?.outputs ?? {};
   const outputs: Record<string, string> = {};
+  /** Text files written this publish, compressed together before the swap. */
+  const written = new Set<string>();
   /**
    * Writes `file` unless the live folder has it with the same fingerprint.
    * The file in public.next may be a link to the live one, so it's removed
@@ -178,8 +174,9 @@ export async function publishSite({ db, dataDir, siteUrl, full = false }: Publis
     if (previous[file] === hash) return false;
     const dest = fileIn(next, file);
     await mkdir(dirname(dest), { recursive: true });
-    await rm(dest, { force: true });
+    await removeWithCopies(dest);
     await write(dest);
+    if (COMPRESSIBLE.test(file) && !file.startsWith(`${MANIFEST_DIR}/`)) written.add(dest);
     return true;
   };
   const putText = (file: string, text: string) =>
@@ -196,11 +193,37 @@ export async function publishSite({ db, dataDir, siteUrl, full = false }: Publis
   const rendered = pages.filter((p) => !redirected.has(p.path));
 
   const loads = newLoads();
+  /** A page the site keeps for itself, not one in the tree: no blocks, never indexed. */
+  const putSystemPage = async (
+    path: string,
+    file: string,
+    title: string,
+    kind: Pick<RenderInput, "searchPage" | "notFound">,
+  ) => {
+    const input: RenderInput = {
+      mode: "publish",
+      locale: "ms",
+      path,
+      page: { title, blocks: [] },
+      site: await siteContext(db, "published", path, siteUrl, {}, loads),
+      noindex: true,
+      ...kind,
+    };
+    return put(file, fingerprint(build, canonicalJson(input)), (dest) =>
+      renderHtml(input).then((html) => writeFile(dest, html)),
+    );
+  };
   const used = new Set<string>();
   mediaIdsOf(settings.identity, used);
   const log: PublishLogEntry[] = [];
+  /** Pages that wouldn't render but stay on the site as they were: not swept away below. */
+  const kept = new Set<string>();
   let unchanged = 0;
-  /** Renders one address if it changed; a failure is logged and the publish carries on to log the rest. */
+  /**
+   * Renders one address if it changed. One that fails keeps what the live
+   * site has (a new page just isn't published), out of the manifest so the
+   * next publish tries it again, and the publish carries on without it.
+   */
   const write = async (
     page: (typeof rendered)[number],
     path: string,
@@ -219,14 +242,27 @@ export async function publishSite({ db, dataDir, siteUrl, full = false }: Publis
       ...extra,
     });
     const entry = { pageId: page.id, path, title: page.content.ms.title };
+    const file = pageFile(path);
     try {
       const html = (dest: string) => renderHtml(input).then((text) => writeFile(dest, text));
-      if (await put(pageFile(path), fingerprint(build, canonicalJson(input)), html))
+      if (await put(file, fingerprint(build, canonicalJson(input)), html))
         log.push({ ...entry, outcome: "written" });
       else unchanged++;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       log.push({ ...entry, outcome: "failed", error: message, ...(await failingBlock(input)) });
+      // Not this render's fingerprint, so the next publish renders it again.
+      if (file in previous) outputs[file] = previous[file]!;
+      else delete outputs[file];
+      const liveCopy = fileIn(live, file);
+      if (existsSync(liveCopy)) {
+        const dest = fileIn(next, file);
+        if (!existsSync(dest)) {
+          await copyFile(liveCopy, dest);
+          written.add(dest);
+        }
+        kept.add(file);
+      }
     }
     return input;
   };
@@ -257,14 +293,9 @@ export async function publishSite({ db, dataDir, siteUrl, full = false }: Publis
         await rssFeed(db, page.id, input.site.name, siteUrl, loads),
       );
   }
-  const failed = log.filter((e) => e.outcome === "failed");
-  if (failed.length) {
-    await rm(next, { recursive: true, force: true });
-    throw new PublishError(
-      `${failed.length} page${failed.length === 1 ? "" : "s"} could not be rendered: ${failed.map((f) => f.path).join(", ")}`,
-      log,
-    );
-  }
+  // Pages that failed and were never live aren't on the site: not in the sitemap or the search index.
+  const onSite = (p: (typeof rendered)[number]) =>
+    pageFile(p.path) in outputs || kept.has(pageFile(p.path));
   const byPath = new Map(pages.map((p) => [p.path, p]));
   for (const redirect of redirects) {
     const page = byPath.get(redirect.source);
@@ -299,20 +330,11 @@ export async function publishSite({ db, dataDir, siteUrl, full = false }: Publis
     }
 
   if (search.on) {
-    const input: RenderInput = {
-      mode: "publish",
-      locale: "ms",
-      path: SEARCH_PATH,
-      page: { title: "Carian", blocks: [] },
-      site: await siteContext(db, "published", SEARCH_PATH, siteUrl, {}, loads),
-      noindex: true,
+    await putSystemPage(SEARCH_PATH, pageFile(SEARCH_PATH), "Carian", {
       searchPage: { filters: search.filters },
-    };
-    await put(pageFile(input.path), fingerprint(build, canonicalJson(input)), (dest) =>
-      renderHtml(input).then((html) => writeFile(dest, html)),
-    );
+    });
     // Each page once, by its main content: not a listing's later or category pages.
-    const indexed = rendered.filter((p) => !p.content.seo?.noindex);
+    const indexed = rendered.filter((p) => !p.content.seo?.noindex && onSite(p));
     const hash = fingerprint(
       pagefindVersion,
       ...indexed.map((p) => `${p.path}:${outputs[pageFile(p.path)]}`),
@@ -337,10 +359,14 @@ export async function publishSite({ db, dataDir, siteUrl, full = false }: Publis
     await putText(SEARCH_PINS_FILE, `${JSON.stringify(pinnedResults(search, rendered))}\n`);
   }
 
+  // For every address the site doesn't have, in the site's layout so people
+  // can find their way on. The public server (or a reverse proxy) sends it with a 404.
+  await putSystemPage("/404", NOT_FOUND_FILE, "Halaman tidak dijumpai", { notFound: true });
+
   if (siteUrl && settings.search.sitemap && !settings.search.hideSite) {
     const origin = siteUrl.replace(/\/$/, "");
     const urls = rendered
-      .filter((p) => !p.content.seo?.noindex && p.content.seo?.sitemap !== false)
+      .filter((p) => onSite(p) && !p.content.seo?.noindex && p.content.seo?.sitemap !== false)
       .map((p) => `  <url><loc>${escapeXml(origin + p.path)}</loc></url>`)
       .join("\n");
     await putText(
@@ -351,13 +377,14 @@ export async function publishSite({ db, dataDir, siteUrl, full = false }: Publis
 
   // What the last publish wrote and this one didn't: gone from the site.
   for (const file of Object.keys(previous)) {
-    if (file in outputs) continue;
+    if (file in outputs || kept.has(file)) continue;
     const dest = fileIn(next, file);
-    await rm(dest, { force: true });
+    await removeWithCopies(dest);
     await pruneEmpty(next, dirname(dest));
     if (file === "index.html" || file.endsWith("/index.html"))
       log.push({ pageId: null, path: addressOf(file), title: addressOf(file), outcome: "removed" });
   }
+  await inPool([...written], precompress);
   await putText(MANIFEST_FILE, `${JSON.stringify({ version: 1, outputs } satisfies Manifest)}\n`);
 
   // Two renames: the live folder is missing only between them, never half-written.
@@ -373,6 +400,7 @@ export async function publishSite({ db, dataDir, siteUrl, full = false }: Publis
       redirects: redirects.length,
       media: used.size,
       written: log.filter((e) => e.outcome === "written").length,
+      failed: log.filter((e) => e.outcome === "failed").length,
       unchanged,
       full: base ? 0 : 1,
     },

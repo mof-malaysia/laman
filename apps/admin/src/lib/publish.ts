@@ -2,16 +2,33 @@
  * Publishing, the same way on every screen: a Publish button sends one thing
  * live, then shows the result where it was pressed (docs/journeys/publish-model.md).
  */
-import { type Job, SiteDocName, type Summary, type WaitingItem } from "@fiscal-sb/contracts";
+import {
+  type Job,
+  type PublishLogEntry,
+  SiteDocName,
+  type Summary,
+  type WaitingItem,
+} from "@fiscal-sb/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
+import type { MessageKey } from "@/i18n";
 import { siteApi, waitForJob } from "./api";
 import { useRefreshPages, useSummary } from "./pages";
+
+/** What each site document is called: "Site settings", "Site colours". */
+export const docName: Record<SiteDocName, MessageKey> = {
+  settings: "waiting.settings",
+  navigation: "waiting.navigation",
+  announcement: "waiting.announcement",
+  search: "waiting.search",
+  theme: "waiting.theme",
+};
 
 export type PublishOutcome =
   | { status: "idle" }
   | { status: "publishing" }
-  | { status: "live"; at: string }
+  /** `skipped`: pages that wouldn't render, so the site kept their last version (or, new, left them off). */
+  | { status: "live"; at: string; skipped?: { pageId: string | null; title: string }[] }
   | { status: "scheduled"; at: string }
   /** `save`: saving first failed, so nothing was published. `error`: why the rebuild failed. */
   | { status: "failed"; reason?: "save"; error?: string };
@@ -52,6 +69,13 @@ export function useRefreshAfterPublish() {
   );
 }
 
+/** The pages a finished publish couldn't render, one entry each. */
+function skippedPages(log: PublishLogEntry[]) {
+  const pages = new Map<string | null, string>();
+  for (const entry of log) if (entry.outcome === "failed") pages.set(entry.pageId, entry.title);
+  return [...pages].map(([pageId, title]) => ({ pageId, title }));
+}
+
 /**
  * Runs a publish and follows its rebuild. `run` starts it and returns the
  * job; a job that runs later (a scheduled entry) ends as "scheduled".
@@ -74,7 +98,11 @@ export function usePublish(run: () => Promise<{ job: Job }>) {
         end =
           done.status === "failed"
             ? { status: "failed", ...(done.error && { error: done.error }) }
-            : { status: "live", at: done.finishedAt ?? new Date().toISOString() };
+            : {
+                status: "live",
+                at: done.finishedAt ?? new Date().toISOString(),
+                ...(done.result?.failed && { skipped: skippedPages(done.log) }),
+              };
       }
     } catch (error) {
       console.error(error);

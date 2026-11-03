@@ -5,17 +5,19 @@
  */
 import {
   type Locale,
-  type PageContent,
+  PageContent,
   type PageDocument,
   type RenderInput,
   type RenderMode,
   defaultLocale,
+  withDefaults,
 } from "@fiscal-sb/blocks";
 import type { Db } from "../db/index.js";
 import { entryRender, latestRender, listingRender } from "./entries.js";
 import type { Loads } from "./loads.js";
 import { mediaInfo } from "./media.js";
 import { type SiteDraft, siteContext } from "./site.js";
+import { breadcrumbOf } from "./tree.js";
 
 export async function renderInputFor(
   db: Db,
@@ -40,12 +42,16 @@ export async function renderInputFor(
   },
 ): Promise<RenderInput> {
   const rest = options;
-  const content = rest.content ?? rest.doc.ms;
+  const content = withDefaults(PageContent, rest.content ?? rest.doc.ms);
   const doc = { ...rest.doc, ms: content };
-  const [site, media, latest] = await Promise.all([
+  // Only a Page intro shows the trail: other pages stay out of their ancestors' renames.
+  const [site, media, latest, breadcrumb] = await Promise.all([
     siteContext(db, rest.scope, rest.path, rest.siteUrl, rest.unsaved, rest.loads),
     mediaInfo(db, [content, doc.entry]),
     latestRender(db, doc, rest.scope, rest.loads),
+    content.blocks.some((b) => b.type === "pageIntro")
+      ? breadcrumbOf(db, { id: rest.pageId }, content.title, rest.loads)
+      : undefined,
   ]);
   const listing =
     rest.kind === "listing"
@@ -69,5 +75,6 @@ export async function renderInputFor(
     ...(listing && { listing }),
     ...(entry && { entry }),
     ...(Object.keys(latest).length && { latest }),
+    ...(breadcrumb && { breadcrumb }),
   };
 }

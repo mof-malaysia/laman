@@ -13,6 +13,20 @@ export const defaultLocale: Locale = "ms";
 /** Site search's page and its index, at the root of the published site. */
 export const SEARCH_PATH = "/carian";
 export const SEARCH_INDEX_DIR = "pagefind";
+/**
+ * Addresses the published site has that aren't pages in the tree: search and
+ * its index, the media files pages use, the renderer's files, the 404 page
+ * and the sitemap. A listing's later and category pages and its feed sit
+ * under the listing's own address.
+ */
+export const SYSTEM_PATHS = [
+  SEARCH_PATH,
+  `/${SEARCH_INDEX_DIR}`,
+  "/media",
+  "/_astro",
+  "/404.html",
+  "/sitemap.xml",
+] as const;
 
 export const PageContent = z.object({
   title: z.string().max(160),
@@ -104,6 +118,16 @@ export const PageDocument = z.object({
   entry: EntryFields.optional(),
 });
 export type PageDocument = z.infer<typeof PageDocument>;
+
+/**
+ * Stored content with its schema's defaults filled in: blocks saved before a
+ * field existed get the value they render with. Content that no longer
+ * parses is returned as it is, for the caller's own checks to report.
+ */
+export function withDefaults<T>(schema: z.ZodType<T>, value: T): T {
+  const result = schema.safeParse(value);
+  return result.success ? result.data : value;
+}
 
 /** One level of a page's address: its parent's path, then "/", then this. */
 export const Slug = z
@@ -202,14 +226,54 @@ export type MediaInfo = {
   variants: { url: string; width: number }[];
 };
 
+/** Every use of a media file in a value (block media fields and settings alike), with the alt text given for that use. */
+export function mediaUsesOf(
+  value: unknown,
+  out: { mediaId: string; alt?: string }[] = [],
+): { mediaId: string; alt?: string }[] {
+  if (Array.isArray(value)) for (const item of value) mediaUsesOf(item, out);
+  else if (value && typeof value === "object") {
+    const node = value as { mediaId?: unknown; alt?: unknown };
+    if (typeof node.mediaId === "string")
+      out.push({ mediaId: node.mediaId, ...(typeof node.alt === "string" && { alt: node.alt }) });
+    else for (const item of Object.values(value)) mediaUsesOf(item, out);
+  }
+  return out;
+}
+
 /** Every media id in a value: block media fields and settings alike. */
 export function mediaIdsOf(value: unknown, out = new Set<string>()): Set<string> {
-  if (Array.isArray(value)) for (const item of value) mediaIdsOf(item, out);
-  else if (value && typeof value === "object")
-    for (const [key, item] of Object.entries(value)) {
-      if (key === "mediaId" && typeof item === "string") out.add(item);
-      else mediaIdsOf(item, out);
+  for (const use of mediaUsesOf(value)) out.add(use.mediaId);
+  return out;
+}
+
+/** A link in a block: its address, and the words it's shown with when there are any. */
+export type LinkUse = { href: string; text?: string | undefined };
+
+/**
+ * Every link in a value: `href`-like fields (`href`, `sourceHref`) with their
+ * label, and rich-text links with the words they're on.
+ */
+export function linksOf(value: unknown, out: LinkUse[] = []): LinkUse[] {
+  if (Array.isArray(value)) for (const item of value) linksOf(item, out);
+  else if (value && typeof value === "object") {
+    const node = value as Record<string, unknown>;
+    // A rich-text run: its link mark carries the address, the run the words.
+    if (node.type === "text" && Array.isArray(node.marks)) {
+      const mark = (node.marks as { type?: string; attrs?: { href?: unknown } }[]).find(
+        (m) => m.type === "link",
+      );
+      if (typeof mark?.attrs?.href === "string")
+        out.push({ href: mark.attrs.href, text: String(node.text ?? "") });
+      return out;
     }
+    for (const [key, item] of Object.entries(node)) {
+      if (/href$/i.test(key) && typeof item === "string") {
+        const text = node.label ?? node.title ?? node.text;
+        out.push({ href: item, text: typeof text === "string" ? text : undefined });
+      } else linksOf(item, out);
+    }
+  }
   return out;
 }
 
@@ -271,7 +335,14 @@ export type RenderInput = {
   latest?: Record<string, { path: string; items: EntryItem[] }>;
   /** The SEARCH_PATH page: the search form and its results, instead of blocks. */
   searchPage?: { filters: boolean };
+  /** The trail from the home page to this one, for a Page intro block. Absent on the home page. */
+  breadcrumb?: { label: string; href?: string }[];
+  /** The published site's 404 page (NOT_FOUND_FILE): FTDS StatusPage in the site layout, instead of blocks. */
+  notFound?: true;
 };
+
+/** The published site's page for addresses it doesn't have, at its root. */
+export const NOT_FOUND_FILE = "404.html";
 
 /** Path on the published site for the slugs from the home page down: [] is the home page. */
 export const pathOf = (slugs: string[]) => (slugs.length ? `/${slugs.join("/")}` : "/");

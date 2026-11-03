@@ -9,6 +9,7 @@ export async function seedIfEmpty(db: Db) {
   const hero = newBlock("hero");
   if (hero.type === "hero")
     hero.props = {
+      ...hero.props,
       eyebrow: "Selamat datang",
       title: "Perkhidmatan agensi, di satu tempat",
       description: "Bayar, mohon dan semak status permohonan anda dalam talian.",
@@ -20,7 +21,7 @@ export async function seedIfEmpty(db: Db) {
     slug: "",
     parentId: null,
     template: "utama",
-    blocks: [hero, newBlock("featureGrid"), newBlock("callout"), newBlock("ctaBand")],
+    blocks: [hero, newBlock("serviceHighlights"), newBlock("callout"), newBlock("ctaBand")],
   });
   return true;
 }

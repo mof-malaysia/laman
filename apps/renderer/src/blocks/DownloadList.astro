@@ -1,0 +1,48 @@
+---
+/**
+ * Files to download, in FTDS DownloadList: each row says the file's type and
+ * size. A file missing from the library is left out; with none, the block
+ * shows only on the canvas.
+ */
+import type { BlockOf, Locale, MediaInfo } from "@fiscal-sb/blocks";
+import DownloadList from "@/components/blocks/download-list.astro";
+import Field from "./Field.astro";
+import { fileSize } from "./format";
+
+type Props = { block: BlockOf<"downloadList">; edit: boolean; lang: Locale; media: Record<string, MediaInfo> };
+const { block, edit, lang, media } = Astro.props;
+const p = block.props;
+const files = p.files.flatMap((item) => {
+  const file = media[item.file.mediaId];
+  if (!file) return [];
+  return [
+    {
+      title: item.title || file.filename.replace(/\.[a-z0-9]+$/i, ""),
+      href: file.url,
+      type: "pdf" as const,
+      size: fileSize(file.size),
+      description: item.description,
+    },
+  ];
+});
+---
+
+{
+  (files.length > 0 || edit) && (
+    <DownloadList files={files} layout={p.layout} tone={p.tone} lang={lang} title={p.title ?? ""}>
+      {(edit || p.title) && (
+        <Field slot="title" name="title" edit={edit} placeholder="Muat turun">{p.title}</Field>
+      )}
+      {(edit || p.description) && (
+        <Field slot="description" name="description" edit={edit} placeholder="Penerangan">
+          {p.description}
+        </Field>
+      )}
+      {edit && files.length === 0 && (
+        <p class="bg-bg-washed text-txt-black-700 text-body-sm rounded-md px-4 py-6 text-center">
+          Pilih fail dari Media
+        </p>
+      )}
+    </DownloadList>
+  )
+}
