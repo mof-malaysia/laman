@@ -6,9 +6,10 @@
  * here" line between blocks, take blocks dragged from the palette, and swap
  * in fresh HTML from the renderer after changes made elsewhere.
  */
-import { type EntryFields, type PageContent, blockDefinition } from "@fiscal-sb/blocks";
+import type { EntryFields, PageContent } from "@fiscal-sb/blocks";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { t } from "@/i18n";
+import { blockLabel, fieldLabelAt } from "@/i18n/registry";
 import { api } from "@/lib/api";
 
 export type CanvasWidth = "desktop" | "tablet" | "mobile";
@@ -124,7 +125,7 @@ export function Canvas(props: CanvasProps) {
       return;
     }
     const name = bar.querySelector(".ftds-name");
-    if (name) name.textContent = blockDefinition(block.type).label;
+    if (name) name.textContent = blockLabel(block.type);
     bar.style.display = "flex";
     const top = el.getBoundingClientRect().top + (d.defaultView?.scrollY ?? 0);
     // Above the block, scaled from its bottom edge; inside it when there's no room.
@@ -149,6 +150,12 @@ export function Canvas(props: CanvasProps) {
     for (const field of doc()?.querySelectorAll<HTMLElement>("[data-ftds-field]") ?? []) {
       field.contentEditable = "plaintext-only";
       field.spellcheck = true;
+      // An empty field shows its label, in the admin's language, from the registry.
+      const id = field.closest<HTMLElement>("[data-ftds-block]")?.dataset.ftdsBlock;
+      const block = latest.current.page.blocks.find((b) => b.id === id);
+      const label =
+        block && field.dataset.ftdsField && fieldLabelAt(block.type, field.dataset.ftdsField);
+      if (label) field.dataset.placeholder = label;
     }
   };
 

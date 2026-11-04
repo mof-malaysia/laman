@@ -22,7 +22,8 @@
   "scripts": {
     "build": "astro build",
     "check-types": "tsc --noEmit",
-    "lint": "oxlint"
+    "lint": "oxlint",
+    "ftds:add": "node ../../scripts/ftds-add.mjs"
   },
   "dependencies": {
     "@astrojs/node": "catalog:",

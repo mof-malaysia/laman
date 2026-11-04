@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-02T01:40:00+08:00",
+  "generatedAt": "2026-11-04T23:30:00+08:00",
   "title": "Design System: FTDS Site Builder",
   "extensions": {
     "colorMeta": {
@@ -49,15 +49,31 @@
           "#FAFAFA"
         ]
       },
-      "sheet": { "role": "neutral", "displayName": "Sheet", "canonical": "rgb(255 255 255)" },
-      "well": { "role": "neutral", "displayName": "Well", "canonical": "rgb(244 244 245)" },
-      "hairline": { "role": "neutral", "displayName": "Hairline", "canonical": "rgb(228 228 231)" },
+      "sheet": {
+        "role": "neutral",
+        "displayName": "Sheet",
+        "canonical": "rgb(255 255 255)"
+      },
+      "well": {
+        "role": "neutral",
+        "displayName": "Well",
+        "canonical": "rgb(244 244 245)"
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "rgb(228 228 231)"
+      },
       "control-edge": {
         "role": "neutral",
         "displayName": "Control Edge",
         "canonical": "rgb(107 107 116 / 0.8)"
       },
-      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "rgb(24 24 27)" },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "rgb(24 24 27)"
+      },
       "ink-secondary": {
         "role": "neutral",
         "displayName": "Ink Secondary",
@@ -137,24 +153,102 @@
         "role": "semantic",
         "displayName": "Warning Wash",
         "canonical": "rgb(254 252 232)"
+      },
+      "field": {
+        "role": "primary",
+        "displayName": "Field",
+        "canonical": "rgb(29 78 216)",
+        "tonalRamp": [
+          "#172554",
+          "#1E3A8A",
+          "#1E40AF",
+          "#1D4ED8",
+          "#2563EB",
+          "#6394FF",
+          "#C2D5FF",
+          "#EFF6FF"
+        ]
+      },
+      "stage": {
+        "role": "primary",
+        "displayName": "Stage",
+        "canonical": "rgb(23 37 84)",
+        "tonalRamp": [
+          "#172554",
+          "#1E3A8A",
+          "#1E40AF",
+          "#1D4ED8",
+          "#2563EB",
+          "#6394FF",
+          "#C2D5FF",
+          "#EFF6FF"
+        ]
+      },
+      "on-field-text": {
+        "role": "neutral",
+        "displayName": "On-Field Text",
+        "canonical": "rgb(219 234 254)"
+      },
+      "on-field-edge": {
+        "role": "neutral",
+        "displayName": "On-Field Edge",
+        "canonical": "rgb(150 183 255)"
+      },
+      "refused": {
+        "role": "semantic",
+        "displayName": "Refused",
+        "canonical": "rgb(252 165 165)"
+      },
+      "node-off": {
+        "role": "neutral",
+        "displayName": "Node Off",
+        "canonical": "rgb(194 213 255)"
       }
     },
     "typographyMeta": {
-      "display": { "displayName": "Display", "purpose": "Page titles on published sites." },
+      "display": {
+        "displayName": "Display",
+        "purpose": "Page titles on published sites."
+      },
       "headline": {
         "displayName": "Headline",
         "purpose": "The admin's screen title, such as the site name on the dashboard."
       },
-      "title": { "displayName": "Title", "purpose": "Section headings inside an admin screen." },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Section headings inside an admin screen."
+      },
       "body": {
         "displayName": "Body",
         "purpose": "Reading text on published sites, prose capped at 70ch."
       },
-      "body-compact": { "displayName": "Body Compact", "purpose": "Reading text in the admin." },
-      "label": { "displayName": "Label", "purpose": "Buttons, form labels, sidebar items, links." },
+      "body-compact": {
+        "displayName": "Body Compact",
+        "purpose": "Reading text in the admin."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Buttons, form labels, sidebar items, links."
+      },
       "label-compact": {
         "displayName": "Label Compact",
         "purpose": "Tags, captions and meta lines in the admin; the smallest size anywhere."
+      },
+      "marketing-display": {
+        "displayName": "Marketing Display",
+        "purpose": "Marketing site only: the home page H1, Ink on white."
+      },
+      "long-form-display": {
+        "displayName": "Long-form Display",
+        "purpose": "Marketing site only: a long-form page's H1, white on the Field title band."
+      },
+      "section-heading": {
+        "displayName": "Section Heading",
+        "purpose": "Marketing site only: every section title (30px on phones, 36px from md)."
+      },
+      "lead": {
+        "displayName": "Lead",
+        "purpose": "Marketing site only: the line under a heading."
       }
     },
     "shadows": [
@@ -167,6 +261,11 @@
         "name": "lift",
         "value": "0 2px 4px rgba(22, 27, 34, 0.06), 0 24px 48px rgba(22, 27, 34, 0.14)",
         "purpose": "Dialogs and sheets, over a scrim of Ink at 40%."
+      },
+      {
+        "name": "depicted-poster",
+        "value": "0 18px 36px -12px rgb(0 0 0 / 0.5)",
+        "purpose": "Marketing site, opening Stage only: the WhatsApp poster, which depicts someone else's uploaded picture. Not a Laman elevation; never reuse it."
       }
     ],
     "motion": [
@@ -174,11 +273,30 @@
         "name": "ease-standard",
         "value": "cubic-bezier(0.16, 1, 0.3, 1)",
         "purpose": "State changes only: hover, press, open, close, expand, at 150–200ms."
+      },
+      {
+        "name": "connector-draw",
+        "value": "900ms cubic-bezier(0.16, 1, 0.3, 1), from a 30% stub",
+        "purpose": "Marketing site boundary diagram: the HTML connector draws once on load; skipped under reduced motion."
       }
     ],
     "breakpoints": [
-      { "name": "md", "value": "768px" },
-      { "name": "lg", "value": "1024px" }
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      }
     ]
   },
   "components": [
@@ -243,17 +361,56 @@
       "description": "FTDS Blue, weight 500, underlined 3px below the text, with the focus ring.",
       "html": "<a class=\"ds-link\" href=\"#\">Agency name</a>",
       "css": ".ds-link { color: #2563EB; font: 500 0.875rem/1.43 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif; text-decoration: underline; text-underline-offset: 3px; border-radius: 4px; } .ds-link:hover { color: #1D4ED8; } .ds-link:focus-visible { outline: 2px solid #3A75F6; outline-offset: 2px; }"
+    },
+    {
+      "name": "Field Buttons",
+      "kind": "button",
+      "refersTo": "button-field-solid",
+      "description": "Marketing site only: on the Primary 700 Field, a white button with FTDS Blue text and a quiet translucent one, with white focus rings.",
+      "html": "<div class=\"ds-field-row\"><a class=\"ds-fbtn ds-fbtn-solid\" href=\"#\">Pasang Laman</a><a class=\"ds-fbtn ds-fbtn-quiet\" href=\"#\">Hubungi pasukan</a></div>",
+      "css": ".ds-field-row { display: flex; flex-wrap: wrap; gap: 12px; padding: 32px; background: #1D4ED8; } .ds-fbtn { display: inline-flex; align-items: center; height: 56px; padding: 0 24px; border-radius: 8px; font: 500 1rem/1.43 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif; text-decoration: none; transition: background-color 150ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-fbtn-solid { background: #FFFFFF; color: #2563EB; } .ds-fbtn-solid:hover { background: #EFF6FF; } .ds-fbtn-quiet { background: rgb(255 255 255 / 0.12); color: #FFFFFF; } .ds-fbtn-quiet:hover { background: rgb(255 255 255 / 0.2); } .ds-fbtn:focus-visible { outline: 2px solid #FFFFFF; outline-offset: 2px; }"
+    },
+    {
+      "name": "Boundary Diagram",
+      "kind": "custom",
+      "refersTo": "boundary-node",
+      "description": "Marketing site signature: the agency's data centre as a dashed line on a Primary 950 Stage panel; only the HTML crosses out. Hover the builder node to preview its off state.",
+      "html": "<figure class=\"ds-bnd\"><div class=\"ds-bnd-line\"><p class=\"ds-bnd-label\">Pusat data agensi anda</p><ul class=\"ds-bnd-grid\"><li class=\"ds-node\"><b>Pembina Laman</b><span>Pegawai menyunting di sini</span></li><li class=\"ds-node ds-node-off\"><b>site.db</b><span>dimatikan</span></li><li class=\"ds-node ds-node-site\"><b>Laman web statik</b><span>Terus berfungsi</span></li></ul></div><p class=\"ds-bnd-conn\">HTML sahaja &rarr; Orang awam</p><p class=\"ds-refused\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M9 9l6 6M15 9l-6 6\"/></svg><s>Awan vendor</s></p></figure>",
+      "css": ".ds-bnd { margin: 0; padding: 24px; border-radius: 16px; background: #172554; color: #FFFFFF; font-family: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif; } .ds-bnd-line { border: 2px dashed #96B7FF; border-radius: 20px; padding: 16px; } .ds-bnd-label { margin: 0 0 12px; font: 600 0.875rem/1.43 inherit; color: #DBEAFE; } .ds-bnd-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; } .ds-node { display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: 14px; background: #FFFFFF; color: #18181B; transition: background-color 200ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-node:hover { background: #C2D5FF; } .ds-node b { font: 600 0.875rem/1.43 inherit; } .ds-node span { font: 400 0.875rem/1.43 inherit; color: #3F3F46; } .ds-node-off { background: #C2D5FF; } .ds-node-site { grid-column: span 2; background: #EFF6FF; } .ds-bnd-conn { margin: 16px 0 8px; font: 600 0.875rem/1.43 inherit; } .ds-refused { display: flex; align-items: center; gap: 10px; margin: 0; font: 400 0.875rem/1.43 inherit; color: #DBEAFE; } .ds-refused svg { color: #FCA5A5; } .ds-refused s { text-decoration-color: #FCA5A5; text-decoration-thickness: 2px; }"
+    },
+    {
+      "name": "Closing Band",
+      "kind": "card",
+      "refersTo": "field-band",
+      "description": "Marketing site only: the Field band every page ends on, a heading, one line and two field buttons.",
+      "html": "<section class=\"ds-band\"><div><h2 class=\"ds-band-title\">Pasang Laman di pelayan anda</h2><p class=\"ds-band-text\">Sumber terbuka, di bawah kawalan agensi anda.</p></div><a class=\"ds-band-btn\" href=\"#\">Pasang Laman</a></section>",
+      "css": ".ds-band { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 24px; padding: 48px 24px; background: #1D4ED8; color: #FFFFFF; font-family: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif; } .ds-band-title { margin: 0; font: 600 1.875rem/1.27 inherit; letter-spacing: -0.02em; } .ds-band-text { margin: 12px 0 0; font: 400 1.125rem/1.44 inherit; color: #DBEAFE; } .ds-band-btn { display: inline-flex; align-items: center; height: 56px; padding: 0 24px; border-radius: 8px; background: #FFFFFF; color: #2563EB; font: 500 1rem/1 inherit; text-decoration: none; } .ds-band-btn:hover { background: #EFF6FF; } .ds-band-btn:focus-visible { outline: 2px solid #FFFFFF; outline-offset: 2px; }"
+    },
+    {
+      "name": "Built-in Comparison (phone)",
+      "kind": "card",
+      "description": "Marketing site, phones: one line per need, Laman's answer with a check in FTDS Blue beside it, the other three in one line under it.",
+      "html": "<ul class=\"ds-cmp\"><li><p class=\"ds-cmp-row\"><span class=\"ds-cmp-need\">Log audit siapa buat apa</span><span class=\"ds-cmp-laman\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M8.5 12.5l2.5 2.5 4.5-5\"/></svg>Terbina dalam</span></p><p class=\"ds-cmp-others\">WordPress: Pemalam · Joomla: Terbina dalam · Drupal: Modul</p></li><li><p class=\"ds-cmp-row\"><span class=\"ds-cmp-need\">Analitik pelawat tanpa kuki</span><span class=\"ds-cmp-laman\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M8.5 12.5l2.5 2.5 4.5-5\"/></svg>Terbina dalam</span></p><p class=\"ds-cmp-others\">WordPress: Pemalam · Joomla: Sambungan · Drupal: Modul</p></li></ul>",
+      "css": ".ds-cmp { list-style: none; margin: 0; padding: 0; width: 340px; background: #FFFFFF; border: 1px solid #E4E4E7; border-radius: 14px; overflow: hidden; font-family: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif; } .ds-cmp li { padding: 14px 16px; } .ds-cmp li + li { border-top: 1px solid #E4E4E7; } .ds-cmp p { margin: 0; } .ds-cmp-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; } .ds-cmp-need { font: 600 0.875rem/1.43 inherit; color: #18181B; } .ds-cmp-laman { display: inline-flex; flex-shrink: 0; align-items: center; gap: 4px; font: 600 0.8125rem/1.38 inherit; color: #2563EB; } .ds-cmp-others { margin-top: 4px !important; font: 400 0.875rem/1.43 inherit; color: #3F3F46; }"
+    },
+    {
+      "name": "AI-agent Log",
+      "kind": "custom",
+      "description": "Marketing site, on the Field: numbered steps with the real MCP tool name in monospace, and a white end row in plain text.",
+      "html": "<ol class=\"ds-log\"><li class=\"ds-step\"><span class=\"ds-num\">1</span><span>Membaca senarai Tender dan sebut harga</span><code>list_entries</code></li><li class=\"ds-step\"><span class=\"ds-num\">2</span><span>Menulis entri baharu sebagai draf</span><code>create_entry</code></li><li class=\"ds-step ds-end\"><svg class=\"ds-endicon\" width=\"28\" height=\"28\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M8.5 12.5l2.5 2.5 4.5-5\"/></svg><b>Menunggu Pengurus Kandungan menerbitkan</b><small>Direkodkan dalam log audit</small></li></ol>",
+      "css": ".ds-log { list-style: none; margin: 0; padding: 24px; display: flex; flex-direction: column; gap: 8px; width: 520px; background: #1D4ED8; font-family: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif; } .ds-step { display: grid; grid-template-columns: 1.75rem minmax(0, 1fr) auto; align-items: center; column-gap: 12px; padding: 12px 16px; border-radius: 12px; background: rgb(255 255 255 / 0.1); color: #FFFFFF; font: 400 1rem/1.5 inherit; } .ds-num { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 9999px; background: #FFFFFF; color: #2563EB; font: 600 0.75rem/1 inherit; } .ds-step code { font: 400 0.8125rem/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; color: #DBEAFE; } .ds-end { background: #FFFFFF; color: #18181B; } .ds-endicon { color: #2563EB; } .ds-end b { font-weight: 600; } .ds-end small { font: 400 0.875rem/1.43 inherit; color: #3F3F46; }"
     }
   ],
   "narrative": {
     "northStar": "The Steady Hand",
-    "overview": "This project does not have its own visual world. It is FTDS v0.2.0, the Ministry of Finance's design system, applied twice: to the agency websites the builder publishes, and to the admin officers use to run them. The North Star, palette, type, elevation and component rules come from the FTDS DESIGN.md, which is the authority for anything this file doesn't say. The tokens above are FTDS's light theme, copied so tools can read them; `styles/ftds.css` in each app is the source they come from.\n\nWhat this file adds is how FTDS is used here. The two surfaces share every token and differ only in density: published sites are FTDS at its comfortable default, built for visitors on older phones; the admin is compact, for officers at a desk. Both are quiet on purpose. Structure comes from spacing and tone, one blue marks the way forward, and nothing is decorated. On the published sites that calm is enforced: officers arrange approved blocks and pick preset variants, so no page can drift from the system.",
+    "overview": "This project does not have its own visual world. It is FTDS v0.2.0, the Ministry of Finance's design system, applied twice: to the agency websites the builder publishes, and to the admin officers use to run them. The North Star, palette, type, elevation and component rules come from the FTDS DESIGN.md, which is the authority for anything this file doesn't say. The tokens above are FTDS's light theme, copied so tools can read them; `styles/ftds.css` in each app is the source they come from.\n\nWhat this file adds is how FTDS is used here. The two surfaces share every token and differ only in density: published sites are FTDS at its comfortable default, built for visitors on older phones; the admin is compact, for officers at a desk. Both are quiet on purpose. Structure comes from spacing and tone, one blue marks the way forward, and nothing is decorated. On the published sites that calm is enforced: officers arrange approved blocks and pick preset variants, so no page can drift from the system.\n\nThere is a third surface, Laman's own marketing site (`apps/www`), and it alone has an expression of its own: \"FTDS as a base, own expression\", approved by its owner for that site only. It is FTDS on white, Paper and Well, like any Laman site, with two deep blues from FTDS's own ramp: the Field (Primary 700), a full-bleed band that carries white text and field buttons, and the Stage (Primary 950), a rounded panel that holds white objects. The home page opens on white, with the H1 and FTDS's own filled button, over a Stage showing a WhatsApp poster turning into a page through Laman's real checks; the Field returns for the AI-agent section and the closing band. Long-form pages open on a Field title band and close on the same band. The boundary diagram (the agency's data centre as a dashed line, with only the published HTML crossing out) sits on a Stage panel in the home page's sovereignty section. Everything on the Field and the Stage is built from FTDS primitives (`apps/www/src/styles/global.css`); neither is a new hue, font or shadow. Both stay on the marketing site: published agency sites and the admin never use them.",
     "keyCharacteristics": [
-      "FTDS as installed, with no project palette, font or radius of its own.",
+      "FTDS as installed, with no project palette, font or radius of its own, on published sites and in the admin.",
       "Comfortable density on published sites, compact density in the admin, from the same tokens.",
-      "Light theme only, on both surfaces, for now.",
-      "Inter, self-hosted, so neither surface makes a third-party font request.",
-      "Pages in the admin are shown as they really render, never as a mock-up."
+      "Light theme only, on every surface, for now.",
+      "Inter, self-hosted, so no surface makes a third-party font request.",
+      "Pages in the admin are shown as they really render, never as a mock-up; the marketing site shows the product only in real screenshots.",
+      "The marketing site alone uses two deep blues from FTDS's ramp: the Primary 700 Field for bands with white text, the Primary 950 Stage for panels that hold white objects."
     ],
     "rules": [
       {
@@ -263,12 +420,32 @@
       },
       {
         "name": "The Light-Only Rule",
-        "body": "Both surfaces are light only for now: the admin sets `color-scheme: light` and ignores the OS preference, and published sites never switch. The dark tokens in the vendored CSS stay unused until dark mode is decided as a whole.",
+        "body": "Both surfaces are light only for now: the admin sets `color-scheme: light` and ignores the OS preference, and published sites never switch. The dark tokens in the vendored CSS stay unused until dark mode is decided as a whole. The marketing site follows the same rule.",
+        "section": "colors"
+      },
+      {
+        "name": "The Field-Stays-Home Rule",
+        "body": "The Field, the Stage and their tokens belong to the marketing site. Never add them to the renderer, a block, a published agency site or the admin; there, FTDS Blue is still a button, a link or a wash, never a band.",
+        "section": "colors"
+      },
+      {
+        "name": "The Band-or-Panel Rule",
+        "body": "The Field is a full-bleed band for text and field buttons; the Stage is a contained, rounded panel for white objects. The Stage never goes full-bleed and never carries a button; a section of text and actions on deep blue is a Field band. Sections between them are Sheet, Paper (`bg-bg-gray-50`) or Well (`bg-bg-washed`), alternating.",
+        "section": "colors"
+      },
+      {
+        "name": "The White Focus Rule",
+        "body": "Anything on the Field or the Stage sits inside `.on-field`, which turns the focus ring white (`--fr-primary: 255 255 255`): Focus Blue doesn't show on Primary 700 or 950.",
         "section": "colors"
       },
       {
         "name": "The Floor Rule",
         "body": "Nothing below 13px, and 13px only in the compact admin. Visitor-facing text starts at 16px. Weights are 400, 500 and 600 only.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tight Display Rule",
+        "body": "Only a page's H1 tracks tighter than -0.02em. Section headings stay at -0.02em, so the opening line is the one loud type moment on a page.",
         "section": "typography"
       },
       {
@@ -283,15 +460,24 @@
       "**Do** keep published sites in comfortable density and the admin in compact density.",
       "**Do** show a page in the admin with the page frame, from the real renderer.",
       "**Do** carry every page and publish state as a wash tag with words.",
-      "**Do** write every admin string through `t()`; site content and FTDS Astro labels are BM by default."
+      "**Do** write every admin string through `t()`; site content and FTDS Astro labels are BM by default.",
+      "**Do** close every marketing page on the Field band, open long-form pages on a Field title band, and keep everything else in FTDS on Sheet, Paper and Well.",
+      "**Do** use the Field for full-bleed bands of text and field buttons, and the Stage for contained panels of white objects.",
+      "**Do** put anything on the Field or the Stage inside `.on-field`, so its focus ring is white, and use field buttons on the Field instead of FTDS's filled primary.",
+      "**Do** turn the navbar's filled \"Pasang Laman\" off (`navAction={false}`) on any page whose opening carries FTDS's filled primary itself.",
+      "**Do** keep marketing copy in the content collections, validated with strict objects.",
+      "**Do** show the product on the marketing site only in real screenshots, each with its provenance file."
     ],
     "donts": [
-      "**Don't** add a project palette, typeface, radius or shadow; this project has none of its own.",
+      "**Don't** add a project palette, typeface, radius or shadow to published sites or the admin; they have none of their own. The marketing site's Field and Stage tokens are aliases of FTDS primitives, not a palette.",
+      "**Don't** use the Field, the Stage, field buttons or the boundary diagram anywhere but the marketing site.",
+      "**Don't** make the Stage full-bleed or put a button on it.",
+      "**Don't** borrow the poster's tilt, drop shadow, warning and danger washes or 28px title for anything Laman draws; they depict someone else's picture.",
       "**Don't** use raw Tailwind colours, hex values or `dark:` overrides.",
       "**Don't** edit files under `components/ui`, `components/blocks`, `lib/ftds` or `styles/ftds.css`.",
       "**Don't** give officers a way to style content on published sites: no colour pickers, font choices, free spacing or custom HTML. Variants are presets.",
       "**Don't** turn on the dark theme on either surface until it is decided for both.",
-      "**Don't** put two filled blue buttons on one screen."
+      "**Don't** put two filled blue buttons on one screen. On the marketing site the home opening's \"Pasang Laman\" is that one (the navbar's is off there); on other pages it is the navbar's. The Field's buttons are white."
     ]
   }
 }

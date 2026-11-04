@@ -9,7 +9,6 @@ import {
   type RichText,
   Block as BlockSchema,
   blockDefinition,
-  blockFields,
   fieldShown,
 } from "@fiscal-sb/blocks";
 import { useId } from "react";
@@ -35,6 +34,7 @@ import {
 import { Select } from "@/components/ui/select";
 import { TextArea } from "@/components/ui/textarea";
 import { type MessageKey, t } from "@/i18n";
+import { blockDescription, blockLabel, localBlockFields } from "@/i18n/registry";
 import { usePages } from "@/lib/pages";
 import { itemTitle } from "./block-meta";
 import { MediaField } from "./media-field";
@@ -72,14 +72,14 @@ export function PropertyPanel({ block, onChange, onRemove }: PropertyPanelProps)
   const set = (path: string[], value: unknown) =>
     onChange(setAt(block.props, path, value) as Block["props"], path.join("."));
 
-  const fields = blockFields(block.type);
+  const fields = localBlockFields(block.type);
   const inline = fields.some((f) => f.inline);
 
   return (
     <div className="flex flex-col">
       <div className="flex flex-col gap-1 p-4">
-        <h2 className="text-title font-semibold">{definition.label}</h2>
-        <p className="text-body-sm text-txt-black-700">{definition.description}</p>
+        <h2 className="text-title font-semibold">{blockLabel(definition.type)}</h2>
+        <p className="text-body-sm text-txt-black-700">{blockDescription(definition.type)}</p>
         {/* Said once here, not under every field it applies to. */}
         {inline && (
           <p className="bg-bg-primary-50 text-body-sm text-txt-black-900 mt-2 rounded-md px-3 py-2">
@@ -113,7 +113,7 @@ export function PropertyPanel({ block, onChange, onRemove }: PropertyPanelProps)
       {/* Away from the title, so it isn't hit by accident. */}
       <div className="border-otl-gray-200 border-t p-4">
         <Button variant="danger-outline" size="small" onClick={onRemove}>
-          <TrashIcon /> {t("editor.block.remove", { block: definition.label })}
+          <TrashIcon /> {t("editor.block.remove", { block: blockLabel(definition.type) })}
         </Button>
       </div>
     </div>

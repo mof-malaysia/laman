@@ -3,15 +3,9 @@ title: Install Laman
 description: Install Laman on your agency's server with Docker Compose. Requirements, installation steps, backups, restore and upgrades.
 path: /en/install
 alternate: /pasang
+heading: "Install Laman"
+lead: "Laman runs as one Docker container: the builder, the admin at `/admin` and the published website at `/`, from one port. This page is for the ICT team who will install it."
 ---
-
-<!-- block: page intro -->
-
-# Install Laman
-
-Laman runs as one Docker container: the builder, the admin at `/admin` and the published website at `/`, from one port. This page is for the ICT team who will install it.
-
-<!-- block: prose -->
 
 ## What you need
 
@@ -20,8 +14,6 @@ Laman runs as one Docker container: the builder, the admin at `/admin` and the p
 - A folder for backups, ideally on another disk or one that's copied off the machine.
 
 We recommend keeping the builder on an internal network or behind a VPN. The published website can be served to the public separately.
-
-<!-- block: steps -->
 
 ## Installation steps
 
@@ -61,15 +53,11 @@ We recommend keeping the builder on an internal network or behind a VPN. The pub
 
 6. **Invite your team.** Choose **Invite someone**, pick the right role (Editor, Content Manager or Admin), and hand the one-time link to that person directly. No mail server needed.
 
-<!-- block: prose -->
-
 ## Serving the public website
 
 The simplest way: let Laman serve it. If the agency wants its existing nginx or Caddy to serve the static files directly, the published folder can be served with three rules: pre-compressed files, addresses without a trailing slash, and the 404 page. Only `/_v` (analytics) needs to be passed on to the builder.
 
 An example nginx configuration is in the [documentation on GitHub](https://github.com/mof-malaysia/laman/blob/main/docs/site-builder.md).
-
-<!-- block: prose -->
 
 ## Backups
 
@@ -83,8 +71,6 @@ docker compose exec site-builder site-builder backup --verify <archive>    # tes
 
 A backup on the same disk doesn't survive losing that disk. Copy `BACKUP_PATH` off the machine with the tool your agency already uses. Never copy the data volume while the container is running; use the archives.
 
-<!-- block: prose -->
-
 ## Restore
 
 Stop the builder first; restore refuses to run otherwise.
@@ -97,8 +83,6 @@ docker compose start site-builder
 
 Accounts and passwords go back to how they were in the backup, everyone is signed out, and the website is published again. Whatever was replaced is kept, not deleted.
 
-<!-- block: prose -->
-
 ## Upgrades
 
 ```sh
@@ -107,10 +91,3 @@ docker compose up -d --build
 ```
 
 The new version backs up the database, then updates it as it starts. If anything fails, the database is put back as it was and the reason is written to the log.
-
-<!-- block: cta band -->
-
-## Ready to start?
-
-- [Open on GitHub](https://github.com/mof-malaysia/laman) (primary)
-- [Need help? Contact the team](/en/contact)

@@ -4,7 +4,7 @@ import { unified } from "@astrojs/markdown-remark";
 import tailwindcss from "@tailwindcss/vite";
 import { copyFile, mkdir } from "node:fs/promises";
 import { defineConfig } from "astro/config";
-import { withBase } from "./src/rehype-base.mjs";
+import { baseLinks, labelCells } from "./src/rehype-base.mjs";
 
 // GitHub Pages serves the project at /laman until there's a custom domain.
 // SITE_BASE="/" builds for the root (a custom domain, or `pnpm dev`).
@@ -37,7 +37,10 @@ export default defineConfig({
     routing: { prefixDefaultLocale: false },
   },
   // Links in the copy are written from the site root ("/pasang"); this puts the base in front.
-  markdown: { processor: unified({ rehypePlugins: [[withBase, { base }]] }) },
+  markdown: {
+    syntaxHighlight: false,
+    processor: unified({ rehypePlugins: [[baseLinks, { base }], labelCells] }),
+  },
   integrations: [englishHomeInFolder],
   vite: { plugins: [tailwindcss()] },
 });

@@ -8,7 +8,9 @@
     "build": "astro build",
     "preview": "astro preview --port 4321",
     "check-types": "tsc --noEmit",
-    "lint": "oxlint"
+    "lint": "oxlint",
+    "test": "node scripts/check-links.mjs",
+    "ftds:add": "node ../../scripts/ftds-add.mjs"
   },
   "dependencies": {
     "@astrojs/markdown-remark": "catalog:",

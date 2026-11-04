@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/table";
 import { Tag } from "@/components/ui/tag";
 import { t } from "@/i18n";
+import { blockDescription, blockLabel } from "@/i18n/registry";
 import { apiError, listingApi } from "@/lib/api";
 import { clx } from "@/lib/ftds/utils";
 import useToast from "@/lib/ftds/hooks/use-toast";
@@ -475,13 +476,13 @@ function ListingForm({ listing, settings }: { listing: Page; settings: ListingSe
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className="text-content text-txt-black-900 font-medium">
-                      {block.label}
+                      {blockLabel(type)}
                     </span>
                     <span
                       id={`starting-${type}-hint`}
                       className="text-body-sm text-txt-black-700 line-clamp-2"
                     >
-                      {block.description}
+                      {blockDescription(type)}
                     </span>
                   </span>
                   <Checkbox

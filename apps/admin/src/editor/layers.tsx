@@ -47,6 +47,7 @@ import {
   MenuTrigger,
 } from "@/components/ui/menu";
 import { t } from "@/i18n";
+import { blockDescription, blockLabel } from "@/i18n/registry";
 import { clx } from "@/lib/ftds/utils";
 import { BlockIcon, excerptOf, groupLabels } from "./block-meta";
 
@@ -93,7 +94,7 @@ export function LeftColumn(props: LeftColumnProps) {
 
 /** How a screen reader names a block: its kind and, when it has one, its first words. */
 function blockName(block: Block, excerpt = excerptOf(block)) {
-  const label = blockDefinition(block.type).label;
+  const label = blockLabel(block.type);
   if (!excerpt) return label;
   return `${label}: ${excerpt.length > 40 ? `${excerpt.slice(0, 40).trimEnd()}…` : excerpt}`;
 }
@@ -238,7 +239,7 @@ function LayerItem(props: LayerItemProps) {
   });
   const tabIndex = props.tabbable ? 0 : -1;
   const definition = blockDefinition(block.type);
-  const label = definition.label;
+  const label = blockLabel(definition.type);
   const excerpt = excerptOf(block);
   return (
     <li
@@ -379,7 +380,11 @@ export function blockChoices(allowed: readonly BlockType[], query = "") {
       (b) =>
         b.group === group &&
         allowed.includes(b.type) &&
-        (!words || `${b.label} ${b.description}`.toLowerCase().includes(words)),
+        (!words ||
+          // Either language finds it: officers may know the English name.
+          `${b.label} ${b.description} ${blockLabel(b.type)} ${blockDescription(b.type)}`
+            .toLowerCase()
+            .includes(words)),
     ),
   );
 }
@@ -423,9 +428,11 @@ export function BlockChoices({
                       className="text-txt-primary mt-0.5 size-4 shrink-0"
                     />
                     <span className="flex min-w-0 flex-col gap-0.5">
-                      <span className="text-label-md font-medium">{definition.label}</span>
+                      <span className="text-label-md font-medium">
+                        {blockLabel(definition.type)}
+                      </span>
                       <span className="text-body-sm text-txt-black-700">
-                        {definition.description}
+                        {blockDescription(definition.type)}
                       </span>
                     </span>
                   </button>

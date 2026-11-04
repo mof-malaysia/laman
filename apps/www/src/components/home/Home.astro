@@ -1,0 +1,17 @@
+---
+/** The home page in one language: its copy (src/content/home/<lang>.yaml) in the site layout. */
+import { getEntry } from "astro:content";
+import HomePage from "@/components/home/HomePage.astro";
+import Base from "@/layouts/Base.astro";
+import type { Lang } from "@/site";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const { data } = (await getEntry("home", lang))!;
+---
+
+<Base lang={lang} title={data.title} description={data.description} path={data.path} alternate={data.alternate} navAction={false}>
+  <HomePage home={data} lang={lang} />
+</Base>

@@ -3,15 +3,9 @@ title: Pasang Laman
 description: Pasang Laman di pelayan agensi anda dengan Docker Compose. Keperluan, langkah pemasangan, sandaran, pemulihan dan naik taraf.
 path: /pasang
 alternate: /en/install
+heading: "Pasang Laman"
+lead: "Laman berjalan sebagai satu bekas Docker: pembina, panel pentadbir di `/admin` dan laman web yang diterbitkan di `/`, dari satu port. Halaman ini untuk pasukan ICT yang akan memasangnya."
 ---
-
-<!-- block: page intro -->
-
-# Pasang Laman
-
-Laman berjalan sebagai satu bekas Docker: pembina, panel pentadbir di `/admin` dan laman web yang diterbitkan di `/`, dari satu port. Halaman ini untuk pasukan ICT yang akan memasangnya.
-
-<!-- block: prose -->
 
 ## Apa yang anda perlukan
 
@@ -20,8 +14,6 @@ Laman berjalan sebagai satu bekas Docker: pembina, panel pentadbir di `/admin` d
 - Folder untuk sandaran, sebaik-baiknya di cakera lain atau yang disalin keluar dari mesin.
 
 Kami mengesyorkan pembina diletakkan di rangkaian dalaman atau di belakang VPN. Laman web yang diterbitkan boleh dihidangkan kepada orang awam secara berasingan.
-
-<!-- block: steps -->
 
 ## Langkah pemasangan
 
@@ -61,15 +53,11 @@ Kami mengesyorkan pembina diletakkan di rangkaian dalaman atau di belakang VPN. 
 
 6. **Jemput pasukan anda.** Pilih **Jemput seseorang**, tetapkan peranan yang sesuai (Editor, Pengurus Kandungan atau Pentadbir), dan serahkan pautan sekali guna itu terus kepada orang tersebut. Tiada pelayan e-mel diperlukan.
 
-<!-- block: prose -->
-
 ## Menghidangkan laman web awam
 
 Cara paling mudah: biarkan Laman menghidangkannya sendiri. Jika agensi mahu nginx atau Caddy sedia ada menghidangkan fail statik itu terus, folder laman web yang diterbitkan boleh dihidangkan dengan tiga peraturan: fail yang telah dimampatkan, alamat tanpa garis condong di hujung, dan halaman 404. Hanya `/_v` (analitik) yang perlu diteruskan ke pembina.
 
 Konfigurasi contoh untuk nginx ada dalam [dokumentasi di GitHub](https://github.com/mof-malaysia/laman/blob/main/docs/site-builder.md).
-
-<!-- block: prose -->
 
 ## Sandaran
 
@@ -83,8 +71,6 @@ docker compose exec site-builder site-builder backup --verify <arkib>     # uji 
 
 Sandaran di cakera yang sama tidak terselamat jika cakera itu rosak. Salin `BACKUP_PATH` keluar dari mesin dengan alat yang agensi sudah gunakan. Jangan sekali-kali menyalin volum data semasa bekas berjalan; gunakan arkib.
 
-<!-- block: prose -->
-
 ## Pemulihan
 
 Hentikan pembina dahulu; pemulihan menolak untuk berjalan jika tidak.
@@ -97,8 +83,6 @@ docker compose start site-builder
 
 Akaun dan kata laluan kembali seperti dalam sandaran, semua orang dilog keluar, dan laman web diterbitkan semula. Apa yang digantikan disimpan, bukan dipadam.
 
-<!-- block: prose -->
-
 ## Naik taraf
 
 ```sh
@@ -107,10 +91,3 @@ docker compose up -d --build
 ```
 
 Versi baharu membuat sandaran pangkalan data, kemudian mengemas kininya semasa bermula. Jika ada yang gagal, pangkalan data dikembalikan seperti sebelumnya dan sebabnya ditulis dalam log.
-
-<!-- block: cta band -->
-
-## Sedia untuk bermula?
-
-- [Buka di GitHub](https://github.com/mof-malaysia/laman) (utama)
-- [Perlukan bantuan? Hubungi pasukan](/hubungi)

@@ -6,7 +6,6 @@
  */
 import {
   type TemplateId,
-  blockDefinition,
   Slug,
   type TemplateKind,
   slugify,
@@ -42,6 +41,7 @@ import {
 } from "@/components/ui/summary-list";
 import { Tag } from "@/components/ui/tag";
 import { type MessageKey, t } from "@/i18n";
+import { blockLabel, templateDescription, templateName } from "@/i18n/registry";
 import { apiError, pagesApi } from "@/lib/api";
 import { type TreeItem, buildTree, childPath, usePages, useRefreshPages } from "@/lib/pages";
 import { clx } from "@/lib/ftds/utils";
@@ -55,7 +55,7 @@ const tags = Object.fromEntries(
       id,
       template.listing
         ? (template.listing.categories ?? []).map((c) => c.name)
-        : template.blocks("").map((b) => blockDefinition(b.type).label),
+        : template.blocks("").map((b) => blockLabel(b.type)),
     ];
   }),
 ) as Record<TemplateId, string[]>;
@@ -313,7 +313,7 @@ export function NewPageScreen() {
         >
           <TemplatePreview
             template={template}
-            title={title || templates[template].name}
+            title={title || templateName(template)}
             path={path}
           />
         </aside>
@@ -417,10 +417,10 @@ function StartStep({
             />
             <span className="flex min-w-0 flex-col gap-1">
               <span className="text-txt-black-900 text-body-md font-semibold">
-                {templates[id].name}
+                {templateName(id)}
               </span>
               <span id={`template-${id}-hint`} className="text-txt-black-700 text-body-sm">
-                {templates[id].description}
+                {templateDescription(id)}
               </span>
               <span className="mt-1 flex flex-wrap gap-1" aria-hidden>
                 {tags[id].map((label, i) => (
@@ -552,7 +552,7 @@ function CheckStep({
 }) {
   const rows: { term: string; detail: string; step: NewPageStep; mono?: boolean }[] = [
     { term: t("newPage.kind.label"), detail: t(`newPage.kind.${kind}.title`), step: "kind" },
-    { term: t("newPage.template.label"), detail: templates[template].name, step: "start" },
+    { term: t("newPage.template.label"), detail: templateName(template), step: "start" },
     { term: t("newPage.parent.label"), detail: parent?.title || t("page.untitled"), step: "place" },
     { term: t("newPage.check.title.label"), detail: title, step: "name" },
     { term: t("newPage.slug.label"), detail: path, step: "name", mono: true },

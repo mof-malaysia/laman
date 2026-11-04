@@ -1,27 +1,66 @@
 ---
 /**
- * Every page of the copy, at the `path` its front matter gives. Until the
- * section components are built (phase 3), a page renders as FTDS prose.
+ * The long-form pages, from their Markdown copy: the title on the primary
+ * field, the argument as FTDS prose, and the closing band.
  */
 import { getCollection, render } from "astro:content";
+import CtaBand from "@/components/CtaBand.astro";
 import Prose from "@/components/ui/prose.astro";
 import Base from "@/layouts/Base.astro";
-import type { Lang } from "@/site";
+import { CONTACT_EMAIL, GITHUB_URL, strings, type Lang } from "@/site";
 
 export async function getStaticPaths() {
   const pages = await getCollection("pages");
   return pages.map((page) => ({
-    params: { slug: page.data.path === "/" ? undefined : page.data.path.slice(1) },
+    params: { slug: page.data.path.slice(1) },
     props: { page, lang: (page.id.startsWith("en/") ? "en" : "ms") as Lang },
   }));
 }
 
 const { page, lang } = Astro.props;
 const { Content } = await render(page);
+const s = strings[lang];
+// The comparison's wide table gets FTDS's wide column; the rest read in the text column.
+const column = page.data.comparison ? "max-w-[1080px]" : "max-w-[808px]";
 ---
 
 <Base lang={lang} title={page.data.title} description={page.data.description} path={page.data.path} alternate={page.data.alternate}>
-  <Prose as="article" class="copy-page mx-auto max-w-[808px] px-4.5 py-12 md:px-6 md:py-16">
+  <section class="on-field bg-bg-field text-txt-white">
+    <div class:list={["mx-auto w-full px-4.5 pt-12 pb-14 md:px-6 md:pt-16 md:pb-20", column]}>
+      <h1 class="text-[clamp(2.25rem,1.7rem+2vw,3.25rem)] leading-[1.08] font-semibold tracking-[-0.03em] text-balance">{page.data.heading}</h1>
+      <p class="text-txt-on-field text-body-lg md:text-body-xl mt-6 max-w-[62ch]">
+        {
+          /* `code` in the lead, as in the Markdown it came from. */
+          page.data.lead.split("`").map((part, i) => (i % 2 ? <code class="text-txt-white font-mono text-[0.9em]">{part}</code> : part))
+        }
+      </p>
+    </div>
+  </section>
+  {
+    page.data.contact && (
+      <div class="mx-auto w-full max-w-[808px] px-4.5 pt-14 md:px-6 md:pt-20">
+        <div class="bg-bg-primary-50 rounded-xl p-6">
+          {CONTACT_EMAIL ? (
+            <a
+              href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(s.emailSubject)}`}
+              class="text-txt-primary text-heading-2xs focus-ring rounded-xs font-semibold underline decoration-1 underline-offset-[3px] hover:decoration-2"
+            >
+              {CONTACT_EMAIL}
+            </a>
+          ) : (
+            <p class="text-body-md text-txt-black-900">
+              {s.emailPending}{" "}
+              <a href={`${GITHUB_URL}/issues`} class="text-txt-primary focus-ring rounded-xs font-medium underline decoration-1 underline-offset-[3px]">
+                GitHub
+              </a>
+            </p>
+          )}
+        </div>
+      </div>
+    )
+  }
+  <Prose as="article" class:list={["copy-page mx-auto w-full px-4.5 py-14 md:px-6 md:py-20", column, page.data.comparison && "comparison"]}>
     <Content />
   </Prose>
+  <CtaBand cta={s.cta} secondary={page.data.contact ? { label: s.issues, href: `${GITHUB_URL}/issues` } : undefined} />
 </Base>

@@ -40,6 +40,9 @@ jobs:
           # https://<owner>.github.io/<repo>, or the custom domain set in Pages.
           SITE_URL: ${{ steps.pages.outputs.origin }}
           SITE_BASE: ${{ steps.pages.outputs.base_path || '/' }}
+      - run: node apps/www/scripts/check-links.mjs
+        env:
+          SITE_BASE: ${{ steps.pages.outputs.base_path || '/' }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: apps/www/dist

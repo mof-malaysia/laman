@@ -2119,4 +2119,10 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "settings.security.offDone":
     "Dua faktor tidak lagi diwajibkan. Mereka yang telah menyediakannya akan mengekalkannya.",
   "settings.security.failed": "Tetapan tidak dapat disimpan",
+  "count.chars.remaining": "Tinggal {count} aksara lagi",
+  "count.chars.over": "{count} aksara melebihi had",
+  "count.chars.limit": "Masukkan {limit} aksara atau kurang",
+  "count.words.remaining": "Tinggal {count} perkataan lagi",
+  "count.words.over": "{count} perkataan melebihi had",
+  "count.words.limit": "Masukkan {limit} perkataan atau kurang",
 };

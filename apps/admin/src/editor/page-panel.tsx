@@ -7,7 +7,7 @@ import type { Page } from "@fiscal-sb/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { CharacterCount } from "@/components/ui/character-count";
+import { CharacterCount } from "@/components/character-count";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldDescription, FieldError, FieldItem, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";

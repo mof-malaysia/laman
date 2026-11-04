@@ -1,6 +1,8 @@
 # Brief: the Laman marketing site
 
-Status: phases 1 and 2 done, 4 Nov 2026. The copy for Utama, Kedaulatan, Banding and Pasang is in `apps/www/src/content/pages/{ms,en}/`; `apps/www` builds and has a GitHub Pages workflow, and renders each page as FTDS prose until the section components (phase 3) replace it.
+Status: phases 1 to 3 done, 4 Nov 2026, with Ejen AI and Hubungi from phase 4. Built in `apps/www`: the home page in the "data-centre boundary" structure the owner chose (direction contract in `apps/www/.impeccable/surfaces/`), and Kedaulatan, Banding, Pasang, Ejen AI and Hubungi as long-form pages, in BM and English. Still to write: Ciri, Keselamatan, Kebolehcapaian and Soalan lazim.
+
+Screenshots are real: `apps/server/scripts/demo-site.ts` seeds a made-up agency (Jabatan Contoh) into a throwaway builder, and `apps/www/scripts/screenshots.mjs` captures the admin in BM and English and the published site into `apps/www/public/shots/`. Re-run both when the admin changes. The figures on the home page (6.7 KB of HTML, 12 KB of CSS) were measured on that demo on 4 Nov 2026.
 
 A static site that makes a Malaysian government agency want to try Laman instead of starting (or staying) on WordPress, Joomla or Drupal. Hosted on GitHub Pages, built from this monorepo.
 
@@ -14,6 +16,17 @@ A static site that makes a Malaysian government agency want to try Laman instead
 | Licence          | Open source (MIT proposed). A `LICENSE` file lands in the repo before the site goes live; the site never claims a licence the repo doesn't have    |
 | Competitors      | Named, factually: WordPress, Joomla, Drupal. No mockery, nothing we can't point at a source for                                                    |
 | Attribution      | Neutral for now. No ministry name or crest; one slot in the footer and the About section to fill after approval                                    |
+
+## Positioning (revised 4 Nov 2026)
+
+The owner moved the lead from sovereignty to completeness and AI:
+
+- **Lead:** everything an agency website needs is built in, with no plugins, and Laman is built for AI agents. The home page opens on the job agencies do (a notice that arrives as a WhatsApp poster, Laman's real checks, the notice as a page), then the built-in comparison and the AI-agent section.
+- **Target customers, in this order:** federal ministries and departments, state governments, local authorities (PBT). Statutory bodies and GLCs aren't addressed directly.
+- **AI wording:** "built for AI agents" (MCP, about 80 tools, the officer's permissions, audit log). Never "AI-native": the admin has no AI of its own. Say plainly that what an officer gives an agent goes to the AI provider the agency chooses.
+- **Comparison:** built in versus plugin, row by row, with competitors' built-in features marked as built in; sources on /banding, dated.
+- **Tone:** confident about Laman, never dismissive of other tools.
+- **Sovereignty:** a supporting section lower on the home page, and its own page.
 
 ## Who the site is for
 
