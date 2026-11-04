@@ -1,0 +1,108 @@
+---
+/**
+ * Every page: skip link, navbar with the language switch, the page, and the
+ * footer. No analytics and no third-party requests: the site lives by the
+ * rules it describes.
+ */
+// Only Inter's Latin file: the site's text is BM and English. Declared here and
+// preloaded, so it starts loading with the page instead of after the stylesheet.
+import interLatin from "@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url";
+import "@/styles/global.css";
+import Button from "@/components/ui/button.astro";
+import LanguageSwitcher from "@/components/ui/language-switcher.astro";
+import Navbar from "@/components/ui/navbar.astro";
+import PhaseBanner from "@/components/ui/phase-banner.astro";
+import SiteFooter from "@/components/ui/site-footer.astro";
+import Skiplink from "@/components/ui/skiplink.astro";
+import { footerGroups, GITHUB_URL, navItems, strings, url, type Lang } from "@/site";
+
+interface Props {
+  lang: Lang;
+  title: string;
+  description: string;
+  /** This page's address, from the site root ("/kedaulatan"). */
+  path: string;
+  /** The same page in the other language. */
+  alternate: string;
+  noindex?: boolean;
+  /** The navbar's Pasang Laman button; off where the page's own opening carries the filled one. */
+  navAction?: boolean;
+}
+
+const { lang, title, description, path, alternate, noindex = false, navAction = true } = Astro.props;
+const other: Lang = lang === "ms" ? "en" : "ms";
+const s = strings[lang];
+const locales = (["ms", "en"] as const).map((code) => ({
+  code,
+  href: url(code === lang ? path : alternate),
+}));
+const canonical = new URL(url(path), Astro.site).href;
+const alternateHref = new URL(url(alternate), Astro.site).href;
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex" />}
+    <link rel="preload" href={interLatin} as="font" type="font/woff2" crossorigin />
+    <style
+      is:inline
+      set:html={`@font-face{font-family:"Inter Variable";font-style:normal;font-display:swap;font-weight:100 900;src:url(${interLatin}) format("woff2-variations");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}`}
+    />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang={lang} href={canonical} />
+    <link rel="alternate" hreflang={other} href={alternateHref} />
+    <link rel="icon" href={url("/logo.svg")} type="image/svg+xml" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:site_name" content="Laman" />
+    <meta property="og:locale" content={lang === "ms" ? "ms_MY" : "en_MY"} />
+  </head>
+  <body class="bg-bg-white text-txt-black-900 font-body">
+    <Skiplink href="#main" lang={lang} />
+    <Navbar brand={{ title: "Laman", href: url(s.home), logo: { src: url("/logo.svg"), alt: "" } }} items={navItems(lang, path)} lang={lang}>
+      <LanguageSwitcher slot="actions" locales={locales} current={lang} lang={lang} />
+      {
+        navAction && (<Button slot="actions" href={url(s.installHref)} variant="primary-fill" class="max-sm:hidden">{s.install}</Button>)
+      }
+    </Navbar>
+    <PhaseBanner phase={s.phase.tag} lang={lang}>
+      {s.phase.text}{" "}
+      <a href={`${GITHUB_URL}/issues`} class="text-txt-primary focus-ring rounded-xs font-medium underline decoration-1 underline-offset-[3px]">{s.phase.link}</a>
+    </PhaseBanner>
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
+    <SiteFooter
+      logoTitle="Laman"
+      groups={footerGroups(lang)}
+      class="px-4.5 md:px-[max(1.5rem,calc((100%-1232px)/2))]"
+    >
+      <img slot="logo" src={url("/logo.svg")} alt="" width="36" height="36" class="size-9" />
+      <p>{s.tagline}</p>
+      <p>{s.licence}</p>
+    </SiteFooter>
+    <script>
+      // The navbar's mobile menu is a popover. Older Android browsers lack the
+      // API: only they download the polyfill (as the renderer's sites do).
+      if (!("popover" in HTMLElement.prototype)) void import("@oddbird/popover-polyfill");
+    </script>
+    <style is:global>
+      /* The polyfill marks an open popover with a class, not :popover-open (navbar.astro). */
+      [data-ftds-navbar-panel].\:popover-open {
+        display: flex;
+        flex-direction: column;
+      }
+      header:has([data-ftds-navbar-panel].\:popover-open) [popovertarget] > :is(svg, span):first-of-type {
+        display: none;
+      }
+      header:has([data-ftds-navbar-panel].\:popover-open) [popovertarget] > svg:nth-of-type(2) {
+        display: block;
+      }
+    </style>
+  </body>
+</html>

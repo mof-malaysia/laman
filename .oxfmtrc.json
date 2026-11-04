@@ -12,6 +12,10 @@
     "apps/renderer/src/components/blocks",
     "apps/renderer/src/lib/ftds",
     "apps/renderer/styles/ftds.css",
+    "apps/www/src/components/ui",
+    "apps/www/src/components/blocks",
+    "apps/www/src/lib/ftds",
+    "apps/www/styles/ftds.css",
     "pnpm-lock.yaml"
   ]
 }

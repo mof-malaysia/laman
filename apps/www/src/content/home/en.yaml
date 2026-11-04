@@ -1,0 +1,217 @@
+# The home page, in English. Structured, because the page is laid out section
+# by section; claims here must be in docs/briefs/marketing-site.md's claims list.
+title: "Laman: the complete website builder for government agencies"
+description: Laman is a website builder for ministries, state governments and local authorities. Everything an agency site needs is built in, with no plugins, and AI agents can run it.
+path: /en
+alternate: /
+
+hero:
+  title: Websites for every citizen.
+  lead: The open-source website builder for Malaysian government agencies.
+  primary: { label: Install Laman, href: /en/install }
+  secondary: { label: See what's built in, href: "#built-in" }
+
+customers:
+  title: For ministries, state governments and local authorities
+  items:
+    - title: Federal ministries and departments
+      text: Many divisions send content, often to a site a vendor built. Laman gives each officer the right role and records who published what.
+      features:
+        - Editor, Content Manager and Admin roles
+        - An audit log, and two-factor that can be required
+        - No vendor ticket to change content
+    - title: State governments
+      text: Every department needs its own site, and they should look alike. Each one is an install of the same Laman, on FTDS.
+      features:
+        - One Docker image per website, easy to repeat
+        - The department's colour, with contrast checked
+        - The admin in Bahasa Melayu or English
+    - title: Local authorities
+      text: "Often one officer runs the site alongside other work, and notices can't wait: assessment tax, road closures, floods."
+      features:
+        - An announcement on every page, which can be scheduled
+        - Undo a publish if something's wrong
+        - AI agents can prepare the draft
+
+builtin:
+  id: built-in
+  title: Everything's built in. No plugins to choose, install or patch.
+  lead: WordPress, Joomla and Drupal get much of this from plugins, extensions or modules. Laman has it in one install.
+  need: What an agency needs
+  labels:
+    built: Built in
+    "yes": "Yes"
+    "no": "No"
+    plugin: Plugin
+    extension: Extension
+    module: Module
+    theme: Theme
+    template: Template
+    partial: Partly
+  rows:
+    - {
+        need: "AI agents with the officer's permissions",
+        laman: built,
+        wordpress: plugin,
+        joomla: extension,
+        drupal: module,
+      }
+    - {
+        need: Accessibility checks before publishing,
+        laman: built,
+        wordpress: plugin,
+        joomla: built,
+        drupal: module,
+      }
+    - { need: Scheduled publishing, laman: built, wordpress: built, joomla: built, drupal: module }
+    - {
+        need: "Undo a publish, restore old versions",
+        laman: built,
+        wordpress: built,
+        joomla: built,
+        drupal: built,
+      }
+    - {
+        need: "Two-factor, which can be required",
+        laman: built,
+        wordpress: plugin,
+        joomla: built,
+        drupal: module,
+      }
+    - {
+        need: An audit log of who did what,
+        laman: built,
+        wordpress: plugin,
+        joomla: built,
+        drupal: module,
+      }
+    - {
+        need: Redirects when a page moves,
+        laman: built,
+        wordpress: partial,
+        joomla: partial,
+        drupal: module,
+      }
+    - { need: Site search, laman: built, wordpress: built, joomla: built, drupal: built }
+    - {
+        need: Visitor analytics without cookies,
+        laman: built,
+        wordpress: plugin,
+        joomla: extension,
+        drupal: module,
+      }
+    - {
+        need: Daily backups that are checked,
+        laman: built,
+        wordpress: plugin,
+        joomla: extension,
+        drupal: module,
+      }
+    - {
+        need: "The agency's colour, with contrast checks",
+        laman: built,
+        wordpress: theme,
+        joomla: template,
+        drupal: theme,
+      }
+    - {
+        need: A public website with no database,
+        laman: "yes",
+        wordpress: "no",
+        joomla: "no",
+        drupal: "no",
+      }
+  notes:
+    - "Partly: WordPress redirects posts when their address changes, but not pages. Joomla's Redirect component collects broken links for you to redirect by hand."
+    - "AI agents: WordPress through the official MCP Adapter plugin; Drupal through the AI Agents and MCP Server modules; Joomla through third-party extensions."
+  checked: Last checked 4 November 2026, against each system's current version.
+  more: { label: See the full comparison and its sources, href: /en/compare }
+
+agents:
+  title: AI agents can run your website, as the officer.
+  lead: Laman's built-in MCP server gives agents such as Claude or Codex about 80 tools to build and update the website, with the permissions of the officer who connected them.
+  example: An example, not a recording
+  request:
+    who: Officer to an AI agent
+    text: Set up a new quotation for drain maintenance work, with its documents and a closing date of 30 November.
+  steps:
+    - { text: Reads the Tenders and quotations listing, tool: list_entries }
+    - { text: Writes a new entry as a draft, tool: create_entry }
+    - { text: "Uploads the documents from the officer's computer", tool: start_upload }
+    - { text: Checks the page before it goes live, tool: check_pages }
+  end: { text: Waits for a Content Manager to publish, note: Recorded in the audit log }
+  safety:
+    - Off until an Admin allows it for a person.
+    - "Only that officer's permissions. An Editor's agent can't publish."
+    - Every call is recorded in the audit log, and a connection can be cut off.
+  data: "What an officer shares with an agent goes to the AI provider the agency chose. Laman itself calls no outside service."
+  more: { label: About AI agents in Laman, href: /en/agents }
+
+steps:
+  title: Three steps, no code
+  lead: Screenshots from the real Laman, with a made-up agency, Jabatan Contoh.
+  items:
+    - title: Arrange
+      text: Start from a template or a blank page and arrange FTDS blocks. Type straight onto the page, as visitors will see it.
+      image: /shots/editor-en.webp
+      alt: The Laman editor. On the left, the page structure with four blocks. In the middle, Jabatan Contoh's home page as visitors will see it. On the right, the page settings.
+    - title: Check
+      text: Laman checks each page before it goes live and says how to fix what it finds. A page with no main heading can't be published.
+      image: /shots/checks-en.webp
+      alt: "The 'Before this page goes live' panel with two items: no main heading, and link text 'Klik sini' that says nothing on its own."
+    - title: Publish
+      text: Publish now or schedule it. The new static site replaces the old one in one step, and every publish can be undone.
+      image: /shots/publishing-en.webp
+      alt: The Publishing screen. One change ticked to publish, and today's publish history on the right.
+  note: The published website is static HTML. It stays up even with the builder off.
+
+visitors:
+  title: What visitors get
+  lead: A Laman website on a computer and a phone.
+  desktop:
+    image: /shots/site.webp
+    width: 1280
+    height: 800
+    alt: "Jabatan Contoh's home page on a computer: an office closure notice at the top, the heading 'Perkhidmatan Jabatan Contoh, di satu tempat' and two buttons."
+  phone: { image: /shots/site-phone.webp, width: 390, height: 844, alt: The same page on a phone. }
+  address: www.jabatancontoh.gov.my
+  figures:
+    - { value: "6.7 KB", label: "of HTML for the home page, compressed" }
+    - { value: "12 KB", label: of CSS for the whole website }
+    - { value: "0", label: "cookies, so no consent banner" }
+  figuresNote: Measured on 4 November 2026, on the sample website published by Laman.
+
+sovereignty:
+  title: And it all stays on your servers
+  lead: Laman runs in the agency's data centre. Only the published website reaches the public, and Laman calls no outside service.
+  facts:
+    - { title: Open source, text: "MIT licence. Read, audit and change the code." }
+    - { title: Nothing calls out, text: Works on a network with no internet access. }
+    - { title: One Docker image, text: "One process, one SQLite file for content." }
+    - { title: Keeps running, text: The static website stays up even with the builder off. }
+  more: { label: Read about sovereign technology, href: /en/sovereignty }
+
+diagram:
+  label: "Diagram: what sits in the agency's data centre, and what leaves it"
+  boundary: Your agency's data centre
+  builder: { title: Laman builder, text: Officers edit and publish }
+  database: { title: site.db, text: "Content, accounts and history" }
+  backups: { title: Daily backups, text: Archives in a folder you choose }
+  audit: { title: Audit log, text: "Who published what, and when" }
+  site: { title: Static website, text: "HTML, CSS and images. No database to attack." }
+  connector: HTML only
+  public: { title: The public, text: Reading your website }
+  outsideLabel: Never contacted
+  outside: [Vendor cloud, Third-party CDN, "The Laman team's servers", Visitor trackers]
+  switchOff: Switch the builder off
+  offState: "Off"
+  offNote: "The builder is off. The public website is still up, because it's only static files."
+  onNote: The builder is running. Officers can edit and publish.
+
+runs:
+  title: One Node process. One SQLite file. One Docker image.
+  lead: Clone the repository, then run these two commands for the builder with HTTPS. Daily backups run by themselves.
+  code: |-
+    cp .env.example .env    # fill in the settings
+    docker compose --profile https up -d --build
+  more: { label: Installation guide, href: /en/install }

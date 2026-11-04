@@ -1,0 +1,9 @@
+---
+import StatusPage from "@/components/blocks/status-page.astro";
+import Base from "@/layouts/Base.astro";
+import { url } from "@/site";
+---
+
+<Base lang="ms" title="Halaman tidak dijumpai | Laman" description="Halaman yang anda cari tiada di laman web ini." path="/404" alternate="/en" noindex>
+  <StatusPage kind="not-found" homeHref={url("/")} lang="ms" />
+</Base>

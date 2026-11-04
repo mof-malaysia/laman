@@ -1,0 +1,33 @@
+{
+  "name": "@fiscal-sb/www",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev --port 4321",
+    "build": "astro build",
+    "preview": "astro preview --port 4321",
+    "check-types": "tsc --noEmit",
+    "lint": "oxlint",
+    "test": "node scripts/check-links.mjs",
+    "ftds:add": "node ../../scripts/ftds-add.mjs"
+  },
+  "dependencies": {
+    "@astrojs/markdown-remark": "catalog:",
+    "@fontsource-variable/inter": "catalog:",
+    "@oddbird/popover-polyfill": "catalog:",
+    "astro": "catalog:",
+    "class-variance-authority": "catalog:",
+    "tailwind-merge": "catalog:",
+    "tw-animate-css": "catalog:"
+  },
+  "devDependencies": {
+    "@fiscal-sb/oxlint-config": "workspace:*",
+    "@fiscal-sb/typescript-config": "workspace:*",
+    "@tailwindcss/vite": "catalog:",
+    "@types/node": "catalog:",
+    "oxlint": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:"
+  }
+}

@@ -10,7 +10,7 @@ import { PageStatusTag, PageKindIcon, redirectTarget } from "@/components/page-s
 import { Backlink } from "@/components/ui/backlink";
 import { Button } from "@/components/ui/button";
 import { Callout, CalloutTitle } from "@/components/ui/callout";
-import { CharacterCount } from "@/components/ui/character-count";
+import { CharacterCount } from "@/components/character-count";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldDescription, FieldError, FieldItem, FieldLabel } from "@/components/ui/field";
 import { EllipsisVerticalIcon } from "@/components/ui/icons/ellipsis-vertical";
@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/summary-list";
 import { Tabs, TabsContent, TabsCounter, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { t } from "@/i18n";
+import { templateName } from "@/i18n/registry";
 import { apiError, pagesApi } from "@/lib/api";
 import useToast from "@/lib/ftds/hooks/use-toast";
 import {
@@ -326,7 +327,7 @@ function DetailsTab({
           ? [
               {
                 term: t("detail.details.template"),
-                detail: templates[page.template as TemplateId].name,
+                detail: templateName(page.template as TemplateId),
               },
             ]
           : []),

@@ -11,7 +11,6 @@ import {
   type PublishTrigger,
   canUndo,
 } from "@fiscal-sb/contracts";
-import { blocks } from "@fiscal-sb/blocks";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { type FormEvent, useMemo, useState } from "react";
@@ -56,6 +55,7 @@ import {
 } from "@/components/ui/table";
 import { Tag } from "@/components/ui/tag";
 import { type MessageKey, t } from "@/i18n";
+import { blockLabel } from "@/i18n/registry";
 import { siteDocQuery, useSiteHref } from "@/lib/publish";
 import { apiError, jobsApi, siteApi, waitForJob } from "@/lib/api";
 import { useCan } from "@/lib/auth";
@@ -934,6 +934,3 @@ function JobDrawer({
     </Drawer>
   );
 }
-
-/** A block type's name as officers know it, such as "FAQ"; the id if it's no longer registered. */
-const blockLabel = (type: string) => blocks.find((b) => b.type === type)?.label ?? type;

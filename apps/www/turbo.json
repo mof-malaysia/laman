@@ -1,0 +1,11 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    // The build writes .astro/ (content types) that the type check reads; run
+    // together, both would write it at once.
+    "check-types": { "dependsOn": ["^build", "build"] },
+    // The test checks the built site's links.
+    "test": { "dependsOn": ["^build", "build"] }
+  }
+}

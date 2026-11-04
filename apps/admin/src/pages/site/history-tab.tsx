@@ -5,7 +5,6 @@
  * keeping the current draft as a revision, so a restore can be undone.
  */
 import type { Block, PageDocument } from "@fiscal-sb/blocks";
-import { blockDefinition } from "@fiscal-sb/blocks";
 import type { Page, Revision } from "@fiscal-sb/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -22,6 +21,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tag } from "@/components/ui/tag";
 import { locale, t } from "@/i18n";
+import { blockLabel, fieldLabelAt } from "@/i18n/registry";
 import { api, apiError, historyApi } from "@/lib/api";
 import useToast from "@/lib/ftds/hooks/use-toast";
 import { formatDateTime, useRefreshPages } from "@/lib/pages";
@@ -115,7 +115,9 @@ export function HistoryTab({ page }: { page: Page }) {
 
 type Change = { kind: "added" | "removed" | "changed"; label: string; fields: string[] };
 
-const label = (block: Block) => blockDefinition(block.type).label;
+const label = (block: Block) => blockLabel(block.type);
+/** A changed prop by its field label, in the admin's language; its key if it has none. */
+const fieldName = (block: Block, key: string) => fieldLabelAt(block.type, key) ?? key;
 
 /** Blocks added, removed or changed between two documents, with the changed fields' names. */
 function diff(before: PageDocument, after: PageDocument): Change[] {
@@ -132,7 +134,9 @@ function diff(before: PageDocument, after: PageDocument): Change[] {
       out.push({
         kind: "changed",
         label: label(block),
-        fields: [...keys].filter((k) => JSON.stringify(a[k]) !== JSON.stringify(b[k])),
+        fields: [...keys]
+          .filter((k) => JSON.stringify(a[k]) !== JSON.stringify(b[k]))
+          .map((k) => fieldName(block, k)),
       });
     }
   }

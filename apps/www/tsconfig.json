@@ -1,0 +1,17 @@
+{
+  "extends": "@fiscal-sb/typescript-config/base.json",
+  "compilerOptions": {
+    "lib": ["es2024", "dom"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "verbatimModuleSyntax": false,
+    "allowJs": true,
+    "types": ["node"],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": [".astro/types.d.ts", "src/**/*.ts", "src/**/*.mjs", "astro.config.mjs"],
+  "exclude": ["dist", "src/components/ui", "src/components/blocks", "src/lib/ftds"]
+}

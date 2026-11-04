@@ -1,0 +1,219 @@
+# The home page, in BM. Structured, because the page is laid out section by
+# section; claims here must be in docs/briefs/marketing-site.md's claims list.
+title: "Laman: pembina laman web yang lengkap untuk agensi kerajaan"
+description: Laman ialah pembina laman web untuk kementerian, kerajaan negeri dan PBT. Semua yang laman web agensi perlukan terbina dalam, tanpa pemalam, dan ejen AI boleh menguruskannya.
+path: /
+alternate: /en
+
+hero:
+  title: Laman web untuk setiap rakyat.
+  lead: Pembina laman web sumber terbuka untuk agensi kerajaan Malaysia.
+  primary: { label: Pasang Laman, href: /pasang }
+  secondary: { label: Lihat apa yang terbina dalam, href: "#terbina-dalam" }
+
+customers:
+  title: Untuk kementerian, kerajaan negeri dan PBT
+  items:
+    - title: Kementerian dan jabatan persekutuan
+      text: Banyak bahagian menghantar kandungan, selalunya ke laman web yang dibina vendor. Laman memberi setiap pegawai peranan yang betul dan merekodkan siapa menerbitkan apa.
+      features:
+        - Peranan Editor, Pengurus Kandungan dan Pentadbir
+        - Log audit, dan dua faktor yang boleh diwajibkan
+        - Tiada tiket vendor untuk menukar kandungan
+    - title: Kerajaan negeri
+      text: Setiap jabatan perlukan laman web sendiri, dengan rupa yang seragam. Setiap satu ialah pemasangan Laman yang sama, di atas FTDS.
+      features:
+        - Satu imej Docker setiap laman web, mudah diulang
+        - Warna jabatan, dengan kontras yang disemak
+        - Panel pentadbir dalam Bahasa Melayu atau Inggeris
+    - title: Pihak berkuasa tempatan
+      text: "Selalunya seorang pegawai mengurus laman web di samping tugas lain, dan notis tidak boleh tunggu: cukai taksiran, penutupan jalan, banjir."
+      features:
+        - Pengumuman di atas setiap halaman, boleh dijadualkan
+        - Batalkan terbitan jika tersilap
+        - Ejen AI boleh menyediakan drafnya
+
+builtin:
+  id: terbina-dalam
+  title: Semuanya terbina dalam. Tiada pemalam untuk dipilih, dipasang atau ditampal.
+  lead: WordPress, Joomla dan Drupal mendapat banyak daripada ini melalui pemalam, sambungan atau modul. Laman menyediakannya dalam satu pemasangan.
+  need: Yang agensi perlukan
+  labels:
+    built: Terbina dalam
+    "yes": "Ya"
+    "no": Tidak
+    plugin: Pemalam
+    extension: Sambungan
+    module: Modul
+    theme: Tema
+    template: Templat
+    partial: Sebahagian
+  rows:
+    - {
+        need: Ejen AI dengan kebenaran pegawai,
+        laman: built,
+        wordpress: plugin,
+        joomla: extension,
+        drupal: module,
+      }
+    - {
+        need: Semakan kebolehcapaian sebelum terbit,
+        laman: built,
+        wordpress: plugin,
+        joomla: built,
+        drupal: module,
+      }
+    - { need: Terbitan berjadual, laman: built, wordpress: built, joomla: built, drupal: module }
+    - {
+        need: "Batalkan terbitan, pulihkan versi lama",
+        laman: built,
+        wordpress: built,
+        joomla: built,
+        drupal: built,
+      }
+    - {
+        need: "Dua faktor, boleh diwajibkan",
+        laman: built,
+        wordpress: plugin,
+        joomla: built,
+        drupal: module,
+      }
+    - {
+        need: Log audit siapa buat apa,
+        laman: built,
+        wordpress: plugin,
+        joomla: built,
+        drupal: module,
+      }
+    - {
+        need: Ubah hala apabila halaman dipindah,
+        laman: built,
+        wordpress: partial,
+        joomla: partial,
+        drupal: module,
+      }
+    - { need: Carian laman web, laman: built, wordpress: built, joomla: built, drupal: built }
+    - {
+        need: Analitik pelawat tanpa kuki,
+        laman: built,
+        wordpress: plugin,
+        joomla: extension,
+        drupal: module,
+      }
+    - {
+        need: Sandaran harian yang diperiksa,
+        laman: built,
+        wordpress: plugin,
+        joomla: extension,
+        drupal: module,
+      }
+    - {
+        need: Warna agensi dengan semakan kontras,
+        laman: built,
+        wordpress: theme,
+        joomla: template,
+        drupal: theme,
+      }
+    - {
+        need: Laman web awam tanpa pangkalan data,
+        laman: "yes",
+        wordpress: "no",
+        joomla: "no",
+        drupal: "no",
+      }
+  notes:
+    - "Sebahagian: WordPress mengubah hala catatan apabila alamatnya berubah, tetapi tidak halaman. Komponen Redirect Joomla merekodkan pautan rosak untuk diubah hala dengan tangan."
+    - "Ejen AI: WordPress melalui pemalam rasmi MCP Adapter; Drupal melalui modul AI Agents dan MCP Server; Joomla melalui sambungan pihak ketiga."
+  checked: Disemak pada 4 November 2026, pada versi semasa setiap sistem.
+  more: { label: Lihat perbandingan penuh dan sumbernya, href: /banding }
+
+agents:
+  title: Ejen AI boleh menguruskan laman web anda, sebagai pegawai.
+  lead: Pelayan MCP terbina dalam Laman memberi ejen seperti Claude atau Codex kira-kira 80 alat untuk membina dan mengemas kini laman web, dengan kebenaran pegawai yang menyambungkannya.
+  example: Contoh, bukan rakaman sebenar
+  request:
+    who: Pegawai kepada ejen AI
+    text: Sediakan sebut harga baharu untuk kerja menyelenggara longkang, dengan dokumennya dan tarikh tutup 30 November.
+  steps:
+    - { text: Membaca senarai Tender dan sebut harga, tool: list_entries }
+    - { text: Menulis entri baharu sebagai draf, tool: create_entry }
+    - { text: Memuat naik dokumen dari komputer pegawai, tool: start_upload }
+    - { text: Menyemak halaman sebelum terbit, tool: check_pages }
+  end: { text: Menunggu Pengurus Kandungan menerbitkan, note: Direkodkan dalam log audit }
+  safety:
+    - Dimatikan sehingga Pentadbir membenarkannya untuk seseorang.
+    - Hanya kebenaran pegawai itu. Ejen seorang Editor tidak boleh menerbitkan.
+    - Setiap panggilan direkodkan dalam log audit, dan sambungan boleh diputuskan.
+  data: Apa yang pegawai kongsi dengan ejen dihantar kepada penyedia AI pilihan agensi. Laman sendiri tidak menghubungi perkhidmatan luar.
+  more: { label: Tentang ejen AI dalam Laman, href: /ejen-ai }
+
+steps:
+  title: Tiga langkah, tanpa kod
+  lead: Tangkapan skrin daripada Laman sebenar, dengan agensi rekaan, Jabatan Contoh.
+  items:
+    - title: Susun
+      text: Mulakan dengan templat atau halaman kosong, dan susun blok FTDS. Taip terus pada halaman, seperti yang dilihat pelawat.
+      image: /shots/editor-ms.webp
+      alt: Penyunting Laman. Di kiri, struktur halaman dengan empat blok. Di tengah, halaman utama Jabatan Contoh seperti yang akan dilihat pelawat. Di kanan, tetapan halaman.
+    - title: Semak
+      text: Laman menyemak setiap halaman sebelum terbit dan menerangkan cara membetulkannya. Halaman tanpa tajuk utama tidak boleh diterbitkan.
+      image: /shots/checks-ms.webp
+      alt: "Panel 'Sebelum halaman ini diterbitkan' dengan dua perkara: tiada tajuk utama, dan teks pautan 'Klik sini' yang tidak bermakna dengan sendirinya."
+    - title: Terbit
+      text: Terbitkan sekarang atau jadualkan. Laman web statik baharu menggantikan yang lama sekali gus, dan setiap terbitan boleh dibatalkan.
+      image: /shots/publishing-ms.webp
+      alt: Skrin Penerbitan. Satu perubahan ditanda untuk diterbitkan, dan sejarah terbitan hari ini di sebelah kanan.
+  note: Laman web yang diterbitkan ialah HTML statik. Ia kekal walaupun pembina dimatikan.
+
+visitors:
+  title: Apa yang pelawat dapat
+  lead: Laman web Laman di komputer dan telefon.
+  desktop:
+    image: /shots/site.webp
+    width: 1280
+    height: 800
+    alt: "Halaman utama Jabatan Contoh di komputer: notis penutupan pejabat di atas, tajuk 'Perkhidmatan Jabatan Contoh, di satu tempat' dan dua butang."
+  phone:
+    { image: /shots/site-phone.webp, width: 390, height: 844, alt: Halaman yang sama di telefon. }
+  address: www.jabatancontoh.gov.my
+  figures:
+    - { value: "6.7 KB", label: HTML halaman utama selepas dimampatkan }
+    - { value: "12 KB", label: CSS untuk seluruh laman web }
+    - { value: "0", label: "kuki, jadi tiada sepanduk persetujuan" }
+  figuresNote: Diukur pada 4 November 2026, pada laman web contoh yang diterbitkan oleh Laman.
+
+sovereignty:
+  title: Dan semuanya kekal di pelayan anda
+  lead: Laman berjalan di pusat data agensi. Hanya laman web yang diterbitkan sampai kepada orang awam, dan Laman tidak menghubungi perkhidmatan luar.
+  facts:
+    - { title: Sumber terbuka, text: "Lesen MIT. Baca, audit dan ubah kodnya." }
+    - { title: Tiada sambungan keluar, text: Berfungsi di rangkaian tanpa internet. }
+    - { title: Satu imej Docker, text: "Satu proses, satu fail SQLite untuk kandungan." }
+    - { title: Terus berjalan, text: Laman web statik kekal walaupun pembina dimatikan. }
+  more: { label: Baca tentang teknologi berdaulat, href: /kedaulatan }
+
+diagram:
+  label: "Rajah: apa yang ada di pusat data agensi, dan apa yang keluar daripadanya"
+  boundary: Pusat data agensi anda
+  builder: { title: Pembina Laman, text: Pegawai menyunting dan menerbitkan }
+  database: { title: site.db, text: "Kandungan, akaun dan sejarah" }
+  backups: { title: Sandaran harian, text: Arkib di folder pilihan anda }
+  audit: { title: Log audit, text: "Siapa menerbitkan apa, dan bila" }
+  site:
+    { title: Laman web statik, text: "HTML, CSS dan imej. Tiada pangkalan data untuk diserang." }
+  connector: HTML sahaja
+  public: { title: Orang awam, text: Membaca laman web anda }
+  outsideLabel: Tidak dihubungi
+  outside: [Awan vendor, CDN pihak ketiga, Pelayan pasukan Laman, Penjejak pelawat]
+  switchOff: Matikan pembina
+  offState: Dimatikan
+  offNote: Pembina dimatikan. Laman web awam masih berjalan, kerana ia hanyalah fail statik.
+  onNote: Pembina berjalan. Pegawai boleh menyunting dan menerbitkan.
+
+runs:
+  title: Satu proses Node. Satu fail SQLite. Satu imej Docker.
+  lead: Klon repositori, kemudian jalankan dua arahan ini untuk pembina dengan HTTPS. Sandaran harian berjalan sendiri.
+  code: |-
+    cp .env.example .env    # isi tetapan
+    docker compose --profile https up -d --build
+  more: { label: Panduan pemasangan, href: /pasang }

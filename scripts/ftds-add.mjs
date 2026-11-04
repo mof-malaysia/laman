@@ -1,4 +1,5 @@
-// Installs FTDS registry items into the renderer: `node scripts/ftds-add.mjs astro-hero …`.
+// Installs FTDS registry items into the Astro app it runs in (the renderer or
+// the marketing site): `pnpm ftds:add astro-hero …` from that app.
 //
 // The shadcn CLI can't install .astro files yet (it parses them as JavaScript),
 // so this does what it does for us: resolve registryDependencies, then write
@@ -8,7 +9,8 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
-const root = join(import.meta.dirname, "..");
+// The app: run from its folder, by its `ftds:add` script.
+const root = process.cwd();
 const { registries } = JSON.parse(await readFile(join(root, "components.json"), "utf8"));
 const itemUrl = (name) => registries["@ftds"].replace("{name}", name);
 

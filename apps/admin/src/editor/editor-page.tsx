@@ -2,7 +2,7 @@
  * The editor: a toolbar row, then the Layers and Insert column, the canvas,
  * and the properties panel.
  */
-import { type BlockType, type PageDocument, blockDefinition, blocksFor } from "@fiscal-sb/blocks";
+import { type BlockType, type PageDocument, blocksFor } from "@fiscal-sb/blocks";
 import type { DraftConflict, Page } from "@fiscal-sb/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams, useSearch } from "@tanstack/react-router";
@@ -34,6 +34,7 @@ import { ToggleGroup } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSidebar } from "@/components/ui/app-shell";
 import { t } from "@/i18n";
+import { blockLabel } from "@/i18n/registry";
 import { ConflictDialog } from "@/components/conflict-dialog";
 import {
   PageCheckList,
@@ -453,7 +454,7 @@ function Editor({ page, onReload }: { page: Page; onReload: () => Promise<void> 
     { id: "editor.preview", title: t("editor.preview"), group, run: preview },
     ...allowed.map((type) => ({
       id: `editor.insert.${type}`,
-      title: t("editor.insert.block", { block: blockDefinition(type).label }),
+      title: t("editor.insert.block", { block: blockLabel(type) }),
       group: t("editor.insert.group"),
       run: () => add(type),
     })),
@@ -748,7 +749,7 @@ function Editor({ page, onReload }: { page: Page; onReload: () => Promise<void> 
               <TabsList width="full" className="shrink-0 px-2">
                 <TabsTrigger value="page">{t("editor.panel.page")}</TabsTrigger>
                 <TabsTrigger value="block" disabled={blocks.length === 0}>
-                  {selected ? blockDefinition(selected.type).label : t("editor.panel.block")}
+                  {selected ? blockLabel(selected.type) : t("editor.panel.block")}
                 </TabsTrigger>
               </TabsList>
             </Tabs>

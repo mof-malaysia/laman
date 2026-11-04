@@ -1,0 +1,306 @@
+---
+/**
+ * The home page, from its structured copy (src/content/home/<lang>.yaml).
+ * It opens on an abstract, moving field (HeroArt) with the headline. Then who it's for,
+ * everything built in, AI agents, the steps, what visitors get, and, lower
+ * down, that it all stays on the agency's servers.
+ * Direction: apps/www/.impeccable/surfaces/.
+ */
+import type { CollectionEntry } from "astro:content";
+import Check from "@/components/ui/icons/check.astro";
+import CheckCircle from "@/components/ui/icons/check-circle.astro";
+import CtaBand from "@/components/CtaBand.astro";
+import Boundary from "@/components/home/Boundary.astro";
+import HeroArt from "@/components/home/HeroArt.astro";
+import MoreLink from "@/components/MoreLink.astro";
+import { href, pageColumn, sectionTitle, strings, url, type Lang } from "@/site";
+
+interface Props {
+  home: CollectionEntry<"home">["data"];
+  lang: Lang;
+}
+const { home: h, lang } = Astro.props;
+
+const wrap = pageColumn;
+
+/**
+ * A product screenshot's src, srcset and size. The capture script writes each
+ * one at 2x (its full width) and 1200px wide (`-1200`), so phones fetch the small one.
+ */
+const shot = (image: { image: string; width: number; height: number }, sizes: string) => {
+  const small = url(image.image.replace(/\.webp$/, "-1200.webp"));
+  return {
+    src: url(image.image),
+    srcset: `${small} 1200w, ${url(image.image)} ${image.width * 2}w`,
+    sizes,
+    width: image.width,
+    height: image.height,
+  };
+};
+
+const products = ["laman", "wordpress", "joomla", "drupal"] as const;
+const productNames = { laman: "Laman", wordpress: "WordPress", joomla: "Joomla", drupal: "Drupal" };
+/** Built in, or the good answer: shown as a positive. */
+const good = (status: string) => status === "built" || status === "yes";
+---
+
+<HeroArt hero={h.hero} />
+
+<section class="bg-bg-white" aria-labelledby="customers-title">
+  <div class:list={[wrap, "py-16 md:py-24"]}>
+    <h2 id="customers-title" class={sectionTitle}>{h.customers.title}</h2>
+    <ul class="mt-10 grid gap-10 md:grid-cols-3 md:gap-8" role="list">
+      {
+        h.customers.items.map((item) => (
+          <li class="border-otl-divider border-t-2 pt-6">
+            <h3 class="text-heading-2xs font-semibold">{item.title}</h3>
+            <p class="text-body-md text-txt-black-700 mt-3">{item.text}</p>
+            <ul class="mt-5 flex flex-col gap-2.5" role="list">
+              {item.features.map((feature) => (
+                <li class="text-body-md flex items-start gap-2.5">
+                  <Check class="text-txt-primary mt-0.5 size-5 shrink-0" aria-hidden="true" />
+                  {feature}
+                </li>
+              ))}
+            </ul>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>
+
+<section id={h.builtin.id} class="bg-bg-gray-50" aria-labelledby="builtin-title">
+  <div class:list={[wrap, "py-16 md:py-24"]}>
+    <div class="max-w-[52rem]">
+      <h2 id="builtin-title" class={sectionTitle}>{h.builtin.title}</h2>
+      <p class="text-body-lg text-txt-black-700 mt-4">{h.builtin.lead}</p>
+    </div>
+    <div class="border-otl-divider bg-bg-white mt-10 hidden overflow-hidden rounded-xl border md:block">
+      <table class="text-body-sm w-full border-collapse text-left">
+        <thead>
+          <tr>
+            <th scope="col" class="text-label-md text-txt-black-700 w-[32%] p-4 font-semibold">{h.builtin.need}</th>
+            {
+              products.map((p) => (
+                <th
+                  scope="col"
+                  class:list={[
+                    "text-label-md p-4 font-semibold",
+                    p === "laman" ? "bg-bg-primary-600 text-txt-white" : "text-txt-black-700",
+                  ]}
+                >
+                  {productNames[p]}
+                </th>
+              ))
+            }
+          </tr>
+        </thead>
+        <tbody>
+          {
+            h.builtin.rows.map((row) => (
+              <tr class="border-otl-divider border-t">
+                <th scope="row" class="text-body-md p-4 font-medium">{row.need}</th>
+                {products.map((p) => (
+                  <td
+                    class:list={[
+                      "p-4",
+                      p === "laman" && "bg-bg-primary-50 font-semibold",
+                      p !== "laman" && (good(row[p]) ? "text-txt-black-900" : "text-txt-black-500"),
+                    ]}
+                  >
+                    <span class="inline-flex items-center gap-1.5">
+                      {good(row[p]) && <CheckCircle class={`size-4 shrink-0 ${p === "laman" ? "text-txt-primary" : "text-txt-success"}`} aria-hidden="true" />}
+                      {h.builtin.labels[row[p]]}
+                    </span>
+                  </td>
+                ))}
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    {/* On a phone each need is one row: Laman's answer beside it, the others in a line under it. */}
+    <ul class="border-otl-divider bg-bg-white divide-otl-divider mt-8 divide-y overflow-hidden rounded-xl border md:hidden" role="list">
+      {
+        h.builtin.rows.map((row) => (
+          <li class="px-4 py-3.5">
+            <p class="flex items-start justify-between gap-3">
+              <span class="text-label-md font-semibold">{row.need}</span>
+              <span class="text-txt-primary text-label-sm inline-flex shrink-0 items-center gap-1 font-semibold">
+                <CheckCircle class="size-4" aria-hidden="true" />
+                <span class="sr-only">Laman:</span>
+                {h.builtin.labels[row.laman]}
+              </span>
+            </p>
+            <p class="text-body-sm text-txt-black-700 mt-1">
+              {products
+                .filter((p) => p !== "laman")
+                .map((p) => `${productNames[p]}: ${h.builtin.labels[row[p]]}`)
+                .join(" · ")}
+            </p>
+          </li>
+        ))
+      }
+    </ul>
+    <div class="text-body-sm text-txt-black-700 mt-6 flex max-w-[60rem] flex-col gap-1.5">
+      {h.builtin.notes.map((note) => <p>{note}</p>)}
+      <p class="text-txt-black-500">{h.builtin.checked}</p>
+    </div>
+    <MoreLink to={h.builtin.more.href} class="mt-6">{h.builtin.more.label}</MoreLink>
+  </div>
+</section>
+
+<section class="on-field bg-bg-field text-txt-white" aria-labelledby="agents-title">
+  <div class:list={[wrap, "grid gap-12 py-16 md:py-24 lg:grid-cols-12 lg:gap-14"]}>
+    <div class="lg:col-span-5">
+      <h2 id="agents-title" class={sectionTitle}>{h.agents.title}</h2>
+      <p class="text-txt-on-field text-body-lg mt-4">{h.agents.lead}</p>
+      <ul class="mt-8 flex flex-col gap-3" role="list">
+        {
+          h.agents.safety.map((item) => (
+            <li class="text-body-md flex items-start gap-2.5">
+              <Check class="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+              {item}
+            </li>
+          ))
+        }
+      </ul>
+      <p class="text-txt-on-field text-body-sm border-otl-on-field mt-8 border-t pt-5">{h.agents.data}</p>
+      <MoreLink to={h.agents.more.href} class="mt-6" onField>{h.agents.more.label}</MoreLink>
+    </div>
+    <div class="lg:col-span-7">
+      <p class="text-txt-on-field text-label-sm font-semibold">{h.agents.example}</p>
+      <div class="bg-bg-white text-txt-black-900 mt-3 rounded-xl p-5 md:p-6">
+        <p class="text-label-sm text-txt-black-500 font-semibold">{h.agents.request.who}</p>
+        <p class="text-body-lg md:text-body-xl mt-2 font-medium">{h.agents.request.text}</p>
+      </div>
+      <ol class="mt-4 flex flex-col gap-2" role="list">
+        {
+          h.agents.steps.map((step, i) => (
+            <li class="bg-bg-white/10 text-body-md grid grid-cols-[1.75rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1 rounded-lg px-4 py-3 sm:grid-cols-[1.75rem_minmax(0,1fr)_auto]">
+              <span class="bg-bg-white text-txt-primary text-label-sm flex size-7 items-center justify-center rounded-full font-semibold" aria-hidden="true">
+                {i + 1}
+              </span>
+              <span>{step.text}</span>
+              <code class="text-txt-on-field col-start-2 font-mono text-body-sm sm:col-start-auto">{step.tool}</code>
+            </li>
+          ))
+        }
+        <li class="bg-bg-white text-txt-black-900 text-body-md grid grid-cols-[1.75rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1 rounded-lg px-4 py-3 sm:grid-cols-[1.75rem_minmax(0,1fr)_auto]">
+          <CheckCircle class="text-txt-primary size-7" aria-hidden="true" />
+          <span class="font-semibold">{h.agents.end.text}</span>
+          <span class="text-body-sm text-txt-black-700 col-start-2 sm:col-start-auto">{h.agents.end.note}</span>
+        </li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section class="bg-bg-gray-50" aria-labelledby="steps-title">
+  <div class:list={[wrap, "py-16 md:py-24"]}>
+    <h2 id="steps-title" class={sectionTitle}>{h.steps.title}</h2>
+    <p class="text-body-md text-txt-black-700 mt-3">{h.steps.lead}</p>
+    <ol class="mt-12 flex flex-col gap-16 md:gap-20" role="list">
+      {
+        h.steps.items.map((step, i) => (
+          <li class="grid gap-6 lg:grid-cols-12 lg:gap-10">
+            <div class="lg:col-span-4 lg:pt-4">
+              <span class="bg-bg-primary-600 text-txt-white text-label-md flex size-9 items-center justify-center rounded-full font-semibold" aria-hidden="true">
+                {i + 1}
+              </span>
+              <h3 class="text-heading-xs mt-4 font-semibold">{step.title}</h3>
+              <p class="text-body-md text-txt-black-700 mt-2 max-w-[38ch]">{step.text}</p>
+            </div>
+            <div class="lg:col-span-8">
+              <img
+                {...shot(step, "(min-width: 1024px) 66vw, 100vw")}
+                alt={step.alt}
+                loading="lazy"
+                decoding="async"
+                class="border-otl-divider bg-bg-white block h-auto w-full rounded-xl border"
+              />
+            </div>
+          </li>
+        ))
+      }
+    </ol>
+    <p class="text-body-lg text-txt-black-900 mt-16 max-w-[52ch] font-medium">{h.steps.note}</p>
+  </div>
+</section>
+
+<section class="bg-bg-washed overflow-hidden" aria-labelledby="visitors-title">
+  <div class:list={[wrap, "py-16 md:py-24"]}>
+    <div class="grid gap-10 lg:grid-cols-12">
+      <div class="lg:col-span-4">
+        <h2 id="visitors-title" class={sectionTitle}>{h.visitors.title}</h2>
+        <p class="text-body-md text-txt-black-700 mt-3">{h.visitors.lead}</p>
+        <dl class="mt-10 flex flex-col gap-6">
+          {
+            h.visitors.figures.map((figure) => (
+              <div class="border-otl-divider border-t pt-4">
+                <dt class="text-heading-sm font-semibold tabular-nums">{figure.value}</dt>
+                <dd class="text-body-sm text-txt-black-700 mt-1">{figure.label}</dd>
+              </div>
+            ))
+          }
+        </dl>
+        <p class="text-body-sm text-txt-black-500 mt-6">{h.visitors.figuresNote}</p>
+      </div>
+      <div class="relative lg:col-span-8">
+        <div class="border-otl-divider bg-bg-white overflow-hidden rounded-xl border">
+          <div class="bg-bg-washed text-body-sm text-txt-black-500 border-otl-divider flex h-9 items-center border-b px-4" aria-hidden="true">
+            {h.visitors.address}
+          </div>
+          <img {...shot(h.visitors.desktop, "(min-width: 1024px) 66vw, 100vw")} alt={h.visitors.desktop.alt} loading="lazy" decoding="async" class="block h-auto w-full" />
+        </div>
+        <img
+          src={url(h.visitors.phone.image)}
+          alt={h.visitors.phone.alt}
+          width={h.visitors.phone.width}
+          height={h.visitors.phone.height}
+          loading="lazy"
+          decoding="async"
+          class="border-bg-black-900 absolute right-4 -bottom-10 hidden h-auto w-[30%] max-w-[15rem] rounded-[1.75rem] border-[6px] shadow-[0_24px_48px_-12px_rgb(0_0_0/0.35)] sm:block"
+        />
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="bg-bg-white" aria-labelledby="sovereignty-title">
+  <div class:list={[wrap, "grid gap-10 py-16 md:py-24 xl:grid-cols-12 xl:gap-x-12"]}>
+    <div class="xl:col-span-4">
+      <h2 id="sovereignty-title" class={sectionTitle}>{h.sovereignty.title}</h2>
+      <p class="text-body-lg text-txt-black-700 mt-4">{h.sovereignty.lead}</p>
+      <dl class="mt-8 grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2 xl:grid-cols-1">
+        {
+          h.sovereignty.facts.map((fact) => (
+            <div>
+              <dt class="text-label-md font-semibold">{fact.title}</dt>
+              <dd class="text-body-sm text-txt-black-700 mt-1">{fact.text}</dd>
+            </div>
+          ))
+        }
+      </dl>
+      <MoreLink to={h.sovereignty.more.href} class="mt-8">{h.sovereignty.more.label}</MoreLink>
+    </div>
+    <div class="on-field bg-bg-stage text-txt-white rounded-2xl p-5 md:p-8 xl:col-span-8">
+      <Boundary d={h.diagram} />
+    </div>
+  </div>
+</section>
+
+<section class="bg-bg-gray-50" aria-labelledby="runs-title">
+  <div class:list={[wrap, "grid gap-10 py-16 md:py-24 lg:grid-cols-12"]}>
+    <div class="lg:col-span-5">
+      <h2 id="runs-title" class={sectionTitle}>{h.runs.title}</h2>
+      <p class="text-body-md text-txt-black-700 mt-3">{h.runs.lead}</p>
+      <MoreLink to={h.runs.more.href} class="mt-6">{h.runs.more.label}</MoreLink>
+    </div>
+    <pre class="code-block self-center lg:col-span-7"><code>{h.runs.code}</code></pre>
+  </div>
+</section>
+
+<CtaBand cta={strings[lang].cta} />

@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Callout, CalloutTitle } from "@/components/ui/callout";
-import { CharacterCount } from "@/components/ui/character-count";
+import { CharacterCount } from "@/components/character-count";
 import { Field, FieldDescription, FieldError, FieldItem, FieldLabel } from "@/components/ui/field";
 import { Fieldset, FieldsetLegend } from "@/components/ui/fieldset";
 import { MegaphoneIcon } from "@/components/ui/icons/megaphone";
