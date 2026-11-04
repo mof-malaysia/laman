@@ -3789,12 +3789,18 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "4",
                           "5",
                           "6",
+                          "8",
+                          "9",
+                          "12",
                         ],
                         "optionLabels": {
+                          "12": "12",
                           "3": "3",
                           "4": "4",
                           "5": "5",
                           "6": "6",
+                          "8": "8",
+                          "9": "9",
                         },
                         "title": "How many",
                         "type": "string",
@@ -3811,6 +3817,19 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                       "seeAll": {
                         "maxLength": 40,
                         "title": "See all link text",
+                        "type": "string",
+                        "widget": "text",
+                      },
+                      "showMore": {
+                        "default": false,
+                        "title": "Show a “Show more” button",
+                        "type": "boolean",
+                        "widget": "toggle",
+                      },
+                      "showMoreText": {
+                        "help": "Used when Show more is on. “Lihat lagi” if left empty.",
+                        "maxLength": 40,
+                        "title": "Show more button text",
                         "type": "string",
                         "widget": "text",
                       },
@@ -3855,6 +3874,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                     },
                     "required": [
                       "count",
+                      "showMore",
                       "style",
                       "tone",
                     ],
@@ -6848,12 +6868,18 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "4",
                           "5",
                           "6",
+                          "8",
+                          "9",
+                          "12",
                         ],
                         "optionLabels": {
+                          "12": "12",
                           "3": "3",
                           "4": "4",
                           "5": "5",
                           "6": "6",
+                          "8": "8",
+                          "9": "9",
                         },
                         "title": "How many",
                         "type": "string",
@@ -6870,6 +6896,19 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                       "seeAll": {
                         "maxLength": 40,
                         "title": "See all link text",
+                        "type": "string",
+                        "widget": "text",
+                      },
+                      "showMore": {
+                        "default": false,
+                        "title": "Show a “Show more” button",
+                        "type": "boolean",
+                        "widget": "toggle",
+                      },
+                      "showMoreText": {
+                        "help": "Used when Show more is on. “Lihat lagi” if left empty.",
+                        "maxLength": 40,
+                        "title": "Show more button text",
                         "type": "string",
                         "widget": "text",
                       },
@@ -6914,6 +6953,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                     },
                     "required": [
                       "count",
+                      "showMore",
                       "style",
                       "tone",
                     ],
@@ -7318,6 +7358,10 @@ exports[`stored document schemas > settings 1`] = `
           ],
           "type": "object",
         },
+        "footerLogo": {
+          "default": true,
+          "type": "boolean",
+        },
         "logo": {
           "additionalProperties": false,
           "properties": {
@@ -7331,6 +7375,10 @@ exports[`stored document schemas > settings 1`] = `
             "mediaId",
           ],
           "type": "object",
+        },
+        "navbarName": {
+          "default": true,
+          "type": "boolean",
         },
         "siteName": {
           "maxLength": 80,
@@ -7355,6 +7403,8 @@ exports[`stored document schemas > settings 1`] = `
       "required": [
         "siteName",
         "agencyName",
+        "navbarName",
+        "footerLogo",
       ],
       "type": "object",
     },

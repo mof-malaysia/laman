@@ -59,6 +59,11 @@ const items: NavbarItem[] = site.nav.map((item) => {
   };
 });
 
+/** The navbar's logo link. With the name hidden the logo names the link, so its alt is the site name. */
+const brand = site.logo && site.hideNavbarName
+  ? { href: "/", logo: { src: site.logo.src, alt: site.name } }
+  : { title: site.name, href: "/", ...(site.logo && { logo: site.logo }) };
+
 const socialIcons = {
   facebook: Facebook,
   x: TwitterX,
@@ -123,7 +128,7 @@ const searchFilters = [
         </PhaseBanner>
       )
     }
-    <Navbar brand={{ title: site.name, href: "/", ...(site.logo && { logo: site.logo }) }} items={items} lang={lang}>
+    <Navbar brand={brand} items={items} lang={lang}>
       {
         site.search && (
           <Button slot="actions" href={SEARCH_PATH} variant="default-ghost" aria-current={input.path === SEARCH_PATH ? "page" : undefined}>
@@ -154,7 +159,7 @@ const searchFilters = [
       }
     </div>
     {/* The publisher decides which pages go in the index; every published page says how to file it. */}
-    <main id="main" tabindex="-1" data-pagefind-body={input.mode === "publish" ? "" : undefined}>
+    <main id="main" tabindex="-1" data-pagefind-body={input.mode === "publish" ? "" : undefined} data-entry={input.entry ? "" : undefined}>
       {
         input.mode === "publish" && (
           <div hidden data-pagefind-filter={searchFilters} data-pagefind-meta={input.entry ? `date:${longDate(input.entry.date)}` : undefined} />
@@ -163,7 +168,7 @@ const searchFilters = [
       <slot />
     </main>
     <SiteFooter logoTitle={owner} groups={site.footer}>
-      {site.logo && <img slot="logo" src={site.logo.src} alt="" height="36" class="h-9 w-auto" />}
+      {site.logo && !site.hideFooterLogo && <img slot="logo" src={site.logo.src} alt="" height="36" class="h-9 w-auto" />}
       {contact.address && <p class="whitespace-pre-line">{contact.address}</p>}
       {
         (contact.phone || contact.email || contact.hours) && (

@@ -439,6 +439,13 @@ export const en = {
   "settings.identity.agencyHint": "In full, for example Jabatan Perkhidmatan Awam Malaysia",
   "settings.identity.logo": "Logo",
   "settings.identity.logoHint": "Shown in the navbar and footer. SVG or PNG on a clear background.",
+  "settings.identity.navbarName": "Show the site name in the navbar",
+  "settings.identity.navbarNameHint":
+    "Turn off when the logo already spells out the name. Screen readers still hear it.",
+  "settings.identity.navbarNameNoLogo":
+    "Add a logo first: without one the name is all the navbar shows.",
+  "settings.identity.footerLogo": "Show the logo in the footer",
+  "settings.identity.footerLogoHint": "Off leaves the agency name on its own.",
   "settings.identity.favicon": "Favicon",
   "settings.identity.faviconHint": "The browser tab icon: a square PNG or SVG, at least 64 px.",
   "settings.identity.socialImage": "Default social image",
@@ -2024,6 +2031,8 @@ export const en = {
   "agents.tool.update_announcement": "Changed the announcement",
   "agents.tool.discard_draft": "Discarded a draft",
   "agents.tool.upload_media": "Uploaded a file",
+  "agents.tool.start_upload": "Asked for an upload link",
+  "agents.tool.upload_link": "Uploaded a file through a link",
   "agents.tool.update_media": "Changed a file's details",
   "agents.tool.publish_page": "Published a page",
   "agents.tool.schedule_publish": "Scheduled a publish",

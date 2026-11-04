@@ -1,0 +1,51 @@
+---
+/**
+ * Entries as cards, in FTDS NewsList's own parts (a Sheet card that is one
+ * stretched link, a category Tag, the date as <time>). NewsList's grid stops
+ * at three cards, which suits a home-page strip but not a listing's page of
+ * twelve, so both entry blocks draw their cards here.
+ */
+import Tag from "@/components/ui/tag.astro";
+import { linked_item_class, meta_row_class, stretched_link_class } from "@/components/ui/section.variants";
+import { formatDate, isoDate, type Lang } from "@/lib/ftds/i18n";
+import { clx } from "@/lib/ftds/utils";
+
+type Card = { title: string; href: string; date: string; category?: string; summary?: string; image?: string };
+type Props = {
+  items: Card[];
+  lang: Lang;
+  /** Cards to a row on wide screens. @default 3 */
+  columns?: 3 | 4;
+  /** h3 under a section heading, h2 when the cards are the page's own list. @default "h3" */
+  heading?: "h2" | "h3";
+};
+const { items, lang, columns = 3, heading: Heading = "h3" } = Astro.props;
+---
+
+<ul class={clx("grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6", columns === 4 ? "lg:grid-cols-4" : "lg:grid-cols-3")}>
+  {
+    items.map((item) => (
+      <li class={clx(linked_item_class, "bg-bg-white flex flex-col overflow-hidden rounded-lg")}>
+        {item.image && <img src={item.image} alt="" loading="lazy" decoding="async" class="bg-bg-washed aspect-[16/9] w-full object-cover" />}
+        <div class="p-surface flex min-w-0 flex-col gap-2">
+          {(item.category || item.date) && (
+            <p class={meta_row_class}>
+              {item.category && (
+                <Tag variant="default" size="small">
+                  {item.category}
+                </Tag>
+              )}
+              {item.date && <time datetime={isoDate(item.date)}>{formatDate(lang, item.date)}</time>}
+            </p>
+          )}
+          <Heading class="text-txt-black-900 text-title font-semibold text-pretty">
+            <a href={item.href} class={stretched_link_class}>
+              {item.title}
+            </a>
+          </Heading>
+          {item.summary && <p class="text-txt-black-700 text-content line-clamp-3">{item.summary}</p>}
+        </div>
+      </li>
+    ))
+  }
+</ul>

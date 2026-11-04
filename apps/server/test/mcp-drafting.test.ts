@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "@rstest/core";
 import sharp from "sharp";
 import { agentApp, agentHelpers } from "./agents.js";
-import { type App } from "./helpers.js";
+import { type App, multipartFile } from "./helpers.js";
 
 let app: App;
 let close: () => Promise<void>;
@@ -263,6 +263,81 @@ describe("media", () => {
         data: Buffer.from("MZ").toString("base64"),
       }),
     ).toBe("file_type_not_allowed");
+  });
+});
+
+/** An image big enough that an agent would have shrunk it. */
+const bigPng = () =>
+  sharp({ create: { width: 1200, height: 800, channels: 3, background: "#0b6b3a" } })
+    .png()
+    .toBuffer();
+
+/** A file posted to an upload link, as curl -F sends it. */
+const postToLink = (url: string, bytes: Buffer, headers: Record<string, string> = {}) => {
+  const file = multipartFile("gambar.png", bytes);
+  return app.inject({
+    method: "POST",
+    url: new URL(url).pathname,
+    payload: file.payload,
+    headers: { ...file.headers, ...headers },
+  });
+};
+
+describe("on a connection of its own", () => {
+  // Its own connection: the suite's has spent its burst of calls by now.
+  let own: string;
+  beforeAll(async () => {
+    const { cookie } = await officer("editor");
+    own = (await connect(cookie)).access_token;
+  });
+  const useOwn = (name: string, args?: object) => helpers.use(own, name, args);
+
+  it("keeps the navbar-name switch when another identity field changes", async () => {
+    const hidden = await useOwn("update_settings", { identity: { navbarName: false } });
+    expect(hidden.draft.identity.navbarName).toBe(false);
+    const renamed = await useOwn("update_settings", { identity: { agencyName: "Lembaga Zakat" } });
+    expect(renamed.draft.identity.navbarName).toBe(false);
+    expect(renamed.draft.identity.footerLogo).toBe(true);
+  });
+
+  it("takes the original file once, as the officer, with the details given up front", async () => {
+    const link = await useOwn("start_upload", { alt: "Bangunan agensi", credit: "Unit Korporat" });
+    expect(link.example).toContain(link.url);
+    const bytes = await bigPng();
+    const response = await postToLink(link.url, bytes);
+    expect(response.statusCode).toBe(201);
+    const media = response.json().data;
+    expect(media).toMatchObject({
+      kind: "image",
+      alt: "Bangunan agensi",
+      credit: "Unit Korporat",
+      width: 1200,
+      size: bytes.length,
+    });
+    // Once only.
+    const again = await postToLink(link.url, bytes);
+    expect(again.statusCode).toBe(404);
+    expect(again.json().error.code).toBe("upload_link_invalid");
+    const log = await app.db
+      .selectFrom("audit_log")
+      .select("detail")
+      .where("action", "=", "agentToolCall")
+      .execute();
+    expect(log.some((row) => String(row.detail).includes('"upload_link"'))).toBe(true);
+  });
+
+  it("refuses an unknown link, another site's page, and what the library refuses", async () => {
+    expect((await postToLink("http://localhost/mcp/uploads/nope", await bigPng())).statusCode).toBe(
+      404,
+    );
+    const framed = await useOwn("start_upload", {});
+    expect(
+      (await postToLink(framed.url, await bigPng(), { origin: "https://evil.example" })).statusCode,
+    ).toBe(403);
+    const link = await useOwn("start_upload", {});
+    const refused = await postToLink(link.url, Buffer.from("MZ"));
+    expect(refused.statusCode).toBe(400);
+    expect(refused.json().error.code).toBe("file_type_not_allowed");
   });
 });
 

@@ -38,6 +38,7 @@ import {
 } from "@fiscal-sb/contracts";
 import { z } from "zod";
 import { ThemeInput } from "./theme.js";
+import { issueUploadLink } from "./uploads.js";
 import { type Api, drafting, type Tool, ToolError } from "./tool.js";
 
 const Position = z
@@ -219,6 +220,9 @@ const SettingsChanges = z.object({
       logo: removable(identity.logo),
       favicon: removable(identity.favicon),
       socialImage: removable(identity.socialImage),
+      // Plain optionals: a default here would switch them back on in every identity change.
+      navbarName: z.boolean().optional(),
+      footerLogo: z.boolean().optional(),
     })
     .optional(),
   contact: sections.contact.partial().optional(),
@@ -818,7 +822,7 @@ export const draftingTools: Tool[] = [
     name: "upload_media",
     title: "Upload a file",
     description:
-      "Adds a file from the officer's machine to the media library: JPEG, PNG, WebP, SVG or PDF, base64-encoded, up to the site's upload limit. Give images alt text (or mark them decorative). Use the returned id in blocks.",
+      "Adds a file from the officer's machine to the media library: JPEG, PNG, WebP, SVG or PDF, base64-encoded, up to the site's upload limit. Give images alt text (or mark them decorative). Use the returned id in blocks. For anything over about 1 MB, or whenever you can run curl, use start_upload instead. Send the file as it is: never resize or recompress it, since the builder makes the smaller copies pages need and keeps the original for the largest screens.",
     input: z.object({
       filename: z.string().trim().min(1).max(200),
       data: z.string().min(1).describe("The file's bytes, base64-encoded."),
@@ -830,6 +834,27 @@ export const draftingTools: Tool[] = [
       const media = (await api.upload("/api/media", filename, bytes)) as { id: string };
       const fields = defined(details);
       return Object.keys(fields).length ? api.patch(`/api/media/${media.id}`, fields) : media;
+    },
+  }),
+  drafting({
+    name: "start_upload",
+    title: "Get an upload link",
+    description:
+      "A one-time link to post a file to straight from disk, so it needn't go through a tool call as base64: the better way to add images when you can run a shell command. Post the original, never a resized or recompressed copy (the builder makes the smaller copies itself): `curl -sS -F \"file=@/path/to/photo.jpg\" <url>`. The answer is the media file; use its `id` in blocks. JPEG, PNG, WebP, SVG or PDF, up to the site's upload limit. The link works once, for 15 minutes. Alt text and the rest given here are applied to the file when it arrives.",
+    input: z.object({ ...UpdateMediaBody.shape }),
+    run: async ({ user, connection, origin }, details) => {
+      const { token, expiresAt } = issueUploadLink({
+        connectionId: connection.id,
+        userId: user.id,
+        details: defined(details),
+      });
+      const url = `${origin}/mcp/uploads/${token}`;
+      return {
+        url,
+        expiresAt,
+        field: "file",
+        example: `curl -sS -F "file=@/path/to/photo.jpg" ${url}`,
+      };
     },
   }),
   drafting({

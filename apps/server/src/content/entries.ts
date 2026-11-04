@@ -12,6 +12,7 @@ import {
   type EntryRender,
   type ListingRender,
   ListingSettings,
+  LATEST_MAX,
   type PageDocument,
   blocksFor,
   collectionSettings,
@@ -325,7 +326,7 @@ export async function latestRender(db: Db, doc: PageDocument, scope: Scope, load
     if (kind?.kind !== "listing") continue;
     out[id] = {
       path: tree.path(id),
-      items: (await entryItems(db, id, scope, { loads })).slice(0, 24),
+      items: (await entryItems(db, id, scope, { loads })).slice(0, LATEST_MAX),
     };
   }
   return out;

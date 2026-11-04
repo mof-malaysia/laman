@@ -51,7 +51,12 @@ const schemaOf = <N extends SiteDocName>(name: N) =>
 async function defaultSettings(db: Db): Promise<SiteSettings> {
   const old = (await readRow(db, "site")) as { name?: string } | undefined;
   return {
-    identity: { siteName: old?.name ?? "Laman Web Agensi", agencyName: "" },
+    identity: {
+      siteName: old?.name ?? "Laman Web Agensi",
+      agencyName: "",
+      navbarName: true,
+      footerLogo: true,
+    },
     contact: { address: "", phone: "", email: "", hours: "" },
     social: [],
     phase: { phase: "off" },
@@ -475,6 +480,9 @@ export async function siteContext(
     ...(logo && {
       logo: { src: logo.url, alt: logo.alt || identity.agencyName || identity.siteName },
     }),
+    // Without a logo the name is all the navbar has, so it stays.
+    ...(logo && !identity.navbarName && { hideNavbarName: true }),
+    ...(!identity.footerLogo && { hideFooterLogo: true }),
     ...(file(identity.favicon) && { favicon: file(identity.favicon)?.url }),
     ...(file(identity.socialImage) && { socialImage: file(identity.socialImage)?.url }),
     nav: navItems,

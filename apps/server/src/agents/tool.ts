@@ -26,7 +26,8 @@ export type Api = {
   html: (path: string, query?: Record<string, unknown>) => Promise<string>;
 };
 
-export type ToolContext = { user: User; connection: Connection; api: Api };
+/** `origin`: the builder's address as the agent reaches it, for links it's given. */
+export type ToolContext = { user: User; connection: Connection; api: Api; origin: string };
 
 /** A refusal the agent sees: the API's code and message, so it can correct itself. */
 export class ToolError extends Error {

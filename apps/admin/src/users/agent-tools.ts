@@ -68,6 +68,9 @@ const tools = [
   "update_announcement",
   "discard_draft",
   "upload_media",
+  "start_upload",
+  // Not a tool: a file posted to start_upload's link, audited like one.
+  "upload_link",
   "update_media",
   "publish_page",
   "schedule_publish",

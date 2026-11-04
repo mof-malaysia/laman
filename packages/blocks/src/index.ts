@@ -3,6 +3,7 @@ export * from "./fields.js";
 export * from "./registry.js";
 export * from "./rich-text.js";
 export { featureIcons } from "./blocks/feature-grid.js";
+export { LATEST_MAX } from "./blocks/latest-entries.js";
 export { blockIcons } from "./define.js";
 export type { BlockDefinition, BlockGroup, BlockIcon } from "./define.js";
 export * from "./templates.js";

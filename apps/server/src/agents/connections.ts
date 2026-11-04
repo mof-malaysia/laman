@@ -214,9 +214,19 @@ export type Connection = {
 };
 
 /** The live connection an access token belongs to, and its officer as they are now. */
-export async function connectionOf(
+export const connectionOf = (db: Db, accessToken: string) =>
+  findConnection(db, { accessHash: hashToken(accessToken) });
+
+/**
+ * A connection by id, if it's still open and its officer may still use agents:
+ * for work an agent started earlier (an upload link), checked again when it's used.
+ * Not its access token's hour, which the link outlives.
+ */
+export const openConnection = (db: Db, id: string) => findConnection(db, { id });
+
+async function findConnection(
   db: Db,
-  accessToken: string,
+  by: { accessHash: string } | { id: string },
 ): Promise<{ connection: Connection; user: User } | undefined> {
   const row = await db
     .selectFrom("agent_connections")
@@ -233,14 +243,17 @@ export async function connectionOf(
       "agent_connections.last_used_at",
       "agent_connections.revoked_at",
     ])
-    .where("agent_connections.access_hash", "=", hashToken(accessToken))
+    .where((eb) =>
+      "id" in by
+        ? eb("agent_connections.id", "=", by.id)
+        : eb("agent_connections.access_hash", "=", by.accessHash),
+    )
     .executeTakeFirst();
   const at = now();
   if (
     !row ||
     row.revoked_at ||
-    !row.access_expires_at ||
-    row.access_expires_at < at ||
+    ("accessHash" in by && (!row.access_expires_at || row.access_expires_at < at)) ||
     row.expires_at < at ||
     row.disabled_at ||
     !row.mcp_enabled
