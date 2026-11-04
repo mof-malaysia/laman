@@ -15,7 +15,7 @@ const { block, edit, lang, breadcrumb } = Astro.props;
 const p = block.props;
 ---
 
-<PageIntro breadcrumb={breadcrumb} tone={p.tone} lang={lang}>
+<PageIntro breadcrumb={breadcrumb} tone={p.tone} width={p.width} lang={lang}>
   {
     (edit || p.eyebrow) && (
       <Tag slot="eyebrow" variant="primary" size="medium">

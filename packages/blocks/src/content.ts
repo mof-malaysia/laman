@@ -184,6 +184,10 @@ export type SiteContext = {
   /** The masthead and footer owner. */
   agency: string;
   logo?: { src: string; alt: string };
+  /** The navbar shows the logo alone, named by the site name for screen readers. Only with a logo. */
+  hideNavbarName?: true;
+  /** The footer leaves the logo out. */
+  hideFooterLogo?: true;
   favicon?: string;
   socialImage?: string;
   nav: SiteNavItem[];

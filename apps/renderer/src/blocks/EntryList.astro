@@ -1,8 +1,8 @@
 ---
 /**
- * A listing page's entries: FTDS NewsList (cards or a compact list), a
- * category filter as links to each category's page, a Pager over the
- * listing's pages, and its RSS feed.
+ * A listing page's entries: cards (EntryCards, since FTDS NewsList's grid
+ * stops at three) or a NewsList list, a category filter as links to each
+ * category's page, a Pager over the listing's pages, and its RSS feed.
  */
 import type { BlockOf, ListingRender } from "@fiscal-sb/blocks";
 import NewsList from "@/components/blocks/news-list.astro";
@@ -10,6 +10,7 @@ import Pager from "@/components/ui/pager.astro";
 import RSS from "@/components/ui/icons/rss.astro";
 import { band_cva } from "@/components/ui/section.variants";
 import { isoDay } from "./date";
+import EntryCards from "./EntryCards.astro";
 import { listingHref } from "./listing";
 
 type Props = { block: BlockOf<"entryList">; edit: boolean; lang: "ms" | "en"; listing?: ListingRender };
@@ -24,6 +25,17 @@ const items = (listing?.items ?? []).map((item) => ({
   ...(p.style === "cards" && item.image && { image: item.image }),
 }));
 const base = listing?.path ?? "/";
+/** Under the entries, cards or list, when there's more than one page. */
+const pager =
+  listing && listing.pages > 1
+    ? {
+        current: listing.page,
+        total: listing.pages,
+        href: (n: number) => listingHref(base, n, listing.category),
+        firstHref: listingHref(base, 1, listing.category),
+        lang,
+      }
+    : undefined;
 ---
 
 <section class={band_cva({ tone: p.tone })}>
@@ -51,17 +63,17 @@ const base = listing?.path ?? "/";
     }
     {
       items.length > 0 ? (
-        <NewsList items={items} layout={p.style === "cards" ? "grid" : "list"} tone={p.tone} lang={lang} title="">
-          {listing && listing.pages > 1 && (
-            <Pager
-              current={listing.page}
-              total={listing.pages}
-              href={(n: number) => listingHref(base, n, listing.category)}
-              firstHref={listingHref(base, 1, listing.category)}
-              lang={lang}
-            />
-          )}
-        </NewsList>
+        p.style === "cards" ? (
+          <>
+            <EntryCards items={items} lang={lang} heading="h2" />
+            {pager && <Pager {...pager} />}
+          </>
+        ) : (
+          // The list keeps NewsList's own band, so its pager goes inside it, under the rows.
+          <NewsList items={items} layout="list" tone={p.tone} lang={lang} title="">
+            {pager && <Pager {...pager} />}
+          </NewsList>
+        )
       ) : (
         <p class="bg-bg-washed text-txt-black-700 rounded-md p-6">
           {edit && !listing ? "Entri muncul di sini." : p.emptyText}

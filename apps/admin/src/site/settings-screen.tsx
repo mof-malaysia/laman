@@ -434,6 +434,21 @@ function renderFields<S extends DocumentSection>(
               onChange={(next) => setI({ [key]: next ? { mediaId: next.mediaId } : undefined })}
             />
           ))}
+          <CheckRow
+            title={t("settings.identity.navbarName")}
+            description={t(
+              v.logo ? "settings.identity.navbarNameHint" : "settings.identity.navbarNameNoLogo",
+            )}
+            checked={v.navbarName || !v.logo}
+            disabled={!v.logo}
+            onChange={(checked) => setI({ navbarName: checked })}
+          />
+          <CheckRow
+            title={t("settings.identity.footerLogo")}
+            description={t("settings.identity.footerLogoHint")}
+            checked={v.footerLogo}
+            onChange={(checked) => setI({ footerLogo: checked })}
+          />
         </>
       );
     }
@@ -706,6 +721,16 @@ function settingsChanges(from: SiteSettings, to: SiteSettings): string[] {
         : "settings.review.imageAdded";
     lines.push(t(message, { label: t(`settings.identity.${key}`) }));
   }
+  change(
+    "settings.identity.navbarName",
+    onOff(from.identity.navbarName),
+    onOff(to.identity.navbarName),
+  );
+  change(
+    "settings.identity.footerLogo",
+    onOff(from.identity.footerLogo),
+    onOff(to.identity.footerLogo),
+  );
   for (const key of ["address", "phone", "email", "hours"] as const)
     text(`settings.contact.${key}`, (s) => s.contact[key]);
   for (const platform of socialPlatforms)

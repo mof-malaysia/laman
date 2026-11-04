@@ -1,25 +1,29 @@
 ---
 /** An event's facts, registration and programme, in FTDS EventDetails, beside the rich-text description. */
+import type { Column } from "./column";
 import { type BlockOf, type Locale, richTextToHtml } from "@fiscal-sb/blocks";
 import EventDetails from "@/components/blocks/event-details.astro";
 import Prose from "@/components/ui/prose.astro";
 import { action } from "./action";
 
-type Props = { block: BlockOf<"eventDetails">; lang: Locale };
-const { block, lang } = Astro.props;
+type Props = { block: BlockOf<"eventDetails">; width: Column; lang: Locale };
+const { block, width, lang } = Astro.props;
 const p = block.props;
 ---
 
-<EventDetails
-  date={p.date}
-  time={p.time}
-  venue={p.venue}
-  fee={p.fee}
-  mapHref={p.mapUrl}
-  registerAction={action(p.registerAction)}
-  registerNote={p.registerNote}
-  programme={p.programme}
-  lang={lang}
->
-  <Prose set:html={richTextToHtml(p.about)} />
-</EventDetails>
+{/* FTDS EventDetails sets the wide column itself; global.css narrows it inside data-column="article". */}
+<div data-column={width}>
+  <EventDetails
+    date={p.date}
+    time={p.time}
+    venue={p.venue}
+    fee={p.fee}
+    mapHref={p.mapUrl}
+    registerAction={action(p.registerAction)}
+    registerNote={p.registerNote}
+    programme={p.programme}
+    lang={lang}
+  >
+    <Prose set:html={richTextToHtml(p.about)} />
+  </EventDetails>
+</div>

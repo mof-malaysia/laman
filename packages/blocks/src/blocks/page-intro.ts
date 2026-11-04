@@ -16,6 +16,7 @@ export const pageIntro = defineBlock({
     title: field.text("Title", { max: 120, inline: true }),
     description: field.textarea("Description", { max: 300, inline: true }).optional(),
     tone: field.tone(["well", "paper"]),
+    width: field.pageColumn(),
   }),
   defaults: {
     title: "Tajuk halaman",

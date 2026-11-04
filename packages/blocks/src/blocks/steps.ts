@@ -22,6 +22,7 @@ export const steps = defineBlock({
     steps: field.list("Steps", Step, { min: 1, max: 12 }),
     action: field.action("Action under the steps").optional(),
     tone: field.tone(),
+    width: field.column(),
   }),
   defaults: {
     title: "Cara memohon",

@@ -26,6 +26,7 @@ export const faq = defineBlock({
     openFirst: field.toggle("Open the first answer").default(false),
     multiple: field.toggle("Let several answers stay open").default(false),
     tone: field.tone(),
+    width: field.column(),
   }),
   defaults: {
     title: "Soalan lazim",

@@ -14,7 +14,7 @@ export const image = defineBlock({
     caption: field.text("Caption", { max: 200, inline: true }).optional(),
     width: field
       .select("Width", ["content", "wide", "full"], {
-        content: "Text width",
+        content: "Text column",
         wide: "Wide",
         full: "Full width",
       })

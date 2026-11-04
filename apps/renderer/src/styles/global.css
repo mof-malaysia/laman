@@ -8,3 +8,12 @@
   --font-body: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-heading: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
 }
+
+/*
+ * The text column for FTDS blocks that set the wide one themselves (FAQ,
+ * Event details): their wrappers put them in data-column="article" when the
+ * block's width is Text column, or Follow page on an article (column.ts).
+ */
+[data-column="article"] .max-w-\[1280px\] {
+  max-width: 808px;
+}

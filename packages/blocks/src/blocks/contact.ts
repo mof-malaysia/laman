@@ -26,6 +26,7 @@ export const contact = defineBlock({
         hours: field.textarea("Office hours", { max: 200 }).optional(),
       })
       .optional(),
+    width: field.column(),
   }),
   defaults: { title: "Hubungi kami" },
 });

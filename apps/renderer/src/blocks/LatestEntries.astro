@@ -1,9 +1,21 @@
 ---
-/** The newest few entries of a listing page, with a link to see them all (FTDS NewsList). */
-import type { BlockOf, EntryItem } from "@fiscal-sb/blocks";
+/**
+ * The newest entries of a listing page, with a link to see them all. Lists
+ * and headlines are FTDS NewsList; cards are EntryCards, since NewsList's
+ * grid stops at three and this block shows up to twelve.
+ *
+ * "Show more" sends up to LATEST_MAX entries; ShowMore reveals `count` more
+ * per press.
+ */
+import { type BlockOf, type EntryItem, LATEST_MAX } from "@fiscal-sb/blocks";
 import NewsList from "@/components/blocks/news-list.astro";
+import ArrowForwardIcon from "@/components/ui/icons/arrow-forward.astro";
+import Link from "@/components/ui/link.astro";
+import Section from "@/components/ui/section.astro";
 import { isoDay } from "./date";
+import EntryCards from "./EntryCards.astro";
 import Field from "./Field.astro";
+import ShowMore from "./ShowMore.astro";
 
 type Props = {
   block: BlockOf<"latestEntries">;
@@ -13,10 +25,11 @@ type Props = {
 };
 const { block, edit, lang, latest } = Astro.props;
 const p = block.props;
+const count = Number(p.count);
 const source = p.listing ? latest?.[p.listing] : undefined;
 const items = (source?.items ?? [])
   .filter((item) => !p.category || item.categorySlug === p.category)
-  .slice(0, Number(p.count))
+  .slice(0, p.showMore ? LATEST_MAX : count)
   .map((item) => ({
     title: item.title,
     href: item.href,
@@ -25,18 +38,42 @@ const items = (source?.items ?? [])
     ...(p.style !== "compact" && item.summary && { summary: item.summary }),
     ...(p.style === "grid" && item.image && { image: item.image }),
   }));
+const more = p.showMore && items.length > count;
 const viewAll = source && p.seeAll ? { label: p.seeAll, href: p.category ? `${source.path === "/" ? "" : source.path}/kategori/${p.category}` : source.path } : undefined;
+// Four or eight sit four to a row; everything else three.
+const fourUp = count === 4 || count === 8;
 ---
 
 {
   items.length > 0 ? (
-    <NewsList items={items} layout={p.style} tone={p.tone} lang={lang} {...(viewAll && { viewAll })}>
-      {(p.title || edit) && (
-        <Field slot="title" name="title" edit={edit} placeholder="Tajuk">
-          {p.title}
-        </Field>
+    <div data-latest-entries={more ? String(count) : undefined}>
+      {p.style === "grid" ? (
+        <Section tone={p.tone}>
+          {(p.title || edit) && (
+            <Field slot="title" name="title" edit={edit} placeholder="Tajuk">
+              {p.title}
+            </Field>
+          )}
+          {viewAll && (
+            <Link slot="aside" href={viewAll.href} primary underline="hover" class="text-label-md inline-flex shrink-0 items-center gap-1.5 font-medium">
+              {viewAll.label}
+              <ArrowForwardIcon aria-hidden="true" class="size-4" />
+            </Link>
+          )}
+          <EntryCards items={items} lang={lang} columns={fourUp ? 4 : 3} />
+          {more && <ShowMore label={p.showMoreText || "Lihat lagi"} />}
+        </Section>
+      ) : (
+        <NewsList items={items} layout={p.style} tone={p.tone} lang={lang} {...(viewAll && { viewAll })}>
+          {(p.title || edit) && (
+            <Field slot="title" name="title" edit={edit} placeholder="Tajuk">
+              {p.title}
+            </Field>
+          )}
+          {more && <ShowMore label={p.showMoreText || "Lihat lagi"} />}
+        </NewsList>
       )}
-    </NewsList>
+    </div>
   ) : (
     edit && (
       <section class="bg-bg-white">

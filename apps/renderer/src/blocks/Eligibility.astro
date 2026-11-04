@@ -1,15 +1,17 @@
 ---
+import type { Column } from "./column";
 import type { BlockOf, Locale } from "@fiscal-sb/blocks";
 import Eligibility from "@/components/blocks/eligibility.astro";
 import Field from "./Field.astro";
 
-type Props = { block: BlockOf<"eligibility">; edit: boolean; lang: Locale };
-const { block, edit, lang } = Astro.props;
+type Props = { block: BlockOf<"eligibility">; width: Column; edit: boolean; lang: Locale };
+const { block, width, edit, lang } = Astro.props;
 const p = block.props;
 const exclusions = p.exclusions?.map((e) => e.text);
 ---
 
 <Eligibility
+  width={width}
   criteria={p.criteria.map((c) => c.text)}
   exclusions={exclusions?.length ? exclusions : undefined}
   criteriaTitle={p.criteriaTitle || undefined}

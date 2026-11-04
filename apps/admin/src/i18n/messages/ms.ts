@@ -441,6 +441,13 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "settings.identity.logo": "Logo",
   "settings.identity.logoHint":
     "Dipaparkan pada bar navigasi dan kaki laman. SVG atau PNG berlatar belakang lut sinar.",
+  "settings.identity.navbarName": "Papar nama laman pada bar navigasi",
+  "settings.identity.navbarNameHint":
+    "Matikan jika logo sudah memaparkan nama. Pembaca skrin masih mendengarnya.",
+  "settings.identity.navbarNameNoLogo":
+    "Tambah logo dahulu: tanpa logo, nama sahaja yang dipaparkan pada bar navigasi.",
+  "settings.identity.footerLogo": "Papar logo pada kaki laman",
+  "settings.identity.footerLogoHint": "Jika dimatikan, nama agensi sahaja dipaparkan.",
   "settings.identity.favicon": "Favikon",
   "settings.identity.faviconHint":
     "Ikon tab pelayar: PNG atau SVG segi empat sama, sekurang-kurangnya 64 px.",
@@ -2048,6 +2055,8 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "agents.tool.update_announcement": "Mengubah pengumuman",
   "agents.tool.discard_draft": "Membuang draf",
   "agents.tool.upload_media": "Memuat naik fail",
+  "agents.tool.start_upload": "Meminta pautan muat naik",
+  "agents.tool.upload_link": "Memuat naik fail melalui pautan",
   "agents.tool.update_media": "Mengubah butiran fail",
   "agents.tool.publish_page": "Menerbitkan halaman",
   "agents.tool.schedule_publish": "Menjadualkan penerbitan",

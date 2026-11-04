@@ -1,24 +1,24 @@
 # Agents over MCP
 
-Status: built. Phases 1 to 5: sign-in and consent, `/mcp` and its 79 tools, managing agents, and the limits below.
+Status: built. Phases 1 to 5: sign-in and consent, `/mcp` and its 80 tools, managing agents, and the limits below.
 
 An officer can ask an AI agent (Claude Desktop, Codex and the like) to build and change the site with the builder's own tools. The agent connects to an MCP server inside the builder, signs in as the officer, and can do exactly what the officer's role can, no more. Admins choose who may connect, see what agents did, and can cut any of them off.
 
 ## Decisions
 
-| Question             | Decision                                                                                                                                                                 |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Clients              | Remote MCP clients first: Claude Desktop, Codex and similar. Streamable HTTP at `/mcp`, in the same process. No stdio mode                                               |
-| Sign-in              | OAuth 2.1 with PKCE and dynamic client registration, as the MCP authorization spec asks. The builder is its own authorization server. No two-factor needed to connect    |
-| What an agent can do | Whatever its officer's role can, checked on every call against the role as it is then. A Content Manager's agent may publish; an Editor's agent never sees publish tools |
-| Who may connect      | Off for everyone until an Admin turns on "MCP access" for that person. Turning it off, or disabling the account, ends all their connections                              |
-| Writing              | Tools call the builder's own `/api` routes in-process, as the officer: the same permission checks, validation, draft conflicts and audit entries as the admin            |
-| Expiry               | Access tokens last an hour and refresh tokens rotate. A connection ends 7 days after consent; the officer then connects again                                            |
-| Logging              | One audit entry per tool call: tool, target, outcome or error code, duration, connection. No arguments. Kept as long as the audit log (365 days)                         |
-| Management           | Admins see every connection and revoke one or all of a person's. Everyone sees and revokes their own                                                                     |
-| Media                | Only files from the officer's machine, sent in the tool call (base64, up to `MEDIA_MAX_MB`). The server never fetches a URL for an agent                                 |
-| Previews             | Text and HTML of the rendered draft. No screenshots                                                                                                                      |
-| Two editors at once  | As today: a save from an old version is refused (409 `draft_conflict`); the tool tells the agent to read the page again                                                  |
+| Question             | Decision                                                                                                                                                                       |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Clients              | Remote MCP clients first: Claude Desktop, Codex and similar. Streamable HTTP at `/mcp`, in the same process. No stdio mode                                                     |
+| Sign-in              | OAuth 2.1 with PKCE and dynamic client registration, as the MCP authorization spec asks. The builder is its own authorization server. No two-factor needed to connect          |
+| What an agent can do | Whatever its officer's role can, checked on every call against the role as it is then. A Content Manager's agent may publish; an Editor's agent never sees publish tools       |
+| Who may connect      | Off for everyone until an Admin turns on "MCP access" for that person. Turning it off, or disabling the account, ends all their connections                                    |
+| Writing              | Tools call the builder's own `/api` routes in-process, as the officer: the same permission checks, validation, draft conflicts and audit entries as the admin                  |
+| Expiry               | Access tokens last an hour and refresh tokens rotate. A connection ends 7 days after consent; the officer then connects again                                                  |
+| Logging              | One audit entry per tool call: tool, target, outcome or error code, duration, connection. No arguments. Kept as long as the audit log (365 days)                               |
+| Management           | Admins see every connection and revoke one or all of a person's. Everyone sees and revokes their own                                                                           |
+| Media                | Only files from the officer's machine: base64 in the tool call, or posted to a one-time upload link (below). Up to `MEDIA_MAX_MB`. The server never fetches a URL for an agent |
+| Previews             | Text and HTML of the rendered draft. No screenshots                                                                                                                            |
+| Two editors at once  | As today: a save from an old version is refused (409 `draft_conflict`); the tool tells the agent to read the page again                                                        |
 
 ## Signing in
 
@@ -49,7 +49,22 @@ Each tool declares a permission, like routes do; `tools/list` shows only the one
 | Search     | `set_search_options(on?, filters?)`, `add_search_pin(terms, pageId)`, `update_search_pin`, `remove_search_pin`                                                                                             |
 | Colours    | `set_theme` with a preset or the agency's colour (the server makes the ramp, as the admin does)                                                                                                            |
 | Site       | `update_settings` (section by section), `update_announcement`, `discard_draft` (settings, navigation, announcement, search or colours)                                                                     |
-| Media      | `upload_media(filename, data, alt…)` with the file base64-encoded, `update_media(id, alt, caption, credit)`                                                                                                |
+| Media      | `start_upload(alt…)` for a one-time upload link, `upload_media(filename, data, alt…)` with the file base64-encoded, `update_media(id, alt, caption, credit)`                                               |
+
+### Media: upload links
+
+A file sent base64 inside a tool call costs the agent a third more than the file, all of it through its context, so agents tend to shrink images before sending them and the site gets a blurred copy. `start_upload` gives the agent a link to post the original to instead, from a shell:
+
+```sh
+curl -sS -F "file=@/path/to/photo.jpg" https://builder.agensi.gov.my/mcp/uploads/<token>
+```
+
+- The link is random, works once and lasts 15 minutes. Only its hash is kept, in memory, so a restart ends every link; a connection holds at most 20 at a time.
+- `POST /mcp/uploads/:token` spends the link before reading the body, refuses a browser page from another origin, and checks the connection is still open and its officer may still use agents. It then uploads through `POST /api/media` as the officer, like `upload_media`, and applies the alt text and other details given to `start_upload`. It answers with the media file (`201`) or `{ "error": … }`.
+- It is audited like a tool call (tool `upload_link`) and counts against the connection's call limit.
+- Both tools' descriptions tell agents to send the original, never a resized or recompressed copy: the builder makes the narrower copies pages use.
+
+`upload_media` stays for agents without a shell and for small files.
 
 ### Publishing (`content.publish`)
 
@@ -94,13 +109,14 @@ codex mcp login site-builder
 
 ## Limits
 
-| What                     | Limit                                                                                                             |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| Tool calls               | 60 at once per connection, then one a second; over that the tool answers `rate_limited` with the wait. Not logged |
-| Registrations            | 100 per hour per address before they slow down; clients nobody allows are forgotten after a day                   |
-| Codes and refresh tokens | 10 wrong ones per address, then each try waits longer                                                             |
-| Request size             | `MEDIA_MAX_MB` as base64, plus 64 KB. The token is checked before the body is read                                |
-| Connections              | An hour per access token; 7 days per consent; ended ones stay on Agents for 30 days                               |
+| What                     | Limit                                                                                                                           |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| Tool calls               | 60 at once per connection, then one a second; over that the tool answers `rate_limited` with the wait. Not logged               |
+| Registrations            | 100 per hour per address before they slow down; clients nobody allows are forgotten after a day                                 |
+| Codes and refresh tokens | 10 wrong ones per address, then each try waits longer                                                                           |
+| Request size             | `MEDIA_MAX_MB` as base64, plus 64 KB; an upload link takes `MEDIA_MAX_MB`. The token or link is checked before the body is read |
+| Upload links             | One use, 15 minutes, 20 open per connection                                                                                     |
+| Connections              | An hour per access token; 7 days per consent; ended ones stay on Agents for 30 days                                             |
 
 ## How it's built
 

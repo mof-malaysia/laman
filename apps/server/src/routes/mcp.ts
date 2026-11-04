@@ -9,11 +9,13 @@ import { createRequire } from "node:module";
 import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { audit, type AuditEvent } from "../auth/audit.js";
-import { type Connection, connectionOf } from "../agents/connections.js";
+import { type Connection, connectionOf, openConnection } from "../agents/connections.js";
 import { CallLimit } from "../agents/limits.js";
 import { issueTicket, TICKET_HEADER } from "../agents/tickets.js";
+import { addMedia, takeUploadLink, type UploadLink } from "../agents/uploads.js";
 import { type Api, ToolError } from "../agents/tool.js";
-import { multipartFile } from "../multipart.js";
+import { errorHandler, HttpError } from "../errors.js";
+import { multipartFile, readUpload } from "../multipart.js";
 import { jsonSchemaOf, ValidationError } from "../validation.js";
 import { mayUse, toolNamed, tools } from "../agents/tools.js";
 import type { User } from "../auth/users.js";
@@ -116,6 +118,31 @@ export const mcpRoutes: FastifyPluginAsync<{ maxUploadBytes: number }> = async (
   const limit = new CallLimit();
   /** Each tool call's audit entry, written after its answer is sent. */
   const toolAudits = new WeakMap<FastifyRequest, AuditEvent>();
+  /** Keeps a call's audit entry for `writeCallAudit`: tool calls and upload links alike. */
+  const recordCall = (
+    request: FastifyRequest,
+    user: User,
+    connection: Connection,
+    call: { tool: string; outcome: string; started: number; target?: string | null },
+  ) =>
+    toolAudits.set(request, {
+      userId: user.id,
+      action: "agentToolCall",
+      target: call.target ?? null,
+      detail: {
+        tool: call.tool,
+        outcome: call.outcome,
+        ms: Date.now() - call.started,
+        agent: connection.clientName,
+        connection: connection.id,
+      },
+      ip: request.ip,
+    });
+  /** A route's onResponse: the entry is written once the answer has gone, so the agent doesn't wait on it. */
+  const writeCallAudit = async (request: FastifyRequest) => {
+    const event = toolAudits.get(request);
+    if (event) await audit(db, event);
+  };
   /** The officer and connection each request's token belongs to, found before its body is read. */
   const agents = new WeakMap<FastifyRequest, { user: User; connection: Connection }>();
 
@@ -214,7 +241,7 @@ export const mcpRoutes: FastifyPluginAsync<{ maxUploadBytes: number }> = async (
         );
       }
       result = await t.run(
-        { user, connection, api: apiFor(user, connection, request.ip) },
+        { user, connection, api: apiFor(user, connection, request.ip), origin: originOf(request) },
         parsed.data,
       );
       return typeof result === "string"
@@ -237,19 +264,11 @@ export const mcpRoutes: FastifyPluginAsync<{ maxUploadBytes: number }> = async (
       outcome = error.code;
       return failed(error.code, error.message, error.details);
     } finally {
-      // Written once the answer has gone (the route's onResponse), so the agent doesn't wait on it.
-      toolAudits.set(request, {
-        userId: user.id,
-        action: "agentToolCall",
-        target: parsed.success ? (t.target?.(parsed.data) ?? null) : null,
-        detail: {
-          tool: name,
-          outcome,
-          ms: Date.now() - started,
-          agent: connection.clientName,
-          connection: connection.id,
-        },
-        ip: request.ip,
+      recordCall(request, user, connection, {
+        tool: name,
+        outcome,
+        started,
+        target: parsed.success ? t.target?.(parsed.data) : null,
       });
     }
   }
@@ -301,10 +320,7 @@ export const mcpRoutes: FastifyPluginAsync<{ maxUploadBytes: number }> = async (
     {
       // Room for upload_media's file, base64 (4 bytes for every 3), and the message around it.
       bodyLimit: Math.ceil(maxUploadBytes / 3) * 4 + 64 * 1024,
-      onResponse: async (request) => {
-        const event = toolAudits.get(request);
-        if (event) await audit(db, event);
-      },
+      onResponse: writeCallAudit,
       // Before the body is read, so a request without a good token can't send megabytes.
       onRequest: async (request, response) => {
         // Browsers send Origin: only this builder's own pages may call (DNS rebinding).
@@ -350,6 +366,75 @@ export const mcpRoutes: FastifyPluginAsync<{ maxUploadBytes: number }> = async (
       }
     },
   );
+
+  // An upload link from start_upload (docs/mcp.md § Media): the original file, as multipart.
+  // Its own scope, with the API's error handler and shape: it answers in JSON, not JSON-RPC.
+  await app.register(async (scope) => {
+    scope.setErrorHandler(errorHandler);
+    /** Each upload's link and who it's for, found before its body is read. */
+    const uploads = new WeakMap<
+      FastifyRequest,
+      { link: UploadLink; user: User; connection: Connection }
+    >();
+
+    scope.post<{ Params: { token: string } }>(
+      "/mcp/uploads/:token",
+      {
+        onResponse: writeCallAudit,
+        // The link is spent and checked before the body is read, so a bad one can't send megabytes.
+        onRequest: async (request) => {
+          const origin = request.headers.origin;
+          if (origin && origin !== originOf(request))
+            throw new HttpError(403, "forbidden", "Not from this origin.");
+          const link = takeUploadLink(request.params.token);
+          const found = link && (await openConnection(db, link.connectionId));
+          if (!link || !found || found.user.id !== link.userId)
+            throw new HttpError(
+              404,
+              "upload_link_invalid",
+              "This upload link is unknown, used or expired. Call start_upload for a new one.",
+            );
+          if (!limit.take(found.connection.id).ok)
+            throw new HttpError(
+              429,
+              "rate_limited",
+              "Too many calls. Wait, then ask for a new link.",
+            );
+          uploads.set(request, { link, ...found });
+        },
+        schema: {
+          summary: "Upload through a link",
+          description:
+            "Posts one file (multipart/form-data, field `file`) to a one-time link an agent got from the `start_upload` tool, as `curl -F file=@photo.jpg <url>`. Answers with the media file, as `POST /api/media` does. See docs/mcp.md.",
+          tags: ["agents"],
+          consumes: ["multipart/form-data"],
+        },
+      },
+      async (request, response) => {
+        const { link, user, connection } = uploads.get(request)!;
+        const started = Date.now();
+        let outcome = "ok";
+        try {
+          const { filename, bytes } = await readUpload(request);
+          const api = apiFor(user, connection, request.ip);
+          return response
+            .status(201)
+            .send({ data: await addMedia(api, filename, bytes, link.details) });
+        } catch (error) {
+          outcome =
+            error instanceof HttpError || error instanceof ToolError
+              ? error.code
+              : "internal_error";
+          // The library's refusal (a file type it doesn't take), in the API's shape.
+          if (error instanceof ToolError)
+            throw new HttpError(400, error.code, error.message, error.details);
+          throw error;
+        } finally {
+          recordCall(request, user, connection, { tool: "upload_link", outcome, started });
+        }
+      },
+    );
+  });
 
   for (const method of ["GET", "DELETE"] as const)
     app.route({

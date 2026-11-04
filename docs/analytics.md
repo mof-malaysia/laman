@@ -15,7 +15,7 @@ We don't treat that as a way round anyone's choice. People block trackers to avo
 - **No cookies, no local storage, no fingerprinting.** Nothing is stored on the visitor's device.
 - **No lasting identifier.** A visitor is `sha256(daily salt, IP, user agent, site host)`, cut to 16 bytes. The salt is random, made with the first beacon of each day, kept in memory and in `analytics.db`, and deleted when the next day's is made. The same person tomorrow is a new visitor; nobody can be followed from one day to the next, or across sites.
 - **No IP addresses are stored**, only the hash and, when a country database is installed, the two-letter country.
-- **Global Privacy Control is honoured.** A browser that sends `Sec-GPC: 1` (or sets `navigator.globalPrivacyControl`) is not counted.
+- **Global Privacy Control is honoured.** A browser that sends `Sec-GPC: 1` (or sets `navigator.globalPrivacyControl`) is not counted. Brave, DuckDuckGo's browser and some privacy extensions turn it on by default, so checking the counts from one of them shows nothing: test from a browser without GPC.
 - **Aggregate reporting only.** The admin shows totals and top lists, never a single visit.
 
 This is the posture the site states on its privacy page (PDPA 2010). With no personal data stored and no cookies there is no consent banner.

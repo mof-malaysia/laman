@@ -14,6 +14,7 @@ export const details = defineBlock({
   props: z.object({
     summary: field.text("Link text, as the reader's question", { max: 120, inline: true }),
     body: RichText.meta({ title: "Help", widget: "richtext" }),
+    width: field.column(),
   }),
   defaults: {
     summary: "Saya tidak menjumpai nombor rujukan saya",

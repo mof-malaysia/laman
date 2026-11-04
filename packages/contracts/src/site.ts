@@ -145,6 +145,10 @@ export const SiteSettings = z.object({
     logo: MediaRef.optional(),
     favicon: MediaRef.optional(),
     socialImage: MediaRef.optional(),
+    /** The site name beside the navbar logo. Off suits a logo that already says it; needs a logo. */
+    navbarName: z.boolean().default(true),
+    /** The logo in the footer, beside the agency name. */
+    footerLogo: z.boolean().default(true),
   }),
   contact: z.object({
     address: z.string().trim().max(300),

@@ -16,6 +16,7 @@ import {
 } from "@tanstack/react-router";
 import { type ReactNode, useMemo, useState } from "react";
 import { SignInAgain } from "@/auth/sign-in-again";
+import { useSiteBrand, useSiteTab } from "./site-brand";
 import {
   AppShell,
   AppShellHeader,
@@ -66,10 +67,10 @@ import { Kbd } from "@/components/ui/kbd";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ShortcutProvider, useCommands, useShortcutActions } from "@/components/ui/shortcuts";
 import { type MessageKey, t } from "@/i18n";
-import { mediaQuery, pagesApi } from "@/lib/api";
+import { pagesApi } from "@/lib/api";
 import { roleLabels, signOut, useCan, useMe } from "@/lib/auth";
 import { usePages } from "@/lib/pages";
-import { siteDocQuery, useAnnouncementDoc } from "@/lib/publish";
+import { useAnnouncementDoc } from "@/lib/publish";
 import { UploadDialog } from "@/media/upload-dialog";
 import { type NavPart, navParts } from "@/site/navigation-screen";
 import { ShellContext, type ShellActions } from "./context";
@@ -240,8 +241,6 @@ function UserMenu({ active }: { active: boolean }) {
   );
 }
 
-const BRAND_STALE = 5 * 60_000;
-
 /**
  * The site's own logo and name once a logo is published, so officers see whose
  * site they're running; Laman's until then. The tag says this is the admin,
@@ -249,9 +248,7 @@ const BRAND_STALE = 5 * 60_000;
  */
 function AdminBrand() {
   // On screen everywhere, so its own mounts (the phone drawer) needn't refetch.
-  const siteSettings = useQuery({ ...siteDocQuery("settings"), staleTime: BRAND_STALE });
-  const identity = siteSettings.data?.published.identity;
-  const logo = useQuery({ ...mediaQuery(identity?.logo?.mediaId), staleTime: BRAND_STALE });
+  const { settings: siteSettings, identity, logo } = useSiteBrand();
   const [broken, setBroken] = useState(false);
   const logoUrl = broken ? undefined : logo.data?.thumbnailUrl;
   const name = logoUrl && identity ? identity.siteName : t("app.name");
@@ -479,6 +476,7 @@ export function AdminShell() {
     files: [],
   });
   const [waiting, setWaiting] = useState(false);
+  useSiteTab();
 
   const actions = useMemo<ShellActions>(
     () => ({

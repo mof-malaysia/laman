@@ -1,12 +1,13 @@
 ---
 /** Links to pages and other websites, in FTDS LinkList; another website is worked out from the address. */
+import type { Column } from "./column";
 import type { BlockOf, Locale } from "@fiscal-sb/blocks";
 import LinkList from "@/components/blocks/link-list.astro";
 import Field from "./Field.astro";
 import { isExternal } from "./links";
 
-type Props = { block: BlockOf<"linkList">; edit: boolean; lang: Locale; siteUrl?: string | undefined };
-const { block, edit, lang, siteUrl } = Astro.props;
+type Props = { block: BlockOf<"linkList">; width: Column; edit: boolean; lang: Locale; siteUrl?: string | undefined };
+const { block, width, edit, lang, siteUrl } = Astro.props;
 const p = block.props;
 const links = p.items.map((item) => ({
   label: item.label,
@@ -16,7 +17,7 @@ const links = p.items.map((item) => ({
 }));
 ---
 
-<LinkList links={links} layout={p.layout} tone={p.tone} lang={lang}>
+<LinkList width={width} links={links} layout={p.layout} tone={p.tone} lang={lang}>
   {
     (edit || p.title) && (
       <Field slot="title" name="title" edit={edit} placeholder="Tajuk">{p.title}</Field>

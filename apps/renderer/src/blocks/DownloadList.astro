@@ -4,13 +4,14 @@
  * size. A file missing from the library is left out; with none, the block
  * shows only on the canvas.
  */
+import type { Column } from "./column";
 import type { BlockOf, Locale, MediaInfo } from "@fiscal-sb/blocks";
 import DownloadList from "@/components/blocks/download-list.astro";
 import Field from "./Field.astro";
 import { fileSize } from "./format";
 
-type Props = { block: BlockOf<"downloadList">; edit: boolean; lang: Locale; media: Record<string, MediaInfo> };
-const { block, edit, lang, media } = Astro.props;
+type Props = { block: BlockOf<"downloadList">; width: Column; edit: boolean; lang: Locale; media: Record<string, MediaInfo> };
+const { block, width, edit, lang, media } = Astro.props;
 const p = block.props;
 const files = p.files.flatMap((item) => {
   const file = media[item.file.mediaId];
@@ -29,7 +30,7 @@ const files = p.files.flatMap((item) => {
 
 {
   (files.length > 0 || edit) && (
-    <DownloadList files={files} layout={p.layout} tone={p.tone} lang={lang} title={p.title ?? ""}>
+    <DownloadList width={width} files={files} layout={p.layout} tone={p.tone} lang={lang} title={p.title ?? ""}>
       {(edit || p.title) && (
         <Field slot="title" name="title" edit={edit} placeholder="Muat turun">{p.title}</Field>
       )}
