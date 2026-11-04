@@ -54,31 +54,6 @@ const home = defineCollection({
   schema: z.strictObject({
     ...meta,
     hero: z.strictObject({ title: z.string(), lead: z.string(), primary: link, secondary: link }),
-    stage: z.strictObject({
-      label: z.string(),
-      tag: z.string(),
-      poster: z.strictObject({
-        title: z.string(),
-        text: z.string(),
-        date: z.string(),
-        caption: z.string(),
-      }),
-      checks: z.strictObject({
-        title: z.string(),
-        items: z.array(z.string()).min(1),
-        caption: z.string(),
-      }),
-      page: z.strictObject({
-        address: z.string(),
-        tag: z.string(),
-        notice: z.string(),
-        crumb: z.string(),
-        title: z.string(),
-        text: z.string(),
-        list: z.array(z.string()),
-        caption: z.string(),
-      }),
-    }),
     customers: z.strictObject({
       title: z.string(),
       items: z.array(titled.extend({ features: z.array(z.string()).length(3) })).length(3),

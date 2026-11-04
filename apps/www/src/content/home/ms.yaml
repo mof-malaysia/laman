@@ -6,37 +6,10 @@ path: /
 alternate: /en
 
 hero:
-  title: Dari poster WhatsApp ke halaman yang semua orang boleh baca.
-  lead: Laman ialah pembina laman web untuk kementerian, kerajaan negeri dan PBT. Semua yang laman web agensi perlukan sudah terbina dalam, tanpa pemalam, dan ejen AI boleh menguruskannya dengan kebenaran pegawai.
+  title: Laman web untuk setiap rakyat.
+  lead: Pembina laman web sumber terbuka untuk agensi kerajaan.
   primary: { label: Pasang Laman, href: /pasang }
   secondary: { label: Lihat apa yang terbina dalam, href: "#terbina-dalam" }
-
-stage:
-  label: "Contoh: notis yang tiba sebagai poster, semakan Laman, dan notis itu sebagai halaman"
-  tag: Contoh rekaan
-  poster:
-    title: NOTIS PENUTUPAN PEJABAT
-    text: Pejabat Jabatan Contoh ditutup sementara pada 12 November 2026 kerana banjir. Urusan kaunter dipindahkan ke cawangan Seksyen 9.
-    date: "12.11.2026"
-    caption: Dimuat naik sebagai gambar, pembaca skrin tidak dapat membacanya dan enjin carian tidak menemuinya.
-  checks:
-    title: Sebelum halaman ini diterbitkan
-    items:
-      - 'Teks alternatif yang tidak menerangkan imej: "poster-notis.jpg"'
-      - 'Teks pautan yang tidak bermakna dengan sendirinya: "Klik sini"'
-    caption: Semakan sebenar Laman, sebelum apa-apa diterbitkan.
-  page:
-    address: jabatancontoh.gov.my/notis/pejabat-ditutup
-    tag: Notis
-    notice: Pejabat ditutup 12 November. Kaunter di cawangan Seksyen 9.
-    crumb: Utama › Notis
-    title: Pejabat ditutup pada 12 November 2026
-    text: Pejabat Jabatan Contoh ditutup sementara kerana banjir. Urusan kaunter dipindahkan ke cawangan Seksyen 9.
-    list:
-      - "Waktu kaunter: 8.00 pagi hingga 5.00 petang"
-      - "Alamat: Jalan Contoh 9, Seksyen 9"
-      - "Telefon: 03-0000 0000"
-    caption: Notis yang sama, sebagai halaman dan pengumuman di atas setiap halaman.
 
 customers:
   title: Untuk kementerian, kerajaan negeri dan PBT

@@ -6,37 +6,10 @@ path: /en
 alternate: /
 
 hero:
-  title: From a WhatsApp poster to a page everyone can read.
-  lead: Laman is a website builder for ministries, state governments and local authorities. Everything an agency website needs is already built in, with no plugins, and AI agents can run it with the officer's permissions.
+  title: Websites for every citizen.
+  lead: The open-source website builder for government agencies.
   primary: { label: Install Laman, href: /en/install }
   secondary: { label: See what's built in, href: "#built-in" }
-
-stage:
-  label: "Example: a notice that arrives as a poster, Laman's checks, and the notice as a page"
-  tag: Made-up example
-  poster:
-    title: NOTIS PENUTUPAN PEJABAT
-    text: Pejabat Jabatan Contoh ditutup sementara pada 12 November 2026 kerana banjir. Urusan kaunter dipindahkan ke cawangan Seksyen 9.
-    date: "12.11.2026"
-    caption: Uploaded as a picture, screen readers can't read it and search engines can't find it.
-  checks:
-    title: Before this page goes live
-    items:
-      - 'Alt text that doesn''t describe the image: "poster-notis.jpg"'
-      - 'Link text that says nothing on its own: "Klik sini"'
-    caption: Laman's real checks, before anything goes live.
-  page:
-    address: jabatancontoh.gov.my/notis/pejabat-ditutup
-    tag: Notis
-    notice: Pejabat ditutup 12 November. Kaunter di cawangan Seksyen 9.
-    crumb: Utama › Notis
-    title: Pejabat ditutup pada 12 November 2026
-    text: Pejabat Jabatan Contoh ditutup sementara kerana banjir. Urusan kaunter dipindahkan ke cawangan Seksyen 9.
-    list:
-      - "Waktu kaunter: 8.00 pagi hingga 5.00 petang"
-      - "Alamat: Jalan Contoh 9, Seksyen 9"
-      - "Telefon: 03-0000 0000"
-    caption: The same notice, as a page and as the announcement on every page.
 
 customers:
   title: For ministries, state governments and local authorities

@@ -240,7 +240,7 @@ This project does not have its own visual world. It is FTDS v0.2.0, the Ministry
 
 What this file adds is how FTDS is used here. The two surfaces share every token and differ only in density: published sites are FTDS at its comfortable default, built for visitors on older phones; the admin is compact, for officers at a desk. Both are quiet on purpose. Structure comes from spacing and tone, one blue marks the way forward, and nothing is decorated. On the published sites that calm is enforced: officers arrange approved blocks and pick preset variants, so no page can drift from the system.
 
-There is a third surface, Laman's own marketing site (`apps/www`), and it alone has an expression of its own: "FTDS as a base, own expression", approved by its owner for that site only. It is FTDS on white, Paper and Well, like any Laman site, with two deep blues from FTDS's own ramp: the Field (Primary 700), a full-bleed band that carries white text and field buttons, and the Stage (Primary 950), a rounded panel that holds white objects. The home page opens on white, with the H1 and FTDS's own filled button, over a Stage showing a WhatsApp poster turning into a page through Laman's real checks; the Field returns for the AI-agent section and the closing band. Long-form pages open on a Field title band and close on the same band. The boundary diagram (the agency's data centre as a dashed line, with only the published HTML crossing out) sits on a Stage panel in the home page's sovereignty section. Everything on the Field and the Stage is built from FTDS primitives (`apps/www/src/styles/global.css`); neither is a new hue, font or shadow. Both stay on the marketing site: published agency sites and the admin never use them.
+There is a third surface, Laman's own marketing site (`apps/www`), and it alone has an expression of its own: "FTDS as a base, own expression", approved by its owner for that site only. It is FTDS on white, Paper and Well, like any Laman site, with two deep blues from FTDS's own ramp: the Field (Primary 700), a full-bleed band that carries white text and field buttons, and the Stage (Primary 950), a rounded panel that holds white objects. The home page opens on the Sunrise: a full-bleed, slowly moving field of FTDS colours with a short centred headline, a one-line lead and two field buttons; the Field returns for the AI-agent section and the closing band. Long-form pages open on a Field title band and close on the same band. The boundary diagram (the agency's data centre as a dashed line, with only the published HTML crossing out) sits on a Stage panel in the home page's sovereignty section. Everything on the Field and the Stage is built from FTDS primitives (`apps/www/src/styles/global.css`); neither is a new hue, font or shadow. Both stay on the marketing site: published agency sites and the admin never use them.
 
 **Key Characteristics:**
 
@@ -281,7 +281,7 @@ Page and publish states map to wash tags, always with words: Draft is neutral, S
 These tokens exist only in `apps/www/src/styles/global.css`, each an alias of an FTDS primitive. They never appear in the renderer, the published sites or the admin.
 
 - **Field** (`bg-bg-field`, Primary 700): a full-bleed band with white text. On the home page, the AI-agent section and the closing band; on long-form pages, the title band and the closing band.
-- **Stage** (`bg-bg-stage`, Primary 950): a rounded panel, deeper than the Field, so the white objects on it carry. It holds the home page's opening stage (poster, check card and published page in a row) and the boundary diagram in the sovereignty section. It holds objects and captions, never buttons.
+- **Stage** (`bg-bg-stage`, Primary 950): a rounded panel, deeper than the Field, so the white objects on it carry. It holds the boundary diagram in the sovereignty section. It holds objects and captions, never buttons.
 - **On-Field Text** (`text-txt-on-field`, Primary 100): leads, captions, fact descriptions and notes on the Field and the Stage. Headings, labels and links there stay white.
 - **On-Field Edge** (`border-otl-on-field`, Primary 300): the dashed boundary line, and the rule above the AI-agent section's data note: the only outlines drawn on the deep blues.
 - **Refused** (`text-otl-refused` / `decoration-otl-refused`, Danger 300): the strike and the cross-circle on the services Laman doesn't contact (vendor cloud, third-party CDN, trackers). It marks a refusal, not an error, and lives only in the boundary diagram.
@@ -343,7 +343,7 @@ The marketing site uses FTDS's larger steps, which agency pages don't reach:
 - **Container:** 1280px wide, 18px gutters on phones and 24px from `md`. Long-form pages narrow to an 808px column (1080px for wide pages such as the comparison), shared by the Field title and the prose.
 - **Sections:** full-bleed bands, 64px top and bottom on phones and 96px from `md`, the AI-agent Field section included. The long-form title band is shorter (48–64px top, 56–80px bottom), and the closing band is 64–80px. Sections alternate Sheet, Paper and Well; there are no cards around a section.
 - **Grid:** a 12-column grid from `lg` (from `xl` in the sovereignty section), usually 4–5 columns of heading against 7–8 of content.
-- **Home opening:** white under the navbar. The H1 spans seven columns, with the lead and both actions in the other five, bottom-aligned. Below it the Stage runs the full container width (edge to edge on phones, 16px radius from `md`) with three objects in a row from `lg` (poster, check card, published page, with arrows between) and a one-line caption under each. On phones the headline and actions come first, then the Stage stacks poster, checks, page, with the arrows turned down. The Phone-Order Rule holds here too.
+- **Home opening:** the Sunrise fills the first viewport under the navbar (full height less the navbar, 96px top and bottom at least), full-bleed. Its text is centred in the 1280px container: the H1 at most 14 characters a line, the lead at most 672px, then both field buttons, wrapping and still centred on phones.
 - **Comparison on phones:** below `md`, the home page's built-in table becomes one row per need: the need, with Laman's answer and a check beside it in FTDS Blue, and the other three in a single body-sm line under it ("WordPress: Pemalam · Joomla: …"). In Markdown prose (the full comparison page) the table stacks instead: the question, then Laman's answer on the Blue Wash, then the others', each under its column's name through `data-label` (set at build). Nothing scrolls sideways.
 
 ## Elevation & Depth
@@ -352,13 +352,11 @@ Flat, as in FTDS: depth comes from Paper, Sheet and Well. Shadows exist only for
 
 The marketing site is flat too. On the Field and the Stage, depth is white on blue: white cards, nodes and buttons sit on Primary 700 or 950 with no shadow, and the quiet layer is a translucent white fill (the quiet button at 12%, 20% on hover; agent log steps at 10%).
 
-The poster on the opening Stage is the one deliberate exception, because it depicts something that isn't Laman: an image someone uploaded. It is tilted 3° with a soft drop shadow (`0 18px 36px -12px` black at 50%) so it reads as a picture lying on the Stage. That shadow belongs to the depicted poster only; it is not a Laman elevation and doesn't transfer to cards, frames or screenshots.
-
 ## Shapes
 
 FTDS's gently rounded language: 8px on buttons and inputs, 12px on summary blocks, page previews and dialogs, pills (9999px) for tags. Inline links get a 4px radius so their focus ring has soft corners.
 
-On the marketing site, content containers (boundary nodes, screenshot frames, the comparison table, command blocks, the check card and page on the Stage, the agent request card) use FTDS's 14px radius; agent log rows use 12px; buttons and the check items keep 8px. The Stage panel is 16px, square on phones where it runs edge to edge. The boundary line is the one larger shape: a 2px dashed On-Field Edge at 20px radius, wider than anything it holds. The poster is square-cornered: it is a picture, not a Laman container.
+On the marketing site, content containers (boundary nodes, screenshot frames, the comparison table, command blocks, the agent request card) use FTDS's 14px radius; agent log rows use 12px; buttons and the check items keep 8px. The Stage panel is 16px, square on phones where it runs edge to edge. The boundary line is the one larger shape: a 2px dashed On-Field Edge at 20px radius, wider than anything it holds.
 
 ## Components
 
@@ -399,16 +397,16 @@ Their copy lives in structured content (`src/content/home/<lang>.yaml` and the M
 
 #### Home opening
 
-- **What it is:** the first viewport, on white under FTDS's navbar: the Marketing Display H1, a Lead in Ink Secondary, and two FTDS large buttons, `primary-fill` ("Pasang Laman") and `default-outline`. Then the opening Stage.
-- **Navbar:** FTDS's white navbar, as the registry ships it, on every page. Its filled "Pasang Laman" is turned off on the home page (`navAction={false}` on `Base.astro`) because the opening carries the filled button; everywhere else it stays on. Never tint or overlay the navbar.
+- **What it is:** the first viewport (`HeroArt.astro`): the Sunrise behind a centred H1 in white (up to 104px, -0.05em), a lead in On-Field Text, and two field buttons, solid ("Pasang Laman") and quiet. Copy comes from `hero` in the home content.
+- **Navbar:** FTDS's white navbar, as the registry ships it, on every page. Its filled "Pasang Laman" is turned off on the home page (`navAction={false}` on `Base.astro`) because the opening carries "Pasang Laman" itself; everywhere else it stays on. Never tint or overlay the navbar.
 
-#### Opening Stage (signature component)
+#### Sunrise (signature component)
 
-- **What it is:** a `figure.on-field` on the Stage, the job Laman does in three objects: the WhatsApp poster as uploaded, a white check card listing Laman's real check wording, and the same notice as a published page in a browser frame. FTDS arrow icons in On-Field Text sit between them, and each object has a one-line body-sm caption in On-Field Text. A label-sm "Contoh rekaan" tag in the top corner says it is a made-up example.
-- **Poster:** a depiction of something that isn't Laman, so it is allowed to look unlike Laman: a 3:4 sheet on the Warning 200 wash with Danger text, bold, a 28px (1.75rem) title, a Danger 700 date strip, tilted -3° with a soft drop shadow (see Elevation & Depth). It is `aria-hidden`; the figure's label and the captions carry its meaning. These values describe the poster only and are not marketing tokens.
-- **Check card:** Sheet, 14px radius, 20px padding; a label-md title and each check as a Warning Wash row (8px radius) with a Warning icon.
-- **Published page:** Sheet, 14px radius, a Well address bar in Ink Tertiary, the announcement bar on Warning Wash with a Warning 600 "Notis" pill, then breadcrumb, a heading-2xs title and body-sm text.
-- **Rule:** this is the only place the site draws a page in HTML rather than a capture, and it is labelled as an example. Don't put a product screenshot or a generic illustration beside the headline instead.
+- **What it is:** an abstract, generative field behind the home opening, drawn by one WebGL fragment shader (no library). Domain-warped noise flows slowly through FTDS colours only: Primary 900 to 600 with Primary 300 where it folds, Success 400 (a teal) high up, and a sunrise from below that goes Danger 400 (coral) to Warning 300 (gold) to Warning 50 at its heart. Fine contour lines run through it, and the sunrise's edge is pushed by the same field, so the light rises and falls along the contours and lights them gold.
+- **Colour order:** blue always passes through coral before gold. Blue mixed straight into gold turns olive.
+- **Legibility:** a soft Primary 950 shade (60%) sits behind the centred text, and the edges are darkened, so white text reads on any frame.
+- **Behaviour:** about 3 KB. It renders below screen resolution (0.75 of CSS pixels, up to 1.5x on dense screens), pauses off screen, leans slightly toward the pointer, draws one still frame with reduced motion, and without WebGL leaves a CSS gradient of the same colours.
+- **Rule:** it is art, not a depiction of the product. Don't put screenshots, illustrations or UI on it, and don't reuse it elsewhere on the site.
 
 #### Field band
 
@@ -446,7 +444,7 @@ Their copy lives in structured content (`src/content/home/<lang>.yaml` and the M
 - **Style:** real captures from a local builder seeded with the made-up agency Jabatan Contoh, as WebP with width and height set, lazy loaded. Sheet behind them, a 1px Hairline edge, 14px radius, no shadow.
 - **Published page:** shown in a browser frame: a 36px Well bar with the address in Ink Tertiary over a Hairline rule, the page under it.
 - **Provenance:** every shipping raster in `public/shots/` has a `.json` beside it saying it is a screenshot, not generated, and how it was captured (`scripts/screenshots.mjs`).
-- **Rule:** the admin and editor appear only as real captures, never as an illustration or mock-up. The admin's page frame rule is the same idea; the marketing site has no live renderer, so it uses captures. The opening Stage is the one labelled exception.
+- **Rule:** the admin and editor appear only as real captures, never as an illustration or mock-up. The admin's page frame rule is the same idea; the marketing site has no live renderer, so it uses captures.
 
 #### Built-in comparison
 
@@ -486,9 +484,8 @@ Their copy lives in structured content (`src/content/home/<lang>.yaml` and the M
 - **Don't** add a project palette, typeface, radius or shadow to published sites or the admin; they have none of their own. The marketing site's Field and Stage tokens are aliases of FTDS primitives, not a palette.
 - **Don't** use the Field, the Stage, field buttons or the boundary diagram anywhere but the marketing site.
 - **Don't** make the Stage full-bleed or put a button on it.
-- **Don't** borrow the poster's tilt, drop shadow, warning and danger washes or 28px title for anything Laman draws; they depict someone else's picture.
 - **Don't** use raw Tailwind colours, hex values or `dark:` overrides.
 - **Don't** edit files under `components/ui`, `components/blocks`, `lib/ftds` or `styles/ftds.css`.
 - **Don't** give officers a way to style content on published sites: no colour pickers, font choices, free spacing or custom HTML. Variants are presets.
 - **Don't** turn on the dark theme on either surface until it is decided for both.
-- **Don't** put two filled blue buttons on one screen. On the marketing site the home opening's "Pasang Laman" is that one (the navbar's is off there); on other pages it is the navbar's. The Field's buttons are white.
+- **Don't** put two filled blue buttons on one screen. On the marketing site, pages other than home use the navbar's; the home opening and the Field use white field buttons, and the navbar's is off on home.

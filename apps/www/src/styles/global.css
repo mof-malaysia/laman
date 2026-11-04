@@ -15,7 +15,7 @@
  */
 @theme inline {
   --color-bg-field: rgb(var(--_primary-700));
-  /* The home page's opening stage: deeper than the field, so white objects carry it. */
+  /* The Stage: deeper than the field, so white objects carry it (the boundary diagram). */
   --color-bg-stage: rgb(var(--_primary-950));
   --color-txt-on-field: rgb(var(--_primary-100));
   --color-otl-on-field: rgb(var(--_primary-300));

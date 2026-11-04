@@ -21,7 +21,7 @@ A static site that makes a Malaysian government agency want to try Laman instead
 
 The owner moved the lead from sovereignty to completeness and AI:
 
-- **Lead:** everything an agency website needs is built in, with no plugins, and Laman is built for AI agents. The home page opens on the job agencies do (a notice that arrives as a WhatsApp poster, Laman's real checks, the notice as a page), then the built-in comparison and the AI-agent section.
+- **Lead:** everything an agency website needs is built in, with no plugins, and Laman is built for AI agents. The home page opens on an abstract, moving hero with a short hopeful line ("Laman web untuk setiap rakyat.", owner, 4 Nov 2026), then who it's for, the built-in comparison and the AI-agent section.
 - **Target customers, in this order:** federal ministries and departments, state governments, local authorities (PBT). Statutory bodies and GLCs aren't addressed directly.
 - **AI wording:** "built for AI agents" (MCP, about 80 tools, the officer's permissions, audit log). Never "AI-native": the admin has no AI of its own. Say plainly that what an officer gives an agent goes to the AI provider the agency chooses.
 - **Comparison:** built in versus plugin, row by row, with competitors' built-in features marked as built in; sources on /banding, dated.

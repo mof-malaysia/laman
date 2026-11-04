@@ -1,0 +1,233 @@
+---
+/**
+ * The home page's opening: an abstract hero. A slow, flowing field
+ * of Laman's blues and a little teal, with fine contour lines through it,
+ * like silk or a topographic map, and a coral-to-gold sunrise from below. Simple text on top.
+ *
+ * One WebGL fragment shader, no library (about 3 KB). It renders below
+ * screen resolution, pauses off screen, draws one still frame
+ * with reduced motion, and falls back to a CSS gradient without WebGL.
+ * Copy: `hero` in src/content/home/<lang>.yaml.
+ */
+import type { CollectionEntry } from "astro:content";
+import FieldButton from "@/components/home/FieldButton.astro";
+import { href } from "@/site";
+
+interface Props {
+  hero: CollectionEntry<"home">["data"]["hero"];
+}
+const { hero: t } = Astro.props;
+---
+
+<section class="hero-art on-field text-txt-white relative isolate overflow-hidden" aria-labelledby="hero-title" data-art>
+  <canvas class="hero-art__canvas" aria-hidden="true" data-canvas></canvas>
+  <div class="hero-art__veil" aria-hidden="true"></div>
+  <div class="relative mx-auto flex min-h-[calc(100svh-4rem)] max-w-[1280px] flex-col items-center justify-center px-4.5 py-24 text-center md:px-6">
+    <h1
+      id="hero-title"
+      class="max-w-[14ch] text-[clamp(3rem,1.2rem+5.6vw,6.5rem)] leading-[0.95] font-semibold tracking-[-0.05em] text-balance"
+    >
+      {t.title}
+    </h1>
+    <p class="text-txt-on-field mt-7 max-w-2xl text-[clamp(1.125rem,1rem+0.4vw,1.375rem)] leading-snug">{t.lead}</p>
+    <div class="mt-10 flex flex-wrap justify-center gap-3">
+      <FieldButton href={href(t.primary.href)}>{t.primary.label}</FieldButton>
+      <FieldButton href={href(t.secondary.href)} variant="quiet">{t.secondary.label}</FieldButton>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Without WebGL (or before it draws), the same idea in CSS. */
+  .hero-art {
+    background:
+      radial-gradient(60rem 30rem at 50% 115%, rgb(var(--_warning-300) / 0.35), transparent 70%),
+      radial-gradient(80rem 50rem at 20% 0%, rgb(var(--_primary-700) / 0.7), transparent 70%),
+      rgb(var(--_primary-950));
+  }
+  .hero-art__canvas {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 1.4s ease-out;
+  }
+  .hero-art__canvas[data-ready] {
+    opacity: 1;
+  }
+  /* A soft shade behind the words, so they read on any part of the field. */
+  .hero-art__veil {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: radial-gradient(46rem 24rem at 50% 46%, rgb(var(--_primary-950) / 0.6), transparent 72%);
+  }
+</style>
+
+<script>
+  const VERT = `attribute vec2 p; void main() { gl_Position = vec4(p, 0.0, 1.0); }`;
+
+  // Domain-warped noise (a field that folds over itself), coloured from the
+  // FTDS primaries, with thin contour lines and a warm light from below.
+  const FRAG = `
+precision highp float;
+uniform vec2 u_res;
+uniform float u_time;
+uniform vec2 u_mouse;
+uniform vec3 c_deep, c_mid, c_light, c_warm, c_glow, c_coral, c_teal;
+
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float noise(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1, 0)), u.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), u.x), u.y);
+}
+float fbm(vec2 p) {
+  float v = 0.0, a = 0.5;
+  mat2 r = mat2(0.8, -0.6, 0.6, 0.8);
+  for (int i = 0; i < 5; i++) { v += a * noise(p); p = r * p * 2.02 + 3.1; a *= 0.5; }
+  return v;
+}
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_res;
+  vec2 p = (gl_FragCoord.xy - 0.5 * u_res) / u_res.y * 0.62;
+  float t = u_time * 0.045;
+
+  // The pointer leans the field a little.
+  p += (u_mouse - 0.5) * vec2(0.12, -0.08);
+
+  vec2 q = vec2(fbm(p * 1.3 + vec2(0.0, t)), fbm(p * 1.3 + vec2(5.2, -t * 0.8)));
+  vec2 r = vec2(fbm(p * 1.1 + 3.6 * q + vec2(1.7, 9.2) + t * 0.6), fbm(p * 1.1 + 3.6 * q + vec2(8.3, 2.8) - t * 0.5));
+  float f = fbm(p * 1.2 + 3.2 * r);
+
+  // Colour: deep to mid blue along the field, light where it folds.
+  vec3 col = mix(c_deep, c_mid, smoothstep(0.12, 0.8, f));
+  col = mix(col, c_light, smoothstep(0.45, 1.0, length(q) * f) * 0.6);
+  // Teal where the folds turn, mostly up high.
+  col = mix(col, c_teal, smoothstep(0.45, 0.8, q.y) * smoothstep(0.3, 0.9, uv.y) * 0.6);
+
+  // Contour lines: thin, brighter where the field rises.
+  float bands = f * 11.0;
+  float d = abs(fract(bands + 0.5) - 0.5) / fwidth(bands);
+  float line = 1.0 - smoothstep(0.0, 1.1, d);
+  col += line * mix(c_light, c_glow, smoothstep(0.55, 0.9, f)) * (0.1 + 0.25 * smoothstep(0.4, 0.85, f));
+
+  // Warm light coming up from the bottom, caught by the folds.
+  // A sunrise from below: coral at its edge, gold, then pale light at its heart.
+  // Its edge is pushed by the same field the contours are drawn from, so the
+  // light rises and falls along them as they flow.
+  vec2 h = (uv - vec2(0.5, -0.1)) * vec2(0.8, 1.3);
+  float horizon = smoothstep(0.95, 0.0, length(h) - (f - 0.5) * 0.85);
+  // Blue goes to coral first (a violet in between), then gold: never blue straight to gold, which turns green.
+  col = mix(col, c_coral, smoothstep(0.0, 0.55, horizon) * (0.55 + 0.35 * smoothstep(0.25, 0.8, r.x)));
+  col = mix(col, c_warm, smoothstep(0.4, 0.85, horizon) * 0.85);
+  col = mix(col, c_glow, smoothstep(0.75, 1.0, horizon) * 0.7);
+  // The contour lines catch the light where it reaches them.
+  col += line * c_glow * smoothstep(0.1, 0.7, horizon) * 0.35;
+
+  // Deep at the edges, a fine grain against banding.
+  col *= mix(0.75, 1.0, smoothstep(1.25, 0.25, length((uv - vec2(0.5, 0.45)) * vec2(1.2, 1.0))));
+  col += (hash(gl_FragCoord.xy + fract(u_time)) - 0.5) * 0.025;
+
+  gl_FragColor = vec4(col, 1.0);
+}`;
+
+  const rgb = (name: string) => {
+    const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim().split(/\s+/).map(Number);
+    return v.length === 3 && v.every(Number.isFinite) ? v.map((n) => n / 255) : [1, 1, 1];
+  };
+
+  for (const section of document.querySelectorAll<HTMLElement>("[data-art]")) {
+    const canvas = section.querySelector<HTMLCanvasElement>("[data-canvas]")!;
+    const gl = canvas.getContext("webgl", { antialias: false, alpha: false, powerPreference: "low-power" });
+    if (!gl || !gl.getExtension("OES_standard_derivatives")) continue; // the CSS gradient stays
+
+    const shader = (type: number, src: string) => {
+      const s = gl.createShader(type)!;
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      return gl.getShaderParameter(s, gl.COMPILE_STATUS) ? s : null;
+    };
+    const vs = shader(gl.VERTEX_SHADER, VERT);
+    const fs = shader(gl.FRAGMENT_SHADER, "#extension GL_OES_standard_derivatives : enable\n" + FRAG);
+    if (!vs || !fs) continue;
+    const prog = gl.createProgram()!;
+    gl.attachShader(prog, vs);
+    gl.attachShader(prog, fs);
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) continue;
+    gl.useProgram(prog);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(prog, "p");
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+
+    const u = (name: string) => gl.getUniformLocation(prog, name);
+    const uRes = u("u_res");
+    const uTime = u("u_time");
+    const uMouse = u("u_mouse");
+    gl.uniform3fv(u("c_deep"), rgb("--_primary-900"));
+    gl.uniform3fv(u("c_mid"), rgb("--_primary-600"));
+    gl.uniform3fv(u("c_light"), rgb("--_primary-300"));
+    gl.uniform3fv(u("c_teal"), rgb("--_success-400"));
+    gl.uniform3fv(u("c_coral"), rgb("--_danger-400"));
+    gl.uniform3fv(u("c_warm"), rgb("--_warning-300"));
+    gl.uniform3fv(u("c_glow"), rgb("--_warning-50"));
+
+    // The field is soft, so it renders below the screen's resolution; the lines stay crisp enough.
+    const QUALITY = Math.min(1.5, devicePixelRatio || 1) * 0.75;
+    const resize = () => {
+      const r = section.getBoundingClientRect();
+      canvas.width = Math.max(1, Math.round(r.width * QUALITY));
+      canvas.height = Math.max(1, Math.round(r.height * QUALITY));
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.uniform2f(uRes, canvas.width, canvas.height);
+    };
+
+    const mouse = { x: 0.5, y: 0.5, tx: 0.5, ty: 0.5 };
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const born = performance.now();
+    // Start a little way in, so the first frame isn't the noise's plain origin.
+    const offset = 40;
+
+    const draw = (now: number) => {
+      mouse.x += (mouse.tx - mouse.x) * 0.04;
+      mouse.y += (mouse.ty - mouse.y) * 0.04;
+      gl.uniform1f(uTime, offset + (reduced ? 0 : (now - born) / 1000));
+      gl.uniform2f(uMouse, mouse.x, mouse.y);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    };
+
+    let raf = 0;
+    let visible = true;
+    const loop = (now: number) => {
+      draw(now);
+      if (visible && !reduced) raf = requestAnimationFrame(loop);
+    };
+
+    new ResizeObserver(() => {
+      resize();
+      draw(performance.now());
+    }).observe(section);
+    resize();
+    draw(performance.now());
+    canvas.dataset.ready = "";
+
+    if (reduced) continue;
+    section.addEventListener("pointermove", (e) => {
+      const r = section.getBoundingClientRect();
+      mouse.tx = (e.clientX - r.left) / r.width;
+      mouse.ty = (e.clientY - r.top) / r.height;
+    });
+    new IntersectionObserver(([entry]) => {
+      visible = !!entry?.isIntersecting;
+      cancelAnimationFrame(raf);
+      if (visible) raf = requestAnimationFrame(loop);
+    }).observe(section);
+  }
+</script>
