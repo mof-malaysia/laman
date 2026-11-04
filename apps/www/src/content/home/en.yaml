@@ -7,7 +7,7 @@ alternate: /
 
 hero:
   title: Websites for every citizen.
-  lead: The open-source website builder for government agencies.
+  lead: The open-source website builder for Malaysian government agencies.
   primary: { label: Install Laman, href: /en/install }
   secondary: { label: See what's built in, href: "#built-in" }
 

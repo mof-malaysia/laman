@@ -7,7 +7,7 @@ alternate: /en
 
 hero:
   title: Laman web untuk setiap rakyat.
-  lead: Pembina laman web sumber terbuka untuk agensi kerajaan.
+  lead: Pembina laman web sumber terbuka untuk agensi kerajaan Malaysia.
   primary: { label: Pasang Laman, href: /pasang }
   secondary: { label: Lihat apa yang terbina dalam, href: "#terbina-dalam" }
 
