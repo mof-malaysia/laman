@@ -56,6 +56,11 @@ export const strings = {
     email: "E-mel pasukan",
     issues: "Buka isu di GitHub",
     emailSubject: "Laman: pertanyaan daripada agensi",
+    phase: {
+      tag: "Alfa",
+      text: "Laman ialah perisian pra-keluaran dan masih berubah.",
+      link: "Kongsi maklum balas di GitHub",
+    },
     emailPending:
       "Alamat e-mel pasukan akan diterbitkan di sini tidak lama lagi. Sementara itu, buka isu di GitHub.",
     cta: {
@@ -76,6 +81,11 @@ export const strings = {
     email: "Email the team",
     issues: "Open an issue on GitHub",
     emailSubject: "Laman: a question from an agency",
+    phase: {
+      tag: "Alpha",
+      text: "Laman is pre-release software and still changing.",
+      link: "Share feedback on GitHub",
+    },
     emailPending:
       "The team's email address will be published here soon. Until then, open an issue on GitHub.",
     cta: {

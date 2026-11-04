@@ -18,5 +18,4 @@ Report bugs and suggestions as [issues on GitHub](https://github.com/mof-malaysi
 
 ## Before you get in touch
 
-- The [installation guide](/en/install) explains what you need and how to install Laman with Docker Compose.
-- The [comparison with WordPress, Joomla and Drupal](/en/compare) explains when Laman fits, and when it doesn't.
+The [comparison with WordPress, Joomla and Drupal](/en/compare) explains when Laman fits, and when it doesn't.

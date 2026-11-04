@@ -18,5 +18,4 @@ Laporkan pepijat dan cadangan sebagai [isu di GitHub](https://github.com/mof-mal
 
 ## Sebelum anda menghubungi kami
 
-- [Panduan pemasangan](/pasang) menerangkan apa yang diperlukan dan bagaimana memasang Laman dengan Docker Compose.
-- [Perbandingan dengan WordPress, Joomla dan Drupal](/banding) menerangkan bila Laman sesuai, dan bila ia tidak sesuai.
+[Perbandingan dengan WordPress, Joomla dan Drupal](/banding) menerangkan bila Laman sesuai, dan bila ia tidak sesuai.

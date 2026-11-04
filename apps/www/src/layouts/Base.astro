@@ -11,9 +11,10 @@ import "@/styles/global.css";
 import Button from "@/components/ui/button.astro";
 import LanguageSwitcher from "@/components/ui/language-switcher.astro";
 import Navbar from "@/components/ui/navbar.astro";
+import PhaseBanner from "@/components/ui/phase-banner.astro";
 import SiteFooter from "@/components/ui/site-footer.astro";
 import Skiplink from "@/components/ui/skiplink.astro";
-import { footerGroups, navItems, strings, url, type Lang } from "@/site";
+import { footerGroups, GITHUB_URL, navItems, strings, url, type Lang } from "@/site";
 
 interface Props {
   lang: Lang;
@@ -69,6 +70,10 @@ const alternateHref = new URL(url(alternate), Astro.site).href;
         navAction && (<Button slot="actions" href={url(s.installHref)} variant="primary-fill" class="max-sm:hidden">{s.install}</Button>)
       }
     </Navbar>
+    <PhaseBanner phase={s.phase.tag} lang={lang}>
+      {s.phase.text}{" "}
+      <a href={`${GITHUB_URL}/issues`} class="text-txt-primary focus-ring rounded-xs font-medium underline decoration-1 underline-offset-[3px]">{s.phase.link}</a>
+    </PhaseBanner>
     <main id="main" tabindex="-1">
       <slot />
     </main>
