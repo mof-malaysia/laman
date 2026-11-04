@@ -1,11 +1,12 @@
 ---
+import type { Column } from "./column";
 import type { BlockOf, Locale } from "@fiscal-sb/blocks";
 import Steps from "@/components/blocks/steps.astro";
 import { action } from "./action";
 import Field from "./Field.astro";
 
-type Props = { block: BlockOf<"steps">; edit: boolean; lang: Locale };
-const { block, edit, lang } = Astro.props;
+type Props = { block: BlockOf<"steps">; width: Column; edit: boolean; lang: Locale };
+const { block, width, edit, lang } = Astro.props;
 const p = block.props;
 const steps = p.steps.map((step) => ({
   title: step.title,
@@ -14,7 +15,7 @@ const steps = p.steps.map((step) => ({
 }));
 ---
 
-<Steps steps={steps} action={action(p.action)} tone={p.tone} lang={lang}>
+<Steps width={width} steps={steps} action={action(p.action)} tone={p.tone} lang={lang}>
   {
     (edit || p.title) && (
       <Field slot="title" name="title" edit={edit} placeholder="Cara memohon">{p.title}</Field>

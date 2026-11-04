@@ -25,6 +25,17 @@ const items = (listing?.items ?? []).map((item) => ({
   ...(p.style === "cards" && item.image && { image: item.image }),
 }));
 const base = listing?.path ?? "/";
+/** Under the entries, cards or list, when there's more than one page. */
+const pager =
+  listing && listing.pages > 1
+    ? {
+        current: listing.page,
+        total: listing.pages,
+        href: (n: number) => listingHref(base, n, listing.category),
+        firstHref: listingHref(base, 1, listing.category),
+        lang,
+      }
+    : undefined;
 ---
 
 <section class={band_cva({ tone: p.tone })}>
@@ -55,28 +66,12 @@ const base = listing?.path ?? "/";
         p.style === "cards" ? (
           <>
             <EntryCards items={items} lang={lang} heading="h2" />
-            {listing && listing.pages > 1 && (
-              <Pager
-              current={listing.page}
-              total={listing.pages}
-              href={(n: number) => listingHref(base, n, listing.category)}
-              firstHref={listingHref(base, 1, listing.category)}
-              lang={lang}
-            />
-            )}
+            {pager && <Pager {...pager} />}
           </>
         ) : (
           // The list keeps NewsList's own band, so its pager goes inside it, under the rows.
           <NewsList items={items} layout="list" tone={p.tone} lang={lang} title="">
-            {listing && listing.pages > 1 && (
-              <Pager
-              current={listing.page}
-              total={listing.pages}
-              href={(n: number) => listingHref(base, n, listing.category)}
-              firstHref={listingHref(base, 1, listing.category)}
-              lang={lang}
-            />
-            )}
+            {pager && <Pager {...pager} />}
           </NewsList>
         )
       ) : (

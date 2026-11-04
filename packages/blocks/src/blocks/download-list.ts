@@ -24,6 +24,7 @@ export const downloadList = defineBlock({
       .select("Style", ["list", "cards"], { list: "List", cards: "Cards" })
       .default("list"),
     tone: field.tone(),
+    width: field.column(),
   }),
   defaults: { title: "Muat turun", files: [] },
 });

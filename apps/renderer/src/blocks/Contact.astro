@@ -4,12 +4,14 @@
  * phone, email and hours as channels, and the office with its address.
  * The block can override any of them.
  */
+import type { Column } from "./column";
 import type { BlockOf, SiteContext } from "@fiscal-sb/blocks";
 import ContactLocations from "@/components/blocks/contact-locations.astro";
 import Field from "./Field.astro";
+import TextColumn from "./TextColumn.astro";
 
-type Props = { block: BlockOf<"contact">; edit: boolean; lang: "ms" | "en"; site: SiteContext };
-const { block, edit, lang, site } = Astro.props;
+type Props = { block: BlockOf<"contact">; width: Column; edit: boolean; lang: "ms" | "en"; site: SiteContext };
+const { block, width, edit, lang, site } = Astro.props;
 const p = block.props;
 const o = p.overrides ?? {};
 const address = o.address ?? site.contact.address;
@@ -37,8 +39,8 @@ const empty = !channels.length && !offices.length;
 {
   empty ? (
     edit && (
-      <section class="bg-bg-white">
-        <div class="mx-auto flex w-full max-w-[1280px] flex-col gap-4 px-4 py-12 md:px-6">
+      <TextColumn width={width}>
+        <div class="flex flex-col gap-4">
           <h2 class="text-headline font-semibold">
             <Field name="title" edit={edit} placeholder="Tajuk">{p.title}</Field>
           </h2>
@@ -46,10 +48,10 @@ const empty = !channels.length && !offices.length;
             Isi alamat, telefon dan e-mel di Tetapan, atau dalam blok ini.
           </p>
         </div>
-      </section>
+      </TextColumn>
     )
   ) : (
-    <ContactLocations channels={channels} offices={offices} lang={lang}>
+    <ContactLocations width={width} channels={channels} offices={offices} lang={lang}>
       {(p.title || edit) && (
         <Field slot="title" name="title" edit={edit} placeholder="Tajuk">
           {p.title}

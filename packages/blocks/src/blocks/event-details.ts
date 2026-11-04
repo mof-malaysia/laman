@@ -30,6 +30,7 @@ export const eventDetails = defineBlock({
       .optional(),
     about: RichText.meta({ title: "About the event", widget: "richtext" }),
     programme: field.list("Programme", Session, { max: 20 }).optional(),
+    width: field.column(),
   }),
   defaults: {
     date: "Khamis, 12 November 2026",

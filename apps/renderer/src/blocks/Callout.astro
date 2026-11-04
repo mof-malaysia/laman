@@ -1,4 +1,5 @@
 ---
+import type { Column } from "./column";
 import type { BlockOf } from "@fiscal-sb/blocks";
 import Button from "@/components/ui/button.astro";
 import Callout from "@/components/ui/callout.astro";
@@ -6,13 +7,13 @@ import { action } from "./action";
 import Field from "./Field.astro";
 import TextColumn from "./TextColumn.astro";
 
-type Props = { block: BlockOf<"callout">; edit: boolean; lang: "ms" | "en" };
-const { block, edit, lang } = Astro.props;
+type Props = { block: BlockOf<"callout">; width: Column; edit: boolean; lang: "ms" | "en" };
+const { block, width, edit, lang } = Astro.props;
 const p = block.props;
 const link = action(p.action);
 ---
 
-<TextColumn tight>
+<TextColumn tight width={width}>
   <Callout variant={p.variant} lang={lang}>
     <Field slot="title" name="title" edit={edit} placeholder="Title">{p.title}</Field>
     {

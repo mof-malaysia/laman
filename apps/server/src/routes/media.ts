@@ -1,6 +1,6 @@
 /** The media library: upload, list, describe, replace (and undo it), delete and restore files. */
 import { createReadStream } from "node:fs";
-import type { FastifyPluginAsync, FastifyRequest } from "fastify";
+import type { FastifyPluginAsync } from "fastify";
 import type { z } from "zod";
 import {
   MediaDetail,
@@ -22,21 +22,9 @@ import {
   restorePrevious,
   updateMedia,
 } from "../content/media.js";
-import { HttpError } from "../errors.js";
+import { readUpload } from "../multipart.js";
 
 type Params = z.infer<typeof MediaParams>;
-
-/** The one file in a multipart request, read into memory (files are capped by MEDIA_MAX_MB). */
-async function readUpload(request: FastifyRequest) {
-  const file = await request.file();
-  if (!file) throw new HttpError(400, "file_missing", "Choose a file to upload");
-  const bytes = await file.toBuffer().catch((error: { code?: string }) => {
-    if (error.code === "FST_REQ_FILE_TOO_LARGE")
-      throw new HttpError(413, "file_too_large", "The file is too large");
-    throw error;
-  });
-  return { filename: file.filename, bytes };
-}
 
 export const mediaRoutes: FastifyPluginAsync<{ dataDir: string; maxBytes: number }> = async (
   app,

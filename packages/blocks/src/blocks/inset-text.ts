@@ -13,6 +13,7 @@ export const insetText = defineBlock({
   props: z.object({
     text: field.textarea("Text", { max: 600, inline: true }),
     author: field.text("Who said it (makes it a quote)", { max: 120, inline: true }).optional(),
+    width: field.column(),
   }),
   defaults: {
     text: "Hantar permohonan anda sebelum 30 April 2027 untuk mengelakkan penalti lewat.",

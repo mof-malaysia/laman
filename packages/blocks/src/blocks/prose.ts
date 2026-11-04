@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { defineBlock } from "../define.js";
+import { field } from "../fields.js";
 import { RichText, paragraphs } from "../rich-text.js";
 
 export const prose = defineBlock({
@@ -11,6 +12,7 @@ export const prose = defineBlock({
   kinds: ["page", "listing", "entry"],
   props: z.object({
     body: RichText.meta({ title: "Text", widget: "richtext" }),
+    width: field.column(),
   }),
   defaults: {
     body: {

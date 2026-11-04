@@ -10,12 +10,10 @@
 }
 
 /*
- * An entry is an article: its blocks share the header's column (FTDS's
- * `article` width, 808px) instead of the page's 1280px one, so text, lists
- * and pictures start where the title does. Blocks are FTDS components that
- * set the wide column themselves, so it is narrowed here, for entries only.
- * Full-width pictures have no column and stay full width.
+ * The text column for FTDS blocks that set the wide one themselves (FAQ,
+ * Event details): their wrappers put them in data-column="article" when the
+ * block's width is Text column, or Follow page on an article (column.ts).
  */
-main[data-entry] .max-w-\[1280px\] {
+[data-column="article"] .max-w-\[1280px\] {
   max-width: 808px;
 }

@@ -9,6 +9,7 @@
 import type { UpdateMediaBody } from "@fiscal-sb/contracts";
 import type { z } from "zod";
 import { hashToken, newToken } from "../auth/tokens.js";
+import type { Api } from "./tool.js";
 
 export const UPLOAD_LINK_MS = 15 * 60 * 1000;
 /** Links an officer's connections can hold open at once; the oldest goes first. */
@@ -42,4 +43,18 @@ export function takeUploadLink(token: string) {
   const link = links.get(key);
   links.delete(key);
   return link && link.expiresAt >= Date.now() ? link : undefined;
+}
+
+/**
+ * A file into the media library as the officer, then its alt text and the
+ * rest: upload_media and upload links both add files this way.
+ */
+export async function addMedia(
+  api: Api,
+  filename: string,
+  bytes: Buffer,
+  details: UploadLink["details"],
+) {
+  const media = (await api.upload("/api/media", filename, bytes)) as { id: string };
+  return Object.keys(details).length ? api.patch(`/api/media/${media.id}`, details) : media;
 }

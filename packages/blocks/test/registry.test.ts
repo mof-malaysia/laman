@@ -39,6 +39,16 @@ describe("block registry", () => {
 
     expect(blockFields("prose")).toEqual([
       expect.objectContaining({ name: "body", widget: "richtext" }),
+      expect.objectContaining({
+        name: "width",
+        widget: "select",
+        defaultValue: "page",
+        options: [
+          { value: "page", label: "Follow page" },
+          { value: "article", label: "Text column" },
+          { value: "wide", label: "Wide" },
+        ],
+      }),
     ]);
   });
 

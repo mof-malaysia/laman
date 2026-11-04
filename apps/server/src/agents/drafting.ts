@@ -38,7 +38,7 @@ import {
 } from "@fiscal-sb/contracts";
 import { z } from "zod";
 import { ThemeInput } from "./theme.js";
-import { issueUploadLink } from "./uploads.js";
+import { addMedia, issueUploadLink } from "./uploads.js";
 import { type Api, drafting, type Tool, ToolError } from "./tool.js";
 
 const Position = z
@@ -212,28 +212,39 @@ const { shape: sections } = SiteSettings;
 /** An optional setting an agent can also take away, with null. */
 const removable = <T extends z.ZodType>(schema: z.ZodOptional<T>) =>
   schema.unwrap().nullable().optional();
+type Patch<S extends z.ZodRawShape> = z.ZodObject<{
+  [K in keyof S]: z.ZodOptional<S[K] extends z.ZodDefault<infer I> ? I : S[K]>;
+}>;
+/**
+ * A section as a change: every field optional, and defaults dropped, since a
+ * default would fill in, and so reset, every field a change doesn't name.
+ */
+const patchOf = <S extends z.ZodRawShape>(section: z.ZodObject<S>) =>
+  z.object(
+    Object.fromEntries(
+      Object.entries(section.shape).map(([key, field]) => [
+        key,
+        ((field instanceof z.ZodDefault ? field.unwrap() : field) as z.ZodType).optional(),
+      ]),
+    ),
+  ) as unknown as Patch<S>;
 const { shape: identity } = sections.identity;
 const SettingsChanges = z.object({
-  identity: sections.identity
-    .partial()
+  identity: patchOf(sections.identity)
     .extend({
       logo: removable(identity.logo),
       favicon: removable(identity.favicon),
       socialImage: removable(identity.socialImage),
-      // Plain optionals: a default here would switch them back on in every identity change.
-      navbarName: z.boolean().optional(),
-      footerLogo: z.boolean().optional(),
     })
     .optional(),
-  contact: sections.contact.partial().optional(),
+  contact: patchOf(sections.contact).optional(),
   social: sections.social.optional(),
-  phase: sections.phase
-    .partial()
+  phase: patchOf(sections.phase)
     .extend({ feedbackUrl: removable(sections.phase.shape.feedbackUrl) })
     .optional(),
-  search: sections.search.partial().optional(),
-  publishing: sections.publishing.partial().optional(),
-  analytics: sections.analytics.unwrap().partial().optional(),
+  search: patchOf(sections.search).optional(),
+  publishing: patchOf(sections.publishing).optional(),
+  analytics: patchOf(sections.analytics.unwrap()).optional(),
 });
 
 export const draftingTools: Tool[] = [
@@ -831,9 +842,7 @@ export const draftingTools: Tool[] = [
     run: async ({ api }, { filename, data, ...details }) => {
       const bytes = Buffer.from(data, "base64");
       if (!bytes.length) throw new ToolError("invalid_input", "`data` isn't base64.");
-      const media = (await api.upload("/api/media", filename, bytes)) as { id: string };
-      const fields = defined(details);
-      return Object.keys(fields).length ? api.patch(`/api/media/${media.id}`, fields) : media;
+      return addMedia(api, filename, bytes, defined(details));
     },
   }),
   drafting({

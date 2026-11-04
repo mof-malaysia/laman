@@ -167,6 +167,27 @@ export const field = {
       .object({ mediaId: z.uuid(), alt: z.string().max(250).optional() })
       .meta(meta({ title, widget: "media", mediaKind: options.kind ?? "image" })),
 
+  /**
+   * The column a block sits in. "Follow page" takes the page's column: an
+   * entry's article column, or elsewhere the width of the page's intro. So a
+   * page's text, lists and pictures start where its title does.
+   */
+  column: () =>
+    panel(
+      field.select("Width", ["page", "article", "wide"], {
+        page: "Follow page",
+        article: "Text column",
+        wide: "Wide",
+      }),
+      { help: "Follow page lines the block up with the page's title." },
+    ).default("page"),
+
+  /** The page intro's column, which blocks set to "Follow page" take too. */
+  pageColumn: () =>
+    panel(field.select("Width", ["wide", "article"], { wide: "Wide", article: "Text column" }), {
+      help: "Text column sets the page like an article: blocks that follow the page take it too.",
+    }).default("wide"),
+
   /** On or off. */
   toggle: (title: string) => z.boolean().meta(meta({ title, widget: "toggle" })),
 

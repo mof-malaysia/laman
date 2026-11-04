@@ -26,6 +26,7 @@ export const eligibility = defineBlock({
       .textarea("Note: exceptions, or where to ask", { max: 300, inline: true })
       .optional(),
     tone: field.tone(),
+    width: field.column(),
   }),
   defaults: {
     criteria: [

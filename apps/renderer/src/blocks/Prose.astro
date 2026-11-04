@@ -1,14 +1,15 @@
 ---
+import type { Column } from "./column";
 import { type BlockOf, richTextToHtml } from "@fiscal-sb/blocks";
 import Prose from "@/components/ui/prose.astro";
 import TextColumn from "./TextColumn.astro";
 
-type Props = { block: BlockOf<"prose">; edit: boolean };
-const { block } = Astro.props;
+type Props = { block: BlockOf<"prose">; width: Column; edit: boolean };
+const { block, width } = Astro.props;
 // Allow-listed HTML from the Tiptap JSON; editors never supply HTML.
 const html = richTextToHtml(block.props.body);
 ---
 
-<TextColumn>
+<TextColumn width={width}>
     <Prose set:html={html} />
 </TextColumn>

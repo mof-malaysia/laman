@@ -159,7 +159,7 @@ const searchFilters = [
       }
     </div>
     {/* The publisher decides which pages go in the index; every published page says how to file it. */}
-    <main id="main" tabindex="-1" data-pagefind-body={input.mode === "publish" ? "" : undefined} data-entry={input.entry ? "" : undefined}>
+    <main id="main" tabindex="-1" data-pagefind-body={input.mode === "publish" ? "" : undefined}>
       {
         input.mode === "publish" && (
           <div hidden data-pagefind-filter={searchFilters} data-pagefind-meta={input.entry ? `date:${longDate(input.entry.date)}` : undefined} />

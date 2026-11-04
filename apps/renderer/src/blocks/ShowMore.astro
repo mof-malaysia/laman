@@ -1,0 +1,38 @@
+---
+/**
+ * "Show more" for Latest entries: inside a `data-latest-entries="<step>"`
+ * element, after its list. It hides all but the first `step` entries, then
+ * shows `step` more per press and moves focus to the first new one. The script
+ * is inline so it runs as the page is read, before anything is drawn: a module
+ * script would show every entry first, then pull the page up. Without
+ * JavaScript every entry shows and the button stays hidden.
+ */
+import Button from "@/components/ui/button.astro";
+
+type Props = { label: string };
+const { label } = Astro.props;
+---
+
+<div class="flex justify-center">
+  <Button variant="primary-outline" size="medium" data-show-more hidden>{label}</Button>
+  <script is:inline>
+    (() => {
+      const box = document.currentScript?.closest("[data-latest-entries]");
+      const step = Number(box?.dataset.latestEntries);
+      const items = [...(box?.querySelectorAll("ul > li") ?? [])];
+      const button = box?.querySelector("[data-show-more]");
+      if (!step || !button) return;
+      let shown = step;
+      const show = () => items.forEach((li, i) => (li.hidden = i >= shown));
+      show();
+      button.hidden = false;
+      button.addEventListener("click", () => {
+        const first = items[shown];
+        shown += step;
+        show();
+        if (shown >= items.length) button.hidden = true;
+        first?.querySelector("a")?.focus();
+      });
+    })();
+  </script>
+</div>
