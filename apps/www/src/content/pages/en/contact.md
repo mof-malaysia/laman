@@ -10,7 +10,7 @@ lead: "For agencies considering Laman, vendors who install it for agencies, and 
 
 ## What to include
 
-Tell us your agency's name, your current website and the system it runs on, and what you want to achieve. We'll reply with a next step: a briefing, help installing, or answers to your security questions.
+Tell us your agency, your current website and what it runs on, and what you want to achieve. We'll reply with a next step: a briefing, help installing, or answers on security.
 
 ## Technical questions and bugs
 

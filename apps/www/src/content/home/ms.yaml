@@ -15,19 +15,19 @@ customers:
   title: Untuk kementerian, kerajaan negeri dan PBT
   items:
     - title: Kementerian dan jabatan persekutuan
-      text: Banyak bahagian menghantar kandungan, dan laman web sering dibina oleh vendor. Laman memberi setiap pegawai peranan yang betul, dan merekodkan siapa menerbitkan apa.
+      text: Banyak bahagian menghantar kandungan, selalunya ke laman web yang dibina vendor. Laman memberi setiap pegawai peranan yang betul dan merekodkan siapa menerbitkan apa.
       features:
         - Peranan Editor, Pengurus Kandungan dan Pentadbir
         - Log audit, dan dua faktor yang boleh diwajibkan
         - Tiada tiket vendor untuk menukar kandungan
     - title: Kerajaan negeri
-      text: Setiap jabatan negeri memerlukan laman webnya sendiri, dengan rupa yang konsisten. Setiap laman web ialah satu pemasangan Laman yang sama, dibina di atas FTDS.
+      text: Setiap jabatan perlukan laman web sendiri, dengan rupa yang seragam. Setiap satu ialah pemasangan Laman yang sama, di atas FTDS.
       features:
         - Satu imej Docker setiap laman web, mudah diulang
         - Warna jabatan, dengan kontras yang disemak
         - Panel pentadbir dalam Bahasa Melayu atau Inggeris
     - title: Pihak berkuasa tempatan
-      text: "Selalunya seorang pegawai menguruskan laman web di samping tugas lain, dan notis perlu keluar hari ini: cukai taksiran, penutupan jalan, banjir."
+      text: "Selalunya seorang pegawai mengurus laman web di samping tugas lain, dan notis tidak boleh tunggu: cukai taksiran, penutupan jalan, banjir."
       features:
         - Pengumuman di atas setiap halaman, boleh dijadualkan
         - Batalkan terbitan jika tersilap
@@ -36,7 +36,7 @@ customers:
 builtin:
   id: terbina-dalam
   title: Semuanya terbina dalam. Tiada pemalam untuk dipilih, dipasang atau ditampal.
-  lead: WordPress, Joomla dan Drupal boleh melakukan hampir apa sahaja, dengan pemalam, sambungan atau modul. Laman membawa apa yang laman web agensi perlukan dalam satu pemasangan.
+  lead: WordPress, Joomla dan Drupal mendapat banyak daripada ini melalui pemalam, sambungan atau modul. Laman menyediakannya dalam satu pemasangan.
   need: Yang agensi perlukan
   labels:
     built: Terbina dalam
@@ -129,7 +129,7 @@ builtin:
 
 agents:
   title: Ejen AI boleh menguruskan laman web anda, sebagai pegawai.
-  lead: Laman dibina untuk ejen AI. Pelayan MCP terbina dalamnya mempunyai kira-kira 80 alat, jadi klien seperti Claude atau Codex boleh membina dan mengemas kini laman web menggunakan alat Laman sendiri, dengan kebenaran pegawai yang menyambungkannya.
+  lead: Pelayan MCP terbina dalam Laman memberi ejen seperti Claude atau Codex kira-kira 80 alat untuk membina dan mengemas kini laman web, dengan kebenaran pegawai yang menyambungkannya.
   example: Contoh, bukan rakaman sebenar
   request:
     who: Pegawai kepada ejen AI
@@ -144,7 +144,7 @@ agents:
     - Dimatikan sehingga Pentadbir membenarkannya untuk seseorang.
     - Hanya kebenaran pegawai itu. Ejen seorang Editor tidak boleh menerbitkan.
     - Setiap panggilan direkodkan dalam log audit, dan sambungan boleh diputuskan.
-  data: Apa yang pegawai berikan kepada ejen dihantar kepada penyedia AI yang dipilih oleh agensi. Laman sendiri tidak menghubungi mana-mana perkhidmatan luar.
+  data: Apa yang pegawai kongsi dengan ejen dihantar kepada penyedia AI pilihan agensi. Laman sendiri tidak menghubungi perkhidmatan luar.
   more: { label: Tentang ejen AI dalam Laman, href: /ejen-ai }
 
 steps:
@@ -152,22 +152,22 @@ steps:
   lead: Tangkapan skrin daripada Laman sebenar, dengan agensi rekaan, Jabatan Contoh.
   items:
     - title: Susun
-      text: Pilih templat atau halaman kosong, kemudian susun blok FTDS di kanvas. Taip teks terus pada halaman, seperti yang akan dilihat pelawat.
+      text: Mulakan dengan templat atau halaman kosong, dan susun blok FTDS. Taip terus pada halaman, seperti yang dilihat pelawat.
       image: /shots/editor-ms.webp
       alt: Penyunting Laman. Di kiri, struktur halaman dengan empat blok. Di tengah, halaman utama Jabatan Contoh seperti yang akan dilihat pelawat. Di kanan, tetapan halaman.
     - title: Semak
-      text: Sebelum diterbitkan, Laman memeriksa halaman dan menerangkan cara membetulkannya. Halaman tanpa tajuk utama tidak boleh diterbitkan langsung.
+      text: Laman menyemak setiap halaman sebelum terbit dan menerangkan cara membetulkannya. Halaman tanpa tajuk utama tidak boleh diterbitkan.
       image: /shots/checks-ms.webp
       alt: "Panel 'Sebelum halaman ini diterbitkan' dengan dua perkara: tiada tajuk utama, dan teks pautan 'Klik sini' yang tidak bermakna dengan sendirinya."
     - title: Terbit
-      text: Tekan Terbit, atau jadualkan. Laman menulis laman web statik dan menggantikan versi lama sekali gus. Setiap terbitan direkodkan, dan boleh dibatalkan.
+      text: Terbitkan sekarang atau jadualkan. Laman web statik baharu menggantikan yang lama sekali gus, dan setiap terbitan boleh dibatalkan.
       image: /shots/publishing-ms.webp
       alt: Skrin Penerbitan. Satu perubahan ditanda untuk diterbitkan, dan sejarah terbitan hari ini di sebelah kanan.
-  note: Laman web yang diterbitkan ialah fail HTML statik. Ia terus berfungsi walaupun pembina dimatikan.
+  note: Laman web yang diterbitkan ialah HTML statik. Ia kekal walaupun pembina dimatikan.
 
 visitors:
   title: Apa yang pelawat dapat
-  lead: Laman web yang diterbitkan oleh Laman, dibuka di komputer dan telefon. Jabatan Contoh ialah agensi rekaan.
+  lead: Laman web Laman di komputer dan telefon.
   desktop:
     image: /shots/site.webp
     width: 1280
@@ -184,7 +184,7 @@ visitors:
 
 sovereignty:
   title: Dan semuanya kekal di pelayan anda
-  lead: Laman dipasang di pusat data agensi. Hanya laman web yang anda terbitkan keluar kepada orang awam, dan Laman sendiri tidak menghubungi mana-mana perkhidmatan luar.
+  lead: Laman berjalan di pusat data agensi. Hanya laman web yang diterbitkan sampai kepada orang awam, dan Laman tidak menghubungi perkhidmatan luar.
   facts:
     - { title: Sumber terbuka, text: "Lesen MIT. Baca, audit dan ubah kodnya." }
     - { title: Tiada sambungan keluar, text: Berfungsi di rangkaian tanpa internet. }
@@ -212,7 +212,7 @@ diagram:
 
 runs:
   title: Satu proses Node. Satu fail SQLite. Satu imej Docker.
-  lead: Selepas mengklon repositori, dua arahan ini menjalankan pembina bersama HTTPS. Sandaran berjalan setiap hari dengan sendirinya.
+  lead: Klon repositori, kemudian jalankan dua arahan ini untuk pembina dengan HTTPS. Sandaran harian berjalan sendiri.
   code: |-
     cp .env.example .env    # isi tetapan
     docker compose --profile https up -d --build

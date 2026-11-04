@@ -4,7 +4,7 @@ description: A fair comparison of what a government agency website needs, and wh
 path: /en/compare
 alternate: /banding
 heading: "Laman compared with WordPress, Joomla and Drupal"
-lead: "WordPress, Joomla and Drupal are mature, capable systems that run a large part of the world's web. The question isn't which is better in general, but what a government agency website needs: secure, accessible, easy to look after, and updated by its own officers."
+lead: "WordPress, Joomla and Drupal are mature and capable. The question is what a government agency website needs: secure, accessible, easy to look after, and updated by its own officers."
 comparison: true
 ---
 
@@ -28,35 +28,35 @@ Last checked 4 November 2026. If a fact has changed, [let us know](/en/contact).
 
 ## Why "no plugins" is a feature
 
-Plugins are the strength of WordPress, Joomla and Drupal: almost anything can be added. But every plugin is third-party code running on the agency's server, on its own update schedule.
+Plugins let WordPress, Joomla and Drupal do almost anything. But each one is third-party code on the agency's server, with its own update schedule.
 
-Patchstack reported 7,966 new security vulnerabilities in the WordPress ecosystem in 2024, the large majority of them in plugins rather than WordPress core. That isn't a failure of WordPress. It's the price of being open to plugins.
+Patchstack counted 7,966 new vulnerabilities in the WordPress ecosystem in 2024, mostly in plugins, not core. That's the price of being open to plugins, not a failure of WordPress.
 
-Laman takes another path. Every block is part of Laman itself, tested together and updated together. And what the public reaches is static files, with no database or server code to attack.
+In Laman, every block is part of Laman, tested and updated together. And the public reaches only static files, with no database or server code to attack.
 
 ## Still on Joomla 3 or Drupal 7?
 
-Joomla 3 stopped receiving free security fixes on 17 August 2023. Drupal 7 stopped receiving security updates on 5 January 2025. A website still on either should be moved, whether to Laman or to a version that's still supported.
+Joomla 3's free security fixes ended on 17 August 2023, and Drupal 7's security updates on 5 January 2025. A website on either should move, to Laman or to a supported version.
 
 ## Laman isn't for everyone
 
-We'd rather you picked the right tool than picked Laman. A general-purpose CMS is the better choice if you need:
+Pick the right tool, even if it isn't Laman. A general-purpose CMS fits better if you need:
 
-- **Forms that store submissions,** such as online applications or complaints. Laman publishes a static website; forms need another system.
+- **Forms that store submissions,** such as applications or complaints. Laman's websites are static, so forms need another system.
 - **Sign-in for the public,** such as a members' portal.
 - **E-commerce** or payments.
 - **A custom design** outside FTDS.
 - **Something that only exists as a plugin,** and can't wait.
 
-Laman is also new. It doesn't have an approval workflow yet, and editing Bahasa Melayu and English side by side isn't built yet. We say so here so it doesn't surprise you later.
+Laman is also new: there's no approval workflow yet, and no side-by-side editing of Bahasa Melayu and English.
 
 ## Moving from your current system
 
-There's no automatic importer yet. Content moves across page by page, and that's often a chance to improve it: posters become text everyone can read, PDFs become pages, and menus that follow the org chart become menus that follow what visitors look for.
+There's no automatic importer yet, so content moves page by page. That's a chance to improve it: posters become readable text, PDFs become pages, and menus follow what visitors look for, not the org chart.
 
-An AI agent connected over MCP can do much of this copying, as the officer, with every draft waiting for the officer to publish.
+An AI agent can do much of the copying as the officer, with every draft waiting for the officer to publish.
 
-[Contact the team](/en/contact) if you'd like to talk about moving.
+[Contact the team](/en/contact) to talk about moving.
 
 ## Sources
 

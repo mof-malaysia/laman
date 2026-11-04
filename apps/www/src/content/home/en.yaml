@@ -15,19 +15,19 @@ customers:
   title: For ministries, state governments and local authorities
   items:
     - title: Federal ministries and departments
-      text: Many divisions send content, and the website is often built by a vendor. Laman gives every officer the right role, and records who published what.
+      text: Many divisions send content, often to a site a vendor built. Laman gives each officer the right role and records who published what.
       features:
         - Editor, Content Manager and Admin roles
         - An audit log, and two-factor that can be required
         - No vendor ticket to change content
     - title: State governments
-      text: Every state department needs its own website, with a consistent look. Each website is one install of the same Laman, built on FTDS.
+      text: Every department needs its own site, and they should look alike. Each one is an install of the same Laman, on FTDS.
       features:
         - One Docker image per website, easy to repeat
         - The department's colour, with contrast checked
         - The admin in Bahasa Melayu or English
     - title: Local authorities
-      text: "Often one officer runs the website on top of other work, and notices have to go out today: assessment tax, road closures, floods."
+      text: "Often one officer runs the site alongside other work, and notices can't wait: assessment tax, road closures, floods."
       features:
         - An announcement on every page, which can be scheduled
         - Undo a publish if something's wrong
@@ -36,7 +36,7 @@ customers:
 builtin:
   id: built-in
   title: Everything's built in. No plugins to choose, install or patch.
-  lead: WordPress, Joomla and Drupal can do almost anything, with plugins, extensions or modules. Laman brings what an agency website needs in one install.
+  lead: WordPress, Joomla and Drupal get much of this from plugins, extensions or modules. Laman has it in one install.
   need: What an agency needs
   labels:
     built: Built in
@@ -129,7 +129,7 @@ builtin:
 
 agents:
   title: AI agents can run your website, as the officer.
-  lead: Laman is built for AI agents. Its built-in MCP server has about 80 tools, so clients such as Claude or Codex can build and update the website with Laman's own tools, with the permissions of the officer who connected them.
+  lead: Laman's built-in MCP server gives agents such as Claude or Codex about 80 tools to build and update the website, with the permissions of the officer who connected them.
   example: An example, not a recording
   request:
     who: Officer to an AI agent
@@ -144,7 +144,7 @@ agents:
     - Off until an Admin allows it for a person.
     - "Only that officer's permissions. An Editor's agent can't publish."
     - Every call is recorded in the audit log, and a connection can be cut off.
-  data: "What an officer gives an agent goes to the AI provider the agency chooses. Laman itself calls no outside service."
+  data: "What an officer shares with an agent goes to the AI provider the agency chose. Laman itself calls no outside service."
   more: { label: About AI agents in Laman, href: /en/agents }
 
 steps:
@@ -152,22 +152,22 @@ steps:
   lead: Screenshots from the real Laman, with a made-up agency, Jabatan Contoh.
   items:
     - title: Arrange
-      text: Start from a template or a blank page, then arrange FTDS blocks on the canvas. Type text straight onto the page, as visitors will see it.
+      text: Start from a template or a blank page and arrange FTDS blocks. Type straight onto the page, as visitors will see it.
       image: /shots/editor-en.webp
       alt: The Laman editor. On the left, the page structure with four blocks. In the middle, Jabatan Contoh's home page as visitors will see it. On the right, the page settings.
     - title: Check
-      text: Before anything goes live, Laman checks the page and says how to fix what it finds. A page with no main heading can't be published at all.
+      text: Laman checks each page before it goes live and says how to fix what it finds. A page with no main heading can't be published.
       image: /shots/checks-en.webp
       alt: "The 'Before this page goes live' panel with two items: no main heading, and link text 'Klik sini' that says nothing on its own."
     - title: Publish
-      text: Press Publish, or schedule it. Laman writes a static website and swaps out the old version in one step. Every publish is recorded, and can be undone.
+      text: Publish now or schedule it. The new static site replaces the old one in one step, and every publish can be undone.
       image: /shots/publishing-en.webp
       alt: The Publishing screen. One change ticked to publish, and today's publish history on the right.
-  note: The published website is static HTML files. It keeps working even when the builder is switched off.
+  note: The published website is static HTML. It stays up even with the builder off.
 
 visitors:
   title: What visitors get
-  lead: A website published by Laman, opened on a computer and a phone. Jabatan Contoh is a made-up agency.
+  lead: A Laman website on a computer and a phone.
   desktop:
     image: /shots/site.webp
     width: 1280
@@ -183,7 +183,7 @@ visitors:
 
 sovereignty:
   title: And it all stays on your servers
-  lead: Laman is installed in the agency's data centre. Only the website you publish goes out to the public, and Laman itself calls no outside service.
+  lead: Laman runs in the agency's data centre. Only the published website reaches the public, and Laman calls no outside service.
   facts:
     - { title: Open source, text: "MIT licence. Read, audit and change the code." }
     - { title: Nothing calls out, text: Works on a network with no internet access. }
@@ -210,7 +210,7 @@ diagram:
 
 runs:
   title: One Node process. One SQLite file. One Docker image.
-  lead: After cloning the repository, these two commands run the builder with HTTPS. Backups run every day by themselves.
+  lead: Clone the repository, then run these two commands for the builder with HTTPS. Daily backups run by themselves.
   code: |-
     cp .env.example .env    # fill in the settings
     docker compose --profile https up -d --build

@@ -10,7 +10,7 @@ lead: "Untuk agensi yang mempertimbangkan Laman, vendor yang memasangnya untuk a
 
 ## Apa yang patut disertakan
 
-Beritahu kami nama agensi anda, laman web semasa anda dan sistem yang menjalankannya, dan apa yang anda mahu capai. Kami akan membalas dengan langkah seterusnya, sama ada taklimat, bantuan memasang, atau jawapan kepada soalan keselamatan anda.
+Beritahu kami nama agensi, laman web semasa dan sistemnya, dan apa yang anda mahu capai. Kami akan membalas dengan langkah seterusnya: taklimat, bantuan memasang, atau jawapan tentang keselamatan.
 
 ## Soalan teknikal dan pepijat
 

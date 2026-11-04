@@ -4,68 +4,58 @@ description: Who holds the data, who holds the code, who can keep it running, an
 path: /en/sovereignty
 alternate: /kedaulatan
 heading: "Sovereign technology for government websites"
-lead: "An agency's website is the front door of a public service. Sovereignty means the agency itself holds four things: the data behind it, the code that runs it, the ability to keep it running, and the say over how it looks. Laman is built so all four stay with the agency."
+lead: "Sovereignty means the agency holds four things: its data, its code, the ability to keep the website running, and the say over how it looks. Laman keeps all four with the agency."
 ---
 
 ## Data: it stays in your data centre
 
-One Laman install is one website, on the agency's own servers. There's no cloud we operate, no account to sign up for, and no data sent to us.
+One install is one website, on your own servers. No cloud of ours, no sign-up, and no data sent to us.
 
-- **Nothing calls out.** Laman loads no scripts from a CDN and makes no lookups to outside services. It can be installed on an internal network with no internet access.
-- **Analytics in your own database.** Visitor figures are kept in a separate database file on the same server. No cookies, no IP addresses stored, and no identifier that lasts longer than a day.
-- **Visitor countries only if you want them.** Laman doesn't ship an IP location database. If the agency wants to see visitors' countries, its ICT team installs that file itself.
+- **Nothing calls out.** No scripts from a CDN, no lookups to outside services. It runs on a network with no internet access.
+- **Analytics stay with you,** in a separate database file on the same server. No cookies, no stored IP addresses, and no identifier that lasts past a day.
+- **Visitor countries are opt-in.** Laman ships no IP location database; your ICT team adds one if you want it.
 
 ## Code: open source
 
-Laman is open-source software under the MIT licence. Your agency can read every line, audit it itself or through a third party, run it, and change it to suit its needs.
-
-No licence fees, no limit on the number of users, and no features locked behind a subscription.
+MIT licence. Read, audit, run and change every line. No licence fees, no user limits, no features behind a subscription.
 
 ## Operations: simple to run yourself
 
-Laman is deliberately small, so an agency's ICT team can run it without a vendor.
+Laman is small by design, so your ICT team can run it without a vendor.
 
-- **One process, one file.** The builder is one Node process, with one SQLite file for all content and one media folder. Analytics, when it's on, goes in a second SQLite file. No database server, no external queue, no microservices.
-- **One Docker image.** Installed with Docker Compose, with optional Caddy for HTTPS.
-- **A static website.** What the public reaches is plain HTML, CSS and image files. The builder can serve them itself, or nginx, Caddy or any web server the agency already uses.
-- **Backups you can restore.** Laman backs itself up every day, before every upgrade, and on request. Every backup is checked when it's made, and a restore can be tested without touching the website.
-- **Safe upgrades.** Before an upgrade changes the database, Laman keeps a copy. If anything fails, the copy is put back and the website stays as it was.
+- **One process, one file.** One Node process, one SQLite file for content and one media folder. Analytics, if on, is a second SQLite file. No database server, queue or microservices.
+- **One Docker image,** installed with Docker Compose, with optional Caddy for HTTPS.
+- **A static website.** The public gets plain HTML, CSS and images, served by the builder or any web server you already use.
+- **Backups you can restore.** Daily, before every upgrade, and on request. Each is checked when made, and a restore can be tested without touching the website.
+- **Safe upgrades.** Laman copies the database first. If anything fails, the copy goes back and the website stays as it was.
 
 ## If the Laman team disappeared tomorrow
 
-It's the question to ask of any government software. Laman's answer:
+Ask this of any government software. Laman's answer:
 
-- **Your website keeps running.** It's static files. Any web server can keep serving them, even with the builder switched off.
-- **The code stays with you.** It's open source. Your agency, or any vendor it appoints, can keep maintaining and improving it.
-- **Your data isn't locked in.** All content is in one SQLite file and one media folder, formats that are open and documented.
-- **Backups are ordinary files.** `.tar.gz` archives in a folder you choose, which the backup tools your agency already uses can copy.
+- **Your website keeps running.** It's static files any web server can serve.
+- **The code stays with you.** Your agency, or any vendor it appoints, can keep maintaining it.
+- **Your data isn't locked in.** Content is one SQLite file and one media folder, in open, documented formats.
+- **Backups are ordinary files:** `.tar.gz` archives your existing backup tools can copy.
 
-No licence to expire, no server of ours to reach, and no account that can be closed.
+No licence to expire, no server of ours to reach, no account to close.
 
 ## Design: built on FTDS
 
-Laman is built on FTDS, a Malaysian design system. Every block is an FTDS component, so every Laman website inherits the same typography, colours, keyboard focus and layout, designed for accessibility.
+Every block is a component of FTDS, a Malaysian design system, so every Laman website shares the same accessible typography, colours, keyboard focus and layout.
 
-- **Bahasa Melayu first.** Website content is in Bahasa Melayu by default, with English as a second language.
-- **The agency's identity, not a free-for-all theme.** The agency chooses its own name, logo and primary colour. Laman generates the shades of that colour and makes sure their contrast meets WCAG AA, so the agency's colour never makes text hard to read.
+- **Bahasa Melayu first,** with English as a second language.
+- **Your identity, not a free-for-all theme.** Choose your name, logo and primary colour. Laman generates its shades and checks that their contrast meets WCAG AA.
 
 ## Control: with the officers
 
-Sovereignty also means an agency doesn't depend on an outside party to update its own website.
-
-- **Officers publish themselves.** No vendor ticket to change opening hours or put out a notice.
-- **Clear roles.** Editors prepare drafts. Content Managers publish. Admins manage accounts. The line is simple: does this change the live website straight away?
-- **Who did what, on record.** An audit log records sign-ins, account changes and every publish. Accounts are disabled, never deleted, so history always knows who did it.
-- **No mail server needed.** Invitation and password reset links are handed over directly by an Admin.
+- **Officers publish themselves.** No vendor ticket to change opening hours or post a notice.
+- **Clear roles.** Editors draft, Content Managers publish, Admins manage accounts.
+- **Who did what, on record.** The audit log records sign-ins, account changes and every publish. Accounts are disabled, never deleted, so the history stays complete.
+- **No mail server needed.** Admins hand over invitation and password reset links directly.
 
 ## AI, on your terms
 
-An officer can ask an AI agent to build and change the website with Laman's own tools, through the Model Context Protocol (MCP). The agent isn't a vendor's service account:
-
-- It's **off** for everyone until an Admin allows it for a person.
-- It signs in **as that officer**, and can only do what that officer's role allows.
-- **Every tool call is recorded** in the audit log, and a connection can be cut off at any time.
-- Laman's server **never fetches an address** on an agent's behalf. Files come from the officer's computer only.
-- It works with **any MCP client**, not one AI vendor.
+AI agents are off until an Admin allows them for a person. An agent signs in as that officer, can do only what their role allows, and every call is recorded. It works with any MCP client.
 
 [Learn about AI agents](/en/agents)
