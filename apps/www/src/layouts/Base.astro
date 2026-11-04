@@ -1,0 +1,68 @@
+---
+/**
+ * Every page: skip link, navbar with the language switch, the page, and the
+ * footer. No analytics and no third-party requests: the site lives by the
+ * rules it describes.
+ */
+import "@fontsource-variable/inter";
+import "@/styles/global.css";
+import Button from "@/components/ui/button.astro";
+import LanguageSwitcher from "@/components/ui/language-switcher.astro";
+import Navbar from "@/components/ui/navbar.astro";
+import SiteFooter from "@/components/ui/site-footer.astro";
+import Skiplink from "@/components/ui/skiplink.astro";
+import { footerGroups, navItems, strings, url, type Lang } from "@/site";
+
+interface Props {
+  lang: Lang;
+  title: string;
+  description: string;
+  /** This page's address, from the site root ("/kedaulatan"). */
+  path: string;
+  /** The same page in the other language. */
+  alternate: string;
+  noindex?: boolean;
+}
+
+const { lang, title, description, path, alternate, noindex = false } = Astro.props;
+const other: Lang = lang === "ms" ? "en" : "ms";
+const s = strings[lang];
+const hrefs = { [lang]: url(path), [other]: url(alternate) } as Record<Lang, string>;
+const locales = (["ms", "en"] as const).map((code) => ({ code, href: hrefs[code] }));
+const canonical = new URL(url(path), Astro.site).href;
+const alternateHref = new URL(url(alternate), Astro.site).href;
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex" />}
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang={lang} href={canonical} />
+    <link rel="alternate" hreflang={other} href={alternateHref} />
+    <link rel="icon" href={url("/logo.svg")} type="image/svg+xml" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:site_name" content="Laman" />
+    <meta property="og:locale" content={lang === "ms" ? "ms_MY" : "en_MY"} />
+  </head>
+  <body class="bg-bg-white text-txt-black-900 font-body">
+    <Skiplink href="#main" lang={lang} />
+    <Navbar brand={{ title: "Laman", href: url(s.home), logo: { src: url("/logo.svg"), alt: "" } }} items={navItems(lang, path)} lang={lang}>
+      <LanguageSwitcher slot="actions" locales={locales} current={lang} lang={lang} />
+      <Button slot="actions" href={url(s.installHref)} variant="primary-fill">{s.install}</Button>
+    </Navbar>
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
+    <SiteFooter logoTitle="Laman" groups={footerGroups(lang)}>
+      <img slot="logo" src={url("/logo.svg")} alt="" width="36" height="36" class="size-9" />
+      <p>{s.tagline}</p>
+      <p>{s.licence}</p>
+    </SiteFooter>
+  </body>
+</html>

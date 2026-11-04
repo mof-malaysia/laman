@@ -23,17 +23,18 @@ pnpm build                       # every package, into git-ignored dist/ folders
 
 ## Where things live
 
-| Path                                 | What                                                                                                                                                                             |
-| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/blocks`                    | The block registry: one Zod schema per block (`src/blocks/`), the page model, rich text and its allow-list HTML writer. Validation, rendering and the property panel all read it |
-| `packages/contracts`                 | Zod schemas and types for the API: the wire contract between server and admin                                                                                                    |
-| `apps/renderer`                      | Astro in middleware mode: block tree in, HTML out, with the FTDS Astro components. `src/blocks/` maps each block type to its component and adds the edit hooks                   |
-| `apps/server`                        | Fastify, one process: the API (`src/routes/`), Kysely over SQLite (`src/db/`), content (`src/content/`), the job queue, the publisher, the CLI (`src/cli.ts`)                    |
-| `apps/admin`                         | React SPA at `/admin`: Rsbuild, TanStack Router (`src/router.tsx`) and Query, FTDS. The editor is in `src/editor/`                                                               |
-| `apps/admin/src/i18n/messages/en.ts` | Every user-facing string of the admin, read with `t()`                                                                                                                           |
-| `packages/typescript-config`         | tsconfig presets: `base`, `node`, `library`, `react`                                                                                                                             |
-| `packages/oxlint-config`             | Oxlint presets: `base`, `node`, `react`                                                                                                                                          |
-| `pnpm-workspace.yaml`                | Workspace packages and the **catalog**: the one place third-party versions live                                                                                                  |
+| Path                                 | What                                                                                                                                                                                                 |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/blocks`                    | The block registry: one Zod schema per block (`src/blocks/`), the page model, rich text and its allow-list HTML writer. Validation, rendering and the property panel all read it                     |
+| `packages/contracts`                 | Zod schemas and types for the API: the wire contract between server and admin                                                                                                                        |
+| `apps/renderer`                      | Astro in middleware mode: block tree in, HTML out, with the FTDS Astro components. `src/blocks/` maps each block type to its component and adds the edit hooks                                       |
+| `apps/server`                        | Fastify, one process: the API (`src/routes/`), Kysely over SQLite (`src/db/`), content (`src/content/`), the job queue, the publisher, the CLI (`src/cli.ts`)                                        |
+| `apps/admin`                         | React SPA at `/admin`: Rsbuild, TanStack Router (`src/router.tsx`) and Query, FTDS. The editor is in `src/editor/`                                                                                   |
+| `apps/www`                           | The marketing site: static Astro on the FTDS Astro components, copy in `src/content/pages/{ms,en}/`, deployed to GitHub Pages by `.github/workflows/www.yml`. Brief: `docs/briefs/marketing-site.md` |
+| `apps/admin/src/i18n/messages/en.ts` | Every user-facing string of the admin, read with `t()`                                                                                                                                               |
+| `packages/typescript-config`         | tsconfig presets: `base`, `node`, `library`, `react`                                                                                                                                                 |
+| `packages/oxlint-config`             | Oxlint presets: `base`, `node`, `react`                                                                                                                                                              |
+| `pnpm-workspace.yaml`                | Workspace packages and the **catalog**: the one place third-party versions live                                                                                                                      |
 
 ## Rules that aren't obvious from the code
 

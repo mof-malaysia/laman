@@ -1,0 +1,27 @@
+---
+/**
+ * Every page of the copy, at the `path` its front matter gives. Until the
+ * section components are built (phase 3), a page renders as FTDS prose.
+ */
+import { getCollection, render } from "astro:content";
+import Prose from "@/components/ui/prose.astro";
+import Base from "@/layouts/Base.astro";
+import type { Lang } from "@/site";
+
+export async function getStaticPaths() {
+  const pages = await getCollection("pages");
+  return pages.map((page) => ({
+    params: { slug: page.data.path === "/" ? undefined : page.data.path.slice(1) },
+    props: { page, lang: (page.id.startsWith("en/") ? "en" : "ms") as Lang },
+  }));
+}
+
+const { page, lang } = Astro.props;
+const { Content } = await render(page);
+---
+
+<Base lang={lang} title={page.data.title} description={page.data.description} path={page.data.path} alternate={page.data.alternate}>
+  <Prose as="article" class="copy-page mx-auto max-w-[808px] px-4.5 py-12 md:px-6 md:py-16">
+    <Content />
+  </Prose>
+</Base>

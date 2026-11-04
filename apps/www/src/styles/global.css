@@ -1,0 +1,17 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "../../styles/ftds.css";
+
+/* Inter is self-hosted (@fontsource-variable/inter): no third-party font requests. */
+@theme {
+  --font-body: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* FTDS Prose leaves h1 to Page intro and Hero. Until the section components
+   replace the interim prose pages (phase 3), give their title its size. */
+@layer components {
+  .copy-page h1 {
+    @apply text-heading-sm text-txt-black-900 mb-6 font-semibold;
+  }
+}
