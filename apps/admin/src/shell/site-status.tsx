@@ -147,7 +147,9 @@ export function SiteInfo() {
   if (!data) return null;
   const ok = data.renderer.ok;
   return (
-    <SidebarMenuItem>
+    // A line above: the system's state, not one of the places to go. Gray-300, as
+    // gray-200 all but vanishes on the sidebar's washed grey.
+    <SidebarMenuItem className="border-otl-gray-300 mt-2 border-t pt-2">
       <div
         className={clx(
           "text-label-md text-txt-black-700 flex h-[var(--ctl-h-sm)] w-full min-w-0 items-center gap-3 px-3",

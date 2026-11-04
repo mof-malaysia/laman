@@ -26,13 +26,12 @@ function block<T extends BlockType>(type: T, props: Record<string, unknown> = {}
 export const templates = {
   blank: {
     name: "Blank",
-    description: "A page intro with the page title, then a text block.",
+    description: "A title and a text block.",
     blocks: (title) => [block("pageIntro", { title, description: undefined }), block("prose")],
   },
   utama: {
     name: "Utama",
-    description:
-      "A home page: a hero, the agency's top services, a notice and a closing call to action.",
+    description: "The home page.",
     blocks: (title) => [
       block("hero", {
         eyebrow: "Selamat datang",
@@ -48,8 +47,7 @@ export const templates = {
   },
   perkhidmatan: {
     name: "Perkhidmatan",
-    description:
-      "A service page: what it is, who can apply, how to apply, forms, questions, then how to start.",
+    description: "One service: who can apply, how, and the forms.",
     blocks: (title) => [
       block("pageIntro", {
         title,
@@ -78,8 +76,7 @@ export const templates = {
   },
   hubungi: {
     name: "Hubungi",
-    description:
-      "A contact page: how to reach the agency, from the site settings, and common questions.",
+    description: "How to reach the agency.",
     blocks: (title) => [
       block("pageIntro", {
         title,
@@ -91,14 +88,13 @@ export const templates = {
   },
   koleksi: {
     name: "Blank collection",
-    description:
-      "A heading, then the entries, newest first. For anything you add to over time: circulars, publications, job vacancies.",
+    description: "Entries, newest first. For circulars, publications, vacancies.",
     listing: {},
     blocks: (title) => [block("pageIntro", { title, description: undefined }), block("entryList")],
   },
   berita: {
     name: "Berita",
-    description: "News and press statements, with a category for each.",
+    description: "News and press statements.",
     listing: {
       categories: [
         { slug: "berita", name: "Berita" },
@@ -112,7 +108,7 @@ export const templates = {
   },
   pengumuman: {
     name: "Pengumuman",
-    description: "Notices for the public: closures, changes to services, reminders.",
+    description: "Closures, service changes, reminders.",
     listing: {},
     blocks: (title) => [
       block("pageIntro", { title, description: "Makluman terkini untuk orang ramai." }),
@@ -121,7 +117,7 @@ export const templates = {
   },
   tender: {
     name: "Tender dan sebut harga",
-    description: "Open tenders and quotations, each with its documents to download.",
+    description: "Open tenders and quotations, with documents.",
     listing: {
       categories: [
         { slug: "tender", name: "Tender" },
@@ -135,8 +131,7 @@ export const templates = {
   },
   acara: {
     name: "Acara",
-    description:
-      "Events: briefings, workshops, open days. Each entry starts with its date, venue, registration and programme.",
+    description: "Briefings, workshops, open days, with date and venue.",
     listing: { startingBlocks: ["eventDetails"] },
     blocks: (title) => [
       block("pageIntro", { title, description: "Taklimat, bengkel dan hari terbuka kami." }),

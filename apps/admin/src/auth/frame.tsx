@@ -2,7 +2,8 @@
  * The frame of the screens before the admin: signing in and its steps, and
  * the one-time links. One narrow column, the builder's name above it.
  */
-import type { FormEvent, ReactNode } from "react";
+import { createContext, type FormEvent, type ReactNode, useContext } from "react";
+import { AppTag } from "@/components/app-tag";
 import { BrandMark } from "@/components/brand-mark";
 import { card } from "@/components/card";
 import { linkClass } from "@/components/text-link";
@@ -13,28 +14,51 @@ import { Input } from "@/components/ui/input";
 import { t } from "@/i18n";
 import { signOut } from "@/lib/auth";
 
+/** Inside the frame, a form's button spans the column; in a dialog or Account it doesn't. */
+const InFrame = createContext(false);
+
+/**
+ * Comfortable density, not the admin's compact one: these screens are one
+ * short task, often on a phone, and 44px controls with 16px text keep mobile
+ * browsers from zooming into the fields.
+ */
 export function AuthFrame({
   title,
   description,
+  footer,
   children,
 }: {
   title: string;
   description?: ReactNode;
+  /** A note under a hairline at the foot of the card, apart from the task. */
+  footer?: ReactNode;
   children: ReactNode;
 }) {
   return (
-    <main id="main" className="bg-bg-washed flex h-full overflow-y-auto">
-      <div className="gap-stack-lg m-auto flex w-full max-w-md flex-col px-4 py-12">
-        <div className="flex items-center gap-2">
+    <main id="main" data-density="comfortable" className="bg-bg-washed flex h-full overflow-y-auto">
+      <div className="m-auto flex w-full max-w-md flex-col gap-5 px-4 py-12">
+        <div className="flex items-center gap-2.5 self-center">
           <BrandMark />
           <span className="text-label-md text-txt-black-900 font-semibold">{t("app.name")}</span>
+          <AppTag />
         </div>
-        <div className={`${card} border-otl-gray-200 gap-stack-md flex flex-col p-6`}>
-          <div className="flex flex-col gap-1">
-            <h1 className="text-heading-2xs text-txt-black-900 font-semibold">{title}</h1>
-            {description && <p className="text-body-sm text-txt-black-700">{description}</p>}
+        <div className={`${card} border-otl-gray-200 flex flex-col`}>
+          <div className="gap-stack-lg flex flex-col p-6 sm:p-8">
+            <div className="flex flex-col gap-1.5">
+              <h1 className="text-heading-2xs text-txt-black-900 font-semibold text-balance">
+                {title}
+              </h1>
+              {description && (
+                <p className="text-body-sm text-txt-black-700 text-pretty">{description}</p>
+              )}
+            </div>
+            <InFrame.Provider value>{children}</InFrame.Provider>
           </div>
-          {children}
+          {footer && (
+            <div className="border-otl-gray-200 text-body-sm text-txt-black-700 border-t px-6 py-4 text-pretty sm:px-8">
+              {footer}
+            </div>
+          )}
         </div>
       </div>
     </main>
@@ -55,6 +79,7 @@ export function AuthForm({
   error?: string | undefined;
   children: ReactNode;
 }) {
+  const inFrame = useContext(InFrame);
   return (
     <form
       noValidate
@@ -70,7 +95,12 @@ export function AuthForm({
           <CalloutTitle>{error}</CalloutTitle>
         </Callout>
       )}
-      <Button type="submit" variant="primary-fill" disabled={pending}>
+      <Button
+        type="submit"
+        variant="primary-fill"
+        disabled={pending}
+        className={inFrame ? "mt-1 w-full justify-center" : undefined}
+      >
         {pending ? t("auth.working") : submit}
       </Button>
     </form>

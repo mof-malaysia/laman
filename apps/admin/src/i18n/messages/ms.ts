@@ -8,6 +8,7 @@ type Key = keyof typeof en;
 
 export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<Key, string>> = {
   "app.name": "Laman",
+  "app.tag": "CMS",
   "layout.skipToContent": "Langkau ke kandungan utama",
 
   "shell.search": "Cari atau jalankan arahan",
@@ -26,7 +27,6 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "nav.publishing": "Penerbitan",
   "nav.analytics": "Analitik",
   "nav.settings": "Tetapan",
-  "nav.shortcuts": "Pintasan papan kekunci",
   "section.soon": "Belum dibina",
   "section.soonBody":
     "Bahagian pembina ini akan tersedia dalam keluaran akan datang. Halaman dan papan pemuka sudah boleh digunakan sekarang.",
@@ -1270,82 +1270,69 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "newPage.step.place": "Lokasi",
   "newPage.step.name": "Nama",
   "newPage.step.check": "Semak",
-  "newPage.changeLater":
-    "Halaman boleh dijadikan senarai kemudian, tetapi senarai tidak boleh dijadikan halaman.",
+  "newPage.changeLater": "Halaman boleh dijadikan senarai kemudian, tetapi bukan sebaliknya.",
   "newPage.preview": "Pratonton",
-  "newPage.previewHint": "Rupa awal halaman",
+  "newPage.previewHint": "Rupa awalnya",
   "newPage.kind.title": "Apakah yang hendak dicipta?",
-  "newPage.kind.intro":
-    "Halaman memuatkan maklumat yang tetap. Senarai memuatkan entri bertarikh yang terus ditambah.",
   "newPage.kind.label": "Jenis",
   "newPage.kind.page.title": "Halaman",
   "newPage.kind.page.body":
-    "Satu halaman maklumat yang dikemas kini apabila ada perubahan. Halaman ini boleh mempunyai subhalaman.",
-  "newPage.kind.page.examples":
-    "Contohnya: mengenai kami, perkhidmatan, hubungi kami, soalan lazim",
+    "Maklumat yang dikemas kini apabila ada perubahan. Boleh mempunyai subhalaman.",
+  "newPage.kind.page.examples": "Mengenai kami, perkhidmatan, hubungi kami, soalan lazim",
   "newPage.kind.listing.title": "Senarai",
   "newPage.kind.listing.body":
-    "Halaman yang menyenaraikan entri, yang terbaharu dahulu. Setiap entri ialah halaman tersendiri dengan tarikh, ringkasan dan kategori, dan senarai ini mendapat suapan RSS sendiri.",
-  "newPage.kind.listing.examples":
-    "Contohnya: berita, pengumuman, tender, pekeliling, penerbitan, jawatan kosong",
-  "newPage.start.page.title": "Pilih titik permulaan",
-  "newPage.start.page.intro":
-    "Halaman akan diisi dengan blok dan teks contoh untuk digantikan dengan kandungan sebenar.",
-  "newPage.start.listing.title": "Pilih titik permulaan untuk senarai",
+    "Senarai entri bertarikh, terbaharu dahulu. Setiap entri ialah halaman tersendiri.",
+  "newPage.kind.listing.examples": "Berita, pengumuman, tender, pekeliling, jawatan kosong",
+  "newPage.start.page.title": "Pilih templat",
+  "newPage.start.page.intro": "Gantikan teks contoh dengan kandungan anda.",
+  "newPage.start.listing.title": "Pilih templat",
   "newPage.start.listing.intro":
-    "Ini hanyalah titik permulaan: mana-mana senarai boleh memuatkan apa-apa jenis entri. Mulakan dengan halaman kosong dan namakannya sendiri jika tiada yang sesuai.",
-  "newPage.place.title": "Di manakah letaknya dalam laman web?",
-  "newPage.place.intro":
-    "Halaman ini terletak di bawah halaman yang dipilih, dalam menu laman web dan dalam alamatnya.",
+    "Mana-mana senarai boleh memuatkan apa-apa entri. Mulakan kosong jika tiada yang sesuai.",
+  "newPage.place.title": "Di manakah letaknya?",
+  "newPage.place.intro": "Ia terletak di bawah halaman yang dipilih, dalam menu dan alamat.",
   "newPage.place.top": "Di bawah {title}, pada aras teratas",
   "newPage.place.under": "Di bawah {title}",
-  "newPage.name.title.page": "Apakah nama halaman ini?",
-  "newPage.name.title.listing": "Apakah nama senarai ini?",
+  "newPage.name.title.page": "Namakan halaman",
+  "newPage.name.title.listing": "Namakan senarai",
   "newPage.name.intro":
-    "Tajuk ialah kepala halaman dan yang dilihat orang dalam hasil carian. Alamat akan mengikut tajuk melainkan ia diubah.",
-  "newPage.title.hint": "Ringkas dan mudah, seperti cara orang mencarinya",
-  "newPage.check.title": "Semak sebelum mencipta",
-  "newPage.check.intro": "Ini halaman yang akan dicipta.",
+    "Tajuk ialah kepala halaman. Alamat mengikut tajuk melainkan anda mengubahnya.",
+  "newPage.title.hint": "Ringkas dan mudah, seperti cara orang mencari",
+  "newPage.check.title": "Semak dan cipta",
   "newPage.check.change": "Ubah",
   "newPage.check.title.label": "Tajuk",
   "newPage.check.draft.page":
-    "Halaman ini akan menjadi draf: hanya pengguna yang log masuk di sini boleh melihatnya sehingga ia diterbitkan.",
+    "Ia bermula sebagai draf. Hanya pengguna yang log masuk boleh melihatnya sehingga diterbitkan.",
   "newPage.check.draft.listing":
-    "Senarai ini akan menjadi draf tanpa entri. Anda menambah entri selepas senarai dicipta; pelawat tidak melihat apa-apa sehingga ia diterbitkan.",
-  "newPage.done.title": "{title} sedia untuk diisi kandungan",
-  "newPage.done.intro":
-    "Draf telah disimpan. Apabila diterbitkan, halaman ini akan berada di {path}.",
+    "Ia bermula sebagai draf kosong. Tambah entri selepas ini; tiada apa diterbitkan sehingga anda menerbitkannya.",
+  "newPage.done.title": "{title} telah dicipta",
+  "newPage.done.intro": "Disimpan sebagai draf. Apabila diterbitkan, ia berada di {path}.",
   "newPage.done.page.edit.title": "Tulis kandungan",
-  "newPage.done.page.edit.body": "Gantikan teks contoh, dan tambah atau buang blok dalam editor.",
+  "newPage.done.page.edit.body": "Gantikan teks contoh dan ubah suai blok.",
   "newPage.done.page.preview.title": "Pratonton",
-  "newPage.done.page.preview.body":
-    "Lihat paparannya pada telefon dan desktop sebelum orang lain melihatnya.",
+  "newPage.done.page.preview.body": "Semak paparannya pada telefon dan desktop.",
   "newPage.done.page.publish.title": "Terbitkan",
-  "newPage.done.page.publish.body":
-    "Tekan Terbitkan halaman dalam editor apabila sudah sedia. Tiada perkara lain yang diterbitkan bersamanya.",
+  "newPage.done.page.publish.body": "Tekan Terbitkan halaman dalam editor apabila sudah sedia.",
   "newPage.done.listing.setup.title": "Tulis pengenalan",
   "newPage.done.listing.setup.body":
-    "Terangkan kandungan senarai ini. Anda boleh menambah kategori dalam tetapannya.",
+    "Terangkan kandungan senarai. Tambah kategori dalam tetapannya.",
   "newPage.done.listing.entries.title": "Tambah entri pertama",
   "newPage.done.listing.entries.body":
-    "Setiap entri mempunyai tarikh, ringkasan dan halaman tersendiri di bawah alamat senarai.",
+    "Setiap entri mempunyai tarikh, ringkasan dan halaman sendiri.",
   "newPage.done.listing.publish.title": "Terbitkan",
-  "newPage.done.listing.publish.body":
-    "Tekan Terbitkan halaman dalam editor apabila sudah sedia, kemudian terbitkan setiap entri.",
+  "newPage.done.listing.publish.body": "Terbitkan senarai, kemudian setiap entri.",
   "newPage.done.more.listing": "Tambah entri",
   "newPage.done.open": "Mula menulis",
   "newPage.done.more.page": "Butiran halaman",
   "newPage.done.another": "Buat halaman lain",
-  "newPage.template.label": "Titik permulaan",
+  "newPage.template.label": "Templat",
   "newPage.parent.label": "Lokasi",
   "newPage.title.label": "Tajuk halaman",
   "newPage.title.required": "Masukkan tajuk halaman",
   "newPage.slug.label": "Alamat",
-  "newPage.slug.hint": "Huruf kecil, nombor dan tanda sempang, contohnya soalan-lazim",
+  "newPage.slug.hint": "Huruf kecil, nombor dan sempang, seperti soalan-lazim",
   "newPage.slug.required": "Masukkan alamat untuk halaman",
   "newPage.slug.invalid": "Gunakan huruf kecil, nombor dan tanda sempang sahaja",
-  "newPage.slug.taken":
-    "Halaman lain di tempat yang sama sudah menggunakan alamat ini. Pilih alamat lain.",
+  "newPage.slug.taken": "Halaman di sini sudah menggunakan alamat ini. Pilih yang lain.",
   "newPage.submit.page": "Cipta halaman",
   "newPage.submit.listing": "Cipta senarai",
   "newPage.failed": "Halaman tidak dapat dicipta. Cuba lagi.",
@@ -1631,8 +1618,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "auth.signIn.title": "Log masuk",
   "auth.signIn.description": "Log masuk untuk menyunting dan menerbitkan laman web.",
   "auth.signIn.submit": "Log masuk",
-  "auth.signIn.forgot":
-    "Terlupa kata laluan, atau kehilangan telefon? Minta pautan set semula daripada pentadbir.",
+  "auth.signIn.forgot": "Tidak dapat log masuk? Minta bantuan daripada pentadbir.",
   "auth.code.title": "Masukkan kod pengesahan",
   "auth.code.description": "Buka aplikasi pengesah dan masukkan kod 6 digit untuk laman web ini.",
   "auth.code.label": "Kod",

@@ -23,7 +23,11 @@ export function SignInScreen() {
   // Already signed in, or partway: carry on from there.
   if (me.data) return <Resume me={me.data} />;
   return (
-    <AuthFrame title={t("auth.signIn.title")} description={t("auth.signIn.description")}>
+    <AuthFrame
+      title={t("auth.signIn.title")}
+      description={t("auth.signIn.description")}
+      footer={t("auth.signIn.forgot")}
+    >
       <AuthForm
         submit={t("auth.signIn.submit")}
         pending={step.pending}
@@ -52,7 +56,6 @@ export function SignInScreen() {
           error={missing && !password ? t("auth.password.missing") : undefined}
         />
       </AuthForm>
-      <p className="text-body-sm text-txt-black-700">{t("auth.signIn.forgot")}</p>
     </AuthFrame>
   );
 }

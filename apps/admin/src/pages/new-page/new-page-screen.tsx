@@ -324,7 +324,7 @@ export function NewPageScreen() {
 
 type Heading = { heading: React.RefObject<HTMLHeadingElement | null> };
 
-function StepHeading({ heading, title, intro }: Heading & { title: string; intro: ReactNode }) {
+function StepHeading({ heading, title, intro }: Heading & { title: string; intro?: ReactNode }) {
   return (
     <div className="flex flex-col gap-2">
       <h1
@@ -334,7 +334,7 @@ function StepHeading({ heading, title, intro }: Heading & { title: string; intro
       >
         {title}
       </h1>
-      <p className="text-txt-black-700 text-body-md">{intro}</p>
+      {intro && <p className="text-txt-black-700 text-body-md">{intro}</p>}
     </div>
   );
 }
@@ -354,11 +354,7 @@ function KindStep({
   ] as const;
   return (
     <>
-      <StepHeading
-        heading={heading}
-        title={t("newPage.kind.title")}
-        intro={t("newPage.kind.intro")}
-      />
+      <StepHeading heading={heading} title={t("newPage.kind.title")} />
       <Fieldset render={<Radio value={value} onValueChange={(v) => onChange(v as TemplateKind)} />}>
         <FieldsetLegend className="sr-only">{t("newPage.kind.label")}</FieldsetLegend>
         {kinds.map(({ id, icon }) => (
@@ -563,11 +559,7 @@ function CheckStep({
   ];
   return (
     <>
-      <StepHeading
-        heading={heading}
-        title={t("newPage.check.title")}
-        intro={t("newPage.check.intro")}
-      />
+      <StepHeading heading={heading} title={t("newPage.check.title")} />
       <SummaryList>
         <SummaryListBody>
           {rows.map((row) => (

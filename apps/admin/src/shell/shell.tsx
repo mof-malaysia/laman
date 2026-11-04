@@ -47,8 +47,8 @@ import { GlobeIcon } from "@/components/ui/icons/globe";
 import { HamburgerMenuIcon } from "@/components/ui/icons/hamburger-menu";
 import { HomeIcon } from "@/components/ui/icons/home";
 import { MegaphoneIcon } from "@/components/ui/icons/megaphone";
-import { QuestionCircleIcon } from "@/components/ui/icons/question-circle";
 import { SearchIcon } from "@/components/ui/icons/search";
+import { AppTag } from "@/components/app-tag";
 import { BrandMark } from "@/components/brand-mark";
 import { PaletteIcon } from "@/components/palette-icon";
 import { SettingIcon } from "@/components/ui/icons/setting";
@@ -63,12 +63,13 @@ import {
   MenuTrigger,
 } from "@/components/ui/menu";
 import { Kbd } from "@/components/ui/kbd";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ShortcutProvider, useCommands, useShortcutActions } from "@/components/ui/shortcuts";
 import { type MessageKey, t } from "@/i18n";
-import { pagesApi } from "@/lib/api";
+import { mediaQuery, pagesApi } from "@/lib/api";
 import { roleLabels, signOut, useCan, useMe } from "@/lib/auth";
 import { usePages } from "@/lib/pages";
-import { useAnnouncementDoc } from "@/lib/publish";
+import { siteDocQuery, useAnnouncementDoc } from "@/lib/publish";
 import { UploadDialog } from "@/media/upload-dialog";
 import { type NavPart, navParts } from "@/site/navigation-screen";
 import { ShellContext, type ShellActions } from "./context";
@@ -239,18 +240,62 @@ function UserMenu({ active }: { active: boolean }) {
   );
 }
 
+const BRAND_STALE = 5 * 60_000;
+
+/**
+ * The site's own logo and name once a logo is published, so officers see whose
+ * site they're running; Laman's until then. The tag says this is the admin,
+ * not the public site, and hides with the name when the sidebar is a rail.
+ */
+function AdminBrand() {
+  // On screen everywhere, so its own mounts (the phone drawer) needn't refetch.
+  const siteSettings = useQuery({ ...siteDocQuery("settings"), staleTime: BRAND_STALE });
+  const identity = siteSettings.data?.published.identity;
+  const logo = useQuery({ ...mediaQuery(identity?.logo?.mediaId), staleTime: BRAND_STALE });
+  const [broken, setBroken] = useState(false);
+  const logoUrl = broken ? undefined : logo.data?.thumbnailUrl;
+  const name = logoUrl && identity ? identity.siteName : t("app.name");
+  // Wait for a logo that's on its way rather than flash Laman's first.
+  const loading = siteSettings.isPending || (Boolean(identity?.logo) && logo.isPending);
+  return (
+    // One row: mark, name, tag. The name gives way first, so the tag always shows.
+    <Link to="/" className="focus-ring flex min-w-0 items-center gap-2 rounded-md no-underline">
+      {loading ? (
+        <>
+          <Skeleton className="size-7 shrink-0 rounded-md" />
+          <Skeleton className="h-4 w-28 group-data-[collapsible=icon]/sidebar:hidden" />
+        </>
+      ) : (
+        <>
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt=""
+              onError={() => setBroken(true)}
+              className="h-7 w-auto max-w-16 shrink-0 rounded-xs object-contain group-data-[collapsible=icon]/sidebar:max-w-7"
+            />
+          ) : (
+            <BrandMark />
+          )}
+          <span
+            className="text-label-md text-txt-black-900 min-w-0 truncate font-semibold group-data-[collapsible=icon]/sidebar:sr-only"
+            title={logoUrl ? name : undefined}
+          >
+            {name}
+          </span>
+        </>
+      )}
+      <AppTag className="group-data-[collapsible=icon]/sidebar:hidden" />
+    </Link>
+  );
+}
+
 function AdminSidebar({ active }: { active: Section }) {
-  const { openCheatSheet } = useShortcutActions();
   const canManagePeople = useCan("users.manage");
   return (
     <Sidebar label={t("shell.sidebar")}>
       <SidebarHeader>
-        <Link to="/" className="focus-ring flex min-w-0 items-center gap-2 rounded-md no-underline">
-          <BrandMark />
-          <span className="text-label-md text-txt-black-900 truncate font-semibold group-data-[collapsible=icon]/sidebar:sr-only">
-            {t("app.name")}
-          </span>
-        </Link>
+        <AdminBrand />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
@@ -271,12 +316,6 @@ function AdminSidebar({ active }: { active: Section }) {
         <SidebarMenu>
           <NavItem section={settings} active={settings === active} />
           {canManagePeople && <NavItem section={users} active={users === active} />}
-          <SidebarMenuItem>
-            <SidebarMenuButton onClick={openCheatSheet} tooltip={t("nav.shortcuts")}>
-              <QuestionCircleIcon />
-              <span>{t("nav.shortcuts")}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
           <UserMenu active={account === active} />
           <SiteInfo />
         </SidebarMenu>
