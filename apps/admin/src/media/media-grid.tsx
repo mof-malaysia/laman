@@ -7,12 +7,25 @@ import { PdfIcon } from "@/components/ui/icons/pdf";
 import { Tag } from "@/components/ui/tag";
 import { t } from "@/i18n";
 import { clx } from "@/lib/ftds/utils";
+import { formatBytes } from "./format";
 
 /** An image with no alt text that isn't marked decorative. */
 export const missingAlt = (media: Pick<Media, "kind" | "alt" | "decorative">) =>
   media.kind === "image" && !media.decorative && !media.alt.trim();
 
-export function MediaThumb({ media, className }: { media: Media; className?: string }) {
+/** A photograph fills its tile; anything smaller (a logo, an icon) is shown whole. */
+const fillsTile = (media: Media) => (media.width ?? 0) >= 300 && (media.height ?? 0) >= 200;
+
+export function MediaThumb({
+  media,
+  className,
+  fill = false,
+}: {
+  media: Media;
+  className?: string;
+  /** In the library's tiles: crop photographs to the tile so the grid reads as one. */
+  fill?: boolean;
+}) {
   if (media.kind === "document")
     return (
       <span
@@ -26,7 +39,12 @@ export function MediaThumb({ media, className }: { media: Media; className?: str
       src={media.thumbnailUrl}
       alt=""
       loading="lazy"
-      className={clx("bg-bg-washed object-contain", className)}
+      className={clx(
+        "bg-bg-washed",
+        fill && fillsTile(media) ? "object-cover" : "object-contain",
+        fill && !fillsTile(media) && "p-3",
+        className,
+      )}
     />
   );
 }
@@ -70,7 +88,7 @@ export function MediaGrid({
   onChoose: (media: Media) => void;
 }) {
   return (
-    <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-3 p-0">
+    <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(10.5rem,1fr))] gap-x-3 gap-y-4 p-0">
       {items.map((media) => (
         <li key={media.id}>
           <button
@@ -78,14 +96,33 @@ export function MediaGrid({
             data-media-id={media.id}
             onClick={() => onChoose(media)}
             aria-pressed={selected === undefined ? undefined : selected === media.id}
-            className={clx(
-              "focus-ring hover:bg-bg-washed flex w-full flex-col gap-1.5 rounded-md p-1.5 text-left",
-              selected === media.id && "bg-bg-primary-50 outline-otl-primary-200 outline-2",
-            )}
+            className="group focus-ring flex w-full cursor-pointer flex-col gap-2 rounded-lg text-left"
           >
-            <MediaThumb media={media} className="aspect-square w-full rounded-sm" />
-            <span className="text-label-compact min-w-0 truncate font-medium">
-              {media.filename}
+            {/* The picture is the tile: it takes the hover and the selection, the words sit under it. */}
+            <span
+              className={clx(
+                "border-otl-gray-200 block w-full overflow-hidden rounded-lg border transition-shadow duration-150 motion-reduce:transition-none",
+                selected === media.id
+                  ? "ring-otl-primary-300 border-otl-primary-300 ring-2"
+                  : "group-hover:shadow-card group-hover:border-otl-gray-300",
+              )}
+            >
+              <MediaThumb media={media} fill className="aspect-[4/3] w-full" />
+            </span>
+            <span className="flex min-w-0 flex-col gap-0.5 px-0.5">
+              <span
+                className={clx(
+                  "text-label-compact min-w-0 truncate font-medium",
+                  selected === media.id && "text-txt-primary",
+                )}
+                title={media.filename}
+              >
+                {media.filename}
+              </span>
+              <span className="text-label-compact text-txt-black-500 truncate tabular-nums">
+                {formatBytes(media.size)}
+                {media.width && media.height ? ` · ${media.width} × ${media.height}` : ""}
+              </span>
             </span>
             <MediaTags media={media} />
           </button>

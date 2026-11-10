@@ -69,9 +69,10 @@ export function MediaField({
       aria-describedby={hint ? `${id}-hint` : undefined}
       className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0"
     >
-      <legend className="text-label-md p-0 font-medium">{title}</legend>
+      <legend className={clx("text-label-md p-0 font-medium", !hint && "mb-2")}>{title}</legend>
       {hint && (
-        <span id={`${id}-hint`} className="text-body-sm text-txt-black-700 -mt-1">
+        // A legend sits outside the column's gap, so the hint keeps its own distance from it.
+        <span id={`${id}-hint`} className="text-body-sm text-txt-black-700 mt-1">
           {hint}
         </span>
       )}

@@ -599,13 +599,13 @@ function Log() {
                   {day.label}
                 </h3>
                 {/* A timeline: the line joins the day's publishes, the dot says how each went. */}
-                <ol className="before:bg-otl-gray-200 relative m-0 list-none p-0 before:absolute before:top-5 before:bottom-5 before:left-[11px] before:w-px">
+                <ol className="before:bg-otl-gray-200 relative m-0 list-none p-0 before:absolute before:top-4 before:bottom-4 before:left-[11px] before:w-px">
                   {day.rows.map((row) => (
                     <li key={row.job.id} className="relative">
                       <span
                         aria-hidden
                         className={clx(
-                          "ring-bg-white absolute top-4 left-2 size-2 rounded-full ring-4",
+                          "ring-bg-white absolute top-3.5 left-2 size-2 rounded-full ring-4",
                           toneDot[toneOf(row.job)],
                         )}
                       />
@@ -613,26 +613,24 @@ function Log() {
                       <button
                         type="button"
                         onClick={() => setOpen(row.job.id)}
-                        className="focus-ring hover:bg-bg-washed group flex w-full items-center gap-3 rounded-md py-2.5 pr-2 pl-7 text-left transition-colors duration-150 motion-reduce:transition-none"
+                        className="focus-ring hover:bg-bg-washed group flex w-full items-center gap-3 rounded-md py-2 pr-2 pl-7 text-left transition-colors duration-150 motion-reduce:transition-none"
                       >
-                        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                          <span className="truncate font-medium group-hover:underline">
-                            {row.line}
-                          </span>
-                          {/* Under the line, so a tag never cuts the title short. */}
-                          <span className="text-label-compact text-txt-black-700 flex flex-wrap items-center gap-x-2 gap-y-1 tabular-nums">
-                            {formatTime(row.job.createdAt)}
-                            {row.repeats > 1 &&
-                              ` · ${t("publishing.log.times", { count: row.repeats })}`}
-                            {/* Words only where it didn't simply go live; the dot carries the rest. */}
-                            {(row.job.status !== "done" ||
-                              isUndone(row.job) ||
-                              Boolean(row.job.result?.failed)) && <ResultTag job={row.job} />}
-                          </span>
+                        {/* One line a publish: what, how it went if not plainly, and when. */}
+                        <span className="min-w-0 flex-1 truncate font-medium group-hover:underline">
+                          {row.line}
+                        </span>
+                        {/* Words only where it didn't simply go live; the dot carries the rest. */}
+                        {(row.job.status !== "done" ||
+                          isUndone(row.job) ||
+                          Boolean(row.job.result?.failed)) && <ResultTag job={row.job} />}
+                        <span className="text-label-compact text-txt-black-500 shrink-0 tabular-nums">
+                          {row.repeats > 1 &&
+                            `${t("publishing.log.times", { count: row.repeats })} · `}
+                          {formatTime(row.job.createdAt)}
                         </span>
                         <ChevronRightIcon
                           aria-hidden
-                          className="text-txt-black-700 size-4 shrink-0"
+                          className="text-txt-black-500 size-4 shrink-0"
                         />
                       </button>
                     </li>

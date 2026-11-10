@@ -228,7 +228,7 @@ function Row({
     </Field>
   );
   return (
-    <li className="flex flex-col gap-1 py-2">
+    <li className="flex flex-col gap-1 px-3 py-2.5">
       <div className="flex items-start gap-3">
         {name}
         <Actions item={item} onNavigate={onNavigate} />
@@ -253,7 +253,7 @@ function MediaRow({
   onNavigate?: (() => void) | undefined;
 }) {
   return (
-    <li className="flex items-start gap-3 py-2">
+    <li className="flex items-start gap-3 px-3 py-2.5">
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-medium">{itemName(item)}</span>
         <span className="text-label-compact text-txt-black-500 truncate">
@@ -330,7 +330,7 @@ export function WaitingList({ onNavigate }: { onNavigate?: () => void }) {
             </button>
           )}
         </div>
-        <ul className="divide-otl-gray-200 m-0 list-none divide-y p-0">
+        <ul className="divide-otl-gray-200 border-otl-gray-200 bg-bg-white m-0 mt-2 list-none divide-y rounded-lg border p-0">
           {items.map((item) => (
             <Row
               key={key(item)}
@@ -357,7 +357,7 @@ export function WaitingList({ onNavigate }: { onNavigate?: () => void }) {
       : t("waiting.publish", { count });
 
   return (
-    <div className="gap-stack-sm text-body-sm flex flex-col">
+    <div className="gap-stack-md text-body-sm flex flex-col">
       {/* The outcome, where Publish was pressed; read out when it arrives. */}
       <div aria-live={outcome.status === "failed" ? "assertive" : "polite"}>
         {outcome.status === "live" && (
@@ -414,7 +414,7 @@ export function WaitingList({ onNavigate }: { onNavigate?: () => void }) {
               <h3 id="waiting-media" className="text-txt-black-700 font-medium">
                 {t("waiting.media")}
               </h3>
-              <ul className="divide-otl-gray-200 m-0 list-none divide-y p-0">
+              <ul className="divide-otl-gray-200 border-otl-gray-200 bg-bg-white m-0 mt-2 list-none divide-y rounded-lg border p-0">
                 {files.map((item) => (
                   <MediaRow key={key(item)} item={item} onNavigate={onNavigate} />
                 ))}
@@ -429,7 +429,7 @@ export function WaitingList({ onNavigate }: { onNavigate?: () => void }) {
       )}
       {waiting.items.length > 0 && canPublish && outcome.status !== "failed" && (
         // Stays in reach while a long list scrolls under it.
-        <div className="bg-bg-white border-otl-gray-200 sticky bottom-0 flex flex-wrap items-center gap-3 border-t py-3">
+        <div className="bg-bg-white sticky bottom-0 flex flex-wrap items-center gap-3 py-2">
           <Button
             variant="primary-fill"
             disabled={busy || count === 0}
