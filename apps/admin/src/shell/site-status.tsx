@@ -15,6 +15,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { StatusDot, type Tone } from "@/components/page-status";
+import { LinkDiagonalIcon } from "@/components/ui/icons/link-diagonal";
 import { SidebarMenuItem } from "@/components/ui/app-shell";
 import { WaitingList } from "@/components/waiting-list";
 import { t } from "@/i18n";
@@ -23,7 +24,7 @@ import { isActive } from "@/lib/api";
 import { useCan } from "@/lib/auth";
 import { backupHealth } from "@/lib/backups";
 import { formatShortDate, useSummary } from "@/lib/pages";
-import { useAnnouncementDoc, useWaiting } from "@/lib/publish";
+import { siteHref, useAnnouncementDoc, useWaiting } from "@/lib/publish";
 import { sessionLost } from "@/lib/session";
 import { useStore } from "@/lib/store";
 
@@ -134,6 +135,24 @@ export function PublishState({ onOpenWaiting }: { onOpenWaiting: () => void }) {
         </button>
       )}
     </div>
+  );
+}
+
+/** The published site in a new tab: the way out of the admin every screen offers. */
+export function ViewSite() {
+  const summary = useSummary().data;
+  if (!summary) return null;
+  return (
+    <a
+      href={siteHref(summary, "/")}
+      target="_blank"
+      rel="noopener"
+      className="text-txt-black-700 text-label-md hover:bg-bg-washed hover:text-txt-black-900 focus-ring flex h-8 shrink-0 items-center gap-1.5 rounded-md px-2 no-underline max-md:hidden"
+    >
+      <LinkDiagonalIcon aria-hidden className="size-4 shrink-0" />
+      {t("shell.viewSite")}
+      <span className="sr-only"> {t("publish.newTab")}</span>
+    </a>
   );
 }
 

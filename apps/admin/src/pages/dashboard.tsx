@@ -16,7 +16,8 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { WeekFigures } from "@/analytics/week-figures";
 import { PageFrame } from "@/components/page-frame";
-import { PageStatusTag } from "@/components/page-status";
+import { card } from "@/components/card";
+import { PageKindIcon, PageStatusTag } from "@/components/page-status";
 import { SiteStateHeading, useSiteState } from "@/components/site-state";
 import { linkClass } from "@/components/text-link";
 import { Button } from "@/components/ui/button";
@@ -182,7 +183,7 @@ function Identity({
         <img
           src={logo.data.thumbnailUrl}
           alt=""
-          className="bg-bg-white size-12 shrink-0 rounded-md object-contain"
+          className="bg-bg-white h-12 w-auto max-w-32 shrink-0 rounded-md object-contain"
         />
       ) : identity ? (
         <span
@@ -266,26 +267,30 @@ function SiteStatus({
       freshLine
     );
   const needsPublish = state === "notPublished" || state === "waiting";
-  const rowClass = "flex flex-wrap items-center gap-x-2 gap-y-1 py-3 last:pb-0";
+  const rowClass = "flex flex-wrap items-center gap-x-2 gap-y-1";
 
   return (
     <section
       aria-labelledby="status-heading"
-      className="bg-bg-washed gap-stack-md flex flex-col rounded-lg p-5"
+      className={clx(card, "border-otl-gray-200 flex flex-col")}
     >
-      <SiteStateHeading state={state} count={waiting.count}>
-        {body}
-      </SiteStateHeading>
+      <div className="gap-stack-md flex flex-col p-5">
+        <SiteStateHeading state={state} count={waiting.count}>
+          {body}
+        </SiteStateHeading>
 
-      {needsPublish && (
-        <div>
-          <Button variant="primary-fill" render={<Link to="/publishing" />}>
-            {t("home.review")}
-          </Button>
-        </div>
-      )}
+        {needsPublish && (
+          // Under the words, past the icon: the next step reads as part of the sentence.
+          <div className="pl-13">
+            <Button variant="primary-fill" render={<Link to="/publishing" />}>
+              {t("home.review")}
+            </Button>
+          </div>
+        )}
+      </div>
 
-      <ul className="divide-otl-gray-200 border-otl-gray-200 m-0 flex list-none flex-col divide-y border-t p-0">
+      {/* The site's vital signs on one quiet strip: read at a glance, out of the way of the answer above. */}
+      <ul className="bg-bg-washed border-otl-gray-200 text-label-compact m-0 flex list-none flex-wrap items-center gap-x-6 gap-y-2 border-t px-5 py-3">
         <li className={rowClass}>
           {/* After a failure this still says when the site last changed: the version visitors see. */}
           <span className="text-txt-black-700" title={lastAt && formatDateTime(lastAt)}>
@@ -294,6 +299,7 @@ function SiteStatus({
               : t("home.neverPublished")}
           </span>
         </li>
+        <BackupLine backup={backup} className={rowClass} />
         {setupLeft > 0 && (
           <li className={rowClass}>
             <a href="#setup-heading" className={linkClass}>
@@ -301,7 +307,6 @@ function SiteStatus({
             </a>
           </li>
         )}
-        <BackupLine backup={backup} className={rowClass} />
         {announcing && (
           <li className={rowClass}>
             <Tag size="small" variant="warning">
@@ -520,7 +525,7 @@ function RecentEdits({
   className?: string;
 }) {
   return (
-    <section aria-labelledby="edits-heading" className={clx("flex flex-col gap-2", className)}>
+    <section aria-labelledby="edits-heading" className={clx("flex flex-col gap-3", className)}>
       <h2 id="edits-heading" className="text-title font-semibold">
         {t("dashboard.edits.title")}
       </h2>
@@ -529,23 +534,37 @@ function RecentEdits({
       ) : pages.length === 0 ? (
         <p className="text-txt-black-700">{t("home.edits.none")}</p>
       ) : (
-        // One line a page: its title as a link, whether it's live, and when. The
+        // One row a page, the whole row its link: title, whether it's live, and when. The
         // status and time sit in fixed spots on the right, so the column scans down.
-        <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
+        <ul
+          className={clx(
+            card,
+            "border-otl-gray-200 divide-otl-gray-200 m-0 flex list-none flex-col divide-y p-0",
+          )}
+        >
           {pages.slice(0, 6).map((page) => (
-            <li key={page.id} className="flex items-center gap-2">
-              <span className="min-w-0 flex-1 truncate">
-                <Link to="/pages/$id" params={{ id: page.id }} className={linkClass}>
-                  {page.title || t("page.untitled")}
-                </Link>
-              </span>
-              <PageStatusTag status={page.status} />
-              <span
-                className="text-label-compact text-txt-black-500 w-16 shrink-0 text-right tabular-nums"
-                title={formatDateTime(page.updatedAt)}
+            <li key={page.id}>
+              <Link
+                to="/pages/$id"
+                params={{ id: page.id }}
+                className="hover:bg-bg-washed focus-ring-inset flex items-center gap-3 px-4 py-2.5 no-underline"
               >
-                {formatAgo(page.updatedAt)}
-              </span>
+                <PageKindIcon
+                  page={page}
+                  aria-hidden
+                  className="text-txt-black-500 size-4 shrink-0"
+                />
+                <span className="text-txt-black-900 min-w-0 flex-1 truncate font-medium">
+                  {page.title || t("page.untitled")}
+                </span>
+                <PageStatusTag status={page.status} />
+                <span
+                  className="text-label-compact text-txt-black-500 w-16 shrink-0 text-right tabular-nums"
+                  title={formatDateTime(page.updatedAt)}
+                >
+                  {formatAgo(page.updatedAt)}
+                </span>
+              </Link>
             </li>
           ))}
         </ul>

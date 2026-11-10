@@ -20,14 +20,6 @@ import { Input, InputAddon } from "@/components/ui/input";
 import { Link as TextLink } from "@/components/ui/link";
 import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  SummaryList,
-  SummaryListAction,
-  SummaryListBody,
-  SummaryListDetail,
-  SummaryListRow,
-  SummaryListTerm,
-} from "@/components/ui/summary-list";
 import { Tabs, TabsContent, TabsCounter, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { t } from "@/i18n";
 import { templateName } from "@/i18n/registry";
@@ -410,19 +402,22 @@ function DetailsTab({
         </Panel>
       </form>
       <Panel title={t("detail.details.about")}>
-        {/* FTDS's SummaryList: one record's facts, a hairline between rows, an action at the end. */}
-        <SummaryList>
-          <SummaryListBody>
-            {facts.map((fact) => (
-              <SummaryListRow key={fact.term} className="last:border-b-0">
-                <SummaryListTerm className="min-w-0 whitespace-nowrap">{fact.term}</SummaryListTerm>
-                <SummaryListDetail className="tabular-nums">{fact.detail}</SummaryListDetail>
-                {/* Every row has the cell, so the columns line up. */}
-                <SummaryListAction className="py-3">{fact.action}</SummaryListAction>
-              </SummaryListRow>
-            ))}
-          </SummaryListBody>
-        </SummaryList>
+        {/* One record's facts, a hairline between rows. The fact and its action share a line
+            while there's room and stack when there isn't, so a date never breaks mid-way. */}
+        <dl className="divide-otl-gray-200 text-body-sm m-0 flex flex-col divide-y">
+          {facts.map((fact) => (
+            <div
+              key={fact.term}
+              className="flex flex-wrap gap-x-3 gap-y-1 py-3 first:pt-0 last:pb-0"
+            >
+              <dt className="text-txt-black-700 w-36 shrink-0 font-medium">{fact.term}</dt>
+              <dd className="m-0 flex min-w-40 flex-1 flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                <span className="text-txt-black-900 tabular-nums">{fact.detail}</span>
+                {fact.action}
+              </dd>
+            </div>
+          ))}
+        </dl>
       </Panel>
     </TabColumns>
   );

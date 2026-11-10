@@ -233,7 +233,8 @@ export function PublishControl({
         // status beside it says the same in words for keyboard and screen reader users.
         <Tooltip>
           <TooltipTrigger render={<span className="shrink-0" />}>
-            <Button className="whitespace-nowrap" variant="primary-fill" size="small" disabled>
+            {/* Quiet while there's nothing to do, so blue always means "this will change the site". */}
+            <Button className="whitespace-nowrap" variant="default-outline" size="small" disabled>
               {label}
             </Button>
           </TooltipTrigger>

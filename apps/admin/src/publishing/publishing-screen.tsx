@@ -14,6 +14,7 @@ import {
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { type FormEvent, useMemo, useState } from "react";
+import { card } from "@/components/card";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { type Tone, toneDot } from "@/components/page-status";
 import { SiteStateHeading, useSiteState } from "@/components/site-state";
@@ -38,7 +39,6 @@ import { ChevronRightIcon } from "@/components/ui/icons/chevron-right";
 import { Input } from "@/components/ui/input";
 import {
   PageHeader,
-  PageHeaderActions,
   PageHeaderContent,
   PageHeaderDescription,
   PageHeaderTitle,
@@ -56,7 +56,7 @@ import {
 import { Tag } from "@/components/ui/tag";
 import { type MessageKey, t } from "@/i18n";
 import { blockLabel } from "@/i18n/registry";
-import { siteDocQuery, useSiteHref } from "@/lib/publish";
+import { siteDocQuery } from "@/lib/publish";
 import { apiError, jobsApi, siteApi, waitForJob } from "@/lib/api";
 import { useCan } from "@/lib/auth";
 import useToast from "@/lib/ftds/hooks/use-toast";
@@ -122,8 +122,6 @@ function ResultTag({ job }: { job: Job }) {
 
 export function PublishingScreen() {
   const canManage = useCan("site.manage");
-  const { lastAt } = useSiteState();
-  const siteUrl = useSiteHref("/");
   return (
     // Body Compact is the admin's reading size; headings and labels set their own.
     <div className="p-surface gap-stack-lg text-body-sm mx-auto flex max-w-6xl flex-col">
@@ -132,18 +130,6 @@ export function PublishingScreen() {
           <PageHeaderTitle size="headline">{t("nav.publishing")}</PageHeaderTitle>
           <PageHeaderDescription>{t("publishing.intro")}</PageHeaderDescription>
         </PageHeaderContent>
-        {lastAt && (
-          <PageHeaderActions>
-            <Button
-              variant="default-outline"
-              // oxlint-disable-next-line jsx-a11y/control-has-associated-label -- labelled by the Button's children
-              render={<a href={siteUrl} target="_blank" rel="noopener" />}
-            >
-              {t("publish.view")}
-              <span className="sr-only"> {t("publish.newTab")}</span>
-            </Button>
-          </PageHeaderActions>
-        )}
       </PageHeader>
 
       {/*
@@ -176,13 +162,13 @@ function SiteStatus() {
   const { state, waiting, lastAt, loaded } = useSiteState();
   if (!loaded) return <Skeleton className="h-20 w-full rounded-lg" />;
   return (
-    <div className="bg-bg-washed flex flex-col gap-1 rounded-lg px-5 py-4">
+    <div className={clx(card, "border-otl-gray-200 px-5 py-4")}>
       <SiteStateHeading state={state} count={waiting.count}>
-        {state === "failed" && t("publishing.status.failedBody")}
+        {state === "failed" && `${t("publishing.status.failedBody")} `}
+        <span title={lastAt ? formatDateTime(lastAt) : undefined}>
+          {lastAt ? t("home.lastPublished", { ago: formatAgo(lastAt) }) : t("home.neverPublished")}
+        </span>
       </SiteStateHeading>
-      <p className="text-txt-black-700 pl-8" title={lastAt ? formatDateTime(lastAt) : undefined}>
-        {lastAt ? t("home.lastPublished", { ago: formatAgo(lastAt) }) : t("home.neverPublished")}
-      </p>
     </div>
   );
 }

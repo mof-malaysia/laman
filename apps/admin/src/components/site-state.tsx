@@ -9,6 +9,7 @@ import { ClockIcon } from "@/components/ui/icons/clock";
 import { WarningCircleIcon } from "@/components/ui/icons/warning-circle";
 import { Spinner } from "@/components/ui/spinner";
 import { t } from "@/i18n";
+import { clx } from "@/lib/ftds/utils";
 import { isActive } from "@/lib/api";
 import { useSummary } from "@/lib/pages";
 import { useWaiting } from "@/lib/publish";
@@ -76,6 +77,16 @@ function sentenceOf(state: SiteState, count: number) {
   }
 }
 
+/** The wash behind each state's icon: the state's colour, quietly, before the words are read. */
+const washes: Record<SiteState, string> = {
+  publishing: "bg-bg-washed",
+  failed: "bg-bg-danger-50",
+  notPublished: "bg-bg-warning-50",
+  waiting: "bg-bg-warning-50",
+  publishedLive: "bg-bg-success-50",
+  live: "bg-bg-success-50",
+};
+
 /** The state as a section heading, read out when it changes, with the screen's own line under it. */
 export function SiteStateHeading({
   state,
@@ -88,17 +99,23 @@ export function SiteStateHeading({
   children?: ReactNode;
 }) {
   return (
-    <div aria-live="polite" className="flex flex-col gap-1">
-      <h2 id="status-heading" className="text-title flex items-center gap-2 font-semibold">
-        <span
-          aria-hidden
-          className="flex size-6 shrink-0 items-center justify-center [&_svg]:size-6"
-        >
-          {icons[state]}
-        </span>
-        {sentenceOf(state, count)}
-      </h2>
-      {children && <p className="text-txt-black-700">{children}</p>}
+    <div aria-live="polite" className="flex items-start gap-3">
+      <span
+        aria-hidden
+        className={clx(
+          "flex size-10 shrink-0 items-center justify-center rounded-full [&_svg]:size-5",
+          washes[state],
+        )}
+      >
+        {icons[state]}
+      </span>
+      {/* One line sits level with the icon; with a second, the pair does. */}
+      <div className="flex min-h-10 min-w-0 flex-col justify-center gap-0.5">
+        <h2 id="status-heading" className="text-title font-semibold text-balance">
+          {sentenceOf(state, count)}
+        </h2>
+        {children && <p className="text-txt-black-700">{children}</p>}
+      </div>
     </div>
   );
 }

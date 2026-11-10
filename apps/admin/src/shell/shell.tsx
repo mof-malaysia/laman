@@ -25,6 +25,7 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -75,8 +76,9 @@ import { UploadDialog } from "@/media/upload-dialog";
 import { type NavPart, navParts } from "@/site/navigation-screen";
 import { ShellContext, type ShellActions } from "./context";
 import { OpenPageDialog } from "./open-page-dialog";
+import { PersonAvatar } from "@/users/person";
 import { usersPages } from "@/users/users-tabs";
-import { PublishState, SiteInfo, WaitingDrawer } from "./site-status";
+import { PublishState, SiteInfo, ViewSite, WaitingDrawer } from "./site-status";
 
 type Section = { to: string; label: MessageKey; combo: string; icon: ReactNode };
 
@@ -109,17 +111,30 @@ const colours: Section = {
   icon: <PaletteIcon />,
 };
 
-const sections = [
-  dashboard,
-  { to: "/pages", label: "nav.pages", combo: "g p", icon: <DocumentIcon /> },
-  { to: "/media", label: "nav.media", combo: "g m", icon: <GalleryIcon /> },
-  navigation,
-  announcement,
-  search,
-  colours,
-  { to: "/publishing", label: "nav.publishing", combo: "g u", icon: <GlobeIcon /> },
-  { to: "/analytics", label: "nav.analytics", combo: "g v", icon: <EyeShowIcon /> },
-] satisfies Section[];
+/**
+ * The sidebar in the order of the work: what the site says, how the site is
+ * dressed, then putting it live and seeing who came. The dashboard stands alone.
+ */
+const groups: { label?: MessageKey; sections: Section[] }[] = [
+  { sections: [dashboard] },
+  {
+    label: "nav.group.content",
+    sections: [
+      { to: "/pages", label: "nav.pages", combo: "g p", icon: <DocumentIcon /> },
+      { to: "/media", label: "nav.media", combo: "g m", icon: <GalleryIcon /> },
+    ],
+  },
+  { label: "nav.group.site", sections: [navigation, announcement, search, colours] },
+  {
+    label: "nav.group.live",
+    sections: [
+      { to: "/publishing", label: "nav.publishing", combo: "g u", icon: <GlobeIcon /> },
+      { to: "/analytics", label: "nav.analytics", combo: "g v", icon: <EyeShowIcon /> },
+    ],
+  },
+];
+
+const sections = groups.flatMap((group) => group.sections);
 
 const settings: Section = {
   to: "/settings",
@@ -223,7 +238,10 @@ function UserMenu({ active }: { active: boolean }) {
             />
           }
         >
-          <UserIcon />
+          {/* In the icon column, so the name lines up with the items above. */}
+          <PersonAvatar name={me.displayName} className="-mx-0.5 size-6 shrink-0" />
+          {/* The rail keeps only icons, so it shows this in the avatar's place. */}
+          <UserIcon className="hidden group-data-[collapsible=icon]/sidebar:block" />
           <span className="flex min-w-0 flex-col text-left leading-tight">
             <span className="truncate">{me.displayName}</span>
             <span className="text-body-2xs text-txt-black-500 truncate">
@@ -295,19 +313,22 @@ function AdminSidebar({ active }: { active: Section }) {
         <AdminBrand />
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarMenu>
-            {sections.map((section) =>
-              section === navigation ? (
-                <NavigationItem key={section.to} active={section === active} />
-              ) : section === announcement ? (
-                <AnnouncementItem key={section.to} active={section === active} />
-              ) : (
-                <NavItem key={section.to} section={section} active={section === active} />
-              ),
-            )}
-          </SidebarMenu>
-        </SidebarGroup>
+        {groups.map((group) => (
+          <SidebarGroup key={group.label ?? "home"}>
+            {group.label && <SidebarGroupLabel>{t(group.label)}</SidebarGroupLabel>}
+            <SidebarMenu>
+              {group.sections.map((section) =>
+                section === navigation ? (
+                  <NavigationItem key={section.to} active={section === active} />
+                ) : section === announcement ? (
+                  <AnnouncementItem key={section.to} active={section === active} />
+                ) : (
+                  <NavItem key={section.to} section={section} active={section === active} />
+                ),
+              )}
+            </SidebarMenu>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
@@ -501,6 +522,7 @@ export function AdminShell() {
             <TopBarBreadcrumb section={active} />
             <span className="flex-1" />
             <PublishState onOpenWaiting={actions.openWaiting} />
+            <ViewSite />
             <SearchTrigger />
           </AppShellHeader>
           <AppShellMain id="main" tabIndex={-1} className="p-0">

@@ -25,6 +25,8 @@ import {
 import { MobileIcon } from "@/components/ui/icons/mobile";
 import { RedoIcon } from "@/components/ui/icons/redo";
 import { TabletIcon } from "@/components/ui/icons/tablet";
+import { ColumnCollapseIcon } from "@/components/ui/icons/column-collapse";
+import { ColumnExpandIcon } from "@/components/ui/icons/column-expand";
 import { UndoIcon } from "@/components/ui/icons/undo";
 import { useCommands } from "@/components/ui/shortcuts";
 import { Spinner } from "@/components/ui/spinner";
@@ -302,6 +304,27 @@ function Editor({ page, onReload }: { page: Page; onReload: () => Promise<void> 
   const [width, setWidth] = useState<CanvasWidth>("desktop");
   const [zoom, setZoom] = useState<CanvasZoom>("fit");
   const wide = useMediaQuery("(min-width: 768px)");
+  // The page structure gives its column to the canvas on a laptop, where a desktop page
+  // would otherwise run off the side. Once the officer chooses, their choice stands.
+  const roomy = useMediaQuery("(min-width: 1640px)");
+  const [structureChoice, setStructureChoice] = useState<boolean | null>(() => {
+    try {
+      const stored = localStorage.getItem(STRUCTURE_KEY);
+      return stored === null ? null : stored === "1";
+    } catch {
+      return null;
+    }
+  });
+  const showStructure = structureChoice ?? roomy;
+  const toggleStructure = () => {
+    const next = !showStructure;
+    setStructureChoice(next);
+    try {
+      localStorage.setItem(STRUCTURE_KEY, next ? "1" : "0");
+    } catch {
+      // Blocked storage: the choice lasts for this visit.
+    }
+  };
   // On a phone, whether the page's own settings are open in place of the block list.
   const [phonePage, setPhonePage] = useState(false);
   // The canvas needs the room: the sidebar folds to its icons while editing, and is put
@@ -611,6 +634,19 @@ function Editor({ page, onReload }: { page: Page; onReload: () => Promise<void> 
         className="border-otl-gray-200 flex shrink-0 flex-wrap items-center gap-2 border-b px-3 py-2 md:h-12 md:flex-nowrap md:gap-3 md:py-0"
       >
         <div className="flex shrink-0 items-center gap-1">
+          {wide && (
+            <>
+              <ToolButton
+                label={t(showStructure ? "editor.left.hide" : "editor.left.show")}
+                disabled={false}
+                pressed={showStructure}
+                onClick={toggleStructure}
+              >
+                {showStructure ? <ColumnCollapseIcon /> : <ColumnExpandIcon />}
+              </ToolButton>
+              <span aria-hidden className="bg-otl-gray-200 mx-1 h-5 w-px" />
+            </>
+          )}
           <ToolButton
             label={t("editor.undo")}
             disabled={state.past.length === 0}
@@ -699,9 +735,14 @@ function Editor({ page, onReload }: { page: Page; onReload: () => Promise<void> 
       {/* On a phone: no canvas. The list of blocks, then one block's fields (or the page's) at a time. */}
       {wide ? (
         <div className="flex min-h-0 flex-1">
-          <nav aria-label={t("editor.left")} className="border-otl-gray-200 w-64 shrink-0 border-r">
-            {leftColumn}
-          </nav>
+          {showStructure && (
+            <nav
+              aria-label={t("editor.left")}
+              className="border-otl-gray-200 w-64 shrink-0 border-r"
+            >
+              {leftColumn}
+            </nav>
+          )}
           <section aria-label={t("editor.canvas")} className="flex min-w-0 flex-1 flex-col">
             {redirectNotice}
             <div className="min-h-0 flex-1">
@@ -797,14 +838,20 @@ function Editor({ page, onReload }: { page: Page; onReload: () => Promise<void> 
   );
 }
 
+/** Whether the page structure column is shown, remembered per browser. */
+const STRUCTURE_KEY = "admin.editor.structure";
+
 function ToolButton({
   label,
   disabled,
+  pressed,
   onClick,
   children,
 }: {
   label: string;
   disabled: boolean;
+  /** For a button that switches something on and off. */
+  pressed?: boolean;
   onClick: () => void;
   children: React.ReactNode;
 }) {
@@ -819,6 +866,7 @@ function ToolButton({
             disabled={disabled}
             onClick={onClick}
             aria-label={label}
+            aria-pressed={pressed}
           />
         }
       >
