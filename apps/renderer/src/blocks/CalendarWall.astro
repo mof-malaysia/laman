@@ -1,0 +1,221 @@
+---
+/**
+ * Event calendar, Wall planner layout: the month as a large grid. Each day
+ * holds its events (three, then "n lagi"); events over several days run as
+ * bars across them; colour says where. Every event opens a card (a native
+ * <details>, so it works without a script) with its time, place and a link
+ * to its page. Narrow screens get the month's weeks as lists instead.
+ */
+import type { BlockOf, CalendarRender, EntryItem } from "@fiscal-sb/blocks";
+import { eventDays } from "@fiscal-sb/blocks";
+import { clx } from "@/lib/ftds/utils";
+import CalendarCard from "./CalendarCard.astro";
+import CalendarFilterMenu from "./CalendarFilterMenu.astro";
+import CalendarMonthNav from "./CalendarMonthNav.astro";
+import { allOf, dayLabel, filterOptions, isMultiDay, monthDays, monthLabel, monthWeeks, timeLabel, toneOf, weekdayNames, weekdayOf, whenShort } from "./events";
+
+type Props = { block: BlockOf<"eventCalendar">; calendar: CalendarRender; lang: "ms" | "en" };
+const { block, calendar, lang } = Astro.props;
+const p = block.props;
+const en = lang === "en";
+const m = calendar.month;
+const weeks = monthWeeks(m);
+const byDay = monthDays(calendar.items, m);
+const multi = calendar.items.filter((item) => isMultiDay(item.event!));
+const single = (day: string) => (byDay.get(day) ?? []).filter((item) => !isMultiDay(item.event!));
+const tone = (item: EntryItem) => toneOf(calendar.locations, item.event?.locationSlug);
+const categoryLabel = p.categoryLabel || (en ? "Category" : "Kategori");
+const locationLabel = en ? "Location" : "Lokasi";
+const pinnedBars = multi.some((item) => item.pinned);
+const weekdays = weekdayNames(lang);
+const locationOptions = filterOptions(calendar, "location", allOf(locationLabel, lang));
+
+/** A week's bars: each multi-day event's run inside the week and the month, in lanes that don't overlap. */
+function barsOf(week: string[]) {
+  const from = week.find((d) => d.startsWith(m))!;
+  const to = week.findLast((d) => d.startsWith(m))!;
+  const lanes: number[] = [];
+  return {
+    bars: multi
+      .map((item) => ({ item, days: eventDays(item.event!) }))
+      .filter(({ days }) => days[0]! <= to && days.at(-1)! >= from)
+      .map(({ item, days }) => {
+        const a = week.indexOf(days[0]! < from ? from : days[0]!);
+        const b = week.indexOf(days.at(-1)! > to ? to : days.at(-1)!);
+        let lane = lanes.findIndex((end) => end < a);
+        if (lane === -1) lane = lanes.push(b) - 1;
+        else lanes[lane] = b;
+        return { item, a, b, lane, continues: days[0]! < from };
+      }),
+    lanes: lanes.length,
+  };
+}
+const chip = (current: boolean) =>
+  clx(
+    "focus-ring text-label-sm inline-flex h-8 items-center gap-2 rounded-full border px-3",
+    current ? "border-txt-black-900 bg-bg-white text-txt-black-900 font-medium" : "border-otl-gray-200 bg-bg-white text-txt-black-700 hover:border-otl-gray-300",
+  );
+const empty = calendar.items.length === 0;
+---
+
+<div class="flex flex-col gap-4">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <CalendarMonthNav calendar={calendar} lang={lang} />
+    {p.categoryFilter && calendar.categories.length > 0 && <CalendarFilterMenu calendar={calendar} label={categoryLabel} lang={lang} />}
+  </div>
+
+  {
+    calendar.locations.length > 0 && (
+      <nav aria-label={locationLabel} class="flex flex-wrap items-center gap-2">
+        {/* The colour key; with the location filter on, each key is also its filter. */}
+        {locationOptions.map((o) => {
+          if (!o.slug && !p.locationFilter) return null;
+          const dot = o.slug && <span class={clx("size-2 rounded-full", toneOf(calendar.locations, o.slug).dot)} aria-hidden="true" />;
+          return p.locationFilter ? (
+            <a href={o.href} aria-current={o.current ? "page" : undefined} class={chip(o.current)}>
+              {dot}
+              {o.name}
+            </a>
+          ) : (
+            <span class="text-label-sm text-txt-black-700 inline-flex items-center gap-2 px-1">
+              {dot}
+              {o.name}
+            </span>
+          );
+        })}
+        {pinnedBars && <span class="text-body-xs text-txt-black-500 ms-1 hidden md:inline">{en ? "Solid bar: pinned event." : "Jalur penuh: acara disematkan."}</span>}
+      </nav>
+    )
+  }
+
+  {/* Wide screens: the grid. */}
+  <div class="border-otl-gray-200 bg-bg-white hidden rounded-lg border md:block">
+    <div class="border-otl-gray-200 grid grid-cols-7 border-b" aria-hidden="true">
+      {weekdays.map((name) => <div class="text-label-compact text-txt-black-500 px-3 py-2.5 font-medium tracking-wide uppercase">{name}</div>)}
+    </div>
+    <ol class="contents" aria-label={monthLabel(m, lang)}>
+      {
+        weeks.map((week, w) => {
+          const { bars, lanes } = barsOf(week);
+          return (
+            <li class={clx("relative grid grid-cols-7", w < weeks.length - 1 && "border-otl-gray-200 border-b")} style={`grid-template-rows: 34px repeat(${lanes}, 25px) 1fr`}>
+              {week.map((day, c) => {
+                const out = !day.startsWith(m);
+                const today = day === calendar.today;
+                const events = out ? [] : single(day);
+                return (
+                  <div
+                    class={clx(
+                      "min-h-32 border-otl-gray-200 flex flex-col pb-2",
+                      c < 6 && "border-e",
+                      out ? "bg-bg-gray-50" : c >= 5 ? "bg-bg-gray-50/60" : "",
+                      today && "bg-bg-primary-50/70",
+                    )}
+                    style={`grid-column: ${c + 1}; grid-row: 1 / -1`}
+                  >
+                    <span class={clx("text-label-sm m-1.5 ms-2 grid size-6 place-items-center rounded-full font-medium tabular-nums", today ? "bg-bg-primary-600 text-txt-white" : out ? "text-txt-black-500" : "text-txt-black-700")}>
+                      <span class="sr-only">{dayLabel(day, lang)}</span>
+                      <span aria-hidden="true">{Number(day.slice(8))}</span>
+                    </span>
+                    {events.length > 0 && (
+                      <ul class="flex min-w-0 flex-col gap-0.5 px-1" style={`margin-top: ${lanes * 25}px`}>
+                        {events.slice(0, 3).map((item) => (
+                          <li class="min-w-0">
+                            <CalendarCard item={item} tone={tone(item)} lang={lang} align={c >= 4 ? "end" : "start"}>
+                              <span class={clx("size-2 shrink-0 rounded-full", tone(item).dot)} aria-hidden="true" />
+                              {!item.event!.allDay && <span class="text-txt-black-500 shrink-0 tabular-nums">{timeLabel(item.event!.start, lang).split(" ")[0]}</span>}
+                              <span class="truncate font-medium">{item.title}</span>
+                            </CalendarCard>
+                          </li>
+                        ))}
+                        {events.length > 3 && (
+                          <li>
+                            <details class="group/more relative" data-calendar-card>
+                              <summary class="text-body-xs text-txt-black-700 hover:bg-bg-washed focus-ring flex h-6 cursor-pointer list-none items-center rounded-xs px-1.5 font-medium [&::-webkit-details-marker]:hidden">
+                                {en ? `${events.length - 3} more` : `${events.length - 3} lagi`}
+                              </summary>
+                              <div class={clx("bg-bg-white border-otl-gray-200 shadow-context-menu absolute top-full z-30 mt-1 w-72 rounded-lg border p-3", c >= 4 ? "end-0" : "start-0")}>
+                                <p class="text-label-md text-txt-black-900 mb-2 font-semibold">{dayLabel(day, lang)}</p>
+                                <ul class="flex flex-col gap-1">
+                                  {events.map((item) => (
+                                    <li>
+                                      <a href={item.href} class="focus-ring hover:bg-bg-washed text-body-sm flex items-center gap-2 rounded-xs px-1.5 py-1">
+                                        <span class={clx("size-2 shrink-0 rounded-full", tone(item).dot)} aria-hidden="true" />
+                                        <span class="text-txt-black-500 shrink-0 tabular-nums">{item.event!.allDay ? "" : timeLabel(item.event!.start, lang)}</span>
+                                        <span class="text-txt-black-900 truncate font-medium">{item.title}</span>
+                                      </a>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            </details>
+                          </li>
+                        )}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })}
+              {bars.map(({ item, a, b, lane, continues }) => (
+                <div class="z-10 mx-1 min-w-0" style={`grid-row: ${2 + lane}; grid-column: ${a + 1} / ${b + 2}`}>
+                  <CalendarCard item={item} tone={tone(item)} lang={lang} bar solid={item.pinned} align={a >= 4 ? "end" : "start"}>
+                    <span class="truncate font-medium">
+                      {continues && <span aria-hidden="true">◂ </span>}
+                      {item.title}
+                    </span>
+                    <span class="sr-only">, {whenShort(item.event!, lang)}</span>
+                  </CalendarCard>
+                </div>
+              ))}
+            </li>
+          );
+        })
+      }
+    </ol>
+  </div>
+
+  {/* Narrow screens: the weeks that have events, as lists. */}
+  <div class="flex flex-col gap-5 md:hidden">
+    {
+      weeks.map((week) => {
+        const days = week.filter((d) => d.startsWith(m) && byDay.has(d));
+        if (!days.length) return null;
+        const inMonth = week.filter((d) => d.startsWith(m));
+        return (
+          <section class="flex flex-col gap-2">
+            <h3 class="text-label-compact text-txt-black-500 font-medium tracking-wide uppercase">
+              {Number(inMonth[0]!.slice(8))} – {Number(inMonth.at(-1)!.slice(8))} {monthLabel(m, lang).split(" ")[0]}
+            </h3>
+            <ul class="bg-bg-white border-otl-gray-200 divide-otl-gray-200 divide-y rounded-lg border">
+              {days.map((day) => (
+                <li class="grid grid-cols-[2.75rem_1fr] gap-3 p-3">
+                  <p class={clx("text-center leading-tight", day === calendar.today ? "text-txt-primary" : "text-txt-black-900")}>
+                    <span class="text-title block font-semibold tabular-nums">{Number(day.slice(8))}</span>
+                    <span class="text-body-xs text-txt-black-500">{weekdays[weekdayOf(day)]}</span>
+                  </p>
+                  <ul class="flex min-w-0 flex-col gap-1.5">
+                    {byDay.get(day)!.map((item) => (
+                      <li class="flex items-baseline gap-2">
+                        <span class={clx("size-2 shrink-0 translate-y-[-1px] rounded-full", tone(item).dot)} aria-hidden="true" />
+                        <span class="min-w-0">
+                          <a href={item.href} class="focus-ring text-body-sm text-txt-black-900 rounded-xs font-medium hover:underline">
+                            {item.title}
+                          </a>{" "}
+                          <span class="text-body-xs text-txt-black-500 whitespace-nowrap">
+                            {isMultiDay(item.event!) || item.event!.allDay ? whenShort(item.event!, lang) : timeLabel(item.event!.start, lang)}
+                          </span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              ))}
+            </ul>
+          </section>
+        );
+      })
+    }
+    {empty && <p class="bg-bg-washed text-txt-black-700 rounded-md p-6">{p.emptyText}</p>}
+  </div>
+  {empty && <p class="text-body-sm text-txt-black-500 hidden md:block">{p.emptyText}</p>}
+</div>

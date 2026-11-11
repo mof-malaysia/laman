@@ -11,8 +11,12 @@ import { paragraphs } from "./rich-text.js";
 export type Template = {
   name: string;
   description: string;
-  /** Present on collection templates: the categories a new collection starts with, and the blocks its entries start with. */
-  listing?: { categories?: { slug: string; name: string }[]; startingBlocks?: BlockType[] };
+  /** Present on collection templates: the categories a new collection starts with, the blocks its entries start with, and its order. */
+  listing?: {
+    categories?: { slug: string; name: string }[];
+    startingBlocks?: BlockType[];
+    sort?: "publishAt" | "eventStart";
+  };
   /** The blocks a new page starts with, given its title. */
   blocks: (title: string) => Block[];
 };
@@ -132,10 +136,20 @@ export const templates = {
   acara: {
     name: "Acara",
     description: "Briefings, workshops, open days, with date and venue.",
-    listing: { startingBlocks: ["eventDetails"] },
+    listing: { startingBlocks: ["eventDetails"], sort: "eventStart" },
     blocks: (title) => [
       block("pageIntro", { title, description: "Taklimat, bengkel dan hari terbuka kami." }),
       block("entryList", { style: "cards", emptyText: "Belum ada acara lagi." }),
+    ],
+  },
+  takwim: {
+    name: "Takwim",
+    description:
+      "A calendar of events, a month at a time, with each month's events listed under it.",
+    listing: { startingBlocks: ["prose"], sort: "eventStart" },
+    blocks: (title) => [
+      block("pageIntro", { title, description: "Acara dan program yang akan datang." }),
+      block("eventCalendar"),
     ],
   },
 } satisfies Record<string, Template>;

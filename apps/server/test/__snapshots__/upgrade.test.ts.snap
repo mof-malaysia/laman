@@ -180,8 +180,40 @@ exports[`stored document schemas > listing settings 1`] = `
       "maxItems": 30,
       "type": "array",
     },
+    "locations": {
+      "default": [],
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 60,
+            "minLength": 1,
+            "type": "string",
+          },
+          "slug": {
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "type": "string",
+          },
+        },
+        "required": [
+          "slug",
+          "name",
+        ],
+        "type": "object",
+      },
+      "maxItems": 20,
+      "type": "array",
+    },
     "rss": {
       "type": "boolean",
+    },
+    "sort": {
+      "default": "publishAt",
+      "enum": [
+        "publishAt",
+        "eventStart",
+      ],
+      "type": "string",
     },
     "startingBlocks": {
       "items": {
@@ -193,6 +225,8 @@ exports[`stored document schemas > listing settings 1`] = `
   },
   "required": [
     "categories",
+    "locations",
+    "sort",
     "addressPattern",
     "startingBlocks",
     "rss",
@@ -3940,6 +3974,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                         "widget": "richtext",
                       },
                       "date": {
+                        "help": "Leave empty on an event entry: its own date and time show here.",
                         "maxLength": 60,
                         "title": "Date as people read it, e.g. Khamis, 12 November 2026",
                         "type": "string",
@@ -4025,6 +4060,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                         "widget": "text",
                       },
                       "time": {
+                        "help": "Leave empty on an event entry.",
                         "maxLength": 60,
                         "title": "Time",
                         "type": "string",
@@ -4055,7 +4091,6 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                       },
                     },
                     "required": [
-                      "date",
                       "about",
                       "width",
                     ],
@@ -4063,6 +4098,119 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                   },
                   "type": {
                     "const": "eventDetails",
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "id",
+                  "type",
+                  "props",
+                ],
+                "type": "object",
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "pattern": "^[a-z0-9-]{1,40}$",
+                    "type": "string",
+                  },
+                  "props": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "caption": {
+                        "inline": true,
+                        "maxLength": 300,
+                        "title": "Text under the frame",
+                        "type": "string",
+                        "widget": "textarea",
+                      },
+                      "details": {
+                        "help": "Facts shown under the frame, such as who owns it or when it was last updated.",
+                        "items": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "label": {
+                              "maxLength": 40,
+                              "title": "Label",
+                              "type": "string",
+                              "widget": "text",
+                            },
+                            "value": {
+                              "maxLength": 120,
+                              "title": "Value",
+                              "type": "string",
+                              "widget": "text",
+                            },
+                          },
+                          "required": [
+                            "label",
+                            "value",
+                          ],
+                          "type": "object",
+                        },
+                        "maxItems": 6,
+                        "minItems": 0,
+                        "title": "Details",
+                        "type": "array",
+                        "widget": "list",
+                      },
+                      "ratio": {
+                        "default": "wide",
+                        "enum": [
+                          "wide",
+                          "standard",
+                          "tall",
+                        ],
+                        "optionLabels": {
+                          "standard": "Standard (4:3)",
+                          "tall": "Tall",
+                          "wide": "Wide (16:9)",
+                        },
+                        "title": "Shape",
+                        "type": "string",
+                        "widget": "select",
+                      },
+                      "title": {
+                        "inline": true,
+                        "maxLength": 120,
+                        "title": "Title",
+                        "type": "string",
+                        "widget": "text",
+                      },
+                      "url": {
+                        "maxLength": 1000,
+                        "title": "Address to embed",
+                        "type": "string",
+                        "widget": "embed",
+                      },
+                      "width": {
+                        "default": "page",
+                        "enum": [
+                          "page",
+                          "article",
+                          "wide",
+                        ],
+                        "help": "Follow page lines the block up with the page's title.",
+                        "optionLabels": {
+                          "article": "Text column",
+                          "page": "Follow page",
+                          "wide": "Wide",
+                        },
+                        "title": "Width",
+                        "type": "string",
+                        "widget": "select",
+                      },
+                    },
+                    "required": [
+                      "title",
+                      "ratio",
+                      "width",
+                    ],
+                    "type": "object",
+                  },
+                  "type": {
+                    "const": "embed",
                     "type": "string",
                   },
                 },
@@ -4460,6 +4608,93 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                   "props": {
                     "additionalProperties": false,
                     "properties": {
+                      "categoryFilter": {
+                        "default": true,
+                        "title": "Show the category filter",
+                        "type": "boolean",
+                        "widget": "toggle",
+                      },
+                      "categoryLabel": {
+                        "help": "Shown over the category filter, e.g. Pasukan. “Kategori” if left empty.",
+                        "maxLength": 40,
+                        "title": "What the categories are called",
+                        "type": "string",
+                        "widget": "text",
+                      },
+                      "emptyText": {
+                        "default": "Tiada acara pada bulan ini.",
+                        "maxLength": 200,
+                        "title": "Text when a month has no events",
+                        "type": "string",
+                        "widget": "text",
+                      },
+                      "layout": {
+                        "default": "wall",
+                        "enum": [
+                          "wall",
+                          "planner",
+                        ],
+                        "optionLabels": {
+                          "planner": "Planner: a small calendar beside the month's events",
+                          "wall": "Wall planner: the month as a large grid",
+                        },
+                        "title": "Layout",
+                        "type": "string",
+                        "widget": "select",
+                      },
+                      "locationFilter": {
+                        "default": true,
+                        "title": "Show the location filter",
+                        "type": "boolean",
+                        "widget": "toggle",
+                      },
+                      "tone": {
+                        "default": "paper",
+                        "enum": [
+                          "paper",
+                          "well",
+                        ],
+                        "optionLabels": {
+                          "paper": "Paper",
+                          "primary": "Primary wash",
+                          "well": "Well",
+                        },
+                        "title": "Background",
+                        "type": "string",
+                        "widget": "select",
+                      },
+                    },
+                    "required": [
+                      "layout",
+                      "categoryFilter",
+                      "locationFilter",
+                      "emptyText",
+                      "tone",
+                    ],
+                    "type": "object",
+                  },
+                  "type": {
+                    "const": "eventCalendar",
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "id",
+                  "type",
+                  "props",
+                ],
+                "type": "object",
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "pattern": "^[a-z0-9-]{1,40}$",
+                    "type": "string",
+                  },
+                  "props": {
+                    "additionalProperties": false,
+                    "properties": {
                       "category": {
                         "maxLength": 80,
                         "title": "Only this category (its address, e.g. siaran-media)",
@@ -4576,6 +4811,103 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                 ],
                 "type": "object",
               },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "pattern": "^[a-z0-9-]{1,40}$",
+                    "type": "string",
+                  },
+                  "props": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "count": {
+                        "default": "3",
+                        "enum": [
+                          "2",
+                          "3",
+                          "4",
+                          "6",
+                        ],
+                        "optionLabels": {
+                          "2": "2",
+                          "3": "3",
+                          "4": "4",
+                          "6": "6",
+                        },
+                        "title": "How many",
+                        "type": "string",
+                        "widget": "select",
+                      },
+                      "countdown": {
+                        "default": true,
+                        "title": "Show how many days are left",
+                        "type": "boolean",
+                        "widget": "toggle",
+                      },
+                      "featuredOnly": {
+                        "default": false,
+                        "title": "Only pinned events",
+                        "type": "boolean",
+                        "widget": "toggle",
+                      },
+                      "listing": {
+                        "format": "uuid",
+                        "pageKind": "listing",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "title": "Listing page",
+                        "type": "string",
+                        "widget": "page",
+                      },
+                      "seeAll": {
+                        "maxLength": 40,
+                        "title": "See all link text",
+                        "type": "string",
+                        "widget": "text",
+                      },
+                      "title": {
+                        "inline": true,
+                        "maxLength": 120,
+                        "title": "Heading",
+                        "type": "string",
+                        "widget": "text",
+                      },
+                      "tone": {
+                        "default": "paper",
+                        "enum": [
+                          "paper",
+                          "well",
+                        ],
+                        "optionLabels": {
+                          "paper": "Paper",
+                          "primary": "Primary wash",
+                          "well": "Well",
+                        },
+                        "title": "Background",
+                        "type": "string",
+                        "widget": "select",
+                      },
+                    },
+                    "required": [
+                      "count",
+                      "featuredOnly",
+                      "countdown",
+                      "tone",
+                    ],
+                    "type": "object",
+                  },
+                  "type": {
+                    "const": "upcomingEvents",
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "id",
+                  "type",
+                  "props",
+                ],
+                "type": "object",
+              },
             ],
           },
           "maxItems": 100,
@@ -4618,6 +4950,62 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
           },
           "required": [
             "mediaId",
+          ],
+          "type": "object",
+        },
+        "event": {
+          "additionalProperties": false,
+          "properties": {
+            "allDay": {
+              "type": "boolean",
+            },
+            "end": {
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+              "type": "string",
+            },
+            "location": {
+              "maxLength": 80,
+              "type": "string",
+            },
+            "source": {
+              "additionalProperties": false,
+              "properties": {
+                "calendar": {
+                  "maxLength": 200,
+                  "minLength": 1,
+                  "type": "string",
+                },
+                "id": {
+                  "maxLength": 400,
+                  "minLength": 1,
+                  "type": "string",
+                },
+                "system": {
+                  "maxLength": 40,
+                  "minLength": 1,
+                  "type": "string",
+                },
+              },
+              "required": [
+                "system",
+                "calendar",
+                "id",
+              ],
+              "type": "object",
+            },
+            "start": {
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+              "type": "string",
+            },
+            "venue": {
+              "maxLength": 200,
+              "type": "string",
+            },
+          },
+          "required": [
+            "start",
           ],
           "type": "object",
         },
@@ -7547,6 +7935,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                         "widget": "richtext",
                       },
                       "date": {
+                        "help": "Leave empty on an event entry: its own date and time show here.",
                         "maxLength": 60,
                         "title": "Date as people read it, e.g. Khamis, 12 November 2026",
                         "type": "string",
@@ -7632,6 +8021,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                         "widget": "text",
                       },
                       "time": {
+                        "help": "Leave empty on an event entry.",
                         "maxLength": 60,
                         "title": "Time",
                         "type": "string",
@@ -7662,7 +8052,6 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                       },
                     },
                     "required": [
-                      "date",
                       "about",
                       "width",
                     ],
@@ -7670,6 +8059,119 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                   },
                   "type": {
                     "const": "eventDetails",
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "id",
+                  "type",
+                  "props",
+                ],
+                "type": "object",
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "pattern": "^[a-z0-9-]{1,40}$",
+                    "type": "string",
+                  },
+                  "props": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "caption": {
+                        "inline": true,
+                        "maxLength": 300,
+                        "title": "Text under the frame",
+                        "type": "string",
+                        "widget": "textarea",
+                      },
+                      "details": {
+                        "help": "Facts shown under the frame, such as who owns it or when it was last updated.",
+                        "items": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "label": {
+                              "maxLength": 40,
+                              "title": "Label",
+                              "type": "string",
+                              "widget": "text",
+                            },
+                            "value": {
+                              "maxLength": 120,
+                              "title": "Value",
+                              "type": "string",
+                              "widget": "text",
+                            },
+                          },
+                          "required": [
+                            "label",
+                            "value",
+                          ],
+                          "type": "object",
+                        },
+                        "maxItems": 6,
+                        "minItems": 0,
+                        "title": "Details",
+                        "type": "array",
+                        "widget": "list",
+                      },
+                      "ratio": {
+                        "default": "wide",
+                        "enum": [
+                          "wide",
+                          "standard",
+                          "tall",
+                        ],
+                        "optionLabels": {
+                          "standard": "Standard (4:3)",
+                          "tall": "Tall",
+                          "wide": "Wide (16:9)",
+                        },
+                        "title": "Shape",
+                        "type": "string",
+                        "widget": "select",
+                      },
+                      "title": {
+                        "inline": true,
+                        "maxLength": 120,
+                        "title": "Title",
+                        "type": "string",
+                        "widget": "text",
+                      },
+                      "url": {
+                        "maxLength": 1000,
+                        "title": "Address to embed",
+                        "type": "string",
+                        "widget": "embed",
+                      },
+                      "width": {
+                        "default": "page",
+                        "enum": [
+                          "page",
+                          "article",
+                          "wide",
+                        ],
+                        "help": "Follow page lines the block up with the page's title.",
+                        "optionLabels": {
+                          "article": "Text column",
+                          "page": "Follow page",
+                          "wide": "Wide",
+                        },
+                        "title": "Width",
+                        "type": "string",
+                        "widget": "select",
+                      },
+                    },
+                    "required": [
+                      "title",
+                      "ratio",
+                      "width",
+                    ],
+                    "type": "object",
+                  },
+                  "type": {
+                    "const": "embed",
                     "type": "string",
                   },
                 },
@@ -8067,6 +8569,93 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                   "props": {
                     "additionalProperties": false,
                     "properties": {
+                      "categoryFilter": {
+                        "default": true,
+                        "title": "Show the category filter",
+                        "type": "boolean",
+                        "widget": "toggle",
+                      },
+                      "categoryLabel": {
+                        "help": "Shown over the category filter, e.g. Pasukan. “Kategori” if left empty.",
+                        "maxLength": 40,
+                        "title": "What the categories are called",
+                        "type": "string",
+                        "widget": "text",
+                      },
+                      "emptyText": {
+                        "default": "Tiada acara pada bulan ini.",
+                        "maxLength": 200,
+                        "title": "Text when a month has no events",
+                        "type": "string",
+                        "widget": "text",
+                      },
+                      "layout": {
+                        "default": "wall",
+                        "enum": [
+                          "wall",
+                          "planner",
+                        ],
+                        "optionLabels": {
+                          "planner": "Planner: a small calendar beside the month's events",
+                          "wall": "Wall planner: the month as a large grid",
+                        },
+                        "title": "Layout",
+                        "type": "string",
+                        "widget": "select",
+                      },
+                      "locationFilter": {
+                        "default": true,
+                        "title": "Show the location filter",
+                        "type": "boolean",
+                        "widget": "toggle",
+                      },
+                      "tone": {
+                        "default": "paper",
+                        "enum": [
+                          "paper",
+                          "well",
+                        ],
+                        "optionLabels": {
+                          "paper": "Paper",
+                          "primary": "Primary wash",
+                          "well": "Well",
+                        },
+                        "title": "Background",
+                        "type": "string",
+                        "widget": "select",
+                      },
+                    },
+                    "required": [
+                      "layout",
+                      "categoryFilter",
+                      "locationFilter",
+                      "emptyText",
+                      "tone",
+                    ],
+                    "type": "object",
+                  },
+                  "type": {
+                    "const": "eventCalendar",
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "id",
+                  "type",
+                  "props",
+                ],
+                "type": "object",
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "pattern": "^[a-z0-9-]{1,40}$",
+                    "type": "string",
+                  },
+                  "props": {
+                    "additionalProperties": false,
+                    "properties": {
                       "category": {
                         "maxLength": 80,
                         "title": "Only this category (its address, e.g. siaran-media)",
@@ -8173,6 +8762,103 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                   },
                   "type": {
                     "const": "latestEntries",
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "id",
+                  "type",
+                  "props",
+                ],
+                "type": "object",
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "pattern": "^[a-z0-9-]{1,40}$",
+                    "type": "string",
+                  },
+                  "props": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "count": {
+                        "default": "3",
+                        "enum": [
+                          "2",
+                          "3",
+                          "4",
+                          "6",
+                        ],
+                        "optionLabels": {
+                          "2": "2",
+                          "3": "3",
+                          "4": "4",
+                          "6": "6",
+                        },
+                        "title": "How many",
+                        "type": "string",
+                        "widget": "select",
+                      },
+                      "countdown": {
+                        "default": true,
+                        "title": "Show how many days are left",
+                        "type": "boolean",
+                        "widget": "toggle",
+                      },
+                      "featuredOnly": {
+                        "default": false,
+                        "title": "Only pinned events",
+                        "type": "boolean",
+                        "widget": "toggle",
+                      },
+                      "listing": {
+                        "format": "uuid",
+                        "pageKind": "listing",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "title": "Listing page",
+                        "type": "string",
+                        "widget": "page",
+                      },
+                      "seeAll": {
+                        "maxLength": 40,
+                        "title": "See all link text",
+                        "type": "string",
+                        "widget": "text",
+                      },
+                      "title": {
+                        "inline": true,
+                        "maxLength": 120,
+                        "title": "Heading",
+                        "type": "string",
+                        "widget": "text",
+                      },
+                      "tone": {
+                        "default": "paper",
+                        "enum": [
+                          "paper",
+                          "well",
+                        ],
+                        "optionLabels": {
+                          "paper": "Paper",
+                          "primary": "Primary wash",
+                          "well": "Well",
+                        },
+                        "title": "Background",
+                        "type": "string",
+                        "widget": "select",
+                      },
+                    },
+                    "required": [
+                      "count",
+                      "featuredOnly",
+                      "countdown",
+                      "tone",
+                    ],
+                    "type": "object",
+                  },
+                  "type": {
+                    "const": "upcomingEvents",
                     "type": "string",
                   },
                 },
@@ -8403,6 +9089,7 @@ exports[`stored document schemas > publish jobs 1`] = `
         "undo",
         "rebuild",
         "restore",
+        "daily",
       ],
       "type": "string",
     },
@@ -8546,6 +9233,47 @@ exports[`stored document schemas > settings 1`] = `
         "phone",
         "email",
         "hours",
+      ],
+      "type": "object",
+    },
+    "embeds": {
+      "additionalProperties": false,
+      "default": {
+        "hosts": [],
+        "services": [],
+      },
+      "properties": {
+        "hosts": {
+          "items": {
+            "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$",
+            "type": "string",
+          },
+          "maxItems": 50,
+          "type": "array",
+        },
+        "services": {
+          "default": [],
+          "items": {
+            "enum": [
+              "powerBi",
+              "lookerStudio",
+              "tableauPublic",
+              "youtube",
+              "vimeo",
+              "googleMaps",
+              "openStreetMap",
+              "microsoftForms",
+              "googleForms",
+            ],
+            "type": "string",
+          },
+          "maxItems": 9,
+          "type": "array",
+        },
+      },
+      "required": [
+        "services",
+        "hosts",
       ],
       "type": "object",
     },
@@ -8722,6 +9450,7 @@ exports[`stored document schemas > settings 1`] = `
     "search",
     "publishing",
     "analytics",
+    "embeds",
   ],
   "type": "object",
 }

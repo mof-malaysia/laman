@@ -7,6 +7,7 @@ import {
   type BlockType,
   type PageContent,
   type PageDocument,
+  isCollectionBlock,
   newBlock,
 } from "@fiscal-sb/blocks";
 
@@ -117,6 +118,21 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     case "add": {
       const block = newBlock(action.blockType);
       const blocks = state.doc.ms.blocks;
+      // A listing shows its entries one way: an Entry list or an Event calendar takes the other's place.
+      const replaced = isCollectionBlock(block.type)
+        ? blocks.findIndex((b) => isCollectionBlock(b.type))
+        : -1;
+      if (replaced !== -1)
+        return commit(
+          state,
+          updatePage(state.doc, (page) => ({
+            ...page,
+            blocks: page.blocks
+              .filter((b, i) => i === replaced || !isCollectionBlock(b.type))
+              .map((b) => (isCollectionBlock(b.type) ? block : b)),
+          })),
+          { rerender: true, selected: block.id },
+        );
       const after = blocks.findIndex((b) => b.id === state.selected);
       const at = action.at ?? (after === -1 ? blocks.length : after + 1);
       return commit(

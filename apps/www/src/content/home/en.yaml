@@ -176,10 +176,10 @@ visitors:
   phone: { image: /shots/site-phone.webp, width: 390, height: 844, alt: The same page on a phone. }
   address: www.jabatancontoh.gov.my
   figures:
-    - { value: "6.7 KB", label: "of HTML for the home page, compressed" }
+    - { value: "7.2 KB", label: "of HTML for the home page, compressed" }
     - { value: "12 KB", label: of CSS for the whole website }
     - { value: "0", label: "cookies, so no consent banner" }
-  figuresNote: Measured on 4 November 2026, on the sample website published by Laman.
+  figuresNote: Measured on 12 November 2026, on the sample website published by Laman.
 
 sovereignty:
   title: And it all stays on your servers

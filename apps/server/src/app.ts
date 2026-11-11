@@ -22,6 +22,7 @@ import { purgeDeleted } from "./content/history.js";
 import type { PublishPayload } from "@fiscal-sb/contracts";
 import { backupDirOf, listBackups, makeBackup, nextRun, retentionOf } from "./backup.js";
 import { runPublish } from "./content/publishing.js";
+import { DAILY_REFRESH, showsEvents } from "./content/entries.js";
 import { MANIFEST_DIR } from "./manifest.js";
 import { ownPath } from "./paths.js";
 import { REDIRECTS_FILE, pageFile } from "./publisher.js";
@@ -169,13 +170,28 @@ export async function buildApp(options: AppOptions) {
     const { id } = payload as { id: string };
     return makeVariants(db, dataDir, id);
   });
+  /** Timers that run something every day at a time in Malaysia, cleared on close. */
+  const timers: { current?: NodeJS.Timeout }[] = [];
+  function everyDayAt(time: string, run: () => void) {
+    const timer: { current?: NodeJS.Timeout } = {};
+    timers.push(timer);
+    const arm = () => {
+      // From a second on, so a timer that fires early can't pick the same time again.
+      const next = Date.parse(nextRun(time, new Date(Date.now() + 1000)));
+      timer.current = setTimeout(() => {
+        run();
+        arm();
+      }, next - Date.now());
+      timer.current.unref();
+    };
+    arm();
+  }
   /**
    * The daily backup: a timer that queues a backup at BACKUP_SCHEDULE, not a
    * queued job, so it isn't in the job list to be cancelled. One missed while
    * the server was down (no full archive since the last scheduled time) is
    * queued at start.
    */
-  let backupTimer: NodeJS.Timeout | undefined;
   const backUp = () =>
     jobs
       .enqueue("backup", { trigger: "scheduled" })
@@ -184,17 +200,18 @@ export async function buildApp(options: AppOptions) {
     const lastDue = Date.parse(nextRun(time)) - 86_400_000;
     const [newest] = (await listBackups(backupDir)).filter((backup) => !backup.dbOnly);
     if (!newest || Date.parse(newest.at) < lastDue) await backUp();
-    const arm = () => {
-      // From a second on, so a timer that fires early can't pick the same time again.
-      const next = Date.parse(nextRun(time, new Date(Date.now() + 1000)));
-      backupTimer = setTimeout(() => {
-        void backUp();
-        arm();
-      }, next - Date.now());
-      backupTimer.unref();
-    };
-    arm();
+    everyDayAt(time, () => void backUp());
   }
+  /**
+   * Just after midnight in Malaysia, a site whose live pages change with the
+   * date publishes again, so an event calendar's "today", upcoming events and
+   * event order move on even when nothing else changes. Only the pages whose
+   * render changed are written.
+   */
+  const publishDaily = () =>
+    void showsEvents(db)
+      .then((shows) => (shows ? jobs.enqueue("publish", { trigger: "daily" }) : undefined))
+      .catch((error: unknown) => app.log.error({ err: error }, "couldn't queue the daily publish"));
   jobs.handle("backup", async () => {
     const backup = await makeBackup({ dataDir, backupDir, keep, database: databasePath });
     app.log.info({ file: backup.file, bytes: backup.bytes }, "backup made");
@@ -216,11 +233,12 @@ export async function buildApp(options: AppOptions) {
   if (options.runJobs ?? true)
     app.addHook("onReady", async () => {
       if (schedule) await scheduleBackups(schedule);
+      everyDayAt(DAILY_REFRESH, publishDaily);
       await jobs.start();
     });
   app.addHook("onReady", () => collector.start());
   app.addHook("onClose", async () => {
-    clearTimeout(backupTimer);
+    for (const timer of timers) clearTimeout(timer.current);
     await jobs.stop();
     await collector.stop();
     await db.destroy();

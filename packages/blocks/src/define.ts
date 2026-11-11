@@ -28,6 +28,7 @@ export const blockIcons = [
   "govt-office",
   "globe",
   "calendar",
+  "desktop",
 ] as const;
 export type BlockIcon = (typeof blockIcons)[number];
 

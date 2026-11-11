@@ -5,18 +5,23 @@ import { type BlockOf, type Locale, richTextToHtml } from "@fiscal-sb/blocks";
 import EventDetails from "@/components/blocks/event-details.astro";
 import Prose from "@/components/ui/prose.astro";
 import { action } from "./action";
+import { type EventInfo, dayRange, detailsTime, whereLabel } from "./events";
 
-type Props = { block: BlockOf<"eventDetails">; width: Column; lang: Locale };
-const { block, width, lang } = Astro.props;
+type Props = { block: BlockOf<"eventDetails">; width: Column; lang: Locale; event?: EventInfo | undefined };
+const { block, width, lang, event } = Astro.props;
 const p = block.props;
+// On an event entry, its own date and time: one place to change them, and the calendar agrees.
+const date = event ? dayRange(event, lang) : (p.date ?? "");
+const time = event ? detailsTime(event, lang) : p.time;
+const venue = p.venue || (event && whereLabel(event)) || undefined;
 ---
 
 {/* FTDS EventDetails sets the wide column itself; global.css narrows it inside data-column="article". */}
 <div data-column={width}>
   <EventDetails
-    date={p.date}
-    time={p.time}
-    venue={p.venue}
+    date={date}
+    time={time}
+    venue={venue}
     fee={p.fee}
     mapHref={p.mapUrl}
     registerAction={action(p.registerAction)}

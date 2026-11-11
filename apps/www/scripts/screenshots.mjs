@@ -159,11 +159,11 @@ const adminShots = (lang) => [
     width: 1440,
     height: 900,
     ready:
-      "document.querySelector('main h1') && document.querySelector('main input[type=checkbox]:not(:disabled)')",
+      "document.querySelector('main h1') && [...document.querySelectorAll('main li')].some((row) => row.textContent.includes('Hubungi kami'))",
     // Tick the publishable change, so the screen shows a publish ready to go.
     act: () =>
       pointerClick(
-        `[...document.querySelectorAll("main input[type=checkbox]")].find((box) => box.labels?.[0]?.textContent.includes("Hubungi kami"))?.parentElement.querySelector("[role=checkbox]")`,
+        `[...document.querySelectorAll("main li")].find((row) => row.textContent.includes("Hubungi kami") && row.querySelector("[role=checkbox]"))?.querySelector("[role=checkbox]")`,
       ),
   },
 ];

@@ -2,7 +2,13 @@
  * Site settings, navigation, the announcement, site search and the theme: drafted documents, saved
  * here and each made live by its own publish.
  */
-import { type Navigation, NavigationCheck, SiteDocName } from "@fiscal-sb/contracts";
+import {
+  type Navigation,
+  NavigationCheck,
+  SiteDocName,
+  type SiteSettings,
+  can,
+} from "@fiscal-sb/contracts";
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import {
@@ -44,7 +50,7 @@ import { draftSearchIndex } from "../draft-search.js";
 import { searchFileType } from "../search.js";
 import type { Db } from "../db/index.js";
 import type { Jobs } from "../jobs.js";
-import { audited } from "../auth/guard.js";
+import { audited, userOf } from "../auth/guard.js";
 
 /**
  * The live announcement's dates each queue a rebuild, so the bar appears and
@@ -68,6 +74,11 @@ async function scheduleAnnouncement(app: { db: Db; jobs: Jobs }) {
 }
 
 const DraftIndexFile = z.object({ version: z.string(), "*": z.string() });
+
+/** The same services and hosts, in any order. */
+const sameEmbeds = (a: SiteSettings["embeds"], b: SiteSettings["embeds"]) =>
+  JSON.stringify([a.services.toSorted(), a.hosts.toSorted()]) ===
+  JSON.stringify([b.services.toSorted(), b.hosts.toSorted()]);
 
 export const siteRoutes: FastifyPluginAsync = async (app) => {
   const { db } = app;
@@ -99,9 +110,20 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
         response: { 200: envelope(SettingsDoc) },
       },
     },
-    async (request) => ({
-      data: await saveSettingsDraft(db, request.body.draft, request.body.base),
-    }),
+    async (request) => {
+      // What pages may frame is an Admin's to decide; the rest of the draft is any editor's.
+      if (
+        !can(userOf(request).role, "site.manage") &&
+        !sameEmbeds((await readDoc(db, "settings", "draft")).embeds, request.body.draft.embeds)
+      )
+        throw new HttpError(
+          403,
+          "forbidden",
+          "Only an Admin can change which sites pages may embed.",
+          { needs: "site.manage" },
+        );
+      return { data: await saveSettingsDraft(db, request.body.draft, request.body.base) };
+    },
   );
 
   app.get<{ Querystring: z.infer<typeof PruneQuery> }>(

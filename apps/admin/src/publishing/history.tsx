@@ -74,6 +74,7 @@ const triggers: Record<PublishTrigger, MessageKey> = {
   undo: "publishing.trigger.undo",
   rebuild: "publishing.trigger.rebuild",
   restore: "publishing.trigger.restore",
+  daily: "publishing.trigger.daily",
 };
 const triggerOf = (job: Job) => t(triggers[payloadOf(job).trigger ?? "manual"]);
 
@@ -452,6 +453,7 @@ const lines: Record<PublishTrigger, MessageKey> = {
   undo: "publishing.line.undo",
   rebuild: "publishing.line.rebuild",
   restore: "publishing.line.restore",
+  daily: "publishing.line.daily",
 };
 
 const isToday = (iso: string) => new Date(iso).toDateString() === new Date().toDateString();

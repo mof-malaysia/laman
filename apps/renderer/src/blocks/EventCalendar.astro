@@ -1,0 +1,65 @@
+---
+/**
+ * A listing's events by month, in the layout the block chose: Wall planner
+ * (CalendarWall) or Planner (CalendarPlanner). Months and filters are links
+ * to pages the publisher writes, and event cards and menus are native
+ * <details>, so both work without a script. The one script only tidies the
+ * cards: one open at a time, closed by Escape or a click elsewhere.
+ */
+import type { BlockOf, ListingRender } from "@fiscal-sb/blocks";
+import RSS from "@/components/ui/icons/rss.astro";
+import { band_cva } from "@/components/ui/section.variants";
+import CalendarPlanner from "./CalendarPlanner.astro";
+import CalendarWall from "./CalendarWall.astro";
+
+type Props = { block: BlockOf<"eventCalendar">; edit: boolean; lang: "ms" | "en"; listing?: ListingRender };
+const { block, edit, lang, listing } = Astro.props;
+const p = block.props;
+const calendar = listing?.calendar;
+---
+
+<section class={band_cva({ tone: p.tone })} data-event-calendar>
+  <div class="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-4 py-8 md:px-6">
+    {
+      !calendar ? (
+        <p class="bg-bg-washed text-txt-black-700 rounded-md p-6">{edit ? (lang === "en" ? "Events appear here." : "Acara muncul di sini.") : p.emptyText}</p>
+      ) : p.layout === "planner" ? (
+        <CalendarPlanner block={block} calendar={calendar} lang={lang} />
+      ) : (
+        <CalendarWall block={block} calendar={calendar} lang={lang} />
+      )
+    }
+    {
+      listing?.rss && (
+        <a href={listing.rss} class="text-txt-primary focus-ring text-body-sm flex w-fit items-center gap-1 rounded-xs underline">
+          <RSS class="size-4" aria-hidden="true" /> Langgan suapan RSS
+        </a>
+      )
+    }
+  </div>
+</section>
+
+<script>
+  // Event cards and menus: one open at a time, closed by Escape or a click outside.
+  const cards = () => document.querySelectorAll<HTMLDetailsElement>("[data-event-calendar] details[data-calendar-card][open]");
+  document.addEventListener(
+    "toggle",
+    (event) => {
+      const opened = event.target;
+      if (!(opened instanceof HTMLDetailsElement) || !opened.open || !opened.matches("[data-calendar-card]")) return;
+      for (const card of cards()) if (card !== opened && !card.contains(opened)) card.open = false;
+    },
+    true,
+  );
+  document.addEventListener("click", (event) => {
+    const target = event.target as Element | null;
+    for (const card of cards()) if (!target || !card.contains(target)) card.open = false;
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    for (const card of cards()) {
+      card.open = false;
+      card.querySelector("summary")?.focus();
+    }
+  });
+</script>

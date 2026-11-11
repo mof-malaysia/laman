@@ -1,0 +1,105 @@
+---
+/**
+ * The next few events of a listing, soonest first: each a card with its day,
+ * how many days are left, its time and place, and a link to the calendar.
+ * What's coming is worked out when the site is published (and again just
+ * after midnight), so "Esok" is right on the day it's read.
+ */
+import { type BlockOf, type EntryItem, dayOf } from "@fiscal-sb/blocks";
+import ArrowForwardIcon from "@/components/ui/icons/arrow-forward.astro";
+import ClockIcon from "@/components/ui/icons/clock.astro";
+import PinIcon from "@/components/ui/icons/pin.astro";
+import Link from "@/components/ui/link.astro";
+import Section from "@/components/ui/section.astro";
+import Tag from "@/components/ui/tag.astro";
+import { linked_item_class, stretched_link_class } from "@/components/ui/section.variants";
+import { clx } from "@/lib/ftds/utils";
+import { daysToGo, monthAbbr, whenShort, whereLabel } from "./events";
+import Field from "./Field.astro";
+
+type Props = {
+  block: BlockOf<"upcomingEvents">;
+  edit: boolean;
+  lang: "ms" | "en";
+  upcoming?: Record<string, { path: string; today: string; items: EntryItem[] }>;
+};
+const { block, edit, lang, upcoming } = Astro.props;
+const p = block.props;
+const count = Number(p.count);
+const source = p.listing ? upcoming?.[p.listing] : undefined;
+// Without its listing there are no items, so nothing reads the day.
+const today = source?.today ?? "";
+const items = (source?.items ?? []).filter((item) => !p.featuredOnly || item.pinned).slice(0, count);
+const columns = count === 2 ? "lg:grid-cols-2" : count === 4 ? "lg:grid-cols-4" : "lg:grid-cols-3";
+---
+
+{
+  items.length > 0 ? (
+    <Section tone={p.tone}>
+      {(p.title || edit) && (
+        <Field slot="title" name="title" edit={edit} placeholder="Tajuk">
+          {p.title}
+        </Field>
+      )}
+      {source && p.seeAll && (
+        <Link slot="aside" href={source.path} primary underline="hover" class="text-label-md inline-flex shrink-0 items-center gap-1.5 font-medium">
+          {p.seeAll}
+          <ArrowForwardIcon aria-hidden="true" class="size-4" />
+        </Link>
+      )}
+      <ul class={clx("grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6", columns)}>
+        {items.map((item) => {
+          const event = item.event!;
+          // A running event counts from today.
+          const first = dayOf(event.start);
+          const day = first < today ? today : first;
+          const near = p.countdown ? daysToGo(today, day, lang) : undefined;
+          const where = whereLabel(event);
+          return (
+            <li class={clx(linked_item_class, "bg-bg-white border-otl-gray-200 flex gap-4 rounded-lg border p-4")}>
+              <time datetime={first} class="bg-bg-primary-50 text-txt-primary flex size-16 shrink-0 flex-col items-center justify-center rounded-md">
+                <span class="text-heading-xs leading-none font-semibold">{Number(first.slice(8))}</span>
+                <span class="text-label-sm uppercase">{monthAbbr(first, lang)}</span>
+              </time>
+              <div class="flex min-w-0 flex-col gap-1.5">
+                {(near || item.category) && (
+                  <p class="flex flex-wrap items-center gap-2">
+                    {near && (
+                      <Tag variant={day === today ? "primary" : "default"} size="small">
+                        {near}
+                      </Tag>
+                    )}
+                    {item.category && <span class="text-label-sm text-txt-black-500">{item.category}</span>}
+                  </p>
+                )}
+                <h3 class="text-txt-black-900 text-body-lg font-semibold text-pretty">
+                  <a href={item.href} class={stretched_link_class}>
+                    {item.title}
+                  </a>
+                </h3>
+                <p class="text-body-sm text-txt-black-700 inline-flex items-center gap-1">
+                  <ClockIcon class="size-4 shrink-0" aria-hidden="true" />
+                  {whenShort(event, lang)}
+                </p>
+                {where && (
+                  <p class="text-body-sm text-txt-black-700 inline-flex items-center gap-1">
+                    <PinIcon class="size-4 shrink-0" aria-hidden="true" />
+                    {where}
+                  </p>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </Section>
+  ) : (
+    edit && (
+      <section class="bg-bg-white">
+        <p class="bg-bg-washed text-txt-black-700 mx-auto my-12 max-w-[70ch] rounded-md p-6 text-center">
+          {p.listing ? (p.featuredOnly ? "Tiada acara disematkan yang akan datang dalam penyenaraian ini." : "Tiada acara akan datang dalam penyenaraian ini.") : "Pilih halaman penyenaraian di panel."}
+        </p>
+      </section>
+    )
+  )
+}

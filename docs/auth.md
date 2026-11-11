@@ -31,6 +31,7 @@ Until now the builder has assumed one officer working alone, with no session (`d
 | Replace a media file, or put back the one it replaced (these change the live site at once)                                  |        |        ✓        |   ✓   |      ✓      |
 | Cancel a scheduled publish                                                                                                  |        |        ✓        |   ✓   |      ✓      |
 | Undo a publish, rebuild the whole site, retry a failed job, back up now                                                     |        |                 |   ✓   |      ✓      |
+| Change what pages may embed: built-in services and the site's own hosts (Settings, Embeds)                                  |        |                 |   ✓   |      ✓      |
 | Invite people, change their role, make reset links, clear two-factor, disable accounts, sign people out; read the audit log |        |                 |   ✓   |      ✓      |
 | Turn "Require two-factor" on or off                                                                                         |        |                 |       |      ✓      |
 

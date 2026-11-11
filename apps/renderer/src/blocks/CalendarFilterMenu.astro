@@ -1,0 +1,39 @@
+---
+/**
+ * The category filter as a menu button: a native <details> whose items are
+ * links to each category's page for the month, with how many events each
+ * has. It opens without a script.
+ */
+import type { CalendarRender } from "@fiscal-sb/blocks";
+import ChevronDown from "@/components/ui/icons/chevron-down.astro";
+import UserGroup from "@/components/ui/icons/user-group.astro";
+import { clx } from "@/lib/ftds/utils";
+import { allOf, filterOptions } from "./events";
+
+type Props = { calendar: CalendarRender; label: string; lang: "ms" | "en" };
+const { calendar, label, lang } = Astro.props;
+const options = filterOptions(calendar, "category", allOf(label, lang));
+const shown = options.find((o) => o.current)!;
+---
+
+<details class="relative" data-calendar-card>
+  <summary class="focus-ring text-label-md border-otl-gray-200 bg-bg-white text-txt-black-900 hover:bg-bg-washed flex h-9 cursor-pointer list-none items-center gap-2 rounded-full border px-4 font-medium [&::-webkit-details-marker]:hidden">
+    <UserGroup class="text-txt-black-500 size-4" aria-hidden="true" />
+    <span class="sr-only">{label}: </span>{shown.name}
+    <ChevronDown class="size-4" aria-hidden="true" />
+  </summary>
+  <nav aria-label={label} class="bg-bg-white border-otl-gray-200 shadow-context-menu absolute end-0 top-full z-30 mt-1.5 w-64 rounded-lg border p-1.5">
+    <ul>
+      {
+        options.map((o) => (
+          <li>
+            <a href={o.href} aria-current={o.current ? "page" : undefined} class={clx("focus-ring text-body-sm hover:bg-bg-washed flex items-center justify-between gap-3 rounded-xs px-2.5 py-2", o.current ? "text-txt-primary font-medium" : "text-txt-black-900")}>
+              {o.name}
+              <span class="text-body-xs text-txt-black-500 tabular-nums">{o.count}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+</details>

@@ -16,7 +16,9 @@ export type Widget =
   | "group"
   | "media"
   | "toggle"
-  | "page";
+  | "page"
+  /** An address for the Embed block: text, with what the site allows to embed. */
+  | "embed";
 
 type Meta = {
   /** Shown in the property panel. */

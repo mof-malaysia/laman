@@ -10,7 +10,9 @@ import CtaSplit from "./CtaSplit.astro";
 import Details from "./Details.astro";
 import DownloadList from "./DownloadList.astro";
 import Eligibility from "./Eligibility.astro";
+import Embed from "./Embed.astro";
 import EntryList from "./EntryList.astro";
+import EventCalendar from "./EventCalendar.astro";
 import EventDetails from "./EventDetails.astro";
 import Faq from "./Faq.astro";
 import FeatureGrid from "./FeatureGrid.astro";
@@ -28,13 +30,14 @@ import Prose from "./Prose.astro";
 import ServiceHighlights from "./ServiceHighlights.astro";
 import StatsBand from "./StatsBand.astro";
 import Steps from "./Steps.astro";
+import UpcomingEvents from "./UpcomingEvents.astro";
 
 type Props = { block: Block; input: RenderInput };
 const { block, input } = Astro.props;
 const edit = input.mode === "edit";
 const lang = input.locale;
 const media = input.media ?? {};
-const { site, listing, latest, breadcrumb } = input;
+const { site, listing, latest, upcoming, breadcrumb } = input;
 /** The column of a block with a width setting (column.ts). */
 const column = (b: { props: { width?: "page" | "article" | "wide" } }) => columnOf(b.props.width, input);
 ---
@@ -56,6 +59,8 @@ const column = (b: { props: { width?: "page" | "article" | "wide" } }) => column
 {block.type === "contact" && <Contact block={block} width={column(block)} edit={edit} lang={lang} site={site} />}
 {block.type === "entryList" && <EntryList block={block} edit={edit} lang={lang} listing={listing} />}
 {block.type === "latestEntries" && <LatestEntries block={block} edit={edit} lang={lang} latest={latest} />}
+{block.type === "eventCalendar" && <EventCalendar block={block} edit={edit} lang={lang} listing={listing} />}
+{block.type === "upcomingEvents" && <UpcomingEvents block={block} edit={edit} lang={lang} upcoming={upcoming} />}
 {block.type === "insetText" && <InsetText block={block} width={column(block)} edit={edit} />}
 {block.type === "details" && <Details block={block} width={column(block)} edit={edit} />}
 {block.type === "statsBand" && <StatsBand block={block} edit={edit} />}
@@ -64,4 +69,5 @@ const column = (b: { props: { width?: "page" | "article" | "wide" } }) => column
 {block.type === "ctaSplit" && <CtaSplit block={block} edit={edit} media={media} />}
 {block.type === "partnerGrid" && <PartnerGrid block={block} edit={edit} lang={lang} media={media} siteUrl={site.url} />}
 {block.type === "logoCloud" && <LogoCloud block={block} edit={edit} media={media} />}
-{block.type === "eventDetails" && <EventDetails block={block} width={column(block)} lang={lang} />}
+{block.type === "eventDetails" && <EventDetails block={block} width={column(block)} lang={lang} event={input.entry?.event} />}
+{block.type === "embed" && <Embed block={block} width={column(block)} edit={edit} live={input.mode === "publish"} lang={lang} rules={site.embeds} />}

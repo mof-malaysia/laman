@@ -3,6 +3,11 @@ import {
   Block,
   blockFields,
   blocks,
+  embedDecision,
+  embedHost,
+  embedHostPattern,
+  embedServiceIds,
+  embedServices,
   fieldShown,
   kindIssues,
   newBlock,
@@ -118,6 +123,106 @@ describe("block registry", () => {
       props: { ...block.props, primaryAction: { label: "x", href: "javascript:alert(1)" } },
     };
     expect(Block.safeParse(bad).success).toBe(false);
+  });
+
+  it("takes an https address to embed, and nothing else", () => {
+    const block = newBlock("embed", "e1");
+    const withUrl = (url: string) => Block.safeParse({ ...block, props: { ...block.props, url } });
+    const address = "https://Peta.Agensi.gov.my/embed?id=42&zoom=7#pusat";
+    expect(withUrl(address).success).toBe(true);
+    // Cleared in the panel: the block then shows only on the canvas.
+    expect(withUrl("").success).toBe(true);
+    for (const refused of [
+      "http://peta.agensi.gov.my/embed",
+      "//peta.agensi.gov.my/embed",
+      "https://pengguna:rahsia@peta.agensi.gov.my/embed",
+      "https://localhost/embed",
+      "https://peta.agensi.gov.my/embed?q=<script>",
+      "javascript:alert(1)",
+      '<iframe src="https://peta.agensi.gov.my/embed"></iframe>',
+    ])
+      expect(withUrl(refused).success, refused).toBe(false);
+    expect(kindIssues("listing", [{ type: "embed" }, { type: "entryList" }])).toEqual([
+      "A listing page can't use the Embed block",
+    ]);
+  });
+
+  const none = { services: [], hosts: [] };
+
+  it("frames a site's own hosts whole, by their exact name", () => {
+    const rules = { services: [], hosts: ["peta.agensi.gov.my"] };
+    const allowed = (address: string, r = rules) => embedDecision(address, r).allowed;
+    expect(embedHost("https://Peta.Agensi.gov.my:8443/embed")).toBe("peta.agensi.gov.my");
+    expect(allowed("https://peta.agensi.gov.my/embed?id=42")).toBe(true);
+    expect(allowed("https://PETA.agensi.gov.my")).toBe(true);
+    for (const refused of [
+      "https://agensi.gov.my/embed",
+      "https://lain.peta.agensi.gov.my/embed",
+      "https://peta.agensi.gov.my.contoh.my/embed",
+      "https://contoh.my/?next=https://peta.agensi.gov.my/embed",
+      "https://contoh.my/peta.agensi.gov.my",
+      "http://peta.agensi.gov.my/embed",
+    ])
+      expect(embedDecision(refused, rules), refused).toMatchObject({ allowed: false });
+    expect(embedDecision("https://contoh.my/x", rules)).toMatchObject({ reason: "notListed" });
+    expect(embedDecision("contoh.my/x", rules)).toMatchObject({ reason: "address" });
+    expect(allowed("https://peta.agensi.gov.my/embed", none)).toBe(false);
+  });
+
+  it("frames a built-in service's embed addresses only, and only when it's switched on", () => {
+    const video = "https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0";
+    expect(embedDecision(video, none)).toMatchObject({
+      allowed: false,
+      reason: "serviceOff",
+      service: { name: "YouTube" },
+    });
+    expect(embedDecision(video, { services: ["vimeo"], hosts: [] })).toMatchObject({
+      reason: "serviceOff",
+    });
+    const on = { services: ["youtube", "googleMaps", "powerBi", "openStreetMap"], hosts: [] };
+    for (const allowed of [
+      video,
+      "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ",
+      "https://www.google.com/maps/embed?pb=!1m18",
+      "https://www.google.com/maps/d/embed?mid=1abc",
+      "https://app.powerbi.com/reportEmbed?reportId=0b6e6c4e&autoAuth=true",
+      "https://www.openstreetmap.org/export/embed.html?bbox=101.68%2C2.90",
+    ])
+      expect(embedDecision(allowed, on), allowed).toMatchObject({ allowed: true });
+    for (const refused of [
+      // The rest of a service's site, which switching it on doesn't allow.
+      "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      "https://www.google.com/search?q=maps/embed",
+      "https://www.google.com/maps/embedded",
+      // Publish to web: open to anyone with the link.
+      "https://app.powerbi.com/view?r=eyJrIjoiYWJjIn0",
+      "https://app.powerbi.com/reportEmbed/more",
+      // A browser would read these as another path.
+      "https://www.youtube.com/embed/../watch?v=dQw4w9WgXcQ",
+      "https://www.youtube.com/embed/%2e%2e/watch",
+      "https://www.youtube.com/embed//x",
+      "https://www.youtube.com:8443/embed/dQw4w9WgXcQ",
+    ])
+      expect(embedDecision(refused, on), refused).toMatchObject({
+        allowed: false,
+        reason: "serviceAddress",
+      });
+    // A site that lists a service's host itself allows all of it.
+    expect(
+      embedDecision("https://www.youtube.com/watch?v=x", {
+        services: [],
+        hosts: ["www.youtube.com"],
+      }).allowed,
+    ).toBe(true);
+  });
+
+  it("names each built-in service once, with hosts the settings would accept", () => {
+    expect(new Set(embedServiceIds).size).toBe(embedServices.length);
+    for (const service of embedServices)
+      for (const source of service.sources) {
+        expect(source.host, service.id).toMatch(embedHostPattern);
+        for (const path of source.paths) expect(path.startsWith("/"), service.id).toBe(true);
+      }
   });
 
   it("rejects unknown block types", () => {

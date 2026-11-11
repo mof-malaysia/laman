@@ -53,6 +53,7 @@ export const summaryRoutes: FastifyPluginAsync<{
         footer: [],
         contact: { address: "", phone: "", email: "", hours: "" },
         social: [],
+        embeds: { services: [], hosts: [] },
         theme: { primary: ftdsPrimary },
       },
     }).then(

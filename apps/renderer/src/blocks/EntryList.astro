@@ -4,14 +4,13 @@
  * stops at three) or a NewsList list, a category filter as links to each
  * category's page, a Pager over the listing's pages, and its RSS feed.
  */
-import type { BlockOf, ListingRender } from "@fiscal-sb/blocks";
+import { type BlockOf, type ListingRender, listingPagePath } from "@fiscal-sb/blocks";
 import NewsList from "@/components/blocks/news-list.astro";
 import Pager from "@/components/ui/pager.astro";
 import RSS from "@/components/ui/icons/rss.astro";
 import { band_cva } from "@/components/ui/section.variants";
 import { isoDay } from "./date";
 import EntryCards from "./EntryCards.astro";
-import { listingHref } from "./listing";
 
 type Props = { block: BlockOf<"entryList">; edit: boolean; lang: "ms" | "en"; listing?: ListingRender };
 const { block, edit, lang, listing } = Astro.props;
@@ -19,7 +18,8 @@ const p = block.props;
 const items = (listing?.items ?? []).map((item) => ({
   title: item.title,
   href: item.href,
-  date: p.showDate ? isoDay(item.date) : "",
+  // An event shows its own day, not the day it was published.
+  date: p.showDate ? isoDay(item.event?.start ?? item.date) : "",
   ...(item.category && { category: item.category }),
   ...(p.showSummary && item.summary && { summary: item.summary }),
   ...(p.style === "cards" && item.image && { image: item.image }),
@@ -31,8 +31,8 @@ const pager =
     ? {
         current: listing.page,
         total: listing.pages,
-        href: (n: number) => listingHref(base, n, listing.category),
-        firstHref: listingHref(base, 1, listing.category),
+        href: (n: number) => listingPagePath(base, n, listing.category),
+        firstHref: listingPagePath(base, 1, listing.category),
         lang,
       }
     : undefined;

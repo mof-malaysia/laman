@@ -3,13 +3,21 @@
  * a parent, siblings in `position` order. A page's path is the slugs from the
  * home page down, so it follows renames and moves without being stored.
  */
-import { SEARCH_INDEX_DIR, SEARCH_PATH, pathOf } from "@fiscal-sb/blocks";
+import {
+  type PageKind,
+  SEARCH_INDEX_DIR,
+  SEARCH_PATH,
+  listingReservedSlug,
+  pathOf,
+} from "@fiscal-sb/blocks";
 import { sql } from "kysely";
 import type { Db } from "../db/index.js";
 import { type Loads, once } from "./loads.js";
 import type { PagesTable } from "../db/schema.js";
 
-export type TreeNode = Pick<PagesTable, "id" | "parent_id" | "slug" | "position">;
+export type TreeNode = Pick<PagesTable, "id" | "parent_id" | "slug" | "position"> & {
+  kind: PageKind;
+};
 
 /** Slugs the published site uses for itself under the home page: site search's page and index. */
 const reservedSlugs = new Set([SEARCH_PATH.slice(1), SEARCH_INDEX_DIR]);
@@ -38,9 +46,15 @@ export class Tree {
     return this.#children.get(null)?.[0];
   }
 
-  /** Whether `slug` under `parentId` is an address the published site keeps for itself. */
+  /**
+   * Whether `slug` under `parentId` is an address the published site keeps
+   * for itself: search under the home page, a listing's own pages under a
+   * listing (kategori, halaman, lokasi, 2026-11).
+   */
   reserved(parentId: string | null, slug: string) {
-    return parentId !== null && parentId === this.home?.id && reservedSlugs.has(slug);
+    if (parentId === null) return false;
+    if (parentId === this.home?.id && reservedSlugs.has(slug)) return true;
+    return this.#nodes.get(parentId)?.kind === "listing" && listingReservedSlug(slug);
   }
 
   get(id: string): TreeNode | undefined {
@@ -103,7 +117,7 @@ export class Tree {
 export async function loadTree(db: Db): Promise<Tree> {
   const rows = await db
     .selectFrom("pages")
-    .select(["id", "parent_id", "slug", "position"])
+    .select(["id", "parent_id", "slug", "position", "kind"])
     .where("deleted_at", "is", null)
     .execute();
   return new Tree(rows);

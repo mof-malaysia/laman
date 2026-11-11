@@ -13,9 +13,10 @@ import {
   type SiteSettings,
   socialPlatforms,
 } from "@fiscal-sb/contracts";
+import { type EmbedService, embedAddresses, embedHost, embedServices } from "@fiscal-sb/blocks";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { type ReactNode, useEffect, useId, useState } from "react";
+import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { SettingsRow } from "@/components/blocks/settings-layout";
 import {
   SavedNote,
@@ -31,10 +32,23 @@ import { PutBackPrevious, useLeaveGuard } from "@/components/unsaved-edits";
 import { Button } from "@/components/ui/button";
 import { Callout, CalloutContent, CalloutTitle } from "@/components/ui/callout";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Combobox,
+  ComboboxChip,
+  ComboboxChipRemove,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxValue,
+} from "@/components/ui/combobox";
 import { Field, FieldDescription, FieldError, FieldItem, FieldLabel } from "@/components/ui/field";
 import { Fieldset, FieldsetLegend } from "@/components/ui/fieldset";
 import { CheckShieldIcon } from "@/components/ui/icons/check-shield";
 import { ClockIcon } from "@/components/ui/icons/clock";
+import { DesktopIcon } from "@/components/ui/icons/desktop";
 import { EyeShowIcon } from "@/components/ui/icons/eye-show";
 import { FolderIcon } from "@/components/ui/icons/folder";
 import { GlobeIcon } from "@/components/ui/icons/globe";
@@ -73,6 +87,7 @@ import { useSummary } from "@/lib/pages";
 import { SwitchSetting } from "@/components/switch-setting";
 import { MediaField } from "@/editor/media-field";
 import { BackupsSection } from "./backups-section";
+import { embedLogos } from "./embed-logos";
 import { formatBytes } from "@/media/format";
 import { Screen } from "@/components/screen";
 
@@ -85,6 +100,7 @@ const documentSections = [
   "search",
   "publishing",
   "analytics",
+  "embeds",
 ] as const satisfies readonly (keyof SiteSettings)[];
 type DocumentSection = (typeof documentSections)[number];
 
@@ -116,6 +132,7 @@ const sectionLabels: Record<SettingsSectionId, MessageKey> = {
   search: "settings.search",
   publishing: "settings.publishing",
   analytics: "settings.analytics",
+  embeds: "settings.embeds",
   language: "settings.language",
   security: "settings.security",
   backups: "settings.backups",
@@ -131,6 +148,7 @@ const sectionIcons: Record<SettingsSectionId, ReactNode> = {
   search: <SearchIcon />,
   publishing: <ClockIcon />,
   analytics: <EyeShowIcon />,
+  embeds: <DesktopIcon />,
   language: <GlobeIcon />,
   security: <CheckShieldIcon />,
   backups: <FolderIcon />,
@@ -143,6 +161,7 @@ const sectionDescriptions: Partial<Record<SettingsSectionId, MessageKey>> = {
   social: "settings.social.description",
   phase: "settings.phase.description",
   search: "settings.search.description",
+  embeds: "settings.embeds.description",
 };
 
 /**
@@ -156,6 +175,7 @@ const sectionApplies: Partial<Record<SettingsSectionId, "publish" | "save" | "no
   phase: "publish",
   search: "publish",
   analytics: "publish",
+  embeds: "publish",
   publishing: "save",
   language: "save",
   security: "now",
@@ -638,6 +658,17 @@ function renderFields<S extends DocumentSection>(
           })}
         </>
       );
+    case "embeds": {
+      const v = value as SiteSettings["embeds"];
+      const setE = set as (u: Partial<SiteSettings["embeds"]>) => void;
+      return (
+        <EmbedFields
+          value={v}
+          set={setE}
+          error={v.hosts.map((_, index) => issue(`hosts.${index}`)).find(Boolean) ?? issue("hosts")}
+        />
+      );
+    }
     case "analytics": {
       const v = value as SiteSettings["analytics"];
       const setA = set as (u: Partial<SiteSettings["analytics"]>) => void;
@@ -662,12 +693,15 @@ function renderFields<S extends DocumentSection>(
 
 /** A checkbox row named by its title, with its description read after it. */
 function CheckRow({
+  icon,
   title,
   description,
   checked,
   disabled,
   onChange,
 }: {
+  /** A decorative mark before the title. */
+  icon?: ReactNode;
   title: string;
   description?: ReactNode;
   checked: boolean;
@@ -677,7 +711,18 @@ function CheckRow({
   const id = useId();
   return (
     <SettingsRow
-      title={title}
+      title={
+        icon ? (
+          <span className="flex items-center gap-2">
+            <span className="text-txt-black-700 [&>svg]:size-5" aria-hidden="true">
+              {icon}
+            </span>
+            {title}
+          </span>
+        ) : (
+          title
+        )
+      }
       description={description && <span id={id}>{description}</span>}
       control={
         <Checkbox
@@ -689,6 +734,120 @@ function CheckRow({
         />
       }
     />
+  );
+}
+
+/**
+ * What an officer typed or pasted as a site, as the host name the renderer
+ * compares (`embedHost`): "https://peta.agensi.gov.my:8443/x" is
+ * "peta.agensi.gov.my". Empty until it is one.
+ */
+const hostOf = (text: string) =>
+  embedHost(`https://${text.trim().replace(/^https?:\/\//i, "")}`) ?? "";
+
+/** A service's own mark (embed-logos.ts), or the Embed block's icon where we have none. */
+function embedIcon(service: EmbedService) {
+  const logo = embedLogos[service.id];
+  if (!logo) return <DesktopIcon />;
+  return (
+    <svg viewBox="0 0 24 24" fill={logo.hex}>
+      <path d={logo.path} />
+    </svg>
+  );
+}
+
+/** What pages may frame: built-in services to switch on, and the site's own hosts. Admins only. */
+function EmbedFields({
+  value,
+  set,
+  error,
+}: {
+  value: SiteSettings["embeds"];
+  set: (update: Partial<SiteSettings["embeds"]>) => void;
+  error: string | undefined;
+}) {
+  const canManage = useCan("site.manage");
+  const anchor = useRef<HTMLDivElement>(null);
+  const [query, setQuery] = useState("");
+  const on = new Set(value.services);
+  // The one thing the list offers: what's typed, as a host name, once it is one and isn't there yet.
+  const typed = hostOf(query);
+  const offered = typed && !value.hosts.includes(typed) ? [typed] : [];
+  return (
+    <>
+      {!canManage && (
+        <Callout variant="info">
+          <CalloutTitle>{t("settings.embeds.adminOnly")}</CalloutTitle>
+        </Callout>
+      )}
+      <Fieldset>
+        <FieldsetLegend>{t("settings.embeds.services")}</FieldsetLegend>
+        {embedServices.map((service) => (
+          <CheckRow
+            key={service.id}
+            icon={embedIcon(service)}
+            title={service.name}
+            description={embedAddresses(service).join(", ")}
+            checked={on.has(service.id)}
+            disabled={!canManage}
+            onChange={(checked) =>
+              set({
+                // Kept in the registry's order, so the same choice always saves the same list.
+                services: embedServices
+                  .map((s) => s.id)
+                  .filter((id) => (id === service.id ? checked : on.has(id))),
+              })
+            }
+          />
+        ))}
+      </Fieldset>
+      <Field name="hosts" invalid={Boolean(error)} className="mt-4">
+        <FieldLabel>{t("settings.embeds.hosts")}</FieldLabel>
+        <Combobox<string, true>
+          multiple
+          disabled={!canManage}
+          items={[...value.hosts, ...offered]}
+          filteredItems={offered}
+          value={value.hosts}
+          onValueChange={(hosts) => {
+            set({ hosts });
+            setQuery("");
+          }}
+          inputValue={query}
+          onInputValueChange={setQuery}
+          autoHighlight
+        >
+          <ComboboxChips ref={anchor}>
+            <ComboboxValue>
+              {(hosts: string[]) =>
+                hosts.map((host) => (
+                  <ComboboxChip key={host}>
+                    {host}
+                    <ComboboxChipRemove aria-label={t("settings.embeds.remove", { host })} />
+                  </ComboboxChip>
+                ))
+              }
+            </ComboboxValue>
+            <ComboboxChipsInput
+              // An example only while the list is empty: beside chips it reads as one more site.
+              placeholder={value.hosts.length ? undefined : "peta.agensi.gov.my"}
+              spellCheck={false}
+            />
+          </ComboboxChips>
+          <ComboboxContent anchor={anchor}>
+            <ComboboxEmpty>{t("settings.embeds.hostsEmpty")}</ComboboxEmpty>
+            <ComboboxList>
+              {(host: string) => (
+                <ComboboxItem key={host} value={host}>
+                  {t("settings.embeds.add", { host })}
+                </ComboboxItem>
+              )}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
+        <FieldError>{error}</FieldError>
+      </Field>
+    </>
   );
 }
 
@@ -816,6 +975,13 @@ function settingsChanges(from: SiteSettings, to: SiteSettings): string[] {
   change("settings.search.hide", onOff(from.search.hideSite), onOff(to.search.hideSite));
   change("settings.search.sitemap", onOff(from.search.sitemap), onOff(to.search.sitemap));
   change("settings.analytics.on", onOff(from.analytics.on), onOff(to.analytics.on));
+  text("settings.embeds.services", (s) =>
+    embedServices
+      .filter((service) => s.embeds.services.includes(service.id))
+      .map((service) => service.name)
+      .join(", "),
+  );
+  text("settings.embeds.hosts", (s) => s.embeds.hosts.join(", "));
   return lines;
 }
 

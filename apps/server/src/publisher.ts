@@ -20,13 +20,15 @@ import {
   type RenderInput,
   SEARCH_INDEX_DIR,
   SEARCH_PATH,
+  calendarPath,
+  listingPagePath,
   mediaIdsOf,
 } from "@fiscal-sb/blocks";
 import type { PublishLogEntry } from "@fiscal-sb/contracts";
 import { mediaFolders } from "./content/media.js";
 import { publishedPages } from "./content/pages.js";
 import { type LiveRedirect, liveRedirects } from "./content/redirects.js";
-import { listingPagePath, rssFeed } from "./content/entries.js";
+import { rssFeed } from "./content/entries.js";
 import { newLoads } from "./content/loads.js";
 import { renderInputFor } from "./content/render-input.js";
 import { readDoc, siteContext } from "./content/site.js";
@@ -227,7 +229,7 @@ export async function publishSite({ db, dataDir, siteUrl, full = false }: Publis
   const write = async (
     page: (typeof rendered)[number],
     path: string,
-    extra: { listingPage?: number; category?: string } = {},
+    extra: { listingPage?: number; category?: string; location?: string; month?: string } = {},
   ) => {
     const input = await renderInputFor(db, {
       pageId: page.id,
@@ -286,7 +288,21 @@ export async function publishSite({ db, dataDir, siteUrl, full = false }: Publis
       return first;
     };
     const input = await writeListing();
-    for (const category of input.listing?.categories ?? []) await writeListing(category.slug);
+    const calendar = input.listing?.calendar;
+    if (calendar) {
+      // An event calendar: the current month at its own address, then each month, the same again per category and location.
+      for (const filter of [
+        undefined,
+        ...calendar.categories.map((c) => ({ kind: "category" as const, slug: c.slug })),
+        ...calendar.locations.map((l) => ({ kind: "location" as const, slug: l.slug })),
+      ]) {
+        const by = filter && { [filter.kind]: filter.slug };
+        if (filter) await write(page, calendarPath(page.path, { filter }), by);
+        for (const month of calendar.months)
+          await write(page, calendarPath(page.path, { month, filter }), { ...by, month });
+      }
+    } else
+      for (const category of input.listing?.categories ?? []) await writeListing(category.slug);
     if (input.listing?.rss)
       await putText(
         input.listing.rss.slice(1),

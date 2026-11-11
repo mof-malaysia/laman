@@ -1,0 +1,218 @@
+---
+/**
+ * Event calendar, Planner layout: a small calendar to steer by and the
+ * filters beside the month's events, listed day by day. A day with events
+ * links down to it, and the day it lands on is highlighted (:target), so it
+ * needs no script. Narrow screens put the events before the filters.
+ */
+import type { BlockOf, CalendarRender, EntryItem } from "@fiscal-sb/blocks";
+import { daysBetween, eventDays } from "@fiscal-sb/blocks";
+import Tag from "@/components/ui/tag.astro";
+import { clx } from "@/lib/ftds/utils";
+import CalendarMonthNav from "./CalendarMonthNav.astro";
+import { allOf, dayLabel, daysToGo, filterOptions, monthDays, monthLabel, monthWeeks, toneOf, weekdayNames, weekdayOf, whenShort, whereLabel } from "./events";
+
+type Props = { block: BlockOf<"eventCalendar">; calendar: CalendarRender; lang: "ms" | "en" };
+const { block, calendar, lang } = Astro.props;
+const p = block.props;
+const en = lang === "en";
+const m = calendar.month;
+const byDay = monthDays(calendar.items, m);
+// The list puts each event once, on its first day in the month; the small calendar marks every day it runs.
+const listed = new Map<string, EntryItem[]>();
+for (const item of calendar.items) {
+  const first = eventDays(item.event!).find((d) => d.startsWith(m))!;
+  listed.set(first, [...(listed.get(first) ?? []), item]);
+}
+const days = [...listed].toSorted(([a], [b]) => a.localeCompare(b));
+// The current month has no "this month" link, and is the one month whose list says what's still to come.
+const today = !calendar.thisMonth ? calendar.today : undefined;
+const coming = today && calendar.items.filter((item) => eventDays(item.event!).at(-1)! >= today).length;
+const weekdays = weekdayNames(lang);
+const weekdaysLong = weekdayNames(lang, "long");
+const tone = (item: EntryItem) => toneOf(calendar.locations, item.event?.locationSlug);
+const categoryLabel = p.categoryLabel || (en ? "Category" : "Kategori");
+const locationLabel = en ? "Location" : "Lokasi";
+
+const groups = [
+  ...(p.locationFilter && calendar.locations.length
+    ? [{ label: locationLabel, kind: "location" as const, options: filterOptions(calendar, "location", allOf(locationLabel, lang)) }]
+    : []),
+  ...(p.categoryFilter && calendar.categories.length
+    ? [{ label: categoryLabel, kind: "category" as const, options: filterOptions(calendar, "category", allOf(categoryLabel, lang)) }]
+    : []),
+];
+---
+
+<div class="grid grid-cols-1 gap-6 md:grid-cols-[18.75rem_minmax(0,1fr)] md:grid-rows-[auto_1fr] md:gap-x-10 md:[grid-template-areas:'cal_main'_'filters_main'] [grid-template-areas:'cal'_'main'_'filters']">
+  <div class="bg-bg-white border-otl-gray-200 rounded-lg border p-3 [grid-area:cal]">
+    <CalendarMonthNav calendar={calendar} lang={lang} size="sm" />
+    <table class="mt-1 w-full table-fixed text-center">
+      <caption class="sr-only">{monthLabel(m, lang)}</caption>
+      <thead>
+        <tr>
+          {weekdays.map((name, i) => <th scope="col" abbr={weekdaysLong[i]} class="text-label-compact text-txt-black-500 py-1.5 font-medium">{name.slice(0, 2)}</th>)}
+        </tr>
+      </thead>
+      <tbody>
+        {
+          monthWeeks(m).map((week) => (
+            <tr>
+              {week.map((day) => {
+                if (!day.startsWith(m)) return <td />;
+                const items = byDay.get(day);
+                const isToday = day === calendar.today;
+                const places = items ? [...new Set(items.map((i) => tone(i).dot))].slice(0, 3) : [];
+                const number = (
+                  <>
+                    <span class="sr-only">{dayLabel(day, lang)}{items ? `, ${items.length} ${en ? "events" : "acara"}` : ""}</span>
+                    <span aria-hidden="true">{Number(day.slice(8))}</span>
+                    {places.length > 0 && (
+                      <span class="absolute bottom-1 left-1/2 flex -translate-x-1/2 gap-0.5" aria-hidden="true">
+                        {places.map((dot) => <span class={clx("size-1 rounded-full", dot)} />)}
+                      </span>
+                    )}
+                  </>
+                );
+                const cls = clx(
+                  "text-body-sm relative mx-auto grid h-9 w-full max-w-10 place-items-center rounded-md tabular-nums",
+                  isToday && "ring-bg-primary-600 text-txt-primary font-semibold ring-[1.5px] ring-inset",
+                );
+                return (
+                  <td class="p-0.5">
+                    {items ? (
+                      <a href={`#hari-${day}`} class={clx(cls, "focus-ring text-txt-black-900 hover:bg-bg-washed")}>
+                        {number}
+                      </a>
+                    ) : (
+                      <span class={clx(cls, !isToday && "text-txt-black-500")}>{number}</span>
+                    )}
+                  </td>
+                );
+              })}
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+    {
+      calendar.thisMonth && (
+        <div class="border-otl-gray-200 mt-2 border-t px-1 pt-2">
+          <a href={calendar.thisMonth} class="focus-ring text-label-md text-txt-primary rounded-xs font-medium hover:underline">
+            {en ? "This month" : "Bulan ini"}
+          </a>
+        </div>
+      )
+    }
+  </div>
+
+  {
+    groups.length > 0 && (
+      <div class="grid gap-6 [grid-area:filters] sm:grid-cols-2 md:grid-cols-1">
+        {groups.map((g) => (
+          <nav aria-label={g.label}>
+            <h3 class="text-label-compact text-txt-black-500 mb-1.5 font-medium tracking-wide uppercase">{g.label}</h3>
+            <ul>
+              {g.options.map((o) => (
+                <li>
+                  <a
+                    href={o.href}
+                    aria-current={o.current ? "page" : undefined}
+                    class={clx(
+                      "focus-ring text-body-sm flex items-center gap-2.5 rounded-md px-2.5 py-1.5",
+                      o.current ? "bg-bg-white text-txt-black-900 shadow-card font-medium" : "text-txt-black-700 hover:bg-bg-washed",
+                    )}
+                  >
+                    {g.kind === "location" && o.slug && <span class={clx("size-2 shrink-0 rounded-full", toneOf(calendar.locations, o.slug).dot)} aria-hidden="true" />}
+                    {o.name}
+                    <span class="text-body-xs text-txt-black-500 ms-auto font-normal tabular-nums">{o.count}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        ))}
+      </div>
+    )
+  }
+
+  <div class="min-w-0 [grid-area:main]">
+    <div class="border-otl-gray-200 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b pb-3">
+      <h2 class="text-heading-2xs text-txt-black-900 font-semibold">{monthLabel(m, lang)}</h2>
+      <p class="text-body-sm text-txt-black-700">
+        {calendar.items.length} {en ? "events" : "acara"}{today && ` · ${coming} ${en ? "coming up" : "akan datang"}`}
+      </p>
+    </div>
+    {
+      days.length ? (
+        <ol>
+          {days.map(([day, items]) => {
+            // "Hari ini" and "Esok" only: further off, the date says enough.
+            const soon = today && daysBetween(today, day) <= 1 ? daysToGo(today, day, lang) : undefined;
+            return (
+              <li
+                id={`hari-${day}`}
+                class={clx(
+                  "border-otl-gray-200 target:bg-bg-primary-50 -mx-3 grid scroll-mt-6 grid-cols-[3rem_1fr] gap-3 rounded-lg border-b px-3 py-4 last:border-b-0 sm:grid-cols-[4rem_1fr] sm:gap-5",
+                  today && day < today && "opacity-60",
+                )}
+              >
+                <p class="pt-0.5 text-center leading-tight">
+                  <span class={clx("text-heading-2xs block font-semibold tabular-nums", day === calendar.today ? "text-txt-primary" : "text-txt-black-900")}>{Number(day.slice(8))}</span>
+                  <span class="text-label-sm text-txt-black-500 font-medium">{weekdays[weekdayOf(day)]}</span>
+                  <span class="sr-only">{dayLabel(day, lang)}</span>
+                  {soon && (
+                    <Tag variant="primary" size="small" class="mt-1.5">
+                      {soon}
+                    </Tag>
+                  )}
+                </p>
+                <ul class="flex min-w-0 flex-col gap-1">
+                  {items.map((item) => {
+                    const where = whereLabel(item.event!);
+                    return (
+                    <li>
+                      <a href={item.href} class="group focus-ring -mx-3 grid gap-x-4 gap-y-0.5 rounded-md px-3 py-2 hover:bg-black/[.03] sm:grid-cols-[9.5rem_1fr]">
+                        <span class="text-body-sm text-txt-black-700 tabular-nums">
+                          {whenShort(item.event!, lang)}
+                        </span>
+                        <span class="min-w-0">
+                          <span class="text-body-md text-txt-black-900 block font-semibold text-pretty group-hover:underline group-hover:underline-offset-4">{item.title}</span>
+                          <span class="text-body-sm text-txt-black-700 mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                            {where && (
+                              <span class="inline-flex items-center gap-1.5">
+                                <span class={clx("size-2 shrink-0 rounded-full", tone(item).dot)} aria-hidden="true" />
+                                {where}
+                              </span>
+                            )}
+                            {item.category && <span>{item.category}</span>}
+                          </span>
+                        </span>
+                      </a>
+                    </li>
+                    );
+                  })}
+                </ul>
+              </li>
+            );
+          })}
+        </ol>
+      ) : (
+        <div class="text-txt-black-700 flex flex-col items-center gap-3 py-10 text-center">
+          <p>{p.emptyText}</p>
+          {calendar.filter ? (
+            <a href={calendar.all} class="focus-ring text-label-md border-otl-gray-200 bg-bg-white rounded-full border px-4 py-1.5 font-medium">
+              {en ? "Show every event" : "Papar semua acara"}
+            </a>
+          ) : (
+            calendar.next && (
+              <a href={calendar.next.href} class="focus-ring text-label-md text-txt-primary font-medium hover:underline">
+                {en ? `See ${monthLabel(calendar.next.month, lang)}` : `Lihat ${monthLabel(calendar.next.month, lang)}`}
+              </a>
+            )
+          )}
+        </div>
+      )
+    }
+  </div>
+</div>

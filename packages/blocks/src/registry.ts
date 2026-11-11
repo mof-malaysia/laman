@@ -12,7 +12,9 @@ import { ctaSplit } from "./blocks/cta-split.js";
 import { details } from "./blocks/details.js";
 import { downloadList } from "./blocks/download-list.js";
 import { eligibility } from "./blocks/eligibility.js";
+import { embed } from "./blocks/embed.js";
 import { entryList } from "./blocks/entry-list.js";
+import { eventCalendar } from "./blocks/event-calendar.js";
 import { eventDetails } from "./blocks/event-details.js";
 import { faq } from "./blocks/faq.js";
 import { featureGrid } from "./blocks/feature-grid.js";
@@ -21,6 +23,7 @@ import { image } from "./blocks/image.js";
 import { impactStats } from "./blocks/impact-stats.js";
 import { insetText } from "./blocks/inset-text.js";
 import { latestEntries } from "./blocks/latest-entries.js";
+import { upcomingEvents } from "./blocks/upcoming-events.js";
 import { linkList } from "./blocks/link-list.js";
 import { logoCloud } from "./blocks/logo-cloud.js";
 import { pageIntro } from "./blocks/page-intro.js";
@@ -49,6 +52,7 @@ export const blocks = [
   partnerGrid,
   logoCloud,
   eventDetails,
+  embed,
   statsBand,
   impactStats,
   faq,
@@ -58,7 +62,9 @@ export const blocks = [
   ctaCards,
   ctaSplit,
   entryList,
+  eventCalendar,
   latestEntries,
+  upcomingEvents,
 ] as const;
 
 export type BlockType = (typeof blocks)[number]["type"];
@@ -96,10 +102,13 @@ export const Block = z.discriminatedUnion("type", [
   blockSchema(partnerGrid),
   blockSchema(logoCloud),
   blockSchema(eventDetails),
+  blockSchema(embed),
   blockSchema(faq),
   blockSchema(contact),
   blockSchema(entryList),
+  blockSchema(eventCalendar),
   blockSchema(latestEntries),
+  blockSchema(upcomingEvents),
 ]);
 export type Block = z.infer<typeof Block>;
 export type BlockOf<T extends BlockType> = Extract<Block, { type: T }>;
@@ -146,9 +155,14 @@ export const openingNames = openings.map((b) => b.label).join(" or ");
 export const hasHeading = (kind: PageKind, list: { type: BlockType }[]) =>
   kind === "entry" || list.some((b) => isOpening(b.type));
 
+/** The blocks that show a listing's own entries: a listing has exactly one. */
+const collectionTypes = new Set<BlockType>(["entryList", "eventCalendar"]);
+/** Whether a block shows its listing's entries (an Entry list or an Event calendar). */
+export const isCollectionBlock = (type: BlockType) => collectionTypes.has(type);
+
 /**
  * Problems with a page's blocks for its kind: blocks it may not use, more
- * than one opening (one h1), and the listing's one entry list.
+ * than one opening (one h1), and the listing's one entry list or event calendar.
  */
 export function kindIssues(kind: PageKind, list: { type: BlockType }[]): string[] {
   const allowed = new Set(blocksFor(kind));
@@ -157,12 +171,12 @@ export function kindIssues(kind: PageKind, list: { type: BlockType }[]): string[
   );
   if (list.filter((b) => isOpening(b.type)).length > 1)
     issues.push(`A page has one ${openingNames}: it holds the page's only h1`);
-  const lists = list.filter((b) => b.type === "entryList").length;
+  const lists = list.filter((b) => isCollectionBlock(b.type)).length;
   if (kind === "listing" && lists !== 1)
     issues.push(
       lists === 0
-        ? "A listing page needs its Entry list block"
-        : "A listing page has one Entry list block",
+        ? "A listing page needs its Entry list or Event calendar block"
+        : "A listing page has one Entry list or Event calendar block",
     );
   return issues;
 }

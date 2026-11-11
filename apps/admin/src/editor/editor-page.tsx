@@ -2,7 +2,7 @@
  * The editor: a toolbar row, then the Layers and Insert column, the canvas,
  * and the properties panel.
  */
-import { type BlockType, type PageDocument, blocksFor } from "@fiscal-sb/blocks";
+import { type BlockType, type PageDocument, blocksFor, isCollectionBlock } from "@fiscal-sb/blocks";
 import type { DraftConflict, Page } from "@fiscal-sb/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
@@ -255,8 +255,8 @@ function useAutosave(page: Page, doc: PageDocument) {
 /** Save states that only a person can clear: nothing more is sent until they do. */
 const halted: ReadonlySet<SaveState> = new Set(["conflict", "forbidden", "gone"]);
 
-/** A listing page's entry list can move, but not go. */
-const required = (block: { type: string }) => block.type === "entryList";
+/** A listing page's entry list (or event calendar) can move, but not go: adding the other replaces it. */
+const required = (block: { type: BlockType }) => isCollectionBlock(block.type);
 
 const liveState: Record<Page["status"], LiveState> = {
   published: "live",

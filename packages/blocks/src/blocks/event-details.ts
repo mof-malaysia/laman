@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { field } from "../fields.js";
+import { field, panel } from "../fields.js";
 import { defineBlock } from "../define.js";
 import { RichText, paragraphs } from "../rich-text.js";
 
@@ -19,8 +19,13 @@ export const eventDetails = defineBlock({
   icon: "calendar",
   kinds: ["page", "entry"],
   props: z.object({
-    date: field.text("Date as people read it, e.g. Khamis, 12 November 2026", { max: 60 }),
-    time: field.text("Time", { max: 60 }).optional(),
+    /** On an event entry, the entry's own date and time show instead. */
+    date: panel(field.text("Date as people read it, e.g. Khamis, 12 November 2026", { max: 60 }), {
+      help: "Leave empty on an event entry: its own date and time show here.",
+    }).optional(),
+    time: panel(field.text("Time", { max: 60 }), {
+      help: "Leave empty on an event entry.",
+    }).optional(),
     venue: field.textarea("Venue", { max: 200 }).optional(),
     fee: field.text("Fee", { max: 60 }).optional(),
     mapUrl: field.mapLink().optional(),
@@ -32,9 +37,8 @@ export const eventDetails = defineBlock({
     programme: field.list("Programme", Session, { max: 20 }).optional(),
     width: field.column(),
   }),
+  // No date or time: on an event entry they come from the entry, and elsewhere the check before publishing asks for them.
   defaults: {
-    date: "Khamis, 12 November 2026",
-    time: "9.00 pagi hingga 1.00 petang",
     venue: "Dewan Perdana, Putrajaya",
     fee: "Percuma",
     about: paragraphs("Terangkan acara ini: untuk siapa, dan apa yang mereka dapat."),

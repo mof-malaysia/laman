@@ -60,6 +60,20 @@ export const registryMs: Record<string, string> = {
     "Tarikh akhir, syarat atau petikan yang diasingkan daripada teks di sekelilingnya.",
   "Who said it (makes it a quote)": "Siapa yang berkata (menjadikannya petikan)",
 
+  // Embed
+  Embed: "Benam",
+  "A page from another website shown in a frame, such as a dashboard, a map or a form. Only what's allowed in Settings, Embeds can be shown.":
+    "Halaman dari laman web lain yang dipaparkan dalam bingkai, seperti papan pemuka, peta atau borang. Hanya yang dibenarkan di Tetapan, Benaman boleh dipaparkan.",
+  "Address to embed": "Alamat untuk dibenamkan",
+  "Text under the frame": "Teks di bawah bingkai",
+  "Facts shown under the frame, such as who owns it or when it was last updated.":
+    "Fakta yang dipaparkan di bawah bingkai, seperti pemiliknya atau bila kali terakhir dikemas kini.",
+  Value: "Nilai",
+  Shape: "Bentuk",
+  "Wide (16:9)": "Lebar (16:9)",
+  "Standard (4:3)": "Biasa (4:3)",
+  Tall: "Tinggi",
+
   // Details
   Details: "Butiran",
   "Short help behind a link, for what only some people need.":
@@ -219,6 +233,9 @@ export const registryMs: Record<string, string> = {
 
   // Event details
   "Event details": "Butiran acara",
+  "Leave empty on an event entry: its own date and time show here.":
+    "Biarkan kosong pada entri acara: tarikh dan masanya sendiri dipaparkan di sini.",
+  "Leave empty on an event entry.": "Biarkan kosong pada entri acara.",
   "An event's date, time, venue, fee and registration, beside what it's about and its programme.":
     "Tarikh, masa, tempat, yuran dan pendaftaran acara, di sebelah perihal acara dan aturcaranya.",
   "Date as people read it, e.g. Khamis, 12 November 2026":
@@ -342,6 +359,27 @@ export const registryMs: Record<string, string> = {
     "Kategori ini sahaja (alamatnya, contohnya siaran-media)",
   "See all link text": "Teks pautan Lihat semua",
 
+  // Event calendar
+  "Event calendar": "Kalendar acara",
+  "This listing's events by month, as a wall planner or a planner, filtered by category and location.":
+    "Acara senarai ini mengikut bulan, sebagai perancang dinding atau perancang, ditapis mengikut kategori dan lokasi.",
+  "Wall planner: the month as a large grid": "Perancang dinding: bulan sebagai grid besar",
+  "Planner: a small calendar beside the month's events":
+    "Perancang: kalendar kecil di sebelah acara bulan itu",
+  "What the categories are called": "Nama bagi kategori",
+  "Shown over the category filter, e.g. Pasukan. “Kategori” if left empty.":
+    "Dipaparkan di atas penapis kategori, contohnya Pasukan. “Kategori” jika dibiarkan kosong.",
+  "Show the location filter": "Tunjukkan penapis lokasi",
+  "Text when a month has no events": "Teks apabila tiada acara pada bulan itu",
+
+  // Upcoming events
+  "Upcoming events": "Acara akan datang",
+  "The next events of a listing page, soonest first, with how many days are left and a link to the calendar.":
+    "Acara seterusnya sesuatu halaman senarai, yang terdekat dahulu, dengan bilangan hari lagi dan pautan ke kalendar.",
+  "2": "2",
+  "Only pinned events": "Acara yang disematkan sahaja",
+  "Show how many days are left": "Tunjukkan berapa hari lagi",
+
   // Templates
   Blank: "Kosong",
   "A title and a text block.": "Tajuk dan satu blok teks.",
@@ -365,4 +403,7 @@ export const registryMs: Record<string, string> = {
   Acara: "Acara",
   "Briefings, workshops, open days, with date and venue.":
     "Taklimat, bengkel, hari terbuka, dengan tarikh dan tempat.",
+  Takwim: "Takwim",
+  "A calendar of events, a month at a time, with each month's events listed under it.":
+    "Kalendar acara, sebulan demi sebulan, dengan acara setiap bulan disenaraikan di bawahnya.",
 };

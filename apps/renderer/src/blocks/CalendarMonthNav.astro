@@ -1,0 +1,45 @@
+---
+/** The month's name between links to the months either side, and a link back to this month. */
+import type { CalendarRender } from "@fiscal-sb/blocks";
+import ChevronLeft from "@/components/ui/icons/chevron-left.astro";
+import ChevronRight from "@/components/ui/icons/chevron-right.astro";
+import { clx } from "@/lib/ftds/utils";
+import { monthLabel } from "./events";
+
+type Props = { calendar: CalendarRender; lang: "ms" | "en"; size?: "lg" | "sm" };
+const { calendar, lang, size = "lg" } = Astro.props;
+const en = lang === "en";
+const arrow = "focus-ring text-txt-black-700 hover:bg-bg-washed grid size-9 shrink-0 place-items-center rounded-full";
+---
+
+<div class={clx("flex items-center", size === "sm" ? "w-full justify-between" : "flex-wrap gap-x-3 gap-y-2")}>
+  {size === "lg" && <h2 class="text-heading-2xs text-txt-black-900 min-w-[9.5ch] font-semibold">{monthLabel(calendar.month, lang)}</h2>}
+  <div class={clx("flex items-center", size === "sm" ? "w-full justify-between" : "gap-1")}>
+    {
+      calendar.prev ? (
+        <a href={calendar.prev.href} class={arrow} aria-label={`${en ? "Previous month" : "Bulan sebelumnya"}: ${monthLabel(calendar.prev.month, lang)}`}>
+          <ChevronLeft class="size-5" aria-hidden="true" />
+        </a>
+      ) : (
+        <span class="size-9" />
+      )
+    }
+    {size === "sm" && <h2 class="text-label-md text-txt-black-900 font-semibold">{monthLabel(calendar.month, lang)}</h2>}
+    {
+      calendar.next ? (
+        <a href={calendar.next.href} class={arrow} aria-label={`${en ? "Next month" : "Bulan seterusnya"}: ${monthLabel(calendar.next.month, lang)}`}>
+          <ChevronRight class="size-5" aria-hidden="true" />
+        </a>
+      ) : (
+        <span class="size-9" />
+      )
+    }
+  </div>
+  {
+    size === "lg" && calendar.thisMonth && (
+      <a href={calendar.thisMonth} class="focus-ring text-label-md border-otl-gray-200 text-txt-black-900 hover:bg-bg-washed bg-bg-white rounded-full border px-4 py-1.5 font-medium">
+        {en ? "This month" : "Bulan ini"}
+      </a>
+    )
+  }
+</div>

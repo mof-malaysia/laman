@@ -5,6 +5,7 @@
  */
 import Block from "@/blocks/Block.astro";
 import { longDate } from "@/blocks/date";
+import { whenLabel, whereLabel } from "@/blocks/events";
 import PageIntro from "@/components/blocks/page-intro.astro";
 import StatusPage from "@/components/blocks/status-page.astro";
 import Site from "@/layouts/Site.astro";
@@ -23,7 +24,12 @@ if (!input) return new Response(null, { status: 404 });
       <PageIntro
         breadcrumb={input.entry.breadcrumb}
         title={input.page.title}
-        meta={[longDate(input.entry.date)]}
+        meta={
+          // An event's header says when and where it is; other entries, when they were published.
+          input.entry.event
+            ? [whenLabel(input.entry.event, input.locale), whereLabel(input.entry.event)].filter(Boolean)
+            : [longDate(input.entry.date)]
+        }
         width="article"
         lang={input.locale}
         data-ftds-entry-header

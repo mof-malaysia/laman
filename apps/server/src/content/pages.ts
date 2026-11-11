@@ -201,7 +201,7 @@ function assertSlugFree(tree: Tree, parentId: string | null, slug: string, selfI
     throw new HttpError(
       409,
       "slug_reserved",
-      `The site uses /${slug} for its search, so choose another address`,
+      `The site uses ${slug} for its own pages here (search, or a listing's categories, later pages and months), so choose another address`,
     );
 }
 
