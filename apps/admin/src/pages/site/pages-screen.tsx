@@ -21,6 +21,7 @@ import { formatAgo, usePages } from "@/lib/pages";
 import { PagesIndex } from "./pages-index";
 import type { DetailSearch } from "./search";
 import { useTrash } from "./trash-screen";
+import { Screen } from "@/components/screen";
 
 export function PagesScreen() {
   const { id } = useParams({ strict: false });
@@ -40,7 +41,7 @@ export function PagesScreen() {
   // A failed refetch keeps the screen; only a load with nothing to show is an error.
   if (pages.isError && !pages.data)
     return (
-      <div className="p-surface">
+      <Screen>
         <Callout variant="danger">
           <CalloutTitle>{t("pages.loadFailed")}</CalloutTitle>
           <CalloutContent>{t("common.tryAgain")}</CalloutContent>
@@ -50,7 +51,7 @@ export function PagesScreen() {
             </Button>
           </CalloutAction>
         </Callout>
-      </div>
+      </Screen>
     );
 
   // No page open: the index.
@@ -58,31 +59,25 @@ export function PagesScreen() {
     return pages.data ? (
       <PagesIndex pages={pages.data} />
     ) : (
-      <div className="bg-bg-gray-50 h-full">
-        <div className="mx-auto flex w-full max-w-5xl flex-col items-center gap-5 px-6 pt-12">
-          <Skeleton className="h-8 w-72" />
-          <Skeleton className="h-12 w-full max-w-2xl rounded-full" />
-          <Skeleton className="h-48 w-full rounded-3xl" />
-        </div>
-      </div>
+      <Screen aria-busy>
+        <Skeleton className="h-8 w-72" />
+        <Skeleton className="h-12 w-full max-w-2xl rounded-full" />
+        <Skeleton className="h-48 w-full rounded-3xl" />
+      </Screen>
     );
 
-  return (
-    <div className="bg-bg-gray-50 h-full overflow-y-auto">
-      {!pages.data || (!exists && entry.isPending) ? (
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 pt-6">
-          <Skeleton className="h-5 w-56 rounded-full" />
-          <Skeleton className="h-12 w-80 rounded-2xl" />
-          <Skeleton className="h-64 w-full rounded-2xl" />
-        </div>
-      ) : showDetail ? (
-        // A page's details live in the editor's drawer now: an old link lands there, on its tab.
-        <Navigate to="/pages/$id/edit" params={{ id }} search={drawerFor(search)} replace />
-      ) : (
-        <Missing id={id} />
-      )}
-    </div>
-  );
+  if (!pages.data || (!exists && entry.isPending))
+    return (
+      <Screen aria-busy>
+        <Skeleton className="h-5 w-56 rounded-full" />
+        <Skeleton className="h-12 w-80 rounded-2xl" />
+        <Skeleton className="h-64 w-full rounded-2xl" />
+      </Screen>
+    );
+  // A page's details live in the editor's drawer now: an old link lands there, on its tab.
+  if (showDetail)
+    return <Navigate to="/pages/$id/edit" params={{ id }} search={drawerFor(search)} replace />;
+  return <Missing id={id} />;
 }
 
 /** An address that isn't a page: deleted pages say so and lead to where they can come back from. */

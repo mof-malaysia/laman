@@ -26,17 +26,16 @@ import { useDocConflict } from "@/components/conflict-dialog";
 import { DiscardEditsDialog, PutBackPrevious, useLeaveGuard } from "@/components/unsaved-edits";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Callout, CalloutTitle } from "@/components/ui/callout";
 import { Field, FieldDescription, FieldError, FieldItem, FieldLabel } from "@/components/ui/field";
 import { PlusIcon } from "@/components/ui/icons/plus";
 import { SearchIcon } from "@/components/ui/icons/search";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import { SplitPane } from "@/components/ui/split-pane";
 import { Tag } from "@/components/ui/tag";
 import { type MessageKey, t } from "@/i18n";
 import { apiError, siteApi } from "@/lib/api";
 import { useMediaQuery } from "@/lib/ftds/hooks/use-media-query";
+import { WorkspaceFallback, WorkspaceHeader } from "@/components/workspace";
 import { clx } from "@/lib/ftds/utils";
 import { usePages, useSummary } from "@/lib/pages";
 import { useSearchDoc } from "@/lib/publish";
@@ -74,32 +73,25 @@ function takenWords(draft: SiteSearch): Map<number, string[]> {
   return out;
 }
 
+/** What the screen is, drawn the same whether its document is loaded, loading or failed. */
+const identity = () => ({
+  icon: <SearchIcon />,
+  title: t("search.title"),
+  subtitle: t("search.subtitle"),
+});
+
+/** The editing pane's starting width, for the SplitPane and the skeleton before it. */
+const PANE_WIDTH = 520;
+
 export function SearchScreen() {
   const doc = useSearchDoc();
-  if (doc.isError)
+  if (doc.isError || !doc.data)
     return (
-      <div className="p-surface">
-        <Callout variant="danger">
-          <CalloutTitle>{t("search.loadFailed")}</CalloutTitle>
-        </Callout>
-      </div>
-    );
-  if (!doc.data)
-    return (
-      <div className="flex h-full flex-col" aria-busy>
-        <div className="px-surface border-otl-gray-200 flex items-start gap-3 border-b pt-5 pb-4">
-          <Skeleton className="size-10 rounded-lg" />
-          <div className="flex flex-col gap-2">
-            <Skeleton className="h-6 w-40" />
-            <Skeleton className="h-4 w-80" />
-          </div>
-        </div>
-        <div className="bg-bg-washed flex flex-1 flex-col gap-4 p-4 md:max-w-[520px]">
-          <Skeleton className="h-16 w-full rounded-lg" />
-          <Skeleton className="h-24 w-full rounded-lg" />
-          <Skeleton className="h-48 w-full rounded-lg" />
-        </div>
-      </div>
+      <WorkspaceFallback
+        {...identity()}
+        error={doc.isError ? t("search.loadFailed") : undefined}
+        paneWidth={PANE_WIDTH}
+      />
     );
   return <Editor doc={doc.data} />;
 }
@@ -185,55 +177,46 @@ function Editor({ doc }: { doc: SearchDoc }) {
   const collections = (pages.data ?? []).filter((p) => p.kind === "listing");
 
   const header = (
-    <header className="bg-bg-white px-surface border-otl-gray-200 flex flex-wrap items-start gap-x-6 gap-y-3 border-b pt-5 pb-4">
-      <div className="flex min-w-0 flex-[1_1_20rem] items-start gap-3">
-        <span
-          aria-hidden
-          className="bg-bg-primary-100 text-txt-primary grid size-10 shrink-0 place-items-center rounded-lg [&_svg]:size-5"
-        >
-          <SearchIcon />
-        </span>
-        <div className="flex min-w-0 flex-col gap-1">
-          <h1 className="text-title text-txt-black-900 truncate font-semibold">
-            {t("search.title")}
-          </h1>
-          <p className="text-body-sm text-txt-black-500">{t("search.subtitle")}</p>
-          <p className="text-body-sm text-txt-black-700 flex flex-wrap items-center gap-2 pt-1">
-            <Tag size="small" variant={live ? "success" : "default"} dot>
-              {live ? t("search.state.on") : t("search.state.off")}
-            </Tag>
-            {live ? t("search.state.onText") : t("search.state.offText")}
-          </p>
-        </div>
-      </div>
-      <div className="flex max-w-full min-w-0 flex-wrap items-center gap-2">
-        {dirty ? (
-          <Button variant="default-ghost" size="small" onClick={() => setDiscarding(true)}>
-            {t("navigation.discardEdits")}
-          </Button>
-        ) : (
-          doc.changed && (
-            <Button variant="default-ghost" size="small" onClick={() => void discard()}>
-              {t("settings.discard")}
+    <WorkspaceHeader
+      {...identity()}
+      status={
+        <>
+          <Tag size="small" variant={live ? "success" : "default"} dot>
+            {live ? t("search.state.on") : t("search.state.off")}
+          </Tag>
+          {live ? t("search.state.onText") : t("search.state.offText")}
+        </>
+      }
+      actions={
+        <>
+          {dirty ? (
+            <Button variant="default-ghost" size="small" onClick={() => setDiscarding(true)}>
+              {t("navigation.discardEdits")}
             </Button>
-          )
-        )}
-        <PublishControl
-          live={doc.changed ? "changed" : "live"}
-          save={conflict.saveState(saving, dirty)}
-          label={t("search.publish")}
-          beforePublish={dirty ? save : undefined}
-          viewPath={draft.on ? "/carian" : "/"}
-          onPublish={() => siteApi.publishDoc("search")}
-          review={{
-            title: t("search.review.title"),
-            description: t("search.review.description"),
-            body: <PublishReview draft={draft} issues={local} />,
-            blocked: local.size > 0,
-          }}
-        />
-      </div>
-    </header>
+          ) : (
+            doc.changed && (
+              <Button variant="default-ghost" size="small" onClick={() => void discard()}>
+                {t("settings.discard")}
+              </Button>
+            )
+          )}
+          <PublishControl
+            live={doc.changed ? "changed" : "live"}
+            save={conflict.saveState(saving, dirty)}
+            label={t("search.publish")}
+            beforePublish={dirty ? save : undefined}
+            viewPath={draft.on ? "/carian" : "/"}
+            onPublish={() => siteApi.publishDoc("search")}
+            review={{
+              title: t("search.review.title"),
+              description: t("search.review.description"),
+              body: <PublishReview draft={draft} issues={local} />,
+              blocked: local.size > 0,
+            }}
+          />
+        </>
+      }
+    />
   );
 
   const form = (
@@ -304,7 +287,7 @@ function Editor({ doc }: { doc: SearchDoc }) {
         <SplitPane
           className="min-h-0 flex-1"
           storageKey="admin.search.split"
-          defaultWidth={520}
+          defaultWidth={PANE_WIDTH}
           maxWidth={760}
           startLabel={t("search.editor")}
           endLabel={t("search.try.title")}

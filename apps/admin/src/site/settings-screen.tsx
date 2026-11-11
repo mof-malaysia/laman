@@ -68,6 +68,7 @@ import { SwitchSetting } from "@/components/switch-setting";
 import { MediaField } from "@/editor/media-field";
 import { BackupsSection } from "./backups-section";
 import { formatBytes } from "@/media/format";
+import { Screen } from "@/components/screen";
 
 /** Sections of the settings document: each saves into its draft. */
 const documentSections = [
@@ -176,7 +177,7 @@ export function SettingsScreen() {
   };
 
   return (
-    <div className="p-surface gap-stack-lg mx-auto flex max-w-6xl flex-col">
+    <Screen>
       <PageHeader>
         <PageHeaderContent>
           <PageHeaderTitle size="headline">{t("nav.settings")}</PageHeaderTitle>
@@ -255,7 +256,7 @@ export function SettingsScreen() {
         destructive
         onConfirm={() => void discard()}
       />
-    </div>
+    </Screen>
   );
 }
 

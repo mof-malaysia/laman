@@ -4,6 +4,7 @@ import { linkClass } from "@/components/text-link";
 import { Button } from "@/components/ui/button";
 import { t } from "@/i18n";
 import { useCopy } from "@/lib/ftds/hooks/use-copy";
+import { Screen } from "@/components/screen";
 
 /**
  * Shown when a screen throws while rendering or loading. Inside the admin it
@@ -30,7 +31,7 @@ export function ErrorPage({ error, reset }: ErrorComponentProps) {
   };
 
   return (
-    <section className="p-surface gap-stack-md flex max-w-2xl flex-col">
+    <Screen className="gap-stack-md max-w-2xl">
       <h1 className="text-heading-xs text-txt-black-900 font-semibold">{t("error.title")}</h1>
       <p className="text-body-md text-txt-black-700">{t("error.body")}</p>
       <div className="flex flex-wrap gap-2">
@@ -61,6 +62,6 @@ export function ErrorPage({ error, reset }: ErrorComponentProps) {
           </output>
         </div>
       </div>
-    </section>
+    </Screen>
   );
 }

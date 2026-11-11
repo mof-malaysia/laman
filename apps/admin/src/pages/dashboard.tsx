@@ -51,6 +51,8 @@ import { EditLink } from "@/pages/site/pages-index";
 import { KindGlyph, PlusGlyph } from "@/pages/site/line-icons";
 import { StateLabel, stateOf } from "@/pages/site/page-state";
 import { useShell } from "@/shell/context";
+import { Screen } from "@/components/screen";
+import { PageHeaderTitle } from "@/components/ui/page-header";
 
 /** Every card on the canvas: white, with the Pages index's hairline. */
 const tile = clx(card, "border-otl-gray-200 rounded-xl");
@@ -63,9 +65,9 @@ export function DashboardPage() {
 
   if (summary.isError)
     return (
-      <Canvas>
+      <Screen className="text-body-sm">
         <LoadFailed title="home.loadFailed" onRetry={() => void summary.refetch()} />
-      </Canvas>
+      </Screen>
     );
 
   // When the pages or the settings fail, say so once and offer the retry, instead of
@@ -86,7 +88,7 @@ export function DashboardPage() {
   const setup = data && settings.data && home ? setupTasks(settings.data, home) : null;
 
   return (
-    <Canvas>
+    <Screen className="text-body-sm">
       <Identity settings={settings.data} failed={settingsFailed} summary={data} />
 
       {(pagesFailed || settingsFailed) && (
@@ -106,12 +108,12 @@ export function DashboardPage() {
 
       <Figures summary={data} />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <div className="flex min-w-0 flex-col gap-6">
+      <div className="gap-stack-lg grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <div className="gap-stack-lg flex min-w-0 flex-col">
           {setup && <Setup tasks={setup} />}
           <RecentEdits pages={data?.recentEdits} />
         </div>
-        <aside className="flex min-w-0 flex-col gap-6">
+        <aside className="gap-stack-lg flex min-w-0 flex-col">
           {home && data ? (
             <SiteThumbnail home={home} live={live ?? false} summary={data} lastDone={lastDone} />
           ) : (
@@ -121,18 +123,7 @@ export function DashboardPage() {
           {data && <Health summary={data} announcing={announcing} />}
         </aside>
       </div>
-    </Canvas>
-  );
-}
-
-/** The washed pane the cards sit on, scrolling on its own like the Pages index. */
-function Canvas({ children }: { children: ReactNode }) {
-  return (
-    <div className="bg-bg-gray-50 h-full overflow-y-auto">
-      <div className="text-body-sm mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 pt-10 pb-16">
-        {children}
-      </div>
-    </div>
+    </Screen>
   );
 }
 
@@ -187,9 +178,9 @@ function Identity({
       )}
       <div className="flex min-w-0 flex-1 flex-col">
         {identity || failed ? (
-          <h1 className="font-heading text-heading-xs text-txt-black-900 truncate font-semibold tracking-tight">
+          <PageHeaderTitle size="headline" className="truncate">
             {identity ? identity.siteName : t("nav.dashboard")}
-          </h1>
+          </PageHeaderTitle>
         ) : (
           <Skeleton className="h-8 w-64" />
         )}

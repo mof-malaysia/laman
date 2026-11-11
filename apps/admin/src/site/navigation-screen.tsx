@@ -50,7 +50,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { TextArea } from "@/components/ui/textarea";
 import { Menu, MenuContent, MenuItem, MenuTrigger } from "@/components/ui/menu";
 import { useShortcut, useShortcutScope } from "@/components/ui/shortcuts";
-import { Skeleton } from "@/components/ui/skeleton";
 import { SplitPane } from "@/components/ui/split-pane";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsCounter, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -83,6 +82,7 @@ import {
 import { LivePreview } from "./live-preview";
 import { SortableList, shifted, sortId, sortIds, useSortableRow } from "@/components/sortable";
 import { TargetField } from "./target-field";
+import { WorkspaceFallback, WorkspaceHeader } from "@/components/workspace";
 
 export type NavPart = "navbar" | "footer";
 export const navParts: NavPart[] = ["navbar", "footer"];
@@ -91,21 +91,25 @@ export function useNavigationDoc() {
   return useQuery(siteDocQuery("navigation"));
 }
 
+/** What the screen is, drawn the same whether its document is loaded, loading or failed. */
+const identity = () => ({
+  icon: <HamburgerMenuIcon />,
+  title: t("navigation.title"),
+  subtitle: t("navigation.everyPage"),
+});
+
+/** The editing pane's starting width, for the SplitPane and the skeleton before it. */
+const PANE_WIDTH = 460;
+
 export function NavigationScreen() {
   const doc = useNavigationDoc();
-  if (doc.isError)
+  if (doc.isError || !doc.data)
     return (
-      <div className="p-surface">
-        <Callout variant="danger">
-          <CalloutTitle>{t("navigation.loadFailed")}</CalloutTitle>
-        </Callout>
-      </div>
-    );
-  if (!doc.data)
-    return (
-      <div className="p-surface">
-        <Skeleton className="h-64 w-full" />
-      </div>
+      <WorkspaceFallback
+        {...identity()}
+        error={doc.isError ? t("navigation.loadFailed") : undefined}
+        paneWidth={PANE_WIDTH}
+      />
     );
   return <Editor doc={doc.data} />;
 }
@@ -223,7 +227,7 @@ function Editor({ doc }: { doc: NavigationDoc }) {
 
   const changes = navigationChanges(doc.published, doc.draft);
   const actions = (
-    <div className="flex max-w-full min-w-0 flex-wrap items-center gap-2">
+    <>
       {doc.changed && !dirty && (
         <Button variant="default-ghost" size="small" onClick={() => void discardChanges()}>
           {t("settings.discard")}
@@ -257,7 +261,7 @@ function Editor({ doc }: { doc: NavigationDoc }) {
           body: <PublishReview changes={changes} warnings={doc.warnings} />,
         }}
       />
-    </div>
+    </>
   );
 
   const warningsIn = (p: NavPart) => warnings.filter((w) => w.path.startsWith(p));
@@ -277,25 +281,7 @@ function Editor({ doc }: { doc: NavigationDoc }) {
         }
         className="flex h-full flex-col gap-0"
       >
-        {/* The same header as a page's detail: what it is, where it shows, then its parts. */}
-        <header className="bg-bg-white px-surface flex flex-col gap-4 pt-5">
-          <div className="flex flex-wrap items-start gap-x-6 gap-y-3">
-            <div className="flex min-w-0 flex-[1_1_20rem] items-start gap-3">
-              <span
-                aria-hidden
-                className="bg-bg-primary-100 text-txt-primary grid size-10 shrink-0 place-items-center rounded-lg [&_svg]:size-5"
-              >
-                <HamburgerMenuIcon />
-              </span>
-              <div className="flex min-w-0 flex-col gap-1">
-                <h1 className="text-title text-txt-black-900 truncate font-semibold">
-                  {t("navigation.title")}
-                </h1>
-                <p className="text-body-sm text-txt-black-500">{t("navigation.everyPage")}</p>
-              </div>
-            </div>
-            {actions}
-          </div>
+        <WorkspaceHeader {...identity()} actions={actions}>
           <TabsList width="full">
             {navParts.map((p) => (
               <TabsTrigger key={p} value={p}>
@@ -310,11 +296,11 @@ function Editor({ doc }: { doc: NavigationDoc }) {
               </TabsTrigger>
             ))}
           </TabsList>
-        </header>
+        </WorkspaceHeader>
         <SplitPane
           className="min-h-0 flex-1"
           storageKey="admin.navigation.split"
-          defaultWidth={460}
+          defaultWidth={PANE_WIDTH}
           maxWidth={720}
           startLabel={t("navigation.editor")}
           endLabel={t("navigation.preview")}

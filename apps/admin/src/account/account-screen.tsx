@@ -37,6 +37,7 @@ import useToast from "@/lib/ftds/hooks/use-toast";
 import { formatAgo, formatDateTime } from "@/lib/pages";
 import { useAction } from "@/lib/use-action";
 import { useRun } from "@/lib/use-run";
+import { Screen } from "@/components/screen";
 
 /** Keeps the signed-in person in the cache up to date after a change to them. */
 function useSetMe() {
@@ -47,7 +48,7 @@ function useSetMe() {
 export function AccountScreen() {
   const me = useMe();
   return (
-    <div className="p-surface gap-stack-lg mx-auto flex max-w-3xl flex-col">
+    <Screen>
       <PageHeader>
         <PageHeaderContent>
           <PageHeaderTitle size="headline">{t("nav.account")}</PageHeaderTitle>
@@ -56,12 +57,15 @@ export function AccountScreen() {
           </PageHeaderDescription>
         </PageHeaderContent>
       </PageHeader>
-      <NameSection />
-      <PasswordSection />
-      <TwoFactorSection />
-      <SessionsSection />
-      <AgentsSection />
-    </div>
+      {/* One person's settings: a readable column, under a header that lines up with every screen's. */}
+      <div className="gap-stack-lg flex max-w-3xl flex-col">
+        <NameSection />
+        <PasswordSection />
+        <TwoFactorSection />
+        <SessionsSection />
+        <AgentsSection />
+      </div>
+    </Screen>
   );
 }
 

@@ -1,11 +1,12 @@
 import { EmptyState, EmptyStateDescription, EmptyStateTitle } from "@/components/ui/empty-state";
 import { PageHeader, PageHeaderContent, PageHeaderTitle } from "@/components/ui/page-header";
 import { type MessageKey, t } from "@/i18n";
+import { Screen } from "@/components/screen";
 
 /** A rail destination whose screen isn't built yet. */
 export function SectionPage({ title }: { title: MessageKey }) {
   return (
-    <div className="p-surface flex flex-col gap-8">
+    <Screen>
       <PageHeader>
         <PageHeaderContent>
           <PageHeaderTitle size="headline">{t(title)}</PageHeaderTitle>
@@ -15,6 +16,6 @@ export function SectionPage({ title }: { title: MessageKey }) {
         <EmptyStateTitle>{t("section.soon")}</EmptyStateTitle>
         <EmptyStateDescription>{t("section.soonBody")}</EmptyStateDescription>
       </EmptyState>
-    </div>
+    </Screen>
   );
 }

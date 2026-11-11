@@ -35,6 +35,7 @@ import { Toggle } from "@/components/ui/toggle";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 import { t } from "@/i18n";
 import { mediaApi } from "@/lib/api";
+import { Screen } from "@/components/screen";
 import { clx } from "@/lib/ftds/utils";
 import { formatDateTime, useSummary } from "@/lib/pages";
 import { useShell } from "@/shell/context";
@@ -255,7 +256,8 @@ export function MediaScreen() {
   return (
     <div
       className={clx(
-        "p-surface gap-stack-md relative flex min-h-full flex-col",
+        // The drop target is the whole main area, not just the centred column.
+        "relative min-h-full",
         dragging && "bg-bg-primary-50",
       )}
       onDragOver={(event) => {
@@ -273,159 +275,166 @@ export function MediaScreen() {
         shell.uploadMedia([...event.dataTransfer.files]);
       }}
     >
-      <PageHeader>
-        <PageHeaderContent>
-          <PageHeaderTitle size="headline">{t("nav.media")}</PageHeaderTitle>
-          <PageHeaderDescription className="text-pretty">{t("media.intro")}</PageHeaderDescription>
-        </PageHeaderContent>
-        {!libraryEmpty && (
-          <PageHeaderActions>
-            <UploadButton onClick={() => shell.uploadMedia()} />
-          </PageHeaderActions>
-        )}
-      </PageHeader>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <ToggleGroup
-          value={[show]}
-          onValueChange={(v) =>
-            v[0] && setFilter({ show: v[0] === "all" ? undefined : (v[0] as MediaShow) })
-          }
-          aria-label={t("media.show")}
-        >
-          <Toggle value="all">{t("media.show.all")}</Toggle>
-          <Toggle value="needsAlt">
-            {t("media.show.needsAlt")}
-            {Boolean(media.data?.needsAlt) && <Count n={media.data?.needsAlt ?? 0} />}
-          </Toggle>
-          <Toggle value="unused">{t("media.show.unused")}</Toggle>
-          <Toggle value="deleted">
-            {t("media.show.deleted")}
-            {Boolean(media.data?.deleted) && <Count n={media.data?.deleted ?? 0} />}
-          </Toggle>
-        </ToggleGroup>
-        <span className="flex-1" />
-        <Input
-          type="search"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setFilter({ q: e.target.value || undefined });
-          }}
-          placeholder={t("media.search")}
-          aria-label={t("media.search.label")}
-          className="w-full sm:w-56"
-        />
-        <Select
-          items={[
-            { value: "all", label: t("media.filter.all") },
-            ...mediaKinds.map((k) => ({
-              value: k,
-              label: t(k === "image" ? "media.filter.images" : "media.filter.documents"),
-            })),
-          ]}
-          value={kind}
-          aria-label={t("media.filter.kind")}
-          className="w-40"
-          onValueChange={(v: string) =>
-            setFilter({ type: v && v !== "all" ? (v as MediaSearch["type"]) : undefined })
-          }
-        />
-        <ToggleGroup
-          value={[view]}
-          onValueChange={(v) => v[0] && setView(v[0] as View)}
-          aria-label={t("media.view")}
-        >
-          <Toggle value="grid" aria-label={t("media.view.grid")}>
-            <GridIcon />
-          </Toggle>
-          <Toggle value="list" aria-label={t("media.view.list")}>
-            <ListIcon />
-          </Toggle>
-        </ToggleGroup>
-      </div>
-
-      {/* Read out when the files change, so a filter or search says what it found. */}
-      <p aria-live="polite" className="text-body-sm text-txt-black-700 max-w-[70ch] text-pretty">
-        {media.data && media.data.items.length > 0
-          ? viewSummary(show, total, media.data.trashDays)
-          : ""}
-      </p>
-
-      {media.isError ? (
-        <Callout variant="danger">
-          <CalloutTitle>{t("media.loadFailed")}</CalloutTitle>
-          <CalloutContent>{t("media.loadFailedBody")}</CalloutContent>
-          <CalloutAction>
-            <Button variant="default-outline" onClick={() => void media.refetch()}>
-              {t("media.retry")}
-            </Button>
-          </CalloutAction>
-        </Callout>
-      ) : !media.data ? (
-        <Loading view={view} />
-      ) : media.data.items.length === 0 ? (
-        <EmptyState>
-          <EmptyStateTitle as="h2">{empty.title}</EmptyStateTitle>
-          <EmptyStateDescription>{empty.body}</EmptyStateDescription>
-          {libraryEmpty ? (
-            <EmptyStateActions>
+      <Screen>
+        <PageHeader>
+          <PageHeaderContent>
+            <PageHeaderTitle size="headline">{t("nav.media")}</PageHeaderTitle>
+            <PageHeaderDescription className="text-pretty">
+              {t("media.intro")}
+            </PageHeaderDescription>
+          </PageHeaderContent>
+          {!libraryEmpty && (
+            <PageHeaderActions>
               <UploadButton onClick={() => shell.uploadMedia()} />
-            </EmptyStateActions>
-          ) : (
-            filtered && (
-              <EmptyStateActions>
-                {show !== "all" && (
-                  <Button variant="default-outline" onClick={() => setFilter({ show: undefined })}>
-                    {t("media.none.searchAll")}
-                  </Button>
-                )}
-                <Button
-                  variant="default-outline"
-                  onClick={() => {
-                    setSearch("");
-                    setFilter({ q: undefined, type: undefined });
-                  }}
-                >
-                  {t("media.none.clear")}
-                </Button>
-              </EmptyStateActions>
-            )
+            </PageHeaderActions>
           )}
-        </EmptyState>
-      ) : view === "grid" ? (
-        <MediaGrid items={media.data.items} onChoose={(m) => openFile(m.id)} />
-      ) : (
-        <DataTable columns={columns} data={media.data.items} />
-      )}
+        </PageHeader>
 
-      {pages > 1 && (
-        <nav aria-label={t("media.paging")} className="flex items-center justify-end gap-2">
-          <span className="text-body-sm text-txt-black-700 tabular-nums">
-            {t("media.range", {
-              from,
-              to: Math.min(from + PAGE_SIZE - 1, total),
-              total,
-            })}
-          </span>
-          <Button
-            variant="default-outline"
-            size="small"
-            disabled={page === 1}
-            onClick={() => go({ ...params, page: page - 1 }, false)}
+        <div className="flex flex-wrap items-center gap-2">
+          <ToggleGroup
+            value={[show]}
+            onValueChange={(v) =>
+              v[0] && setFilter({ show: v[0] === "all" ? undefined : (v[0] as MediaShow) })
+            }
+            aria-label={t("media.show")}
           >
-            {t("common.previous")}
-          </Button>
-          <Button
-            variant="default-outline"
-            size="small"
-            disabled={page === pages}
-            onClick={() => go({ ...params, page: page + 1 }, false)}
+            <Toggle value="all">{t("media.show.all")}</Toggle>
+            <Toggle value="needsAlt">
+              {t("media.show.needsAlt")}
+              {Boolean(media.data?.needsAlt) && <Count n={media.data?.needsAlt ?? 0} />}
+            </Toggle>
+            <Toggle value="unused">{t("media.show.unused")}</Toggle>
+            <Toggle value="deleted">
+              {t("media.show.deleted")}
+              {Boolean(media.data?.deleted) && <Count n={media.data?.deleted ?? 0} />}
+            </Toggle>
+          </ToggleGroup>
+          <span className="flex-1" />
+          <Input
+            type="search"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setFilter({ q: e.target.value || undefined });
+            }}
+            placeholder={t("media.search")}
+            aria-label={t("media.search.label")}
+            className="w-full sm:w-56"
+          />
+          <Select
+            items={[
+              { value: "all", label: t("media.filter.all") },
+              ...mediaKinds.map((k) => ({
+                value: k,
+                label: t(k === "image" ? "media.filter.images" : "media.filter.documents"),
+              })),
+            ]}
+            value={kind}
+            aria-label={t("media.filter.kind")}
+            className="w-40"
+            onValueChange={(v: string) =>
+              setFilter({ type: v && v !== "all" ? (v as MediaSearch["type"]) : undefined })
+            }
+          />
+          <ToggleGroup
+            value={[view]}
+            onValueChange={(v) => v[0] && setView(v[0] as View)}
+            aria-label={t("media.view")}
           >
-            {t("common.next")}
-          </Button>
-        </nav>
-      )}
+            <Toggle value="grid" aria-label={t("media.view.grid")}>
+              <GridIcon />
+            </Toggle>
+            <Toggle value="list" aria-label={t("media.view.list")}>
+              <ListIcon />
+            </Toggle>
+          </ToggleGroup>
+        </div>
+
+        {/* Read out when the files change, so a filter or search says what it found. */}
+        <p aria-live="polite" className="text-body-sm text-txt-black-700 max-w-[70ch] text-pretty">
+          {media.data && media.data.items.length > 0
+            ? viewSummary(show, total, media.data.trashDays)
+            : ""}
+        </p>
+
+        {media.isError ? (
+          <Callout variant="danger">
+            <CalloutTitle>{t("media.loadFailed")}</CalloutTitle>
+            <CalloutContent>{t("media.loadFailedBody")}</CalloutContent>
+            <CalloutAction>
+              <Button variant="default-outline" onClick={() => void media.refetch()}>
+                {t("media.retry")}
+              </Button>
+            </CalloutAction>
+          </Callout>
+        ) : !media.data ? (
+          <Loading view={view} />
+        ) : media.data.items.length === 0 ? (
+          <EmptyState>
+            <EmptyStateTitle as="h2">{empty.title}</EmptyStateTitle>
+            <EmptyStateDescription>{empty.body}</EmptyStateDescription>
+            {libraryEmpty ? (
+              <EmptyStateActions>
+                <UploadButton onClick={() => shell.uploadMedia()} />
+              </EmptyStateActions>
+            ) : (
+              filtered && (
+                <EmptyStateActions>
+                  {show !== "all" && (
+                    <Button
+                      variant="default-outline"
+                      onClick={() => setFilter({ show: undefined })}
+                    >
+                      {t("media.none.searchAll")}
+                    </Button>
+                  )}
+                  <Button
+                    variant="default-outline"
+                    onClick={() => {
+                      setSearch("");
+                      setFilter({ q: undefined, type: undefined });
+                    }}
+                  >
+                    {t("media.none.clear")}
+                  </Button>
+                </EmptyStateActions>
+              )
+            )}
+          </EmptyState>
+        ) : view === "grid" ? (
+          <MediaGrid items={media.data.items} onChoose={(m) => openFile(m.id)} />
+        ) : (
+          <DataTable columns={columns} data={media.data.items} />
+        )}
+
+        {pages > 1 && (
+          <nav aria-label={t("media.paging")} className="flex items-center justify-end gap-2">
+            <span className="text-body-sm text-txt-black-700 tabular-nums">
+              {t("media.range", {
+                from,
+                to: Math.min(from + PAGE_SIZE - 1, total),
+                total,
+              })}
+            </span>
+            <Button
+              variant="default-outline"
+              size="small"
+              disabled={page === 1}
+              onClick={() => go({ ...params, page: page - 1 }, false)}
+            >
+              {t("common.previous")}
+            </Button>
+            <Button
+              variant="default-outline"
+              size="small"
+              disabled={page === pages}
+              onClick={() => go({ ...params, page: page + 1 }, false)}
+            >
+              {t("common.next")}
+            </Button>
+          </nav>
+        )}
+      </Screen>
       {dragging && (
         <p className="text-txt-primary text-title pointer-events-none absolute inset-x-0 top-1/2 text-center font-semibold">
           {t("media.dropHere")}

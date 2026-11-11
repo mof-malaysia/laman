@@ -27,15 +27,14 @@ import { PublishControl } from "@/components/publish-control";
 import { useDocConflict } from "@/components/conflict-dialog";
 import { DiscardEditsDialog, PutBackPrevious, useLeaveGuard } from "@/components/unsaved-edits";
 import { Button } from "@/components/ui/button";
-import { Callout, CalloutTitle } from "@/components/ui/callout";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import { SplitPane } from "@/components/ui/split-pane";
 import { Tag } from "@/components/ui/tag";
 import { type MessageKey, t } from "@/i18n";
 import { siteApi } from "@/lib/api";
 import { useMediaQuery } from "@/lib/ftds/hooks/use-media-query";
+import { WorkspaceFallback, WorkspaceHeader } from "@/components/workspace";
 import { clx } from "@/lib/ftds/utils";
 import { useThemeDoc } from "@/lib/publish";
 import { Choice } from "./announcement-screen";
@@ -74,31 +73,25 @@ const nameOf = (theme: { preset: Preset; seed?: string | undefined }) =>
     ? t("theme.custom.named", { hex: theme.seed })
     : t(presetName[theme.preset]);
 
+/** What the screen is, drawn the same whether its document is loaded, loading or failed. */
+const identity = () => ({
+  icon: <PaletteIcon />,
+  title: t("theme.title"),
+  subtitle: t("theme.subtitle"),
+});
+
+/** The editing pane's starting width, for the SplitPane and the skeleton before it. */
+const PANE_WIDTH = 460;
+
 export function ThemeScreen() {
   const doc = useThemeDoc();
-  if (doc.isError)
+  if (doc.isError || !doc.data)
     return (
-      <div className="p-surface">
-        <Callout variant="danger">
-          <CalloutTitle>{t("theme.loadFailed")}</CalloutTitle>
-        </Callout>
-      </div>
-    );
-  if (!doc.data)
-    return (
-      <div className="flex h-full flex-col" aria-busy>
-        <div className="px-surface border-otl-gray-200 flex items-start gap-3 border-b pt-5 pb-4">
-          <Skeleton className="size-10 rounded-lg" />
-          <div className="flex flex-col gap-2">
-            <Skeleton className="h-6 w-40" />
-            <Skeleton className="h-4 w-80" />
-          </div>
-        </div>
-        <div className="bg-bg-washed flex flex-1 flex-col gap-4 p-4 md:max-w-[520px]">
-          <Skeleton className="h-64 w-full rounded-lg" />
-          <Skeleton className="h-32 w-full rounded-lg" />
-        </div>
-      </div>
+      <WorkspaceFallback
+        {...identity()}
+        error={doc.isError ? t("theme.loadFailed") : undefined}
+        paneWidth={PANE_WIDTH}
+      />
     );
   return <Editor doc={doc.data} />;
 }
@@ -157,66 +150,57 @@ function Editor({ doc }: { doc: ThemeDoc }) {
   };
 
   const header = (
-    <header className="bg-bg-white px-surface border-otl-gray-200 flex flex-wrap items-start gap-x-6 gap-y-3 border-b pt-5 pb-4">
-      <div className="flex min-w-0 flex-[1_1_20rem] items-start gap-3">
-        <span
-          aria-hidden
-          className="bg-bg-primary-100 text-txt-primary grid size-10 shrink-0 place-items-center rounded-lg [&_svg]:size-5"
-        >
-          <PaletteIcon />
-        </span>
-        <div className="flex min-w-0 flex-col gap-1">
-          <h1 className="text-title text-txt-black-900 truncate font-semibold">
-            {t("theme.title")}
-          </h1>
-          <p className="text-body-sm text-txt-black-500">{t("theme.subtitle")}</p>
-          <p className="text-body-sm text-txt-black-700 flex flex-wrap items-center gap-2 pt-1">
-            <span
-              aria-hidden
-              className="border-otl-gray-200 size-4 shrink-0 rounded-full border"
-              style={{ background: rgb(doc.published.primary, "600") }}
-            />
-            {t("theme.state.live", { name: nameOf(doc.published) })}
-          </p>
-        </div>
-      </div>
-      <div className="flex max-w-full min-w-0 flex-wrap items-center gap-2">
-        {dirty ? (
-          <Button variant="default-ghost" size="small" onClick={() => setDiscarding(true)}>
-            {t("navigation.discardEdits")}
-          </Button>
-        ) : (
-          doc.changed && (
-            <Button variant="default-ghost" size="small" onClick={() => void discard()}>
-              {t("settings.discard")}
+    <WorkspaceHeader
+      {...identity()}
+      status={
+        <>
+          <span
+            aria-hidden
+            className="border-otl-gray-200 size-4 shrink-0 rounded-full border"
+            style={{ background: rgb(doc.published.primary, "600") }}
+          />
+          {t("theme.state.live", { name: nameOf(doc.published) })}
+        </>
+      }
+      actions={
+        <>
+          {dirty ? (
+            <Button variant="default-ghost" size="small" onClick={() => setDiscarding(true)}>
+              {t("navigation.discardEdits")}
             </Button>
-          )
-        )}
-        <PublishControl
-          live={doc.changed ? "changed" : "live"}
-          save={conflict.saveState(saving, dirty)}
-          label={t("theme.publish")}
-          beforePublish={dirty ? save : undefined}
-          onPublish={() => siteApi.publishDoc("theme")}
-          review={{
-            title: t("theme.review.title"),
-            description: t("theme.review.description"),
-            body: (
-              <div className="flex flex-col gap-3">
-                {!valid && (
-                  <p className="text-txt-danger" role="alert">
-                    {t("theme.hexInvalid")}
-                  </p>
-                )}
-                <p>{t("theme.review.body", { name: nameOf(choice) })}</p>
-                <p className="text-txt-black-700">{t("theme.review.undo")}</p>
-              </div>
-            ),
-            blocked: !valid,
-          }}
-        />
-      </div>
-    </header>
+          ) : (
+            doc.changed && (
+              <Button variant="default-ghost" size="small" onClick={() => void discard()}>
+                {t("settings.discard")}
+              </Button>
+            )
+          )}
+          <PublishControl
+            live={doc.changed ? "changed" : "live"}
+            save={conflict.saveState(saving, dirty)}
+            label={t("theme.publish")}
+            beforePublish={dirty ? save : undefined}
+            onPublish={() => siteApi.publishDoc("theme")}
+            review={{
+              title: t("theme.review.title"),
+              description: t("theme.review.description"),
+              body: (
+                <div className="flex flex-col gap-3">
+                  {!valid && (
+                    <p className="text-txt-danger" role="alert">
+                      {t("theme.hexInvalid")}
+                    </p>
+                  )}
+                  <p>{t("theme.review.body", { name: nameOf(choice) })}</p>
+                  <p className="text-txt-black-700">{t("theme.review.undo")}</p>
+                </div>
+              ),
+              blocked: !valid,
+            }}
+          />
+        </>
+      }
+    />
   );
 
   const form = (
@@ -254,7 +238,7 @@ function Editor({ doc }: { doc: ThemeDoc }) {
         <SplitPane
           className="min-h-0 flex-1"
           storageKey="admin.theme.split"
-          defaultWidth={460}
+          defaultWidth={PANE_WIDTH}
           maxWidth={640}
           startLabel={t("theme.editor")}
           endLabel={t("navigation.preview")}

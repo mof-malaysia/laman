@@ -24,7 +24,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Callout, CalloutTitle } from "@/components/ui/callout";
 import { CharacterCount } from "@/components/character-count";
 import { Field, FieldDescription, FieldError, FieldItem, FieldLabel } from "@/components/ui/field";
 import { Fieldset, FieldsetLegend } from "@/components/ui/fieldset";
@@ -32,13 +31,13 @@ import { MegaphoneIcon } from "@/components/ui/icons/megaphone";
 import { WarningCircleIcon } from "@/components/ui/icons/warning-circle";
 import { Input } from "@/components/ui/input";
 import { Radio, RadioButton, RadioItem, RadioLabel } from "@/components/ui/radio";
-import { Skeleton } from "@/components/ui/skeleton";
 import { SplitPane } from "@/components/ui/split-pane";
 import { Tag, type TagProps } from "@/components/ui/tag";
 import { locale, type MessageKey, t } from "@/i18n";
 import { apiError, siteApi } from "@/lib/api";
 import { useCan } from "@/lib/auth";
 import { useMediaQuery } from "@/lib/ftds/hooks/use-media-query";
+import { WorkspaceFallback, WorkspaceHeader } from "@/components/workspace";
 import { clx } from "@/lib/ftds/utils";
 import { useAnnouncementDoc, usePublish } from "@/lib/publish";
 import { LivePreview } from "./live-preview";
@@ -136,32 +135,25 @@ function problems(a: Announcement): Map<string, string> {
   return out;
 }
 
+/** What the screen is, drawn the same whether its document is loaded, loading or failed. */
+const identity = () => ({
+  icon: <MegaphoneIcon />,
+  title: t("announcement.title"),
+  subtitle: t("announcement.everyPage"),
+});
+
+/** The editing pane's starting width, for the SplitPane and the skeleton before it. */
+const PANE_WIDTH = 460;
+
 export function AnnouncementScreen() {
   const doc = useAnnouncementDoc();
-  if (doc.isError)
+  if (doc.isError || !doc.data)
     return (
-      <div className="p-surface">
-        <Callout variant="danger">
-          <CalloutTitle>{t("announcement.loadFailed")}</CalloutTitle>
-        </Callout>
-      </div>
-    );
-  if (!doc.data)
-    return (
-      <div className="flex h-full flex-col" aria-busy>
-        <div className="px-surface border-otl-gray-200 flex items-start gap-3 border-b pt-5 pb-4">
-          <Skeleton className="size-10 rounded-lg" />
-          <div className="flex flex-col gap-2">
-            <Skeleton className="h-6 w-40" />
-            <Skeleton className="h-4 w-80" />
-          </div>
-        </div>
-        <div className="bg-bg-washed flex flex-1 flex-col gap-4 p-4 md:max-w-[460px]">
-          <Skeleton className="h-16 w-full rounded-lg" />
-          <Skeleton className="h-64 w-full rounded-lg" />
-          <Skeleton className="h-40 w-full rounded-lg" />
-        </div>
-      </div>
+      <WorkspaceFallback
+        {...identity()}
+        error={doc.isError ? t("announcement.loadFailed") : undefined}
+        paneWidth={PANE_WIDTH}
+      />
     );
   return <Editor doc={doc.data} />;
 }
@@ -241,58 +233,49 @@ function Editor({ doc }: { doc: AnnouncementDoc }) {
   const look = barLook[state.bar];
 
   const header = (
-    <header className="bg-bg-white px-surface border-otl-gray-200 flex flex-wrap items-start gap-x-6 gap-y-3 border-b pt-5 pb-4">
-      <div className="flex min-w-0 flex-[1_1_20rem] items-start gap-3">
-        <span
-          aria-hidden
-          className="bg-bg-primary-100 text-txt-primary grid size-10 shrink-0 place-items-center rounded-lg [&_svg]:size-5"
-        >
-          <MegaphoneIcon />
-        </span>
-        <div className="flex min-w-0 flex-col gap-1">
-          <h1 className="text-title text-txt-black-900 truncate font-semibold">
-            {t("announcement.title")}
-          </h1>
-          <p className="text-body-sm text-txt-black-500">{t("announcement.everyPage")}</p>
-          <p className="text-body-sm text-txt-black-700 flex flex-wrap items-center gap-2 pt-1">
-            <Tag size="small" variant={look.tone} dot>
-              {t(look.label)}
-            </Tag>
-            {state.text}
-          </p>
-        </div>
-      </div>
-      <div className="flex max-w-full min-w-0 flex-wrap items-center gap-2">
-        {canPublish && (state.bar === "showing" || state.bar === "scheduled") && (
-          <EndNow doc={doc} onEnded={load} />
-        )}
-        {dirty ? (
-          <Button variant="default-ghost" size="small" onClick={() => setDiscarding(true)}>
-            {t("navigation.discardEdits")}
-          </Button>
-        ) : (
-          doc.changed && (
-            <Button variant="default-ghost" size="small" onClick={() => void discard()}>
-              {t("settings.discard")}
+    <WorkspaceHeader
+      {...identity()}
+      status={
+        <>
+          <Tag size="small" variant={look.tone} dot>
+            {t(look.label)}
+          </Tag>
+          {state.text}
+        </>
+      }
+      actions={
+        <>
+          {canPublish && (state.bar === "showing" || state.bar === "scheduled") && (
+            <EndNow doc={doc} onEnded={load} />
+          )}
+          {dirty ? (
+            <Button variant="default-ghost" size="small" onClick={() => setDiscarding(true)}>
+              {t("navigation.discardEdits")}
             </Button>
-          )
-        )}
-        <PublishControl
-          live={doc.changed ? "changed" : "live"}
-          save={conflict.saveState(saving, dirty)}
-          label={t("announcement.publish")}
-          beforePublish={dirty ? save : undefined}
-          viewPath="/"
-          onPublish={() => siteApi.publishDoc("announcement")}
-          review={{
-            title: t("announcement.review.title"),
-            description: t("announcement.review.description"),
-            body: <PublishReview draft={draft} issues={local} />,
-            blocked: local.size > 0,
-          }}
-        />
-      </div>
-    </header>
+          ) : (
+            doc.changed && (
+              <Button variant="default-ghost" size="small" onClick={() => void discard()}>
+                {t("settings.discard")}
+              </Button>
+            )
+          )}
+          <PublishControl
+            live={doc.changed ? "changed" : "live"}
+            save={conflict.saveState(saving, dirty)}
+            label={t("announcement.publish")}
+            beforePublish={dirty ? save : undefined}
+            viewPath="/"
+            onPublish={() => siteApi.publishDoc("announcement")}
+            review={{
+              title: t("announcement.review.title"),
+              description: t("announcement.review.description"),
+              body: <PublishReview draft={draft} issues={local} />,
+              blocked: local.size > 0,
+            }}
+          />
+        </>
+      }
+    />
   );
 
   const form = (
@@ -479,7 +462,7 @@ function Editor({ doc }: { doc: AnnouncementDoc }) {
         <SplitPane
           className="min-h-0 flex-1"
           storageKey="admin.announcement.split"
-          defaultWidth={460}
+          defaultWidth={PANE_WIDTH}
           maxWidth={720}
           startLabel={t("navigation.editor")}
           endLabel={t("navigation.preview")}

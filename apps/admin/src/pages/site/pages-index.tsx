@@ -9,7 +9,14 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useMemo, useRef, useState } from "react";
 import { card } from "@/components/card";
+import { Screen } from "@/components/screen";
 import { Button } from "@/components/ui/button";
+import {
+  PageHeader,
+  PageHeaderContent,
+  PageHeaderDescription,
+  PageHeaderTitle,
+} from "@/components/ui/page-header";
 import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
 import { useShortcut } from "@/components/ui/shortcuts";
 import { t } from "@/i18n";
@@ -114,252 +121,250 @@ export function PagesIndex({ pages }: { pages: PageSummary[] }) {
   const shownWaiting = allWaiting ? waiting : waiting.slice(0, CAP);
 
   return (
-    <div className="bg-bg-gray-50 h-full overflow-y-auto">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 pt-12 pb-16">
-        <header className="flex flex-col items-center gap-5 text-center">
-          <div className="flex flex-col gap-1">
-            <h1 className="font-heading text-txt-black-900 text-heading-xs font-semibold tracking-tight">
-              {t("pages.index.title")}
-            </h1>
-            <p className="text-body-md text-txt-black-700">
+    <Screen>
+      <div className="gap-stack-md flex flex-col">
+        <PageHeader>
+          <PageHeaderContent>
+            <PageHeaderTitle size="headline">{t("pages.index.title")}</PageHeaderTitle>
+            <PageHeaderDescription>
               {t("pages.index.intro", { count: pages.length })}
-            </p>
-          </div>
-          <div className="flex w-full max-w-2xl items-center gap-2">
-            <label className="bg-bg-white border-otl-gray-200 focus-within:border-otl-primary-300 focus-within:ring-bg-primary-100 shadow-card flex h-12 min-w-0 flex-1 items-center gap-3 rounded-full border pr-2 pl-5 transition-[border-color,box-shadow] duration-150 ease-out focus-within:ring-4">
-              <SearchGlyph className="text-txt-black-500 size-5 shrink-0" />
-              <input
-                ref={input}
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Escape") setQuery("");
-                  if (e.key === "Enter" && first) open(first.id);
-                }}
-                placeholder={t("pages.index.search")}
-                aria-label={t("pages.index.searchLabel")}
-                className="text-body-md text-txt-black-900 placeholder:text-txt-black-500 min-w-0 flex-1 bg-transparent outline-none [&::-webkit-search-cancel-button]:hidden"
-              />
-              <kbd className="text-label-compact text-txt-black-500 bg-bg-washed shrink-0 rounded-full px-2.5 py-1 font-sans">
-                {searching ? t("pages.index.enter") : "/"}
-              </kbd>
-            </label>
-            <Button variant="primary-fill" size="large" onClick={() => shell.newPage()}>
-              <PlusGlyph className="size-5" /> {t("commands.newPage")}
-            </Button>
-          </div>
-        </header>
-
-        {searching ? (
-          <section
-            aria-label={t("pages.index.results")}
-            className={clx(card, "border-otl-gray-200 mx-auto w-full max-w-2xl rounded-2xl p-2")}
-          >
-            {pageMatches.map((page) => (
-              <ResultRow
-                key={page.id}
-                page={page}
-                first={page === first}
-                sub={[...trailOf(page.id, byId), page.path].join(" · ")}
-              />
-            ))}
-            {entries.matches.length > 0 && (
-              <>
-                <h2 className="text-label-compact text-txt-black-500 px-3 pt-3 pb-1 font-medium">
-                  {t("tree.entries")}
-                </h2>
-                {entries.matches.map((entry) => (
-                  <ResultRow
-                    key={entry.id}
-                    page={entry}
-                    first={entry === first}
-                    sub={t("tree.entryIn", {
-                      collection: titleOf(byId.get(entry.parentId ?? "") ?? { title: "" }),
-                    })}
-                  />
-                ))}
-              </>
-            )}
-            {pageMatches.length === 0 && entries.matches.length === 0 && entries.settled && (
-              <p className="text-body-md text-txt-black-700 px-3 py-6 text-center">
-                {t("pages.index.noMatch", { query: query.trim() })}
-              </p>
-            )}
-          </section>
-        ) : (
-          <>
-            {waiting.length > 0 ? (
-              <section
-                aria-labelledby="waiting-heading"
-                className="bg-bg-washed flex flex-col gap-2 rounded-3xl p-2"
-              >
-                <div className="flex items-center justify-between gap-3 py-1.5 pr-1 pl-4">
-                  <div className="flex flex-col">
-                    <h2
-                      id="waiting-heading"
-                      className="text-body-md text-txt-black-900 font-semibold"
-                    >
-                      {t("pages.index.waiting")}
-                    </h2>
-                    <p className="text-body-sm text-txt-black-700">
-                      {t("pages.index.waitingBody", { count: waiting.length })}
-                    </p>
-                  </div>
-                  <Button
-                    variant="default-outline"
-                    // Sheet on the tray's Well, so it still reads as a button.
-                    className="bg-bg-white hover:bg-bg-gray-50"
-                    onClick={() => shell.openWaiting()}
-                  >
-                    <UploadGlyph className="size-[18px]" /> {t("pages.index.publish")}
-                  </Button>
-                </div>
-                <ul className="m-0 grid list-none grid-cols-1 gap-2 p-0 md:grid-cols-2">
-                  {shownWaiting.map((item) => {
-                    const page = byId.get(item.id);
-                    const target = {
-                      id: item.id,
-                      title: item.title,
-                      kind: page?.kind ?? "entry",
-                      parentId: page?.parentId ?? "",
-                    };
-                    return (
-                      <li
-                        key={item.id}
-                        className={clx(
-                          card,
-                          "group/row relative flex items-center gap-3.5 rounded-2xl border-transparent p-3.5",
-                        )}
-                      >
-                        <Bubble page={target} />
-                        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                          <EditLink id={item.id} className="text-body-md font-medium">
-                            {titleOf(item)}
-                          </EditLink>
-                          <StateLine
-                            state={item.new ? "draft" : "changed"}
-                            updatedAt={item.updatedAt}
-                            editedBy={item.editedBy}
-                          />
-                        </span>
-                        <span className="relative z-10 flex items-center gap-1">
-                          <Button
-                            variant="default-outline"
-                            size="small"
-                            render={
-                              // oxlint-disable-next-line jsx-a11y/anchor-has-content, jsx-a11y/control-has-associated-label -- the Button fills it with its label
-                              <a href={previewHref(item.id)} target="_blank" rel="noopener" />
-                            }
-                          >
-                            {t("pages.index.preview")}
-                          </Button>
-                          <RowMenu page={target} />
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-                {waiting.length > CAP && (
-                  <Button
-                    variant="default-ghost"
-                    size="small"
-                    aria-expanded={allWaiting}
-                    onClick={() => setAllWaiting((all) => !all)}
-                    className="self-center"
-                  >
-                    {allWaiting
-                      ? t("pages.index.showFewer")
-                      : t("pages.index.showAll", { count: waiting.length })}
-                    <ChevronGlyph
-                      className={clx(
-                        "size-4 transition-transform duration-150 ease-out motion-reduce:transition-none",
-                        allWaiting ? "-rotate-90" : "rotate-90",
-                      )}
-                    />
-                  </Button>
-                )}
-              </section>
-            ) : (
-              <p className="bg-bg-success-50 text-txt-success text-body-md flex items-center justify-center gap-2 rounded-3xl py-5">
-                <CheckGlyph className="size-5" /> {t("pages.index.caughtUp")}
-              </p>
-            )}
-
-            {recentEdits.length > 0 && (
-              <section aria-labelledby="recent-heading" className="flex flex-col gap-3">
-                <h2
-                  id="recent-heading"
-                  className="text-body-md text-txt-black-900 px-1 font-semibold"
-                >
-                  {t("pages.index.recent")}
-                </h2>
-                <ul className="m-0 grid list-none grid-cols-2 gap-3 p-0 lg:grid-cols-4">
-                  {recentEdits.slice(0, 4).map((page) => (
-                    <li key={page.id}>
-                      <Link
-                        to="/pages/$id/edit"
-                        params={{ id: page.id }}
-                        className={clx(
-                          card,
-                          "border-otl-gray-200 hover:border-otl-gray-300 focus-ring flex h-full flex-col items-start gap-4 rounded-2xl p-4 no-underline transition-[border-color] duration-150 ease-out",
-                        )}
-                      >
-                        <Bubble page={page} />
-                        <span className="flex w-full min-w-0 flex-col gap-0.5">
-                          <span className="text-label-compact text-txt-black-500 truncate">
-                            {page.parentId === null
-                              ? t("pages.index.home")
-                              : (trailOf(page.id, byId).at(-1) ?? page.path)}
-                          </span>
-                          <span className="text-body-md text-txt-black-900 truncate font-medium">
-                            {titleOf(page)}
-                          </span>
-                          <StateLine
-                            state={stateOf(page)}
-                            updatedAt={page.updatedAt}
-                            editedBy={page.editedBy}
-                          />
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-
-            <section aria-labelledby="all-heading" className="flex flex-col gap-3">
-              <h2 id="all-heading" className="text-body-md text-txt-black-900 px-1 font-semibold">
-                {t("pages.index.all")}
-                <span className="text-txt-black-500 ml-2 font-normal tabular-nums">
-                  {pages.length}
-                </span>
-              </h2>
-              <div className="columns-1 gap-3 md:columns-2 xl:columns-3 [&>*]:mb-3">
-                {site.sections.map((section) => (
-                  <SectionCard key={section.id} section={section} />
-                ))}
-                {(site.home || site.singles.length > 0) && (
-                  <PageCard title={t("pages.index.more")}>
-                    {[...(site.home ? [site.home] : []), ...site.singles].map((page) => (
-                      <Line key={page.id} page={page} />
-                    ))}
-                  </PageCard>
-                )}
-                <Link
-                  to="/pages/trash"
-                  className="border-otl-gray-300 text-body-sm text-txt-black-700 hover:text-txt-black-900 hover:bg-bg-white focus-ring flex w-full break-inside-avoid items-center gap-2.5 rounded-2xl border border-dashed px-4 py-3.5 no-underline transition-colors duration-150 ease-out"
-                >
-                  <TrashGlyph className="size-[18px]" />
-                  {t("pages.index.trash")}
-                  <span className="text-txt-black-500 ml-auto tabular-nums">{trashed}</span>
-                </Link>
-              </div>
-            </section>
-          </>
-        )}
+            </PageHeaderDescription>
+          </PageHeaderContent>
+        </PageHeader>
+        <div className="flex w-full max-w-2xl items-center gap-2">
+          <label className="bg-bg-white border-otl-gray-200 focus-within:border-otl-primary-300 focus-within:ring-bg-primary-100 shadow-card flex h-12 min-w-0 flex-1 items-center gap-3 rounded-full border pr-2 pl-5 transition-[border-color,box-shadow] duration-150 ease-out focus-within:ring-4">
+            <SearchGlyph className="text-txt-black-500 size-5 shrink-0" />
+            <input
+              ref={input}
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setQuery("");
+                if (e.key === "Enter" && first) open(first.id);
+              }}
+              placeholder={t("pages.index.search")}
+              aria-label={t("pages.index.searchLabel")}
+              className="text-body-md text-txt-black-900 placeholder:text-txt-black-500 min-w-0 flex-1 bg-transparent outline-none [&::-webkit-search-cancel-button]:hidden"
+            />
+            <kbd className="text-label-compact text-txt-black-500 bg-bg-washed shrink-0 rounded-full px-2.5 py-1 font-sans">
+              {searching ? t("pages.index.enter") : "/"}
+            </kbd>
+          </label>
+          <Button variant="primary-fill" size="large" onClick={() => shell.newPage()}>
+            <PlusGlyph className="size-5" /> {t("commands.newPage")}
+          </Button>
+        </div>
       </div>
-    </div>
+
+      {searching ? (
+        <section
+          aria-label={t("pages.index.results")}
+          className={clx(card, "border-otl-gray-200 w-full max-w-2xl rounded-2xl p-2")}
+        >
+          {pageMatches.map((page) => (
+            <ResultRow
+              key={page.id}
+              page={page}
+              first={page === first}
+              sub={[...trailOf(page.id, byId), page.path].join(" · ")}
+            />
+          ))}
+          {entries.matches.length > 0 && (
+            <>
+              <h2 className="text-label-compact text-txt-black-500 px-3 pt-3 pb-1 font-medium">
+                {t("tree.entries")}
+              </h2>
+              {entries.matches.map((entry) => (
+                <ResultRow
+                  key={entry.id}
+                  page={entry}
+                  first={entry === first}
+                  sub={t("tree.entryIn", {
+                    collection: titleOf(byId.get(entry.parentId ?? "") ?? { title: "" }),
+                  })}
+                />
+              ))}
+            </>
+          )}
+          {pageMatches.length === 0 && entries.matches.length === 0 && entries.settled && (
+            <p className="text-body-md text-txt-black-700 px-3 py-6 text-center">
+              {t("pages.index.noMatch", { query: query.trim() })}
+            </p>
+          )}
+        </section>
+      ) : (
+        <>
+          {waiting.length > 0 ? (
+            <section
+              aria-labelledby="waiting-heading"
+              className="bg-bg-washed flex flex-col gap-2 rounded-3xl p-2"
+            >
+              <div className="flex items-center justify-between gap-3 py-1.5 pr-1 pl-4">
+                <div className="flex flex-col">
+                  <h2
+                    id="waiting-heading"
+                    className="text-body-md text-txt-black-900 font-semibold"
+                  >
+                    {t("pages.index.waiting")}
+                  </h2>
+                  <p className="text-body-sm text-txt-black-700">
+                    {t("pages.index.waitingBody", { count: waiting.length })}
+                  </p>
+                </div>
+                <Button
+                  variant="default-outline"
+                  // Sheet on the tray's Well, so it still reads as a button.
+                  className="bg-bg-white hover:bg-bg-gray-50"
+                  onClick={() => shell.openWaiting()}
+                >
+                  <UploadGlyph className="size-[18px]" /> {t("pages.index.publish")}
+                </Button>
+              </div>
+              <ul className="m-0 grid list-none grid-cols-1 gap-2 p-0 md:grid-cols-2">
+                {shownWaiting.map((item) => {
+                  const page = byId.get(item.id);
+                  const target = {
+                    id: item.id,
+                    title: item.title,
+                    kind: page?.kind ?? "entry",
+                    parentId: page?.parentId ?? "",
+                  };
+                  return (
+                    <li
+                      key={item.id}
+                      className={clx(
+                        card,
+                        "group/row relative flex items-center gap-3.5 rounded-2xl border-transparent p-3.5",
+                      )}
+                    >
+                      <Bubble page={target} />
+                      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                        <EditLink id={item.id} className="text-body-md font-medium">
+                          {titleOf(item)}
+                        </EditLink>
+                        <StateLine
+                          state={item.new ? "draft" : "changed"}
+                          updatedAt={item.updatedAt}
+                          editedBy={item.editedBy}
+                        />
+                      </span>
+                      <span className="relative z-10 flex items-center gap-1">
+                        <Button
+                          variant="default-outline"
+                          size="small"
+                          render={
+                            // oxlint-disable-next-line jsx-a11y/anchor-has-content, jsx-a11y/control-has-associated-label -- the Button fills it with its label
+                            <a href={previewHref(item.id)} target="_blank" rel="noopener" />
+                          }
+                        >
+                          {t("pages.index.preview")}
+                        </Button>
+                        <RowMenu page={target} />
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+              {waiting.length > CAP && (
+                <Button
+                  variant="default-ghost"
+                  size="small"
+                  aria-expanded={allWaiting}
+                  onClick={() => setAllWaiting((all) => !all)}
+                  className="self-center"
+                >
+                  {allWaiting
+                    ? t("pages.index.showFewer")
+                    : t("pages.index.showAll", { count: waiting.length })}
+                  <ChevronGlyph
+                    className={clx(
+                      "size-4 transition-transform duration-150 ease-out motion-reduce:transition-none",
+                      allWaiting ? "-rotate-90" : "rotate-90",
+                    )}
+                  />
+                </Button>
+              )}
+            </section>
+          ) : (
+            <p className="bg-bg-success-50 text-txt-success text-body-md flex items-center justify-center gap-2 rounded-3xl py-5">
+              <CheckGlyph className="size-5" /> {t("pages.index.caughtUp")}
+            </p>
+          )}
+
+          {recentEdits.length > 0 && (
+            <section aria-labelledby="recent-heading" className="flex flex-col gap-3">
+              <h2
+                id="recent-heading"
+                className="text-body-md text-txt-black-900 px-1 font-semibold"
+              >
+                {t("pages.index.recent")}
+              </h2>
+              <ul className="m-0 grid list-none grid-cols-2 gap-3 p-0 lg:grid-cols-4">
+                {recentEdits.slice(0, 4).map((page) => (
+                  <li key={page.id}>
+                    <Link
+                      to="/pages/$id/edit"
+                      params={{ id: page.id }}
+                      className={clx(
+                        card,
+                        "border-otl-gray-200 hover:border-otl-gray-300 focus-ring flex h-full flex-col items-start gap-4 rounded-2xl p-4 no-underline transition-[border-color] duration-150 ease-out",
+                      )}
+                    >
+                      <Bubble page={page} />
+                      <span className="flex w-full min-w-0 flex-col gap-0.5">
+                        <span className="text-label-compact text-txt-black-500 truncate">
+                          {page.parentId === null
+                            ? t("pages.index.home")
+                            : (trailOf(page.id, byId).at(-1) ?? page.path)}
+                        </span>
+                        <span className="text-body-md text-txt-black-900 truncate font-medium">
+                          {titleOf(page)}
+                        </span>
+                        <StateLine
+                          state={stateOf(page)}
+                          updatedAt={page.updatedAt}
+                          editedBy={page.editedBy}
+                        />
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          <section aria-labelledby="all-heading" className="flex flex-col gap-3">
+            <h2 id="all-heading" className="text-body-md text-txt-black-900 px-1 font-semibold">
+              {t("pages.index.all")}
+              <span className="text-txt-black-500 ml-2 font-normal tabular-nums">
+                {pages.length}
+              </span>
+            </h2>
+            <div className="columns-1 gap-3 md:columns-2 xl:columns-3 [&>*]:mb-3">
+              {site.sections.map((section) => (
+                <SectionCard key={section.id} section={section} />
+              ))}
+              {(site.home || site.singles.length > 0) && (
+                <PageCard title={t("pages.index.more")}>
+                  {[...(site.home ? [site.home] : []), ...site.singles].map((page) => (
+                    <Line key={page.id} page={page} />
+                  ))}
+                </PageCard>
+              )}
+              <Link
+                to="/pages/trash"
+                className="border-otl-gray-300 text-body-sm text-txt-black-700 hover:text-txt-black-900 hover:bg-bg-washed focus-ring flex w-full break-inside-avoid items-center gap-2.5 rounded-2xl border border-dashed px-4 py-3.5 no-underline transition-colors duration-150 ease-out"
+              >
+                <TrashGlyph className="size-[18px]" />
+                {t("pages.index.trash")}
+                <span className="text-txt-black-500 ml-auto tabular-nums">{trashed}</span>
+              </Link>
+            </div>
+          </section>
+        </>
+      )}
+    </Screen>
   );
 }
 

@@ -7,7 +7,9 @@ import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
 import { useSiteState } from "@/components/site-state";
 import { PublishConfirm, PublishOutcome, useWaitingPublish } from "@/components/waiting-list";
+import { Screen } from "@/components/screen";
 import { Button } from "@/components/ui/button";
+import { PageHeaderTitle } from "@/components/ui/page-header";
 import { Callout, CalloutAction, CalloutContent, CalloutTitle } from "@/components/ui/callout";
 import { Tabs, TabsContent, TabsCounter, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { t } from "@/i18n";
@@ -36,16 +38,15 @@ export function PublishingScreen() {
   const items = state.waiting.items.length;
 
   return (
-    <div className="bg-bg-gray-50 h-full overflow-y-auto md:overflow-hidden">
+    // From md up the comparison scrolls in its own panes, so the screen fills the main area.
+    <div className="h-full overflow-y-auto md:overflow-hidden">
       <Tabs
         value={tab}
         onValueChange={(value) => go(value as Tab)}
-        className="text-body-sm mx-auto flex h-full w-full max-w-7xl flex-col gap-4 px-6 pt-8 pb-10"
+        render={<Screen className="text-body-sm h-full min-h-0" />}
       >
         <header className="flex flex-wrap items-center gap-x-5 gap-y-3">
-          <h1 className="font-heading text-heading-xs text-txt-black-900 font-semibold tracking-tight">
-            {t("nav.publishing")}
-          </h1>
+          <PageHeaderTitle size="headline">{t("nav.publishing")}</PageHeaderTitle>
           <TabsList>
             <TabsTrigger value="ready">
               {t("publishing.tab.ready")}
@@ -85,7 +86,7 @@ export function PublishingScreen() {
           </Callout>
         )}
 
-        <TabsContent value="ready" className="flex min-h-0 flex-1 flex-col gap-4">
+        <TabsContent value="ready" className="gap-stack-lg flex min-h-0 flex-1 flex-col">
           <PublishOutcome state={state} />
           <Compare state={state} item={search.item} />
           {items > 0 && !canPublish && (

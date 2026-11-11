@@ -51,6 +51,7 @@ import { useAction } from "@/lib/use-action";
 import { useRun } from "@/lib/use-run";
 import { PersonCell } from "./person";
 import { UsersHeader } from "./users-tabs";
+import { Screen } from "@/components/screen";
 
 /** After this long without signing in, an account is flagged as possibly no longer needed. */
 const STALE_DAYS = 90;
@@ -115,7 +116,7 @@ export function UsersScreen() {
   const stale = sorted?.filter(isStale).length ?? 0;
 
   return (
-    <div className="p-surface gap-stack-lg mx-auto flex max-w-6xl flex-col">
+    <Screen>
       <UsersHeader
         description={t("users.intro")}
         actions={
@@ -201,7 +202,7 @@ export function UsersScreen() {
         />
       )}
       {shown && <LinkDialog {...shown} onClose={() => setShown(undefined)} />}
-    </div>
+    </Screen>
   );
 }
 
