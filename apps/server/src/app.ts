@@ -22,6 +22,7 @@ import { purgeDeleted } from "./content/history.js";
 import type { PublishPayload } from "@fiscal-sb/contracts";
 import { backupDirOf, listBackups, makeBackup, nextRun, retentionOf } from "./backup.js";
 import { runPublish } from "./content/publishing.js";
+import { DAILY_REFRESH, showsEvents } from "./content/entries.js";
 import { MANIFEST_DIR } from "./manifest.js";
 import { ownPath } from "./paths.js";
 import { REDIRECTS_FILE, pageFile } from "./publisher.js";
@@ -195,6 +196,25 @@ export async function buildApp(options: AppOptions) {
     };
     arm();
   }
+  /**
+   * Just after midnight in Malaysia, a site whose live pages show events
+   * publishes again, so an event calendar's "today" and an upcoming events
+   * block's coming events move on even when nothing else changes. Only the
+   * pages whose render changed are written.
+   */
+  let dailyTimer: NodeJS.Timeout | undefined;
+  const armDaily = () => {
+    const next = Date.parse(nextRun(DAILY_REFRESH, new Date(Date.now() + 1000)));
+    dailyTimer = setTimeout(() => {
+      void showsEvents(db)
+        .then((shows) => (shows ? jobs.enqueue("publish", { trigger: "daily" }) : undefined))
+        .catch((error: unknown) =>
+          app.log.error({ err: error }, "couldn't queue the daily publish"),
+        );
+      armDaily();
+    }, next - Date.now());
+    dailyTimer.unref();
+  };
   jobs.handle("backup", async () => {
     const backup = await makeBackup({ dataDir, backupDir, keep, database: databasePath });
     app.log.info({ file: backup.file, bytes: backup.bytes }, "backup made");
@@ -216,11 +236,13 @@ export async function buildApp(options: AppOptions) {
   if (options.runJobs ?? true)
     app.addHook("onReady", async () => {
       if (schedule) await scheduleBackups(schedule);
+      armDaily();
       await jobs.start();
     });
   app.addHook("onReady", () => collector.start());
   app.addHook("onClose", async () => {
     clearTimeout(backupTimer);
+    clearTimeout(dailyTimer);
     await jobs.stop();
     await collector.stop();
     await db.destroy();

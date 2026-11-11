@@ -356,6 +356,22 @@ export const registryMs: Record<string, string> = {
     "Kategori ini sahaja (alamatnya, contohnya siaran-media)",
   "See all link text": "Teks pautan Lihat semua",
 
+  // Event calendar
+  "Event calendar": "Kalendar acara",
+  "This listing's events by date: what's coming, day by day, and a month view, filtered by category and location.":
+    "Acara senarai ini mengikut tarikh: apa yang akan datang, hari demi hari, dan paparan bulan, ditapis mengikut kategori dan lokasi.",
+  "Offer a month view": "Tawarkan paparan bulan",
+  "Show the location filter": "Tunjukkan penapis lokasi",
+  "Text when there are no coming events": "Teks apabila tiada acara akan datang",
+
+  // Upcoming events
+  "Upcoming events": "Acara akan datang",
+  "The next events of a listing page, soonest first, with how many days are left and a link to the calendar.":
+    "Acara seterusnya sesuatu halaman senarai, yang terdekat dahulu, dengan bilangan hari lagi dan pautan ke kalendar.",
+  "2": "2",
+  "Only pinned events": "Acara yang disematkan sahaja",
+  "Show how many days are left": "Tunjukkan berapa hari lagi",
+
   // Templates
   Blank: "Kosong",
   "A title and a text block.": "Tajuk dan satu blok teks.",
@@ -379,4 +395,7 @@ export const registryMs: Record<string, string> = {
   Acara: "Acara",
   "Briefings, workshops, open days, with date and venue.":
     "Taklimat, bengkel, hari terbuka, dengan tarikh dan tempat.",
+  Takwim: "Takwim",
+  "A calendar of events: what's coming, day by day, and a page per month.":
+    "Kalendar acara: apa yang akan datang, hari demi hari, dan satu halaman setiap bulan.",
 };

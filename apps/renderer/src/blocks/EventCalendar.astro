@@ -1,0 +1,227 @@
+---
+/**
+ * A listing's events by date. The agenda lists coming events day by day; the
+ * month view is a table of the month's days on wide screens and the same
+ * days as a list on narrow ones. The views, months and filters are links to
+ * pages the publisher writes, so none of it needs a script.
+ */
+import { type BlockOf, type CalendarRender, type EntryItem, type ListingRender, addDays, dayOf, daysBetween, eventDays } from "@fiscal-sb/blocks";
+import ChevronLeft from "@/components/ui/icons/chevron-left.astro";
+import ChevronRight from "@/components/ui/icons/chevron-right.astro";
+import RSS from "@/components/ui/icons/rss.astro";
+import { band_cva, linked_item_class, stretched_link_class } from "@/components/ui/section.variants";
+import { clx } from "@/lib/ftds/utils";
+import EventDays from "./EventDays.astro";
+import { dayLabel, monthLabel, timeLabel, weekdayNames } from "./events";
+
+type Props = { block: BlockOf<"eventCalendar">; edit: boolean; lang: "ms" | "en"; listing?: ListingRender };
+const { block, edit, lang, listing } = Astro.props;
+const p = block.props;
+const calendar: CalendarRender | undefined = listing?.calendar;
+const en = lang === "en";
+const words = {
+  agenda: en ? "Coming up" : "Akan datang",
+  month: en ? "Month" : "Bulan",
+  all: en ? "All" : "Semua",
+  categories: en ? "Categories" : "Kategori",
+  locations: en ? "Locations" : "Lokasi",
+  views: en ? "Calendar view" : "Paparan kalendar",
+  prev: en ? "Previous month" : "Bulan sebelumnya",
+  next: en ? "Next month" : "Bulan seterusnya",
+  noneInMonth: en ? "No events this month." : "Tiada acara pada bulan ini.",
+  placeholder: en ? "Events appear here." : "Acara muncul di sini.",
+  rss: "Langgan suapan RSS",
+};
+
+type Day = { day: string; items: EntryItem[] };
+/** The agenda's days: each event under its first day, or today for one already running. */
+function agendaDays(items: EntryItem[], today: string): Day[] {
+  const days = new Map<string, EntryItem[]>();
+  for (const item of items) {
+    const first = dayOf(item.event!.start);
+    const day = first < today ? today : first;
+    days.set(day, [...(days.get(day) ?? []), item]);
+  }
+  return [...days].map(([day, list]) => ({ day, items: list }));
+}
+
+/** A month's days with their events, an event on every day it runs. */
+function monthDays(items: EntryItem[], month: string): Day[] {
+  const days = new Map<string, EntryItem[]>();
+  for (const item of items)
+    for (const day of eventDays(item.event!))
+      if (day.startsWith(month)) days.set(day, [...(days.get(day) ?? []), item]);
+  return [...days].toSorted(([a], [b]) => a.localeCompare(b)).map(([day, list]) => ({ day, items: list }));
+}
+
+/** The month's table: weeks from Monday, with the days of the months either side left blank. */
+function weeksOf(month: string) {
+  const first = `${month}-01`;
+  // 2026-11-02 is a Monday: days since then, modulo 7, is the weekday from Monday.
+  const lead = (((daysBetween("2026-11-02", first) % 7) + 7) % 7);
+  const start = addDays(first, -lead);
+  const weeks: (string | undefined)[][] = [];
+  for (let day = start; day.slice(0, 7) <= month; ) {
+    const week = Array.from({ length: 7 }, (_, i) => addDays(day, i));
+    weeks.push(week.map((d) => (d.startsWith(month) ? d : undefined)));
+    day = addDays(day, 7);
+  }
+  return weeks;
+}
+
+const chip = (current: boolean) =>
+  clx(
+    "focus-ring text-label-md rounded-full px-3 py-1",
+    current ? "bg-bg-primary-600 text-txt-white" : "bg-bg-washed text-txt-black-900 hover:bg-bg-washed-active",
+  );
+const filters = calendar
+  ? [
+      ...(p.categoryFilter && calendar.categories.length
+        ? [{ kind: "category" as const, label: words.categories, options: calendar.categories }]
+        : []),
+      ...(p.locationFilter && calendar.locations.length
+        ? [{ kind: "location" as const, label: words.locations, options: calendar.locations }]
+        : []),
+    ]
+  : [];
+const days = calendar ? (calendar.month ? monthDays(calendar.items, calendar.month) : agendaDays(calendar.items, calendar.today)) : [];
+const byDay = new Map(days.map((d) => [d.day, d.items]));
+---
+
+<section class={band_cva({ tone: p.tone })} data-event-calendar>
+  <div class="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-4 py-8 md:px-6">
+    {
+      calendar && (
+        <div class="flex flex-col gap-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            {calendar.monthHref ? (
+              <nav aria-label={words.views} class="bg-bg-washed inline-flex rounded-full p-1">
+                {[
+                  { label: words.agenda, href: calendar.agendaHref, current: calendar.view === "agenda" },
+                  { label: words.month, href: calendar.monthHref, current: calendar.view === "month" },
+                ].map((v) => (
+                  <a
+                    href={v.href}
+                    aria-current={v.current ? "page" : undefined}
+                    class={clx(
+                      "focus-ring text-label-md rounded-full px-4 py-1.5 font-medium",
+                      v.current ? "bg-bg-white text-txt-black-900 shadow-button" : "text-txt-black-700 hover:text-txt-black-900",
+                    )}
+                  >
+                    {v.label}
+                  </a>
+                ))}
+              </nav>
+            ) : (
+              <span />
+            )}
+            {calendar.month && (
+              <div class="flex items-center gap-2">
+                {calendar.prev ? (
+                  <a href={calendar.prev.href} class="focus-ring text-txt-black-700 hover:bg-bg-washed rounded-full p-1.5" aria-label={`${words.prev}: ${monthLabel(calendar.prev.month, lang)}`}>
+                    <ChevronLeft class="size-5" aria-hidden="true" />
+                  </a>
+                ) : (
+                  <span class="size-8" />
+                )}
+                <h2 class="text-title text-txt-black-900 min-w-[10ch] text-center font-semibold">{monthLabel(calendar.month, lang)}</h2>
+                {calendar.next ? (
+                  <a href={calendar.next.href} class="focus-ring text-txt-black-700 hover:bg-bg-washed rounded-full p-1.5" aria-label={`${words.next}: ${monthLabel(calendar.next.month, lang)}`}>
+                    <ChevronRight class="size-5" aria-hidden="true" />
+                  </a>
+                ) : (
+                  <span class="size-8" />
+                )}
+              </div>
+            )}
+          </div>
+          {filters.map((f) => (
+            <nav aria-label={f.label} class="flex flex-wrap items-center gap-2">
+              <span class="text-label-sm text-txt-black-500 me-1 font-medium">{f.label}</span>
+              <a href={calendar.all} aria-current={!calendar.filter ? "page" : undefined} class={chip(!calendar.filter)}>
+                {words.all}
+              </a>
+              {f.options.map((o) => {
+                const current = calendar.filter?.kind === f.kind && calendar.filter.slug === o.slug;
+                return (
+                  <a href={o.href} aria-current={current ? "page" : undefined} class={chip(current)}>
+                    {o.name}
+                  </a>
+                );
+              })}
+            </nav>
+          ))}
+        </div>
+      )
+    }
+
+    {
+      !calendar ? (
+        <p class="bg-bg-washed text-txt-black-700 rounded-md p-6">{edit ? words.placeholder : p.emptyText}</p>
+      ) : calendar.month ? (
+        <>
+          {/* Wide screens: the month as a table. */}
+          <table class="bg-bg-white border-otl-gray-200 hidden w-full table-fixed border-separate border-spacing-0 overflow-hidden rounded-lg border md:table">
+            <caption class="sr-only">{monthLabel(calendar.month, lang)}</caption>
+            <thead>
+              <tr>
+                {weekdayNames(lang).map((name, i) => (
+                  <th scope="col" abbr={weekdayNames(lang, "long")[i]} class="text-label-sm text-txt-black-500 border-otl-gray-200 border-b px-2 py-2 text-start font-medium">
+                    {name}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {weeksOf(calendar.month).map((week) => (
+                <tr>
+                  {week.map((day) =>
+                    day ? (
+                      <td class={clx("border-otl-gray-200 h-28 border-e border-b p-1.5 align-top last:border-e-0", day === calendar.today && "bg-bg-primary-50")}>
+                        <span class={clx("text-label-sm inline-grid size-6 place-items-center rounded-full", day === calendar.today ? "bg-bg-primary-600 text-txt-white font-semibold" : "text-txt-black-700")}>
+                          <span class="sr-only">{dayLabel(day, lang)}</span>
+                          <span aria-hidden="true">{Number(day.slice(8))}</span>
+                        </span>
+                        {byDay.get(day) && (
+                          <ul class="mt-1 flex flex-col gap-1">
+                            {byDay.get(day)!.map((item) => (
+                              <li class={clx(linked_item_class, "bg-bg-primary-50 text-txt-primary rounded-xs px-1.5 py-0.5")}>
+                                <a href={item.href} class={clx(stretched_link_class, "text-body-xs line-clamp-2 font-medium")}>
+                                  {!item.event!.allDay && dayOf(item.event!.start) === day && <span class="font-normal">{timeLabel(item.event!.start, lang)} </span>}
+                                  {item.title}
+                                </a>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </td>
+                    ) : (
+                      <td class="bg-bg-gray-50 border-otl-gray-200 border-e border-b last:border-e-0" />
+                    ),
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {/* Narrow screens: the month's days that have events, as a list. */}
+          <div class="md:hidden">
+            {days.length ? <EventDays days={days} today={calendar.today} lang={lang} /> : <p class="bg-bg-washed text-txt-black-700 rounded-md p-6">{words.noneInMonth}</p>}
+          </div>
+          {!days.length && <p class="bg-bg-washed text-txt-black-700 hidden rounded-md p-6 md:block">{words.noneInMonth}</p>}
+        </>
+      ) : days.length ? (
+        <EventDays days={days} today={calendar.today} lang={lang} />
+      ) : (
+        <p class="bg-bg-washed text-txt-black-700 rounded-md p-6">{p.emptyText}</p>
+      )
+    }
+
+    {
+      listing?.rss && (
+        <a href={listing.rss} class="text-txt-primary focus-ring text-body-sm flex w-fit items-center gap-1 rounded-xs underline">
+          <RSS class="size-4" aria-hidden="true" /> {words.rss}
+        </a>
+      )
+    }
+  </div>
+</section>

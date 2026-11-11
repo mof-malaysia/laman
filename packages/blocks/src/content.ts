@@ -62,6 +62,36 @@ export const PageSeo = z.object({
 });
 export type PageSeo = z.infer<typeof PageSeo>;
 
+/** Where an event entry came from, when a sync wrote it: the system, the calendar and the event's id there. */
+export const EventSource = z.object({
+  system: z.string().trim().min(1).max(40),
+  calendar: z.string().trim().min(1).max(200),
+  id: z.string().trim().min(1).max(400),
+});
+export type EventSource = z.infer<typeof EventSource>;
+
+/**
+ * An entry that is an event: when and where. Times carry their offset; an
+ * all-day event runs on the days its start and end fall on in Malaysia.
+ */
+export const EntryEvent = z
+  .object({
+    start: z.iso.datetime({ offset: true }),
+    end: z.iso.datetime({ offset: true }).optional(),
+    allDay: z.boolean().optional(),
+    /** One of the listing's location slugs. */
+    location: z.string().max(80).optional(),
+    /** The room or address, as people read it. */
+    venue: z.string().max(200).optional(),
+    /** Set only on synced events: they're changed in their calendar, not here. */
+    source: EventSource.optional(),
+  })
+  .refine((e) => !e.end || Date.parse(e.end) >= Date.parse(e.start), {
+    message: "The event ends before it starts",
+    path: ["end"],
+  });
+export type EntryEvent = z.infer<typeof EntryEvent>;
+
 /**
  * The fixed fields of an entry (an article or notice under a listing page).
  * They're part of its draft, so they publish and roll back with it.
@@ -74,23 +104,28 @@ export const EntryFields = z.object({
   /** Used on the listing, in search results and in RSS. */
   summary: z.string().max(200).optional(),
   cover: z.object({ mediaId: z.uuid(), alt: z.string().max(250).optional() }).optional(),
-  /** Shown first in the listing. */
+  /** Shown first in the listing; for events, featured (the upcoming events block can show only these). */
   pinned: z.boolean().optional(),
+  /** An event's date, time and place: the event calendar and upcoming events read it. */
+  event: EntryEvent.optional(),
 });
 export type EntryFields = z.infer<typeof EntryFields>;
 
+/** A named choice with an address: a listing's category or an event location. */
+const SlugName = z.object({
+  slug: z
+    .string()
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use lower-case letters, numbers and hyphens"),
+  name: z.string().trim().min(1).max(60),
+});
+
 /** A listing page's settings: its entries' categories, addresses, starting blocks and feed. */
 export const ListingSettings = z.object({
-  categories: z
-    .array(
-      z.object({
-        slug: z
-          .string()
-          .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use lower-case letters, numbers and hyphens"),
-        name: z.string().trim().min(1).max(60),
-      }),
-    )
-    .max(30),
+  categories: z.array(SlugName).max(30),
+  /** Where its events happen, for the event calendar's location filter. */
+  locations: z.array(SlugName).max(20).default([]),
+  /** "publishAt": newest first. "eventStart": coming events soonest first, then past ones. */
+  sort: z.enum(["publishAt", "eventStart"]).default("publishAt"),
   /** "slug": /berita/tajuk. "year": /berita/2026/tajuk. New entries only. */
   addressPattern: z.enum(["slug", "year"]),
   /** The block types a new entry starts with. */
@@ -101,6 +136,8 @@ export type ListingSettings = z.infer<typeof ListingSettings>;
 
 export const defaultListingSettings = (): ListingSettings => ({
   categories: [],
+  locations: [],
+  sort: "publishAt",
   addressPattern: "slug",
   startingBlocks: ["prose"],
   rss: true,
@@ -296,6 +333,40 @@ export type EntryItem = {
   summary?: string;
   image?: string;
   pinned?: boolean;
+  /** An event entry: when and where, with its location's name. */
+  event?: {
+    start: string;
+    end?: string;
+    allDay?: boolean;
+    location?: string;
+    locationSlug?: string;
+    venue?: string;
+  };
+};
+
+/** What an event calendar shows on this address: the agenda or one month, perhaps filtered. */
+export type CalendarRender = {
+  view: "agenda" | "month";
+  /** The day it was published, in Malaysia: YYYY-MM-DD. */
+  today: string;
+  /** The month view's month: YYYY-MM. */
+  month?: string;
+  /** The category or location this address filters by. */
+  filter?: { kind: "category" | "location"; slug: string };
+  /** The same view unfiltered, and filtered by each category and location. */
+  all: string;
+  categories: { slug: string; name: string; href: string }[];
+  locations: { slug: string; name: string; href: string }[];
+  /** The agenda and month view of the same filter; month is absent when the block offers no month view. */
+  agendaHref: string;
+  monthHref?: string;
+  /** Every month with a page, oldest first: YYYY-MM. Empty when the block offers no month view. */
+  months: string[];
+  /** The month pages either side, when there are any. */
+  prev?: { month: string; href: string };
+  next?: { month: string; href: string };
+  /** The agenda: coming events, soonest first. A month: the events on any of its days. */
+  items: EntryItem[];
 };
 
 /** The entries an entry list shows on this page of its listing. */
@@ -308,6 +379,8 @@ export type ListingRender = {
   page: number;
   pages: number;
   rss?: string;
+  /** A listing with an event calendar: what it shows on this address. */
+  calendar?: CalendarRender;
 };
 
 /** What an entry's article layout draws above its blocks. */
@@ -318,6 +391,8 @@ export type EntryRender = {
   category?: string;
   cover?: { src: string; alt: string };
   breadcrumb: { label: string; href?: string }[];
+  /** An event entry: the header gives its time and place instead of the publish date. */
+  event?: NonNullable<EntryItem["event"]>;
 };
 
 /** What the renderer is given for one page. */
@@ -340,6 +415,8 @@ export type RenderInput = {
   entry?: EntryRender;
   /** Latest entries blocks: the newest entries of each listing they name, by its page id. */
   latest?: Record<string, { path: string; items: EntryItem[] }>;
+  /** Upcoming events blocks: each listing's coming events, soonest first, by its page id. */
+  upcoming?: Record<string, { path: string; today: string; items: EntryItem[] }>;
   /** The SEARCH_PATH page: the search form and its results, instead of blocks. */
   searchPage?: { filters: boolean };
   /** The trail from the home page to this one, for a Page intro block. Absent on the home page. */

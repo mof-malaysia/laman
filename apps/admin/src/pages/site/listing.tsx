@@ -311,6 +311,73 @@ export function CollectionSettings({ listing }: { listing: Page }) {
   );
 }
 
+/** Named choices with addresses (categories, locations): a row each, the address following the name until it's edited. */
+function SlugNameRows({
+  kind,
+  rows,
+  onChange,
+  addLabel,
+}: {
+  kind: "category" | "location";
+  rows: { slug: string; name: string }[];
+  onChange: (rows: { slug: string; name: string }[]) => void;
+  addLabel: string;
+}) {
+  return (
+    <>
+      {rows.map((row, i) => (
+        <div key={`${kind}${i}`} className="flex items-end gap-2">
+          <Field name={`${kind}-name-${i}`} className="flex-1">
+            {/* The column names show once, over the first row. */}
+            <FieldLabel className={i > 0 ? "sr-only" : undefined}>
+              {t("listing.categories.name")}
+            </FieldLabel>
+            <Input
+              value={row.name}
+              maxLength={60}
+              onChange={(e) => {
+                const name = e.target.value;
+                onChange(
+                  rows.map((r, k) => (k === i ? { name, slug: r.slug || slugify(name) } : r)),
+                );
+              }}
+            />
+          </Field>
+          <Field name={`${kind}-slug-${i}`} className="flex-1">
+            <FieldLabel className={i > 0 ? "sr-only" : undefined}>
+              {t("listing.categories.slug")}
+            </FieldLabel>
+            <Input
+              value={row.slug}
+              maxLength={80}
+              onChange={(e) =>
+                onChange(rows.map((r, k) => (k === i ? { ...r, slug: e.target.value } : r)))
+              }
+            />
+          </Field>
+          <Button
+            variant="danger-ghost"
+            iconOnly
+            aria-label={t("navigation.remove", { label: row.name })}
+            onClick={() => onChange(rows.filter((_, k) => k !== i))}
+          >
+            <TrashIcon />
+          </Button>
+        </div>
+      ))}
+      <div>
+        <Button
+          variant="default-outline"
+          size="small"
+          onClick={() => onChange([...rows, { name: "", slug: "" }])}
+        >
+          <PlusIcon /> {addLabel}
+        </Button>
+      </div>
+    </>
+  );
+}
+
 const entryBlocks = blocksFor("entry");
 /** For the example address of the year pattern. */
 const THIS_YEAR = new Date().getFullYear();
@@ -344,66 +411,43 @@ function ListingForm({ listing, settings }: { listing: Page; settings: ListingSe
     // their titles when it's wide.
     <form noValidate onSubmit={(e) => void save(e)} className="@container flex flex-col pt-2">
       <FormRow title={t("listing.categories")} description={t("listing.categories.hint")}>
-        {value.categories.map((category, i) => (
-          <div key={`c${i}`} className="flex items-end gap-2">
-            <Field name={`category-name-${i}`} className="flex-1">
-              {/* The column names show once, over the first row. */}
-              <FieldLabel className={i > 0 ? "sr-only" : undefined}>
-                {t("listing.categories.name")}
-              </FieldLabel>
-              <Input
-                value={category.name}
-                maxLength={60}
-                onChange={(e) => {
-                  const name = e.target.value;
-                  set({
-                    categories: value.categories.map((c, k) =>
-                      k === i
-                        ? {
-                            name,
-                            slug: c.slug || slugify(name),
-                          }
-                        : c,
-                    ),
-                  });
-                }}
+        <SlugNameRows
+          kind="category"
+          rows={value.categories}
+          onChange={(categories) => set({ categories })}
+          addLabel={t("listing.categories.add")}
+        />
+      </FormRow>
+      <FormRow title={t("listing.sort")} description={t("listing.sort.hint")}>
+        <Field name="listing-sort">
+          <Fieldset
+            className="flex-row flex-wrap gap-x-6 gap-y-2"
+            render={
+              <Radio
+                value={value.sort}
+                onValueChange={(v) => set({ sort: v as ListingSettings["sort"] })}
               />
-            </Field>
-            <Field name={`category-slug-${i}`} className="flex-1">
-              <FieldLabel className={i > 0 ? "sr-only" : undefined}>
-                {t("listing.categories.slug")}
-              </FieldLabel>
-              <Input
-                value={category.slug}
-                maxLength={80}
-                onChange={(e) =>
-                  set({
-                    categories: value.categories.map((c, k) =>
-                      k === i ? { ...c, slug: e.target.value } : c,
-                    ),
-                  })
-                }
-              />
-            </Field>
-            <Button
-              variant="danger-ghost"
-              iconOnly
-              aria-label={t("navigation.remove", { label: category.name })}
-              onClick={() => set({ categories: value.categories.filter((_, k) => k !== i) })}
-            >
-              <TrashIcon />
-            </Button>
-          </div>
-        ))}
-        <div>
-          <Button
-            variant="default-outline"
-            size="small"
-            onClick={() => set({ categories: [...value.categories, { name: "", slug: "" }] })}
+            }
           >
-            <PlusIcon /> {t("listing.categories.add")}
-          </Button>
-        </div>
+            <FieldsetLegend className="sr-only">{t("listing.sort")}</FieldsetLegend>
+            {(["publishAt", "eventStart"] as const).map((sort) => (
+              <FieldItem key={sort} className="w-auto">
+                <RadioItem>
+                  <RadioButton value={sort} id={`sort-${sort}`} />
+                  <RadioLabel htmlFor={`sort-${sort}`}>{t(`listing.sort.${sort}`)}</RadioLabel>
+                </RadioItem>
+              </FieldItem>
+            ))}
+          </Fieldset>
+        </Field>
+      </FormRow>
+      <FormRow title={t("listing.locations")} description={t("listing.locations.hint")}>
+        <SlugNameRows
+          kind="location"
+          rows={value.locations}
+          onChange={(locations) => set({ locations })}
+          addLabel={t("listing.locations.add")}
+        />
       </FormRow>
       <FormRow title={t("listing.pattern")} description={t("listing.pattern.hint")}>
         <Field name="address-pattern">

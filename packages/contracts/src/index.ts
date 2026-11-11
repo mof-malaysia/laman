@@ -279,6 +279,8 @@ export const PublishTrigger = z.enum([
   "rebuild",
   /** Queued by a restore, so the site matches the restored content. */
   "restore",
+  /** Just after midnight, on a site with event calendars or upcoming events, so "today" and what's coming stay right. */
+  "daily",
 ]);
 export type PublishTrigger = z.infer<typeof PublishTrigger>;
 

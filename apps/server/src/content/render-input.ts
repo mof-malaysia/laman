@@ -13,7 +13,7 @@ import {
   withDefaults,
 } from "@fiscal-sb/blocks";
 import type { Db } from "../db/index.js";
-import { entryRender, latestRender, listingRender } from "./entries.js";
+import { entryRender, latestRender, listingRender, upcomingRender } from "./entries.js";
 import type { Loads } from "./loads.js";
 import { mediaInfo } from "./media.js";
 import { type SiteDraft, siteContext } from "./site.js";
@@ -37,6 +37,9 @@ export async function renderInputFor(
     /** Listing pages: which page of entries, and which category. */
     listingPage?: number;
     category?: string;
+    /** Event calendars: which location, and which month (YYYY-MM). */
+    location?: string;
+    month?: string;
     /** A publish's shared reads, so each address doesn't load the site again. */
     loads?: Loads;
   },
@@ -45,10 +48,11 @@ export async function renderInputFor(
   const content = withDefaults(PageContent, rest.content ?? rest.doc.ms);
   const doc = { ...rest.doc, ms: content };
   // Only a Page intro shows the trail: other pages stay out of their ancestors' renames.
-  const [site, media, latest, breadcrumb] = await Promise.all([
+  const [site, media, latest, upcoming, breadcrumb] = await Promise.all([
     siteContext(db, rest.scope, rest.path, rest.siteUrl, rest.unsaved, rest.loads),
     mediaInfo(db, [content, doc.entry]),
     latestRender(db, doc, rest.scope, rest.loads),
+    upcomingRender(db, doc, rest.scope, rest.loads),
     content.blocks.some((b) => b.type === "pageIntro")
       ? breadcrumbOf(db, { id: rest.pageId }, content.title, rest.loads)
       : undefined,
@@ -58,6 +62,8 @@ export async function renderInputFor(
       ? await listingRender(db, rest.pageId, doc, rest.scope, {
           ...(rest.listingPage && { page: rest.listingPage }),
           ...(rest.category && { category: rest.category }),
+          ...(rest.location && { location: rest.location }),
+          ...(rest.month && { month: rest.month }),
           loads: rest.loads,
         })
       : undefined;
@@ -75,6 +81,7 @@ export async function renderInputFor(
     ...(listing && { listing }),
     ...(entry && { entry }),
     ...(Object.keys(latest).length && { latest }),
+    ...(Object.keys(upcoming).length && { upcoming }),
     ...(breadcrumb && { breadcrumb }),
   };
 }

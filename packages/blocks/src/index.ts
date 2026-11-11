@@ -13,6 +13,8 @@ export {
 export type { EmbedRules, EmbedService, EmbedServiceId } from "./blocks/embed.js";
 export { featureIconGroups, featureIconLabels, featureIcons } from "./blocks/feature-grid.js";
 export { LATEST_MAX } from "./blocks/latest-entries.js";
+export { UPCOMING_MAX } from "./blocks/upcoming-events.js";
+export * from "./events.js";
 export { blockIcons } from "./define.js";
 export type { BlockDefinition, BlockGroup, BlockIcon } from "./define.js";
 export * from "./templates.js";

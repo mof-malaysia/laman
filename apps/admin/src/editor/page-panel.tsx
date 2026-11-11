@@ -114,6 +114,153 @@ function EntryFieldsEditor({
           <FieldLabel>{t("entry.pinned")}</FieldLabel>
         </FieldItem>
       </Field>
+      <EntryEventEditor
+        entry={entry}
+        locations={listing.data?.settings.locations ?? []}
+        set={set}
+      />
+    </section>
+  );
+}
+
+type EntryEvent = NonNullable<EntryFields["event"]>;
+
+/** A date input's value (local day) from an ISO time. */
+const dayInputOf = (iso: string) => localOf(iso).slice(0, 10);
+/** An all-day event's day as stored: midnight in Malaysia. */
+const allDayAt = (day: string) => `${day}T00:00:00+08:00`;
+
+/** A new event: tomorrow at nine. */
+function newEvent(): EntryEvent {
+  const start = new Date();
+  start.setDate(start.getDate() + 1);
+  start.setHours(9, 0, 0, 0);
+  return { start: start.toISOString() };
+}
+
+/**
+ * An entry's event: when and where. The event calendar and upcoming events
+ * read these. A synced event's come from its calendar, so they're read-only.
+ */
+function EntryEventEditor({
+  entry,
+  locations,
+  set,
+}: {
+  entry: EntryFields;
+  locations: { slug: string; name: string }[];
+  set: (next: Partial<EntryFields>, key: string) => void;
+}) {
+  const event = entry.event;
+  const synced = event?.source;
+  const change = (next: Partial<EntryEvent>, key: string) =>
+    event && set({ event: { ...event, ...next } }, `entry.event.${key}`);
+  /** A time from its input: a day for an all-day event, else a local date and time. */
+  const timeOf = (value: string) => {
+    if (!value) return undefined;
+    if (event?.allDay) return allDayAt(value);
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+  };
+  const inputOf = (iso: string) => (event?.allDay ? dayInputOf(iso) : localOf(iso));
+  return (
+    <section
+      className="border-otl-gray-200 flex flex-col gap-3 border-t pt-5"
+      aria-labelledby="entry-event"
+    >
+      <h3 id="entry-event" className="text-label-md text-txt-black-900 font-semibold">
+        {t("entry.event")}
+      </h3>
+      {synced ? (
+        <p className="bg-bg-washed text-txt-black-700 text-body-sm rounded-md p-3">
+          {t("entry.event.synced", { system: synced.system })}
+        </p>
+      ) : (
+        <Field name="entry-is-event">
+          <FieldItem>
+            <Checkbox
+              checked={Boolean(event)}
+              onCheckedChange={(on) => set({ event: on ? newEvent() : undefined }, "entry.event")}
+            />
+            <FieldLabel>{t("entry.event.on")}</FieldLabel>
+          </FieldItem>
+        </Field>
+      )}
+      {event && (
+        <fieldset disabled={Boolean(synced)} className="flex flex-col gap-3">
+          <Field name="entry-event-all-day">
+            <FieldItem>
+              <Checkbox
+                checked={event.allDay ?? false}
+                onCheckedChange={(allDay) =>
+                  change(
+                    allDay
+                      ? {
+                          allDay: true,
+                          start: allDayAt(dayInputOf(event.start)),
+                          end: event.end && allDayAt(dayInputOf(event.end)),
+                        }
+                      : { allDay: undefined },
+                    "allDay",
+                  )
+                }
+              />
+              <FieldLabel>{t("entry.event.allDay")}</FieldLabel>
+            </FieldItem>
+          </Field>
+          <Field name="entry-event-start">
+            <FieldLabel>
+              {t(event.allDay ? "entry.event.startDay" : "entry.event.start")}
+            </FieldLabel>
+            <Input
+              type={event.allDay ? "date" : "datetime-local"}
+              value={inputOf(event.start)}
+              onChange={(e) => {
+                const start = timeOf(e.target.value);
+                if (!start) return;
+                // An end before the new start moves with it.
+                const end =
+                  event.end && Date.parse(event.end) < Date.parse(start) ? start : event.end;
+                change({ start, end }, "start");
+              }}
+            />
+          </Field>
+          <Field name="entry-event-end">
+            <FieldLabel>{t(event.allDay ? "entry.event.endDay" : "entry.event.end")}</FieldLabel>
+            <FieldDescription>{t("entry.event.endHint")}</FieldDescription>
+            <Input
+              type={event.allDay ? "date" : "datetime-local"}
+              value={event.end ? inputOf(event.end) : ""}
+              min={inputOf(event.start)}
+              onChange={(e) => {
+                const end = timeOf(e.target.value);
+                if (end && Date.parse(end) < Date.parse(event.start)) return;
+                change({ end }, "end");
+              }}
+            />
+          </Field>
+          {locations.length > 0 && (
+            <Field name="entry-event-location">
+              <FieldLabel>{t("entry.event.location")}</FieldLabel>
+              <Select
+                items={locations.map((l) => ({ value: l.slug, label: l.name }))}
+                value={event.location ?? ""}
+                clearable
+                placeholder={t("editor.field.none")}
+                onValueChange={(v: string) => change({ location: v || undefined }, "location")}
+              />
+            </Field>
+          )}
+          <Field name="entry-event-venue">
+            <FieldLabel>{t("entry.event.venue")}</FieldLabel>
+            <Input
+              value={event.venue ?? ""}
+              maxLength={200}
+              onChange={(e) => change({ venue: e.target.value || undefined }, "venue")}
+            />
+          </Field>
+        </fieldset>
+      )}
     </section>
   );
 }

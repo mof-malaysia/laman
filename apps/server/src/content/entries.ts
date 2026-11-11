@@ -8,15 +8,24 @@
 import {
   type BlockOf,
   type BlockType,
+  type CalendarRender,
+  type EntryFields,
   type EntryItem,
   type EntryRender,
   type ListingRender,
   ListingSettings,
   LATEST_MAX,
   type PageDocument,
+  UPCOMING_MAX,
+  addMonths,
   blocksFor,
+  calendarPath,
   collectionSettings,
+  dayOf,
   defaultListingSettings,
+  eventDays,
+  isUpcoming,
+  monthOf,
   newBlock,
   slugify,
 } from "@fiscal-sb/blocks";
@@ -155,7 +164,7 @@ export async function listEntries(
     pageSize: number;
   },
 ) {
-  await listingSettings(db, listingId);
+  const settings = await listingSettings(db, listingId);
   const ids = (
     await db
       .selectFrom("pages")
@@ -176,6 +185,7 @@ export async function listEntries(
     ).map((r) => [r.id, JSON.parse(r.draft) as PageDocument]),
   );
   const search = query.search?.toLowerCase();
+  const at = Date.now();
   const items: EntrySummary[] = pages
     .flatMap((p) => {
       const entry = drafts.get(p.id)?.entry;
@@ -187,11 +197,32 @@ export async function listEntries(
     .toSorted(
       (a, b) =>
         Number(Boolean(b.entry.pinned)) - Number(Boolean(a.entry.pinned)) ||
+        (settings.sort === "eventStart" ? byEvent(a.entry, b.entry, at) : 0) ||
         Date.parse(b.entry.publishAt) - Date.parse(a.entry.publishAt),
     );
   const start = (query.page - 1) * query.pageSize;
   return { items: items.slice(start, start + query.pageSize), total: items.length };
 }
+
+/**
+ * Event order: coming events soonest first, then past ones latest first, then
+ * entries that aren't events. 0 when it can't tell them apart.
+ */
+function byEvent(a: EntryFields, b: EntryFields, at: number) {
+  const rank = (e: EntryFields) => (!e.event ? 2 : isUpcoming(e.event, at) ? 0 : 1);
+  const ra = rank(a);
+  const rb = rank(b);
+  if (ra !== rb) return ra - rb;
+  if (ra === 2) return 0;
+  const diff = Date.parse(a.event!.start) - Date.parse(b.event!.start);
+  return ra === 0 ? diff : -diff;
+}
+
+/** Coming events, soonest first: the agenda and upcoming events blocks. */
+const upcomingOf = (items: EntryItem[], at: number) =>
+  items
+    .filter((item) => item.event && isUpcoming(item.event, at))
+    .toSorted((a, b) => Date.parse(a.event!.start) - Date.parse(b.event!.start));
 
 /**
  * A listing's entries as visitors see them: the published ones whose date
@@ -232,10 +263,12 @@ function entryItems(
       docs.map((d) => d.entry.cover),
     );
     const names = new Map(settings.categories.map((c) => [c.slug, c.name]));
+    const places = new Map(settings.locations.map((l) => [l.slug, l.name]));
     return docs
       .toSorted(
         (a, b) =>
           Number(Boolean(b.entry.pinned)) - Number(Boolean(a.entry.pinned)) ||
+          (settings.sort === "eventStart" ? byEvent(a.entry, b.entry, at) : 0) ||
           // As times, not text: an entry dated "…+08:00" isn't later than one in UTC.
           Date.parse(b.entry.publishAt) - Date.parse(a.entry.publishAt) ||
           // Entries dated to the same instant: the one made last first, so the order never varies.
@@ -244,6 +277,8 @@ function entryItems(
       .map(({ id, doc, entry }) => {
         const cover = entry.cover && covers[entry.cover.mediaId];
         const categoryName = entry.category && names.get(entry.category);
+        const event = entry.event;
+        const place = event?.location && places.get(event.location);
         return {
           title: doc.ms.title,
           href: tree.path(id),
@@ -252,6 +287,15 @@ function entryItems(
           ...(entry.summary && { summary: entry.summary }),
           ...(cover && { image: cover.variants.find((v) => v.width >= 480)?.url ?? cover.url }),
           ...(entry.pinned && { pinned: true }),
+          ...(event && {
+            event: {
+              start: event.start,
+              ...(event.end && { end: event.end }),
+              ...(event.allDay && { allDay: true }),
+              ...(place && { location: place, locationSlug: event.location }),
+              ...(event.venue && { venue: event.venue }),
+            },
+          }),
         };
       });
   });
@@ -263,9 +307,22 @@ export function listingPagePath(base: string, page: number, category?: string) {
   return page > 1 ? `${root === "/" ? "" : root}/halaman/${page}` : root;
 }
 
-type ListingOptions = { page?: number; category?: string; loads?: Loads };
+type ListingOptions = {
+  page?: number;
+  category?: string;
+  /** An event calendar's location filter. */
+  location?: string;
+  /** An event calendar's month page: YYYY-MM. */
+  month?: string;
+  /** The time it's rendered at; now by default. */
+  now?: number;
+  loads?: Loads;
+};
 
-/** What a listing page's entry list shows on page `page`, optionally of one category. */
+const calendarOf = (doc: PageDocument) =>
+  doc.ms.blocks.find((b): b is BlockOf<"eventCalendar"> => b.type === "eventCalendar");
+
+/** What a listing page's entry list (or event calendar) shows on page `page`, optionally of one category. */
 export async function listingRender(
   db: Db,
   listingId: string,
@@ -278,11 +335,17 @@ export async function listingRender(
     listingSettingsOf(db, listingId, loads),
     treeOf(db, loads),
   ]);
-  const all = await entryItems(db, listingId, scope, { category: options.category, loads });
+  // A calendar reads every event, so its months are the same under every filter.
+  const all = calendarOf(doc)
+    ? await entryItems(db, listingId, scope, { loads })
+    : await entryItems(db, listingId, scope, { category: options.category, loads });
   return listingRenderOf(settings, tree.path(listingId), doc, all, options);
 }
 
-/** The listing render from its parts, without the database: `all` is every matching entry. */
+/**
+ * The listing render from its parts, without the database: `all` is every
+ * matching entry (with an event calendar, every entry, unfiltered).
+ */
 export function listingRenderOf(
   settings: ListingSettings,
   base: string,
@@ -290,11 +353,7 @@ export function listingRenderOf(
   all: EntryItem[],
   options: ListingOptions = {},
 ): ListingRender {
-  const block = doc.ms.blocks.find((b): b is BlockOf<"entryList"> => b.type === "entryList");
-  const perPage = Number(block?.props.perPage ?? 12);
-  const pages = Math.max(1, Math.ceil(all.length / perPage));
-  const page = Math.min(options.page ?? 1, pages);
-  return {
+  const shared = {
     path: base,
     categories: settings.categories.map((c) => ({
       slug: c.slug,
@@ -302,10 +361,110 @@ export function listingRenderOf(
       href: listingPagePath(base, 1, c.slug),
     })),
     ...(options.category && { category: options.category }),
-    items: all.slice((page - 1) * perPage, page * perPage),
-    page,
-    pages,
     ...(settings.rss && { rss: `${base === "/" ? "" : base}/rss.xml` }),
+  };
+  const calendar = calendarOf(doc);
+  if (calendar)
+    return {
+      ...shared,
+      items: [],
+      page: 1,
+      pages: 1,
+      calendar: calendarRenderOf(settings, base, calendar, all, options),
+    };
+  const block = doc.ms.blocks.find((b): b is BlockOf<"entryList"> => b.type === "entryList");
+  const perPage = Number(block?.props.perPage ?? 12);
+  const pages = Math.max(1, Math.ceil(all.length / perPage));
+  const page = Math.min(options.page ?? 1, pages);
+  return { ...shared, items: all.slice((page - 1) * perPage, page * perPage), page, pages };
+}
+
+/** Month pages reach at most this far either side of the current month. */
+const MONTHS_AROUND = 12;
+
+/**
+ * The months a calendar has a page for: from its first event's month to its
+ * last, always with the current one, at most a year either side of it.
+ */
+export function calendarMonths(all: EntryItem[], at: number): string[] {
+  const current = monthOf(at);
+  const earliest = addMonths(current, -MONTHS_AROUND);
+  const latest = addMonths(current, MONTHS_AROUND);
+  let first = current;
+  let last = current;
+  for (const item of all) {
+    if (!item.event) continue;
+    const days = eventDays(item.event);
+    const from = days[0]!.slice(0, 7);
+    const to = days.at(-1)!.slice(0, 7);
+    if (from < first) first = from;
+    if (to > last) last = to;
+  }
+  if (first < earliest) first = earliest;
+  if (last > latest) last = latest;
+  const months = [];
+  for (let m = first; m <= last; m = addMonths(m, 1)) months.push(m);
+  return months;
+}
+
+/** What an event calendar shows on one of its addresses. */
+export function calendarRenderOf(
+  settings: ListingSettings,
+  base: string,
+  block: BlockOf<"eventCalendar">,
+  all: EntryItem[],
+  options: Pick<ListingOptions, "category" | "location" | "month" | "now"> = {},
+): CalendarRender {
+  const at = options.now ?? Date.now();
+  const filter = options.category
+    ? ({ kind: "category", slug: options.category } as const)
+    : options.location
+      ? ({ kind: "location", slug: options.location } as const)
+      : undefined;
+  const months = block.props.monthView ? calendarMonths(all, at) : [];
+  const month = options.month && months.includes(options.month) ? options.month : undefined;
+  const shown = all.filter(
+    (item) =>
+      item.event &&
+      (!filter ||
+        (filter.kind === "category"
+          ? item.categorySlug === filter.slug
+          : item.event.locationSlug === filter.slug)),
+  );
+  const items = month
+    ? shown
+        .filter((item) => eventDays(item.event!).some((day) => day.startsWith(month)))
+        .toSorted((a, b) => Date.parse(a.event!.start) - Date.parse(b.event!.start))
+    : upcomingOf(shown, at);
+  const hrefFor = (f: typeof filter) => calendarPath(base, { month, filter: f });
+  const index = month ? months.indexOf(month) : -1;
+  const prev = index > 0 ? months[index - 1] : undefined;
+  const next = index >= 0 && index < months.length - 1 ? months[index + 1] : undefined;
+  return {
+    view: month ? "month" : "agenda",
+    today: dayOf(at),
+    ...(month && { month }),
+    ...(filter && { filter }),
+    all: hrefFor(undefined),
+    categories: settings.categories.map((c) => ({
+      ...c,
+      href: hrefFor({ kind: "category", slug: c.slug }),
+    })),
+    locations: settings.locations.map((l) => ({
+      ...l,
+      href: hrefFor({ kind: "location", slug: l.slug }),
+    })),
+    agendaHref: calendarPath(base, { filter }),
+    ...(months.length && {
+      monthHref: calendarPath(base, {
+        month: months.includes(monthOf(at)) ? monthOf(at) : months[0],
+        filter,
+      }),
+    }),
+    months,
+    ...(prev && { prev: { month: prev, href: calendarPath(base, { month: prev, filter }) } }),
+    ...(next && { next: { month: next, href: calendarPath(base, { month: next, filter }) } }),
+    items,
   };
 }
 
@@ -327,6 +486,33 @@ export async function latestRender(db: Db, doc: PageDocument, scope: Scope, load
     out[id] = {
       path: tree.path(id),
       items: (await entryItems(db, id, scope, { loads })).slice(0, LATEST_MAX),
+    };
+  }
+  return out;
+}
+
+/** The coming events of every listing that upcoming events blocks in `doc` name. */
+export async function upcomingRender(db: Db, doc: PageDocument, scope: Scope, loads?: Loads) {
+  const out: Record<string, { path: string; today: string; items: EntryItem[] }> = {};
+  const tree = await treeOf(db, loads);
+  const blocks = doc.ms.blocks.filter(
+    (b): b is BlockOf<"upcomingEvents"> => b.type === "upcomingEvents",
+  );
+  const at = Date.now();
+  for (const block of blocks) {
+    const id = block.props.listing;
+    if (!id || out[id] || !tree.get(id)) continue;
+    const kind = await once(loads, `kind:${id}`, () =>
+      db.selectFrom("pages").select("kind").where("id", "=", id).executeTakeFirst(),
+    );
+    if (kind?.kind !== "listing") continue;
+    const coming = upcomingOf(await entryItems(db, id, scope, { loads }), at);
+    // The soonest few, and the soonest pinned ones for blocks that show only those.
+    const pinned = new Set(coming.filter((item) => item.pinned).slice(0, UPCOMING_MAX));
+    out[id] = {
+      path: tree.path(id),
+      today: dayOf(at),
+      items: coming.filter((item, i) => i < UPCOMING_MAX || pinned.has(item)),
     };
   }
   return out;
@@ -356,10 +542,21 @@ export async function entryRender(
     doc.entry.cover && (await mediaInfo(db, [doc.entry.cover]))[doc.entry.cover.mediaId];
   const category =
     doc.entry.category && settings.categories.find((c) => c.slug === doc.entry?.category)?.name;
+  const event = doc.entry.event;
+  const place = event?.location && settings.locations.find((l) => l.slug === event.location)?.name;
   return {
     date: doc.entry.publishAt,
     collection: titles.get(parentId) ?? "",
     ...(category && { category }),
+    ...(event && {
+      event: {
+        start: event.start,
+        ...(event.end && { end: event.end }),
+        ...(event.allDay && { allDay: true }),
+        ...(place && { location: place, locationSlug: event.location }),
+        ...(event.venue && { venue: event.venue }),
+      },
+    }),
     ...(cover && { cover: { src: cover.url, alt: doc.entry.cover?.alt ?? cover.alt } }),
     breadcrumb: breadcrumb ?? [],
   };
@@ -415,4 +612,24 @@ ${entries}
   </channel>
 </rss>
 `;
+}
+
+/** When the daily publish runs, in Malaysia's time (HH:MM). */
+export const DAILY_REFRESH = "00:05";
+
+/** Whether a live page shows events by date: an event calendar or upcoming events. */
+export async function showsEvents(db: Db) {
+  const row = await db
+    .selectFrom("pages")
+    .innerJoin("revisions", "revisions.id", "pages.published_revision_id")
+    .select("pages.id")
+    .where("pages.deleted_at", "is", null)
+    .where((eb) =>
+      eb.or([
+        eb("revisions.content", "like", '%"type":"eventCalendar"%'),
+        eb("revisions.content", "like", '%"type":"upcomingEvents"%'),
+      ]),
+    )
+    .executeTakeFirst();
+  return Boolean(row);
 }

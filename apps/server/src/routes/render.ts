@@ -211,11 +211,16 @@ export const renderRoutes: FastifyPluginAsync<{ publicDir: string }> = async (
         noindex: true,
       });
       // A collection shows example entries.
+      // Dated as events too, a few days apart from tomorrow, so a calendar has something to show.
       const examples = [1, 2, 3].map((n) => ({
         title: `Contoh entri ${n}`,
         href: `${path === "/" ? "" : path}/contoh-${n}`,
         date: new Date(Date.now() - n * 86_400_000).toISOString(),
         summary: "Ringkasan pendek yang muncul di bawah tajuk dalam senarai.",
+        event: {
+          start: new Date(Date.now() + (n * 3 - 2) * 86_400_000).toISOString(),
+          venue: "Dewan Utama",
+        },
       }));
       const html = await renderHtml(
         template.listing
