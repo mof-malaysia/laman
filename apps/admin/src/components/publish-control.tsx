@@ -6,6 +6,7 @@
  */
 import type { Job } from "@fiscal-sb/contracts";
 import { type ReactNode, useState } from "react";
+import { createPortal } from "react-dom";
 import { StatusDot, type Tone } from "@/components/page-status";
 import { Link } from "@tanstack/react-router";
 import { linkClass } from "@/components/text-link";
@@ -69,6 +70,13 @@ const liveText: Record<LiveState, Key> = {
   scheduled: "live.scheduled",
 };
 
+const liveShort: Record<LiveState, Key> = {
+  live: "live.live",
+  changed: "live.changed.short",
+  new: "live.new.short",
+  scheduled: "live.scheduled",
+};
+
 /** What a finished publish skipped: this page, how many others, or nothing. */
 type Skipped = "this" | number;
 
@@ -82,7 +90,7 @@ function statusLine(
   live: LiveState,
   save: SaveState,
   skipped: Skipped,
-): { tone: Tone; text: string } {
+): { tone: Tone; text: string; short?: string } {
   if (outcome.status === "publishing") return { tone: "neutral", text: t("publish.busy") };
   if (outcome.status === "failed")
     return {
@@ -110,10 +118,18 @@ function statusLine(
     };
   if (notSaving.has(save)) return { tone: "danger", text: t(saveText[save]) };
   const state = t(liveText[live]);
-  if (save !== "saved") return { tone: "neutral", text: `${t(saveText[save])} · ${state}` };
+  // Where room is short: the live state in two words or fewer.
+  const shortState = t(liveShort[live]);
+  if (save !== "saved")
+    return {
+      tone: "neutral",
+      text: `${t(saveText[save])} · ${state}`,
+      short: `${t(saveText[save])} · ${shortState}`,
+    };
   return {
     tone: live === "live" ? "success" : live === "scheduled" ? "neutral" : "warning",
     text: `${t("save.saved")} · ${state}`,
+    short: `${t("save.saved")} · ${shortState}`,
   };
 }
 
@@ -129,6 +145,9 @@ export function PublishControl({
   pageId,
   disabled,
   review,
+  badge,
+  statusIn,
+  compact = false,
 }: {
   live: LiveState;
   save?: SaveState;
@@ -145,6 +164,15 @@ export function PublishControl({
   /** The page being published, so a publish that couldn't build it says so. */
   pageId?: string | undefined;
   disabled?: boolean;
+  /** A count on the button, such as the page's checks; `label` says it in words. */
+  badge?: { count: number; label: string; danger?: boolean } | undefined;
+  /**
+   * Where the status goes, when not beside the button: an element elsewhere in the
+   * same bar (the editor puts it by undo and redo). Nothing shows until it's mounted.
+   */
+  statusIn?: HTMLElement | null;
+  /** Below extra-large screens, the status in its short words ("Saved · Not live"). */
+  compact?: boolean;
   /** What publishing will change, shown in a confirmation before it happens. */
   /** With `blocked`, the confirmation says what's wrong and can't be confirmed. */
   /**
@@ -182,9 +210,9 @@ export function PublishControl({
   const busy = outcome.status === "publishing";
   const nothingToPublish = live === "live" && save === "saved" && outcome.status !== "failed";
 
-  return (
-    // On a phone it takes its own line, the status beside the button.
-    <div className="flex min-w-0 items-center gap-2 max-md:w-full max-md:justify-between">
+  // Saved and live, and what Publish just did, with its link.
+  const status = (
+    <>
       <Tooltip>
         <TooltipTrigger
           render={
@@ -199,7 +227,14 @@ export function PublishControl({
           }
         >
           <StatusDot tone={line.tone} />
-          <span className="truncate">{line.text}</span>
+          {compact && line.short ? (
+            <>
+              <span className="truncate max-xl:hidden">{line.text}</span>
+              <span className="truncate xl:hidden">{line.short}</span>
+            </>
+          ) : (
+            <span className="truncate">{line.text}</span>
+          )}
         </TooltipTrigger>
         <TooltipContent>
           {savedAt && <div>{t("save.savedAt", { time: formatTime(savedAt) })}</div>}
@@ -223,6 +258,13 @@ export function PublishControl({
           <span className="sr-only"> {t("publish.newTab")}</span>
         </a>
       )}
+    </>
+  );
+
+  return (
+    // On a phone it takes its own line, the status beside the button.
+    <div className="flex min-w-0 items-center gap-2 max-md:w-full max-md:justify-between">
+      {statusIn === undefined ? status : statusIn && createPortal(status, statusIn)}
       {!canPublish ? (
         // Editors save; a Content Manager publishes from Publishing.
         live !== "live" && (
@@ -233,7 +275,8 @@ export function PublishControl({
         // status beside it says the same in words for keyboard and screen reader users.
         <Tooltip>
           <TooltipTrigger render={<span className="shrink-0" />}>
-            <Button className="whitespace-nowrap" variant="primary-fill" size="small" disabled>
+            {/* Quiet while there's nothing to do, so blue always means "this will change the site". */}
+            <Button className="whitespace-nowrap" variant="default-outline" size="small" disabled>
               {label}
             </Button>
           </TooltipTrigger>
@@ -248,6 +291,17 @@ export function PublishControl({
           onClick={() => (review ? setReviewing(true) : void publish())}
         >
           {busy ? t("publish.busy") : outcome.status === "failed" ? t("publish.retry") : label}
+          {badge && badge.count > 0 && !busy && (
+            <span
+              className={clx(
+                "text-label-compact rounded-sm px-1.5 py-px font-semibold tabular-nums",
+                badge.danger ? "bg-bg-danger-600" : "bg-bg-white/20",
+              )}
+            >
+              <span aria-hidden>{badge.count}</span>
+              <span className="sr-only">, {badge.label}</span>
+            </span>
+          )}
         </Button>
       )}
       {review && (

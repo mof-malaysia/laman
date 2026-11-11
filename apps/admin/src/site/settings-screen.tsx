@@ -1,12 +1,11 @@
 /**
- * Site settings, one section at a time in FTDS SettingsLayout. Every section
+ * Site settings, one section at a time beside the section index. Every section
  * saves into the settings draft, which goes live with Publish settings, so
  * the preview and the published site never disagree mid-edit. Publishing
- * shows what will change first, and what was live before can be put back.
- * The Publishing defaults and analytics retention change the admin, not the
- * site, so they apply on save. So do the admin's language, which isn't
- * part of the settings at all (it's each person's own preference), and
- * Security, which only the super admin sees.
+ * shows what will change first. (Putting back what was live before is hidden
+ * for now: see PutBackPrevious.) Which sections apply on save instead, and
+ * which at once, is `sectionApplies`; analytics retention alone applies on
+ * save inside a section that otherwise goes live on publish.
  */
 import {
   AdminLanguage,
@@ -17,7 +16,14 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useId, useState } from "react";
-import { SettingsLayout, SettingsRow, SettingsSection } from "@/components/blocks/settings-layout";
+import { SettingsRow } from "@/components/blocks/settings-layout";
+import {
+  SavedNote,
+  SettingsCard,
+  SettingsColumns,
+  SettingsForm,
+  SettingsNav,
+} from "@/components/settings-card";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { PublishControl } from "@/components/publish-control";
 import { useDocConflict } from "@/components/conflict-dialog";
@@ -44,7 +50,6 @@ import {
   PageHeader,
   PageHeaderActions,
   PageHeaderContent,
-  PageHeaderDescription,
   PageHeaderTitle,
 } from "@/components/ui/page-header";
 import { Radio, RadioButton, RadioHintText, RadioItem, RadioLabel } from "@/components/ui/radio";
@@ -57,9 +62,10 @@ import {
   SummaryListRow,
   SummaryListTerm,
 } from "@/components/ui/summary-list";
+import { Tag } from "@/components/ui/tag";
 import { TextArea } from "@/components/ui/textarea";
 import { currentLanguage, type MessageKey, t } from "@/i18n";
-import { siteDocQuery } from "@/lib/publish";
+import { SCHEDULING_ENABLED, siteDocQuery } from "@/lib/publish";
 import { apiError, preferencesApi, siteApi } from "@/lib/api";
 import { securityApi, useCan, useMe } from "@/lib/auth";
 import useToast from "@/lib/ftds/hooks/use-toast";
@@ -68,6 +74,7 @@ import { SwitchSetting } from "@/components/switch-setting";
 import { MediaField } from "@/editor/media-field";
 import { BackupsSection } from "./backups-section";
 import { formatBytes } from "@/media/format";
+import { Screen } from "@/components/screen";
 
 /** Sections of the settings document: each saves into its draft. */
 const documentSections = [
@@ -130,6 +137,41 @@ const sectionIcons: Record<SettingsSectionId, ReactNode> = {
   about: <SettingIcon />,
 };
 
+/** A line under a section's title, where the title alone doesn't say enough. */
+const sectionDescriptions: Partial<Record<SettingsSectionId, MessageKey>> = {
+  contact: "settings.contact.description",
+  social: "settings.social.description",
+  phase: "settings.phase.description",
+  search: "settings.search.description",
+};
+
+/**
+ * When a change in each section takes effect: when the settings are published,
+ * when the section is saved, or at once. Backups and About change nothing.
+ */
+const sectionApplies: Partial<Record<SettingsSectionId, "publish" | "save" | "now">> = {
+  identity: "publish",
+  contact: "publish",
+  social: "publish",
+  phase: "publish",
+  search: "publish",
+  analytics: "publish",
+  publishing: "save",
+  language: "save",
+  security: "now",
+};
+
+/** The tag beside a section's title saying when its changes take effect. */
+function Applies({ section }: { section: SettingsSectionId }) {
+  const when = sectionApplies[section];
+  if (!when) return null;
+  return (
+    <Tag size="small" variant={when === "publish" ? "default" : "primary"}>
+      {t(`settings.applies.${when}`)}
+    </Tag>
+  );
+}
+
 export function SettingsScreen() {
   const canSecure = useCan("security.manage");
   const shown = settingsSections.filter((id) => id !== "security" || canSecure);
@@ -142,9 +184,17 @@ export function SettingsScreen() {
   const { toast } = useToast();
   const doc = useQuery(siteDocQuery("settings"));
   const Panel = section in panels ? panels[section as keyof typeof panels] : undefined;
+  /** Saved into the draft but not published yet. */
+  const notLive = (id: SettingsSectionId) =>
+    doc.data !== undefined &&
+    (documentSections as readonly string[]).includes(id) &&
+    JSON.stringify(doc.data.published[id as DocumentSection]) !==
+      JSON.stringify(doc.data.draft[id as DocumentSection]);
   // The section in view has edits that aren't saved: Publish waits, and leaving asks first.
   const [dirty, setDirty] = useState(false);
   const [discarding, setDiscarding] = useState(false);
+  // The section just saved, to say so beside its title: its form remounts with the new draft.
+  const [savedSection, setSavedSection] = useState<SettingsSectionId>();
   // Another section is another `?section=`: the guard asks then too.
   const leaveGuard = useLeaveGuard(dirty, t("settings.leave.body"), { search: true });
 
@@ -176,11 +226,10 @@ export function SettingsScreen() {
   };
 
   return (
-    <div className="p-surface gap-stack-lg mx-auto flex max-w-6xl flex-col">
+    <Screen>
       <PageHeader>
         <PageHeaderContent>
           <PageHeaderTitle size="headline">{t("nav.settings")}</PageHeaderTitle>
-          <PageHeaderDescription>{t("settings.intro")}</PageHeaderDescription>
         </PageHeaderContent>
         {/* Sections outside the settings document have nothing here to publish. */}
         {doc.data && !Panel && (
@@ -206,18 +255,25 @@ export function SettingsScreen() {
           </PageHeaderActions>
         )}
       </PageHeader>
-      <SettingsLayout
-        items={shown.map((id) => ({
-          id,
-          label: t(sectionLabels[id]),
-          icon: sectionIcons[id],
-          href: `/admin/settings?section=${id}`,
-        }))}
-        current={section}
-        onNavigate={(id, event) => {
-          event.preventDefault();
-          void navigate({ to: "/settings", search: { section: id as SettingsSectionId } });
-        }}
+      <SettingsColumns
+        nav={
+          <SettingsNav
+            label={t("settings.sections")}
+            kind="page"
+            current={section}
+            items={shown.map((id) => ({
+              id,
+              label: t(sectionLabels[id]),
+              icon: sectionIcons[id],
+              href: `/admin/settings?section=${id}`,
+              mark: notLive(id) ? t("settings.notLive") : undefined,
+            }))}
+            onSelect={(id) => {
+              setSavedSection(undefined);
+              void navigate({ to: "/settings", search: { section: id as SettingsSectionId } });
+            }}
+          />
+        }
       >
         {Panel ? (
           <Panel onDirtyChange={setDirty} />
@@ -233,6 +289,8 @@ export function SettingsScreen() {
               key={`${section}-${JSON.stringify(doc.data.draft[section as DocumentSection])}`}
               section={section as DocumentSection}
               draft={doc.data.draft}
+              saved={savedSection === section && !dirty}
+              onSaved={() => setSavedSection(section)}
               onDirtyChange={setDirty}
             />
             {doc.data.previous && !doc.data.changed && !dirty && (
@@ -243,7 +301,7 @@ export function SettingsScreen() {
             )}
           </>
         )}
-      </SettingsLayout>
+      </SettingsColumns>
       {leaveGuard}
       <ConfirmDialog
         open={discarding}
@@ -255,23 +313,27 @@ export function SettingsScreen() {
         destructive
         onConfirm={() => void discard()}
       />
-    </div>
+    </Screen>
   );
 }
 
 function SectionForm<S extends DocumentSection>({
   section,
   draft,
+  saved,
+  onSaved,
   onDirtyChange,
 }: {
   section: S;
   draft: SiteSettings;
+  /** Just saved: says so beside the title. */
+  saved: boolean;
+  onSaved: () => void;
   onDirtyChange: (dirty: boolean) => void;
 }) {
   const queryClient = useQueryClient();
   const [value, setValue] = useState<SiteSettings[S]>(draft[section]);
   const [pending, setPending] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<ReactNode>();
   const [issues, setIssues] = useState<Map<string, string>>(new Map());
   // Keeping fewer revisions removes older drafts: what it would remove, while the officer decides.
@@ -280,7 +342,6 @@ function SectionForm<S extends DocumentSection>({
   useEffect(() => onDirtyChange(dirty), [dirty, onDirtyChange]);
 
   const set = (update: Partial<SiteSettings[S]>) => {
-    setSaved(false);
     // Lists (social links) are replaced whole; objects merge.
     setValue(
       (current) => (Array.isArray(current) ? update : { ...current, ...update }) as SiteSettings[S],
@@ -300,9 +361,9 @@ function SectionForm<S extends DocumentSection>({
     setIssues(new Map());
     try {
       const doc = await siteApi.saveSettings({ ...draft, [section]: value });
+      onSaved();
       queryClient.setQueryData(["settings"], doc);
       void queryClient.invalidateQueries({ queryKey: ["summary"] });
-      setSaved(true);
     } catch (caught) {
       if (await conflict.handle(caught)) return;
       const body = await apiError(caught);
@@ -333,24 +394,39 @@ function SectionForm<S extends DocumentSection>({
 
   return (
     <>
-      <SettingsSection
+      <SettingsCard
         title={t(sectionLabels[section])}
-        description={t(`${sectionLabels[section]}.description` as MessageKey)}
-        pending={pending}
-        saved={saved}
-        error={error}
-        onSave={() => void save()}
-        labels={{
-          save: t("settings.save"),
-          saving: t("settings.saving"),
-          saved: t(section === "publishing" ? "settings.savedApplied" : "settings.saved"),
-        }}
+        description={sectionDescriptions[section] && t(sectionDescriptions[section])}
+        aside={
+          saved ? (
+            <SavedNote>
+              {t(
+                sectionApplies[section] === "publish" ? "settings.saved" : "settings.savedApplied",
+              )}
+            </SavedNote>
+          ) : (
+            <Applies section={section} />
+          )
+        }
       >
-        {/* Fields keep a readable width; the card can be wider than a form needs. */}
-        <div className="gap-stack-md flex max-w-2xl flex-col">
-          {renderFields(section, value, set, issue)}
-        </div>
-      </SettingsSection>
+        <SettingsForm
+          dirty={dirty}
+          pending={pending}
+          error={error}
+          section={t(sectionLabels[section])}
+          onSave={() => void save()}
+          onDiscard={() => {
+            setValue(draft[section]);
+            setError(undefined);
+            setIssues(new Map());
+          }}
+        >
+          {/* Fields keep a readable width; the card can be wider than a form needs. */}
+          <div className="gap-stack-md flex max-w-2xl flex-col">
+            {renderFields(section, value, set, issue)}
+          </div>
+        </SettingsForm>
+      </SettingsCard>
       {conflict.dialog}
       <ConfirmDialog
         open={pruning !== null}
@@ -445,7 +521,6 @@ function renderFields<S extends DocumentSection>(
           />
           <CheckRow
             title={t("settings.identity.footerLogo")}
-            description={t("settings.identity.footerLogoHint")}
             checked={v.footerLogo}
             onChange={(checked) => setI({ footerLogo: checked })}
           />
@@ -556,10 +631,7 @@ function renderFields<S extends DocumentSection>(
     case "publishing":
       return (
         <>
-          {text("scheduleTime", "settings.publishing.time", {
-            hint: "settings.publishing.timeHint",
-            type: "time",
-          })}
+          {SCHEDULING_ENABLED && text("scheduleTime", "settings.publishing.time", { type: "time" })}
           {text("revisionsToKeep", "settings.publishing.revisions", {
             hint: "settings.publishing.revisionsHint",
             type: "number",
@@ -597,7 +669,7 @@ function CheckRow({
   onChange,
 }: {
   title: string;
-  description: ReactNode;
+  description?: ReactNode;
   checked: boolean;
   disabled?: boolean;
   onChange: (checked: boolean) => void;
@@ -606,14 +678,14 @@ function CheckRow({
   return (
     <SettingsRow
       title={title}
-      description={<span id={id}>{description}</span>}
+      description={description && <span id={id}>{description}</span>}
       control={
         <Checkbox
           checked={checked}
           disabled={disabled}
           onCheckedChange={onChange}
           aria-label={title}
-          aria-describedby={id}
+          aria-describedby={description ? id : undefined}
         />
       }
     />
@@ -766,7 +838,8 @@ function RadioChoices<V extends string>({
   label: (option: V) => string;
   /** The label's language, when it isn't the admin's. */
   labelLang?: (option: V) => string;
-  hint: (option: V) => string;
+  /** A line under each option, when its label alone doesn't say enough. */
+  hint?: (option: V) => string;
 }) {
   return (
     <Field name={name}>
@@ -778,14 +851,16 @@ function RadioChoices<V extends string>({
               <RadioButton
                 value={option}
                 id={`${name}-${option}`}
-                aria-describedby={`${name}-${option}-hint`}
+                aria-describedby={hint ? `${name}-${option}-hint` : undefined}
                 className="mt-0.5"
               />
               <span className="flex flex-col">
                 <RadioLabel htmlFor={`${name}-${option}`} lang={labelLang?.(option)}>
                   {label(option)}
                 </RadioLabel>
-                <RadioHintText id={`${name}-${option}-hint`}>{hint(option)}</RadioHintText>
+                {hint && (
+                  <RadioHintText id={`${name}-${option}-hint`}>{hint(option)}</RadioHintText>
+                )}
               </span>
             </RadioItem>
           </FieldItem>
@@ -821,32 +896,33 @@ function LanguageSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
   };
 
   return (
-    <SettingsSection
+    <SettingsCard
       title={t("settings.language")}
       description={t("settings.language.description")}
-      pending={pending}
-      error={error}
-      onSave={() => void save()}
-      labels={{
-        save: t("settings.save"),
-        saving: t("settings.saving"),
-        saved: t("settings.savedApplied"),
-      }}
+      aside={<Applies section="language" />}
     >
-      <div className="gap-stack-md flex max-w-2xl flex-col">
-        {/* Each language in its own name, so it can be found in either. */}
-        <RadioChoices
-          name="language"
-          legend={t("settings.language.label")}
-          options={AdminLanguage.options}
-          value={value}
-          onChange={setValue}
-          label={(language) => t(`settings.language.${language}`)}
-          labelLang={(language) => language}
-          hint={(language) => t(`settings.language.${language}Hint`)}
-        />
-      </div>
-    </SettingsSection>
+      <SettingsForm
+        dirty={dirty}
+        pending={pending}
+        error={error}
+        section={t("settings.language")}
+        onSave={() => void save()}
+        onDiscard={() => setValue(currentLanguage())}
+      >
+        <div className="gap-stack-md flex max-w-2xl flex-col">
+          {/* Each language in its own name, so it can be found in either. */}
+          <RadioChoices
+            name="language"
+            legend={t("settings.language.label")}
+            options={AdminLanguage.options}
+            value={value}
+            onChange={setValue}
+            label={(language) => t(`settings.language.${language}`)}
+            labelLang={(language) => language}
+          />
+        </div>
+      </SettingsForm>
+    </SettingsCard>
   );
 }
 
@@ -876,10 +952,7 @@ function SecuritySection() {
   };
 
   return (
-    <SettingsSection
-      title={t("settings.security")}
-      description={t("settings.security.description")}
-    >
+    <SettingsCard title={t("settings.security")} aside={<Applies section="security" />}>
       <div className="gap-stack-md flex flex-col">
         <SwitchSetting
           title={t("settings.security.require")}
@@ -907,7 +980,7 @@ function SecuritySection() {
         confirm={t("settings.security.confirm.yes")}
         onConfirm={() => void save(true)}
       />
-    </SettingsSection>
+    </SettingsCard>
   );
 }
 
@@ -933,7 +1006,7 @@ function About() {
       ]
     : [];
   return (
-    <SettingsSection title={t("settings.about")} description={t("settings.about.description")}>
+    <SettingsCard title={t("settings.about")}>
       <SummaryList>
         <SummaryListBody>
           {rows.map(([label, value]) => (
@@ -944,6 +1017,6 @@ function About() {
           ))}
         </SummaryListBody>
       </SummaryList>
-    </SettingsSection>
+    </SettingsCard>
   );
 }

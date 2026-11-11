@@ -1,6 +1,7 @@
 /**
  * What happens to the page as a whole, from least to most destructive:
  * redirect, duplicate, move, unpublish, delete. The home page only duplicates.
+ * A collection's own settings come first.
  */
 import type { PageRedirect, RedirectStatus } from "@fiscal-sb/blocks";
 import type { DeletePreview, Page, PageSummary } from "@fiscal-sb/contracts";
@@ -18,7 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Field, FieldDescription, FieldError, FieldItem, FieldLabel } from "@/components/ui/field";
+import { Field, FieldError, FieldItem, FieldLabel } from "@/components/ui/field";
 import { Fieldset, FieldsetLegend } from "@/components/ui/fieldset";
 import { Input } from "@/components/ui/input";
 import { Radio, RadioButton, RadioItem, RadioLabel } from "@/components/ui/radio";
@@ -30,26 +31,13 @@ import { apiError, listingApi, pagesApi } from "@/lib/api";
 import { useCan } from "@/lib/auth";
 import useToast from "@/lib/ftds/hooks/use-toast";
 import { isHome, subtreeIds, useRefreshPages } from "@/lib/pages";
+import { CollectionSettings } from "./listing";
 import { PathChanges } from "./move";
 import type { SettingsSection } from "./search";
-import { card } from "./tab-layout";
+import { tabCard } from "./tab-layout";
 import { UndoDelete } from "./trash-screen";
 import { useSaveDraft } from "./use-save-draft";
-
-/**
- * Scrolls the pane that holds `element` so it sits at the top. Not
- * scrollIntoView, which would also scroll the shell's fixed frame.
- */
-function scrollToTop(element: HTMLElement | null) {
-  if (!element) return;
-  for (let pane = element.parentElement; pane; pane = pane.parentElement) {
-    const { overflowY } = getComputedStyle(pane);
-    if ((overflowY === "auto" || overflowY === "scroll") && pane.scrollHeight > pane.clientHeight) {
-      pane.scrollTop += element.getBoundingClientRect().top - pane.getBoundingClientRect().top - 16;
-      return;
-    }
-  }
-}
+import { scrollToTop } from "@/lib/scroll";
 
 /** One row of the Settings list: what it does on the left, its action on the right, any options under both. */
 function Section({
@@ -80,14 +68,17 @@ function Section({
     >
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
         <div className="flex min-w-0 flex-1 basis-72 flex-col gap-0.5">
-          {/* The type of FTDS's SettingsRow: a medium-weight title over its description, one size. */}
+          {/* Semibold, a step above the medium-weight field labels under it. */}
           <h3
             id={`settings-${id}-title`}
-            className={`text-content font-medium ${danger ? "text-txt-danger" : "text-txt-black-900"}`}
+            className={`text-content font-semibold ${danger ? "text-txt-danger" : "text-txt-black-900"}`}
           >
             {t(`settings.${id}.title`)}
           </h3>
-          <p className="text-content text-txt-black-700">{t(`settings.${id}.description`)}</p>
+          {/* The collection's rows say it all; every other section has a line. */}
+          {id !== "collection" && (
+            <p className="text-content text-txt-black-700">{t(`settings.${id}.description`)}</p>
+          )}
         </div>
         {action && <div className="flex flex-wrap items-center gap-2">{action}</div>}
       </div>
@@ -99,7 +90,7 @@ function Section({
 /** A bordered list of Settings rows. */
 const SectionList = ({ danger, children }: { danger?: boolean; children: ReactNode }) => (
   <div
-    className={`${card} flex flex-col divide-y ${danger ? "border-otl-danger-200 divide-otl-danger-200" : "border-otl-gray-200 divide-otl-gray-200"}`}
+    className={`${tabCard} flex flex-col divide-y ${danger ? "border-otl-danger-200 divide-otl-danger-200" : "border-otl-gray-200 divide-otl-gray-200"}`}
   >
     {children}
   </div>
@@ -118,14 +109,30 @@ function useFailure() {
   };
 }
 
+/**
+ * Settings open inside the editor share the draft the editor is saving: the redirect is
+ * part of it, and making a listing or unpublishing changes it on the server. So there
+ * the redirect goes through the editor's own draft, and those two actions save the
+ * editor's edits first and reload its page after, instead of racing its autosave.
+ */
+export type DraftLink = {
+  redirect: PageRedirect | null;
+  setRedirect: (redirect: PageRedirect | null) => void;
+  beforeChange: () => Promise<unknown>;
+  afterChange: () => Promise<unknown>;
+};
+
 export function SettingsTab({
   page,
   pages,
   section,
+  draft,
 }: {
   page: Page;
   pages: PageSummary[];
   section: SettingsSection | undefined;
+  /** In the editor: its draft (see `DraftLink`). */
+  draft?: DraftLink | undefined;
 }) {
   const home = isHome(page);
   const row = (id: SettingsSection) => ({ id, focus: section === id });
@@ -154,12 +161,23 @@ export function SettingsTab({
   return (
     <div className="flex max-w-5xl flex-col gap-6">
       <SectionList>
+        {page.kind === "listing" && (
+          <Section {...row("collection")}>
+            <CollectionSettings listing={page} />
+          </Section>
+        )}
         {homeOr(
           "redirect",
-          <RedirectForm key={page.updatedAt} row={row("redirect")} page={page} pages={pages} />,
+          <RedirectForm
+            key={page.updatedAt}
+            row={row("redirect")}
+            page={page}
+            pages={pages}
+            draft={draft}
+          />,
         )}
         {page.kind === "page" && !home && (
-          <MakeListing row={row("listing")} page={page} pages={pages} />
+          <MakeListing row={row("listing")} page={page} pages={pages} draft={draft} />
         )}
         <DuplicateForm row={row("duplicate")} page={page} pages={pages} />
         {/* An entry stays in its collection, so it has nothing to move. */}
@@ -171,7 +189,10 @@ export function SettingsTab({
           {t("settings.danger")}
         </h2>
         <SectionList danger>
-          {liveOr("unpublish", <UnpublishForm row={row("unpublish")} page={page} pages={pages} />)}
+          {liveOr(
+            "unpublish",
+            <UnpublishForm row={row("unpublish")} page={page} pages={pages} draft={draft} />,
+          )}
           {liveOr("delete", <DeleteAction row={row("delete")} page={page} pages={pages} />)}
         </SectionList>
       </section>
@@ -183,10 +204,20 @@ type Row = { id: SettingsSection; focus: boolean };
 
 type RedirectMode = "off" | "page" | "url";
 
-function RedirectForm({ row, page, pages }: { row: Row; page: Page; pages: PageSummary[] }) {
+function RedirectForm({
+  row,
+  page,
+  pages,
+  draft,
+}: {
+  row: Row;
+  page: Page;
+  pages: PageSummary[];
+  draft: DraftLink | undefined;
+}) {
   const save = useSaveDraft(page);
   const { toast } = useToast();
-  const current = page.draft.redirect ?? null;
+  const current = (draft ? draft.redirect : page.draft.redirect) ?? null;
   const [mode, setMode] = useState<RedirectMode>(current?.to ?? "off");
   const [target, setTarget] = useState<string | null>(
     current?.to === "page" ? current.pageId : null,
@@ -212,7 +243,9 @@ function RedirectForm({ row, page, pages }: { row: Row; page: Page; pages: PageS
       redirect = { to: "url", url: url.trim(), status };
     }
     try {
-      await save.mutateAsync((draft) => ({ ...draft, redirect }));
+      // In the editor, its autosave saves it with the rest of the draft.
+      if (draft) draft.setRedirect(redirect);
+      else await save.mutateAsync((doc) => ({ ...doc, redirect }));
       toast({
         variant: "success",
         title: redirect ? t("settings.redirect.saved") : t("settings.redirect.off"),
@@ -249,7 +282,6 @@ function RedirectForm({ row, page, pages }: { row: Row; page: Page; pages: PageS
           {mode === "page" && (
             <Field name="redirect-page" invalid={Boolean(error)}>
               <FieldLabel>{t("settings.redirect.pageLabel")}</FieldLabel>
-              <FieldDescription>{t("settings.redirect.pageHint")}</FieldDescription>
               <PagePicker
                 pages={pages}
                 value={target}
@@ -262,7 +294,6 @@ function RedirectForm({ row, page, pages }: { row: Row; page: Page; pages: PageS
           {mode === "url" && (
             <Field name="redirect-url" invalid={Boolean(error)}>
               <FieldLabel>{t("settings.redirect.urlLabel")}</FieldLabel>
-              <FieldDescription>{t("settings.redirect.urlHint")}</FieldDescription>
               <Input type="url" value={url} onChange={(e) => setUrl(e.target.value)} />
               <FieldError>{error}</FieldError>
             </Field>
@@ -309,7 +340,17 @@ function RedirectForm({ row, page, pages }: { row: Row; page: Page; pages: PageS
   );
 }
 
-function MakeListing({ row, page, pages }: { row: Row; page: Page; pages: PageSummary[] }) {
+function MakeListing({
+  row,
+  page,
+  pages,
+  draft,
+}: {
+  row: Row;
+  page: Page;
+  pages: PageSummary[];
+  draft: DraftLink | undefined;
+}) {
   const refresh = useRefreshPages();
   const fail = useFailure();
   const { toast } = useToast();
@@ -323,8 +364,10 @@ function MakeListing({ row, page, pages }: { row: Row; page: Page; pages: PageSu
   const make = async () => {
     setBusy(true);
     try {
+      await draft?.beforeChange();
       await listingApi.make(page.id);
       await refresh(page.id);
+      await draft?.afterChange();
       toast({ variant: "success", title: t("settings.listing.done") });
     } catch (error) {
       await fail(t("settings.listing.failed"), error);
@@ -359,7 +402,8 @@ function DuplicateForm({ row, page, pages }: { row: Row; page: Page; pages: Page
       const copy = await pagesApi.duplicate(page.id, { includeChildren: withChildren });
       await refresh();
       toast({ variant: "success", title: t("settings.duplicate.done", { title: copy.title }) });
-      await navigate({ to: "/pages/$id", params: { id: copy.id } });
+      // The copy, ready to edit.
+      await navigate({ to: "/pages/$id/edit", params: { id: copy.id } });
     } catch (error) {
       await fail(t("settings.duplicate.failed"), error);
     } finally {
@@ -421,7 +465,6 @@ function MoveForm({ row, page, pages }: { row: Row; page: Page; pages: PageSumma
       toast({
         variant: "success",
         title: t("settings.move.done"),
-        description: t("settings.whenLive"),
       });
     } catch (error) {
       await fail(t("move.failed"), error);
@@ -468,7 +511,17 @@ function MoveForm({ row, page, pages }: { row: Row; page: Page; pages: PageSumma
   );
 }
 
-function UnpublishForm({ row, page, pages }: { row: Row; page: Page; pages: PageSummary[] }) {
+function UnpublishForm({
+  row,
+  page,
+  pages,
+  draft,
+}: {
+  row: Row;
+  page: Page;
+  pages: PageSummary[];
+  draft: DraftLink | undefined;
+}) {
   const refresh = useRefreshPages();
   const fail = useFailure();
   const { toast } = useToast();
@@ -486,12 +539,13 @@ function UnpublishForm({ row, page, pages }: { row: Row; page: Page; pages: Page
   const unpublish = async () => {
     setBusy(true);
     try {
+      await draft?.beforeChange();
       await pagesApi.unpublish(page.id, redirect && target ? { redirectTo: target } : {});
       await refresh(page.id);
+      await draft?.afterChange();
       toast({
         variant: "success",
         title: t("settings.unpublish.done"),
-        description: t("settings.whenLive"),
       });
     } catch (error) {
       await fail(t("settings.unpublish.failed"), error);
@@ -593,13 +647,10 @@ function DeleteDialogContent({
       toast({
         variant: "success",
         title: t("delete.done", { title: page.title }),
-        description: (
-          <>
-            {t("settings.whenLive")} <UndoDelete id={page.id} />
-          </>
-        ),
+        description: <UndoDelete id={page.id} />,
       });
-      await navigate({ to: "/pages/$id", params: { id: page.parentId ?? page.id } });
+      // Back to every page: the one deleted is gone from the list, and Undo is in the toast.
+      await navigate({ to: "/pages" });
     } catch (error) {
       await fail(t("delete.failed"), error);
     } finally {

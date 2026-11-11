@@ -295,11 +295,10 @@ function FileDetails({
 
         <section aria-label={t("media.section.file")} className="flex flex-col gap-3">
           {media.kind === "image" ? (
-            <img
-              src={media.url}
-              alt=""
-              className="bg-bg-washed max-h-64 w-full rounded-md object-contain"
-            />
+            // At its own size when it's small: a logo blown up to the drawer's width only blurs.
+            <span className="bg-bg-washed flex min-h-24 items-center justify-center overflow-hidden rounded-md">
+              <img src={media.url} alt="" className="max-h-64 max-w-full object-contain" />
+            </span>
           ) : (
             <a href={media.url} target="_blank" rel="noreferrer" className="focus-ring rounded-md">
               <MediaThumb media={media} className="h-40 w-full rounded-md" />
@@ -483,7 +482,7 @@ function FileDetails({
                       {page.title}
                     </Link>
                   ) : (
-                    <Link to="/pages/$id" params={{ id: page.id }} className={linkClass}>
+                    <Link to="/pages/$id/edit" params={{ id: page.id }} className={linkClass}>
                       {page.title}
                     </Link>
                   )}
@@ -552,7 +551,8 @@ function FileDetails({
               <Button
                 type="submit"
                 form={formId}
-                variant="primary-fill"
+                // Quiet until there's something to save.
+                variant={changed ? "primary-fill" : "default-outline"}
                 disabled={!changed || saving}
               >
                 {t("common.saveChanges")}

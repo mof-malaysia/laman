@@ -42,7 +42,7 @@ function Picker({
 }) {
   const [query, setQuery] = useState("");
   return (
-    <DialogBody className="sm:w-lg">
+    <DialogBody className="sm:max-w-2xl">
       <DialogHeader>
         <DialogTitle>{t("editor.picker.title")}</DialogTitle>
       </DialogHeader>
@@ -65,7 +65,7 @@ function Picker({
           placeholder={t("editor.picker.search")}
           aria-label={t("editor.picker.search")}
         />
-        <div className="max-h-[60vh] overflow-y-auto">
+        <div className="-mx-1 max-h-[60vh] overflow-y-auto px-1 pb-1">
           <BlockChoices allowed={allowed} query={query} onPick={onPick} />
         </div>
       </DialogContent>

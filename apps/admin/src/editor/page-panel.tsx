@@ -1,6 +1,7 @@
 /**
- * The properties panel with nothing selected: the page's title and address,
- * and the SEO fields from the Pages screen.
+ * The page's own fields, in the page drawer's Details tab: its title (and an entry's
+ * fixed fields), its address and the SEO fields. They're part of the draft the
+ * editor is saving, so they change through it like any block.
  */
 import { type PageDocument, Slug } from "@fiscal-sb/blocks";
 import type { Page } from "@fiscal-sb/contracts";
@@ -11,12 +12,15 @@ import { CharacterCount } from "@/components/character-count";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldDescription, FieldError, FieldItem, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { ParentPrefix } from "@/components/parent-prefix";
 import { Select } from "@/components/ui/select";
 import { t } from "@/i18n";
+import { SCHEDULING_ENABLED } from "@/lib/publish";
 import { apiError, listingApi, pagesApi } from "@/lib/api";
 import useToast from "@/lib/ftds/hooks/use-toast";
 import { fixedAddress, useRefreshPages } from "@/lib/pages";
 import { MediaField } from "./media-field";
+import { useNow } from "@/lib/use-now";
 
 type EntryFields = NonNullable<PageDocument["entry"]>;
 
@@ -43,6 +47,8 @@ function EntryFieldsEditor({
     enabled: Boolean(page.parentId),
   });
   const categories = listing.data?.settings.categories ?? [];
+  // Without scheduling, an entry can be dated up to now at the latest.
+  const now = useNow();
   // Header changes show on the canvas, so these edits re-render it.
   const set = (next: Partial<EntryFields>, key: string) =>
     onDoc((d) => ({ ...d, entry: { ...(d.entry ?? entry), ...next } }), key, true);
@@ -51,19 +57,22 @@ function EntryFieldsEditor({
       className="border-otl-gray-200 flex flex-col gap-3 border-t pt-5"
       aria-labelledby="entry-fields"
     >
-      <h3 id="entry-fields" className="text-label-compact text-txt-black-500 font-medium uppercase">
+      <h3 id="entry-fields" className="text-label-md text-txt-black-900 font-semibold">
         {t("entry.fields")}
       </h3>
       <Field name="entry-publish-at">
         <FieldLabel>{t("entry.publishAt")}</FieldLabel>
-        <FieldDescription>{t("entry.publishAtHint")}</FieldDescription>
+        {SCHEDULING_ENABLED && <FieldDescription>{t("entry.publishAtHint")}</FieldDescription>}
         <Input
           type="datetime-local"
           value={localOf(entry.publishAt)}
+          // Without scheduling, a date in the future would quietly schedule the entry.
+          max={SCHEDULING_ENABLED ? undefined : localOf(new Date(now).toISOString())}
           onChange={(e) => {
             const date = new Date(e.target.value);
-            if (!Number.isNaN(date.getTime()))
-              set({ publishAt: date.toISOString() }, "entry.publishAt");
+            if (Number.isNaN(date.getTime())) return;
+            const at = SCHEDULING_ENABLED ? date : new Date(Math.min(date.getTime(), now));
+            set({ publishAt: at.toISOString() }, "entry.publishAt");
           }}
         />
       </Field>
@@ -117,13 +126,11 @@ type PagePanelProps = {
 
 export function PagePanel({ page, doc, onDoc }: PagePanelProps) {
   return (
-    <div className="flex flex-col gap-5 p-4">
-      <p className="bg-bg-primary-50 text-body-sm text-txt-black-900 rounded-md px-3 py-2">
-        {t("editor.page.hint")}
-      </p>
+    <div className="flex flex-col gap-5">
       <Field name="page-title">
-        <FieldLabel>{t("editor.page.titleLabel")}</FieldLabel>
-        <FieldDescription>{t("editor.page.titleHint")}</FieldDescription>
+        <FieldLabel>
+          {t(page.kind === "entry" ? "entry.title" : "editor.page.titleLabel")}
+        </FieldLabel>
         <Input
           value={doc.ms.title}
           maxLength={160}
@@ -133,9 +140,6 @@ export function PagePanel({ page, doc, onDoc }: PagePanelProps) {
           }}
         />
       </Field>
-      {page.kind === "entry" && doc.entry && (
-        <EntryFieldsEditor page={page} entry={doc.entry} onDoc={onDoc} />
-      )}
       {fixedAddress(page) ? (
         <Field name="page-path">
           <FieldLabel>{t("editor.page.address")}</FieldLabel>
@@ -143,6 +147,9 @@ export function PagePanel({ page, doc, onDoc }: PagePanelProps) {
         </Field>
       ) : (
         <SlugField key={page.slug} page={page} />
+      )}
+      {page.kind === "entry" && doc.entry && (
+        <EntryFieldsEditor page={page} entry={doc.entry} onDoc={onDoc} />
       )}
       <section
         className="border-otl-gray-200 flex flex-col gap-3 border-t pt-5"
@@ -229,9 +236,13 @@ function SlugField({ page }: { page: Page }) {
   return (
     <Field name="page-slug" invalid={Boolean(error)}>
       <FieldLabel>{t("editor.page.address")}</FieldLabel>
-      <FieldDescription>{t("editor.page.addressHint", { path: page.path })}</FieldDescription>
       <div className="flex gap-2">
-        <Input value={slug} onChange={(e) => setSlug(e.target.value)} />
+        <Input
+          className="min-w-0 flex-1"
+          value={slug}
+          onChange={(e) => setSlug(e.target.value)}
+          prepend={<ParentPrefix path={page.path} />}
+        />
         <Button
           variant="default-outline"
           disabled={busy || slug === page.slug}

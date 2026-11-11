@@ -133,14 +133,13 @@ The dialog creates a draft and opens it in a tab.
   - **Layers:** the block list as it is now (drag to reorder, select, duplicate, delete), denser, with the block icon and a one-line excerpt of its main text.
   - **Insert:** the palette grouped by kind (Opening, Content, Call to action, Contact). Each item has an icon and a one-line description. Click to add after the selected block, or drag onto the canvas between blocks. The palette only offers the blocks allowed for this kind of page (screen 4).
 - **Canvas:** the iframe, as it is now, centred on the Well at the chosen width. The selection outline carries a small floating toolbar with these actions:
-  - Move up and down
   - Duplicate
   - Delete
   - Open in the panel
 
-  An "insert here" line appears between blocks on hover.
+  An "insert here" line appears between blocks on hover. Blocks reorder only by dragging in Layers: nothing in the editor moves things up and down by button.
 
-- **Right column: Properties.** The selected block's fields come from its schema, as now, grouped (Content, Actions, Appearance) and laid out densely: label above the control, compact controls, and lists that collapse. With nothing selected, it shows the page settings (title, slug and the SEO fields from the Pages screen).
+- **Right column: Properties.** The selected block's fields come from its schema, as now, grouped (Content, Actions, Appearance) and laid out densely: label above the control, compact controls, and lists that collapse. A list's items reorder by dragging their grip, like Layers' rows. With nothing selected, it shows the page settings (title, slug and the SEO fields from the Pages screen).
 - **Media fields:** an image field opens the media picker (screen 5) in a dialog. Alt text is required and is copied with the image, but it can be overridden per use.
 - **Keyboard:**
   - `mod+s` saves now.
@@ -172,24 +171,21 @@ News, tenders and notices live in the page tree like everything else. A **listin
   - The canvas shows it so the page reads as the visitor will see it, and clicking the header selects the fixed fields.
 - **The kinds are code, like the blocks.** Agencies choose blocks within a kind; they don't define new kinds.
 
-**Listing detail** (selecting a listing page in the tree)
+**A collection's entries and settings** live in the editor's page drawer, as every page's settings do. A collection opens in the editor like any page; the Pages index's **Entries** button and an entry's breadcrumb open it with the drawer on Entries (`?panel=entries`). The old page screen's address (`/pages/$id`) still works and lands on the matching drawer tab.
 
-- **`PageHeader`:** the title, the path, the entry count, and a status summary ("1 scheduled · 1 draft · 1 changed").
-- **Actions:**
-  - "New entry", the primary action. Collections don't name their entries: the admin calls them entries everywhere.
-  - Open in editor
-  - Preview
-- **Entries tab:**
-  - A dense table: title, category, status, publish date and last saved, newest first, with pinned entries on top.
+- **Entries tab** (first, collections only, with the entry count on it):
+  - The count and a status summary ("1 scheduled · 1 draft · 1 changed"), and **New entry**, the primary action. Collections don't name their entries: the admin calls them entries everywhere.
   - Search, plus status and category filters, and paging.
-  - Keys: `j`/`k` move, `o` opens, `c` writes a new entry.
+  - One row per entry, sized for the drawer: the title (and Pinned), then status, publish date and category. Newest first, pinned entries on top. A row opens the entry in the editor.
+  - Keys: `j`/`k` move, `e` edits, `o` opens the entry's details.
   - Status adds **Scheduled** to Draft, Changed and Published. A scheduled entry has a publish date in the future.
-- **Settings tab, the listing settings:**
+- **Settings tab, the Collection section** (first, `?section=collection`):
   - Categories, each with its own filtered page.
   - Entry address pattern: `/berita/tajuk` or `/berita/2026/tajuk`. A change applies to new entries only, and existing addresses never change.
   - The blocks a new entry starts with.
   - RSS on or off.
-- **SEO and History tabs:** the same as for any page.
+  - Saved on their own, not with the page's draft.
+- **Details, History and Analytics tabs:** the same as for any page.
 
 **Listing page editor.** The normal editor, with the listing page's own blocks: an introduction, a callout, a contact block, whatever the agency wants. Among them is the **Entry list** block, which renders this listing's entries.
 
@@ -259,7 +255,7 @@ The screen is a `SplitPane`: the editor on the left, and on the right a live pre
 
 - **Tree:** the top-level items, either links or dropdowns, each dropdown tagged with its style. Below each dropdown are its links, or its columns and their links. A feature card or footer link that is on shows as a one-line summary.
 - **Add menu:** a link to a page, a link to another website, a dropdown, or a column in the selected grouped dropdown.
-- **Reorder:** move up and down, or `alt+arrows`.
+- **Reorder:** drag a row by its grip, or `alt+arrows`.
 - **Editor, below the tree, follows the selection:**
   - **A dropdown:** the menu title, then its style as a `ToggleGroup`:
     - **List:** plain links in 1, 2 or 3 columns. For up to about 8 links.

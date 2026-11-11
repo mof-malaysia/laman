@@ -33,6 +33,7 @@ import { useRun } from "@/lib/use-run";
 import { AgentTag, agentOf, describe, failed, lookedOnly, nextBefore } from "./audit-entry";
 import { ANY, PersonAvatar, PersonCell, PersonFilter } from "./person";
 import { UsersHeader } from "./users-tabs";
+import { Screen } from "@/components/screen";
 
 /** Tool calls a page of Recent activity shows; Load more brings the next. */
 const RECENT = 15;
@@ -104,7 +105,7 @@ export function AgentsScreen() {
     void navigate({ to: "/users/agents", search: agentsSearch({ userId: value }), replace: true });
 
   return (
-    <div className="p-surface gap-stack-lg mx-auto flex max-w-6xl flex-col">
+    <Screen>
       <UsersHeader description={t("agents.intro", { days: CONNECTION_DAYS })} />
 
       {/* What's live comes first and full width: it's what an Admin may need to act on. */}
@@ -210,7 +211,7 @@ export function AgentsScreen() {
           </Button>
         )}
       </section>
-    </div>
+    </Screen>
   );
 }
 

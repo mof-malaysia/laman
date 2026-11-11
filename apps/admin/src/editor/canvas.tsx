@@ -14,7 +14,7 @@ import { api } from "@/lib/api";
 
 export type CanvasWidth = "desktop" | "tablet" | "mobile";
 export type CanvasZoom = "fit" | "100";
-export type BlockAction = "up" | "down" | "duplicate" | "delete" | "panel";
+export type BlockAction = "duplicate" | "delete" | "panel";
 
 /** The smallest Fit zoom: 16 px body text shows at 12 px, the least that's readable. */
 const MIN_FIT = 0.75;
@@ -66,8 +66,6 @@ const overlayCss = `
 `;
 
 const toolbarButtons: { action: BlockAction; glyph: string; label: Parameters<typeof t>[0] }[] = [
-  { action: "up", glyph: "↑", label: "editor.block.up" },
-  { action: "down", glyph: "↓", label: "editor.block.down" },
   { action: "duplicate", glyph: "⧉", label: "editor.block.duplicate" },
   { action: "delete", glyph: "✕", label: "editor.block.delete" },
   { action: "panel", glyph: "⋯", label: "editor.block.panel" },

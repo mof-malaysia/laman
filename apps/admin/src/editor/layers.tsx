@@ -27,10 +27,9 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { type KeyboardEvent, type SVGProps, useRef } from "react";
+import { type KeyboardEvent, useRef } from "react";
+import { GripIcon } from "@/components/grip-icon";
 import { Button } from "@/components/ui/button";
-import { ArrowDownIcon } from "@/components/ui/icons/arrow-down";
-import { ArrowUpIcon } from "@/components/ui/icons/arrow-up";
 import { DuplicateIcon } from "@/components/ui/icons/duplicate";
 import { EllipsisVerticalIcon } from "@/components/ui/icons/ellipsis-vertical";
 import { PlusIcon } from "@/components/ui/icons/plus";
@@ -72,20 +71,21 @@ export function LeftColumn(props: LeftColumnProps) {
           {t("editor.left.count", { count: props.blocks.length })}
         </span>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-3">
+      <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-3">
         <Layers {...props} />
       </div>
       {/* Always in the same place, however long the page: the foot of the column. */}
       <div className="shrink-0 p-2">
         <Button
-          variant="primary-fill"
+          // Blue Wash, not the fill: Publish is the editor's one blue button.
+          variant="primary-outline"
           size="small"
           className="w-full justify-center"
           onClick={props.onAddBlock}
           aria-keyshortcuts="A"
         >
           <PlusIcon /> {t("editor.insert.here")}
-          <Kbd combo="a" inverse aria-hidden className="ml-1" />
+          <Kbd combo="a" aria-hidden className="ml-1" />
         </Button>
       </div>
     </div>
@@ -183,7 +183,7 @@ function Layers({
       }}
     >
       <SortableContext items={ids} strategy={verticalListSortingStrategy}>
-        <ol ref={list} className="flex flex-col">
+        <ol ref={list} className="flex flex-col gap-0.5">
           {blocks.map((block, index) => (
             <LayerItem
               key={block.id}
@@ -192,11 +192,7 @@ function Layers({
               tabbable={block.id === current}
               onKeyDown={(event) => onRowKey(event, index)}
               required={required?.(block) ?? false}
-              first={index === 0}
-              last={index === blocks.length - 1}
               onSelect={() => onSelect(block.id)}
-              onUp={() => onMove(index, index - 1)}
-              onDown={() => onMove(index, index + 1)}
               onDuplicate={() => onDuplicate(block.id)}
               onRemove={() => onRemove(block.id)}
             />
@@ -214,11 +210,7 @@ type LayerItemProps = {
   tabbable: boolean;
   onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
   required: boolean;
-  first: boolean;
-  last: boolean;
   onSelect: () => void;
-  onUp: () => void;
-  onDown: () => void;
   onDuplicate: () => void;
   onRemove: () => void;
 };
@@ -246,9 +238,9 @@ function LayerItem(props: LayerItemProps) {
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={clx(
-        "group/row flex items-center rounded-sm",
+        "group/row relative flex items-center rounded-md",
         selected ? "bg-bg-primary-50" : "hover:bg-bg-washed",
-        isDragging && "bg-bg-white shadow-card relative z-10",
+        isDragging && "bg-bg-white shadow-card z-10",
       )}
     >
       {/* The row selects; dragging is the grip's job, so Enter and Space mean "open this block". */}
@@ -256,17 +248,13 @@ function LayerItem(props: LayerItemProps) {
         type="button"
         data-layer-row={block.id}
         tabIndex={tabIndex}
+        aria-label={blockName(block, excerpt)}
         onClick={props.onSelect}
         onKeyDown={props.onKeyDown}
         aria-current={selected || undefined}
         aria-describedby={required ? `${block.id}-required` : undefined}
-        className="focus-ring flex min-w-0 grow items-center gap-2 rounded-sm px-2 py-1.5 text-left"
+        className="focus-ring flex min-w-0 grow items-center gap-2 rounded-md py-1.5 pr-2 pl-9 text-left"
       >
-        <BlockIcon
-          name={definition.icon}
-          aria-hidden
-          className={clx("size-4 shrink-0", selected ? "text-txt-primary" : "text-txt-black-500")}
-        />
         <span className="flex min-w-0 flex-col">
           <span className="flex min-w-0 items-center gap-1.5">
             <span
@@ -297,16 +285,34 @@ function LayerItem(props: LayerItemProps) {
           {t("editor.layers.requiredWhy")}
         </span>
       )}
+      {/* The block's icon turns into its grip under the pointer or the keyboard, so the
+          handle is where the hand already is and the text keeps the row's width. */}
       <button
         type="button"
         ref={setActivatorNodeRef}
         {...attributes}
         {...listeners}
         tabIndex={tabIndex}
+        onClick={props.onSelect}
         aria-label={t("editor.layers.reorder", { block: blockName(block, excerpt) })}
-        className="focus-ring text-txt-black-500 hover:text-txt-black-900 flex size-7 shrink-0 cursor-grab items-center justify-center rounded-sm active:cursor-grabbing"
+        className="group/grip focus-ring absolute top-1/2 left-1 flex size-7 -translate-y-1/2 cursor-grab touch-none items-center justify-center rounded-sm active:cursor-grabbing"
       >
-        <GripIcon aria-hidden className="size-4" />
+        <BlockIcon
+          name={definition.icon}
+          aria-hidden
+          className={clx(
+            "size-4 group-hover/row:hidden group-focus-visible/grip:hidden",
+            selected ? "text-txt-primary" : "text-txt-black-500",
+            isDragging && "hidden",
+          )}
+        />
+        <GripIcon
+          aria-hidden
+          className={clx(
+            "text-txt-black-700 hidden size-4 group-hover/row:block group-focus-visible/grip:block",
+            isDragging && "block",
+          )}
+        />
       </button>
       <Menu>
         <MenuTrigger
@@ -317,9 +323,10 @@ function LayerItem(props: LayerItemProps) {
               iconOnly
               tabIndex={tabIndex}
               // Always there on the selected row, so its actions can be found without hovering.
+              // It takes room only while it shows, so the other rows' text runs the full width.
               className={clx(
-                "group-hover/row:opacity-100 focus-visible:opacity-100 data-[popup-open]:opacity-100",
-                selected ? "opacity-100" : "opacity-0",
+                "mr-0.5 shrink-0 group-focus-within/row:flex group-hover/row:flex data-[popup-open]:flex",
+                selected ? "flex" : "hidden",
               )}
               aria-label={t("editor.layers.actions", { block: label })}
             />
@@ -328,18 +335,6 @@ function LayerItem(props: LayerItemProps) {
           <EllipsisVerticalIcon />
         </MenuTrigger>
         <MenuContent>
-          <MenuItem disabled={props.first} onClick={props.onUp}>
-            <MenuItemIcon>
-              <ArrowUpIcon />
-            </MenuItemIcon>
-            {t("editor.block.up")}
-          </MenuItem>
-          <MenuItem disabled={props.last} onClick={props.onDown}>
-            <MenuItemIcon>
-              <ArrowDownIcon />
-            </MenuItemIcon>
-            {t("editor.block.down")}
-          </MenuItem>
           <MenuItem disabled={required} onClick={props.onDuplicate}>
             <MenuItemIcon>
               <DuplicateIcon />
@@ -356,17 +351,6 @@ function LayerItem(props: LayerItemProps) {
         </MenuContent>
       </Menu>
     </li>
-  );
-}
-
-/** Six dots: the handle a row is dragged by. */
-function GripIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 20 20" fill="currentColor" {...props}>
-      {[7, 13].flatMap((x) =>
-        [5, 10, 15].map((y) => <circle key={`${x}-${y}`} cx={x} cy={y} r={1.4} />),
-      )}
-    </svg>
   );
 }
 
@@ -405,33 +389,37 @@ export function BlockChoices({
   if (!offered.length)
     return <p className="text-body-sm text-txt-black-700 px-1">{t("editor.picker.none")}</p>;
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       {groupOrder.map((group) => {
         const items = offered.filter((b) => b.group === group);
         if (!items.length) return null;
         return (
-          <section key={group} className="flex flex-col gap-1">
-            <h3 className="text-label-sm text-txt-black-700 px-1 font-semibold">
+          <section key={group} className="flex flex-col gap-2">
+            <h3 className="text-label-compact text-txt-black-700 px-0.5 font-semibold">
               {t(groupLabels[group])}
             </h3>
-            <ul className="flex flex-col">
+            {/* Tiles, two abreast: a block is chosen by what it is, so its icon leads and
+                the description stays to two lines. */}
+            <ul className="m-0 grid list-none grid-cols-1 gap-2 p-0 sm:grid-cols-2">
               {items.map((definition) => (
-                <li key={definition.type}>
+                <li key={definition.type} className="flex">
                   <button
                     type="button"
                     onClick={() => onPick(definition.type)}
-                    className="hover:bg-bg-washed focus-ring flex w-full items-start gap-2.5 rounded-sm px-2 py-2 text-left"
+                    title={blockDescription(definition.type)}
+                    className="group border-otl-gray-200 bg-bg-white hover:border-otl-primary-300 hover:bg-bg-primary-50 focus-ring flex w-full cursor-pointer items-start gap-3 rounded-lg border p-3 text-left transition-colors duration-150 motion-reduce:transition-none"
                   >
-                    <BlockIcon
-                      name={definition.icon}
+                    <span
                       aria-hidden
-                      className="text-txt-primary mt-0.5 size-4 shrink-0"
-                    />
+                      className="bg-bg-primary-50 text-txt-primary group-hover:bg-bg-white flex size-9 shrink-0 items-center justify-center rounded-md transition-colors duration-150 motion-reduce:transition-none"
+                    >
+                      <BlockIcon name={definition.icon} className="size-4.5" />
+                    </span>
                     <span className="flex min-w-0 flex-col gap-0.5">
-                      <span className="text-label-md font-medium">
+                      <span className="text-label-md text-txt-black-900 font-medium">
                         {blockLabel(definition.type)}
                       </span>
-                      <span className="text-body-sm text-txt-black-700">
+                      <span className="text-label-compact text-txt-black-700 line-clamp-2">
                         {blockDescription(definition.type)}
                       </span>
                     </span>

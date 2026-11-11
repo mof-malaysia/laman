@@ -4,30 +4,38 @@
  * the announcement: Publish search saves and sends it live in one step, after
  * saying what visitors will get. Officers switch it on or off, choose whether
  * results can be narrowed by collection, and pin a page first for the words
- * visitors search for most. "Try a search" runs a query against the live
- * index with the draft's pins on top, so a pin can be checked before it's
- * published.
+ * visitors search for most. "Try a search" runs a query, with the draft's pins
+ * on top, against every page's draft (an index the server builds for signed-in
+ * users only, so search can be tried before anything is published, each result
+ * that isn't live tagged with its status) or against the live site's index.
  */
-import { type PageSummary, type SearchDoc, SiteSearch, searchLimits } from "@fiscal-sb/contracts";
+import {
+  type PageStatus,
+  type PageSummary,
+  type SearchDoc,
+  SiteSearch,
+  searchLimits,
+} from "@fiscal-sb/contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useId, useMemo, useRef, useState } from "react";
 import { card } from "@/components/card";
 import { PagePicker } from "@/components/page-picker";
+import { PageStatusTag } from "@/components/page-status";
 import { PublishControl } from "@/components/publish-control";
 import { useDocConflict } from "@/components/conflict-dialog";
 import { DiscardEditsDialog, PutBackPrevious, useLeaveGuard } from "@/components/unsaved-edits";
 import { Button } from "@/components/ui/button";
-import { Callout, CalloutTitle } from "@/components/ui/callout";
-import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Field, FieldDescription, FieldError, FieldItem, FieldLabel } from "@/components/ui/field";
 import { PlusIcon } from "@/components/ui/icons/plus";
 import { SearchIcon } from "@/components/ui/icons/search";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import { SplitPane } from "@/components/ui/split-pane";
 import { Tag } from "@/components/ui/tag";
 import { type MessageKey, t } from "@/i18n";
 import { apiError, siteApi } from "@/lib/api";
 import { useMediaQuery } from "@/lib/ftds/hooks/use-media-query";
+import { WorkspaceFallback, WorkspaceHeader } from "@/components/workspace";
 import { clx } from "@/lib/ftds/utils";
 import { usePages, useSummary } from "@/lib/pages";
 import { useSearchDoc } from "@/lib/publish";
@@ -65,32 +73,25 @@ function takenWords(draft: SiteSearch): Map<number, string[]> {
   return out;
 }
 
+/** What the screen is, drawn the same whether its document is loaded, loading or failed. */
+const identity = () => ({
+  icon: <SearchIcon />,
+  title: t("search.title"),
+  subtitle: t("search.subtitle"),
+});
+
+/** The editing pane's starting width, for the SplitPane and the skeleton before it. */
+const PANE_WIDTH = 520;
+
 export function SearchScreen() {
   const doc = useSearchDoc();
-  if (doc.isError)
+  if (doc.isError || !doc.data)
     return (
-      <div className="p-surface">
-        <Callout variant="danger">
-          <CalloutTitle>{t("search.loadFailed")}</CalloutTitle>
-        </Callout>
-      </div>
-    );
-  if (!doc.data)
-    return (
-      <div className="flex h-full flex-col" aria-busy>
-        <div className="px-surface border-otl-gray-200 flex items-start gap-3 border-b pt-5 pb-4">
-          <Skeleton className="size-10 rounded-lg" />
-          <div className="flex flex-col gap-2">
-            <Skeleton className="h-6 w-40" />
-            <Skeleton className="h-4 w-80" />
-          </div>
-        </div>
-        <div className="bg-bg-washed flex flex-1 flex-col gap-4 p-4 md:max-w-[520px]">
-          <Skeleton className="h-16 w-full rounded-lg" />
-          <Skeleton className="h-24 w-full rounded-lg" />
-          <Skeleton className="h-48 w-full rounded-lg" />
-        </div>
-      </div>
+      <WorkspaceFallback
+        {...identity()}
+        error={doc.isError ? t("search.loadFailed") : undefined}
+        paneWidth={PANE_WIDTH}
+      />
     );
   return <Editor doc={doc.data} />;
 }
@@ -176,55 +177,46 @@ function Editor({ doc }: { doc: SearchDoc }) {
   const collections = (pages.data ?? []).filter((p) => p.kind === "listing");
 
   const header = (
-    <header className="bg-bg-white px-surface border-otl-gray-200 flex flex-wrap items-start gap-x-6 gap-y-3 border-b pt-5 pb-4">
-      <div className="flex min-w-0 flex-[1_1_20rem] items-start gap-3">
-        <span
-          aria-hidden
-          className="bg-bg-primary-100 text-txt-primary grid size-10 shrink-0 place-items-center rounded-lg [&_svg]:size-5"
-        >
-          <SearchIcon />
-        </span>
-        <div className="flex min-w-0 flex-col gap-1">
-          <h1 className="text-title text-txt-black-900 truncate font-semibold">
-            {t("search.title")}
-          </h1>
-          <p className="text-body-sm text-txt-black-500">{t("search.subtitle")}</p>
-          <p className="text-body-sm text-txt-black-700 flex flex-wrap items-center gap-2 pt-1">
-            <Tag size="small" variant={live ? "success" : "default"} dot>
-              {live ? t("search.state.on") : t("search.state.off")}
-            </Tag>
-            {live ? t("search.state.onText") : t("search.state.offText")}
-          </p>
-        </div>
-      </div>
-      <div className="flex max-w-full min-w-0 flex-wrap items-center gap-2">
-        {dirty ? (
-          <Button variant="default-ghost" size="small" onClick={() => setDiscarding(true)}>
-            {t("navigation.discardEdits")}
-          </Button>
-        ) : (
-          doc.changed && (
-            <Button variant="default-ghost" size="small" onClick={() => void discard()}>
-              {t("settings.discard")}
+    <WorkspaceHeader
+      {...identity()}
+      status={
+        <>
+          <Tag size="small" variant={live ? "success" : "default"} dot>
+            {live ? t("search.state.on") : t("search.state.off")}
+          </Tag>
+          {live ? t("search.state.onText") : t("search.state.offText")}
+        </>
+      }
+      actions={
+        <>
+          {dirty ? (
+            <Button variant="default-ghost" size="small" onClick={() => setDiscarding(true)}>
+              {t("navigation.discardEdits")}
             </Button>
-          )
-        )}
-        <PublishControl
-          live={doc.changed ? "changed" : "live"}
-          save={conflict.saveState(saving, dirty)}
-          label={t("search.publish")}
-          beforePublish={dirty ? save : undefined}
-          viewPath={draft.on ? "/carian" : "/"}
-          onPublish={() => siteApi.publishDoc("search")}
-          review={{
-            title: t("search.review.title"),
-            description: t("search.review.description"),
-            body: <PublishReview draft={draft} issues={local} />,
-            blocked: local.size > 0,
-          }}
-        />
-      </div>
-    </header>
+          ) : (
+            doc.changed && (
+              <Button variant="default-ghost" size="small" onClick={() => void discard()}>
+                {t("settings.discard")}
+              </Button>
+            )
+          )}
+          <PublishControl
+            live={doc.changed ? "changed" : "live"}
+            save={conflict.saveState(saving, dirty)}
+            label={t("search.publish")}
+            beforePublish={dirty ? save : undefined}
+            viewPath={draft.on ? "/carian" : "/"}
+            onPublish={() => siteApi.publishDoc("search")}
+            review={{
+              title: t("search.review.title"),
+              description: t("search.review.description"),
+              body: <PublishReview draft={draft} issues={local} />,
+              blocked: local.size > 0,
+            }}
+          />
+        </>
+      }
+    />
   );
 
   const form = (
@@ -233,7 +225,7 @@ function Editor({ doc }: { doc: SearchDoc }) {
       <div className={clx(card, "border-otl-gray-200 shrink-0 p-4")}>
         <SwitchRow
           title={t("search.on")}
-          hint={draft.on ? t("search.onHint") : t("search.offHint")}
+          hint={draft.on ? undefined : t("search.offHint")}
           checked={draft.on}
           onCheckedChange={(on) => set({ on })}
         />
@@ -295,7 +287,7 @@ function Editor({ doc }: { doc: SearchDoc }) {
         <SplitPane
           className="min-h-0 flex-1"
           storageKey="admin.search.split"
-          defaultWidth={520}
+          defaultWidth={PANE_WIDTH}
           maxWidth={760}
           startLabel={t("search.editor")}
           endLabel={t("search.try.title")}
@@ -491,7 +483,14 @@ type Pagefind = {
   } | null>;
 };
 
-type Found = { url: string; title: string; excerpt?: string; pin?: "live" | "draft" };
+/** A result, with its page's status when it's known (drafts, and a pinned page). */
+type Found = {
+  url: string;
+  title: string;
+  excerpt?: string;
+  pinned?: boolean;
+  status?: PageStatus;
+};
 type Trial =
   | { status: "idle" | "busy" | "notLive" | "noIndex" | "failed" }
   | { status: "done"; q: string; found: Found[]; total: number };
@@ -542,37 +541,50 @@ function TrySearch({
 }) {
   const id = useId();
   const [q, setQ] = useState("");
+  // On: every page's draft, as visitors will find them once published. Off: the live site.
+  const [includeDrafts, setIncludeDrafts] = useState(true);
   const [trial, setTrial] = useState<Trial>({ status: "idle" });
   // The live index, loaded again only after a publish, which may have changed it.
   const lastPublish = useSummary().data?.publishes.find((j) => j.status === "done")?.id ?? "";
   const engine = useRef<{ key: string; loaded: Promise<Pagefind> } | undefined>(undefined);
 
-  const run = async (query: string) => {
+  const run = async (query: string, withDrafts = includeDrafts) => {
     const words = query.trim();
     if (!words) return setTrial({ status: "idle" });
-    if (!live) return setTrial({ status: "notLive" });
+    if (!withDrafts && !live) return setTrial({ status: "notLive" });
     setTrial({ status: "busy" });
     try {
-      if (engine.current?.key !== lastPublish)
+      // Drafts: the server's index of every draft, by its version; it's built again only
+      // after a draft changes. Live: the published site's own index.
+      const drafts = withDrafts ? await siteApi.draftSearch() : undefined;
+      const key = drafts ? `drafts:${drafts.version}` : `live:${lastPublish}`;
+      const url = drafts
+        ? `/api/search/drafts/${encodeURIComponent(drafts.version)}/pagefind.js`
+        : `/pagefind/pagefind.js?v=${encodeURIComponent(lastPublish)}`;
+      if (engine.current?.key !== key)
         engine.current = {
-          key: lastPublish,
-          loaded: import(
-            /* webpackIgnore: true */ `/pagefind/pagefind.js?v=${encodeURIComponent(lastPublish)}`
-          ).then(async (module: Pagefind) => {
+          key,
+          loaded: import(/* webpackIgnore: true */ url).then(async (module: Pagefind) => {
             await module.options({ excerptLength: 24 });
             return module;
           }),
         };
       const results = (await (await engine.current.loaded).search(words))?.results ?? [];
       const data = await Promise.all(results.slice(0, 8).map((r) => r.data()));
-      const found = data.map((d) => ({
-        url: d.url.replace(/\/$/, "") || "/",
-        title: d.meta.title ?? d.url,
-        excerpt: d.excerpt,
-      }));
+      const found = data.map((d) => {
+        const at = d.url.replace(/\/$/, "") || "/";
+        const status = drafts?.pages[at];
+        return {
+          url: at,
+          title: d.meta.title ?? d.url,
+          excerpt: d.excerpt,
+          ...(status && { status }),
+        };
+      });
       setTrial({ status: "done", q: words, found, total: results.length });
     } catch {
       engine.current = undefined;
+      if (withDrafts) return setTrial({ status: "failed" });
       // No index on the site yet (it's written by the next publish), or something else went wrong.
       const index = await fetch("/pagefind/pagefind.js", { method: "HEAD" }).catch(() => undefined);
       setTrial({ status: index?.status === 404 ? "noIndex" : "failed" });
@@ -590,7 +602,8 @@ function TrySearch({
           {
             url: pinned.path,
             title: pinned.title || t("page.untitled"),
-            pin: pinned.status === "draft" ? "draft" : "live",
+            pinned: true,
+            status: pinned.status,
           },
           ...done.found.filter((f) => f.url !== pinned.path),
         ]
@@ -620,7 +633,9 @@ function TrySearch({
         <h2 id={id} className="text-label-lg text-txt-black-900 font-semibold">
           {t("search.try.title")}
         </h2>
-        <p className="text-body-sm text-txt-black-700">{t("search.try.hint")}</p>
+        <p className="text-body-sm text-txt-black-700">
+          {t(includeDrafts ? "search.try.hint.drafts" : "search.try.hint.live")}
+        </p>
       </div>
       <search>
         <form onSubmit={submit} className="flex items-end gap-2">
@@ -633,7 +648,22 @@ function TrySearch({
             {t("search.try.button")}
           </Button>
         </form>
+        <Field name="try-drafts" className="mt-3">
+          <FieldItem>
+            <Checkbox
+              checked={includeDrafts}
+              onCheckedChange={(checked) => {
+                setIncludeDrafts(checked);
+                void run(q, checked);
+              }}
+            />
+            <FieldLabel>{t("search.try.includeDrafts")}</FieldLabel>
+          </FieldItem>
+        </Field>
       </search>
+      {includeDrafts && !live && (
+        <p className="text-body-sm text-txt-black-700">{t("search.try.offNote")}</p>
+      )}
       <output aria-live="polite" className="text-body-sm text-txt-black-900 font-medium">
         {message}
       </output>
@@ -644,17 +674,19 @@ function TrySearch({
               key={f.url}
               className={clx(
                 "flex flex-col gap-1",
-                f.pin && "border-otl-primary-200 bg-bg-primary-50 rounded-md border p-3",
+                f.pinned && "border-otl-primary-200 bg-bg-primary-50 rounded-md border p-3",
               )}
             >
-              {f.pin && (
-                <Tag
-                  size="small"
-                  variant={f.pin === "live" ? "primary" : "warning"}
-                  className="self-start"
-                >
-                  {f.pin === "live" ? t("search.try.pinned") : t("search.try.draftPin")}
-                </Tag>
+              {/* Pinned, and not live yet: the same tags the Pages lists use. Live needs no tag. */}
+              {(f.pinned || (f.status && f.status !== "published")) && (
+                <span className="flex flex-wrap gap-1.5">
+                  {f.pinned && (
+                    <Tag size="small" variant="primary">
+                      {t("search.try.pinned")}
+                    </Tag>
+                  )}
+                  {f.status && f.status !== "published" && <PageStatusTag status={f.status} />}
+                </span>
               )}
               <span className="text-body-md text-txt-primary font-semibold">{f.title}</span>
               <span className="text-label-compact text-txt-black-500">{f.url}</span>

@@ -27,11 +27,11 @@ import { formatDateTime, useRefreshPages } from "@/lib/pages";
 import { clx } from "@/lib/ftds/utils";
 import { docName, isNewPage, usePublish, useSiteHref, useWaiting } from "@/lib/publish";
 
-const key = (item: WaitingItem) =>
+export const key = (item: WaitingItem) =>
   item.kind === "page" ? item.id : item.kind === "media" ? `media:${item.id}` : item.kind;
 
 /** What a row is called: the page's title, the file's name, or the document's name. */
-const itemName = (item: WaitingItem) =>
+export const itemName = (item: WaitingItem) =>
   item.kind === "page"
     ? item.title || t("page.untitled")
     : item.kind === "media"
@@ -47,7 +47,12 @@ function Review({ item, onNavigate }: { item: WaitingItem; onNavigate?: () => vo
   );
   if (item.kind === "page")
     return (
-      <Link to="/pages/$id" params={{ id: item.id }} className={linkClass} onClick={onNavigate}>
+      <Link
+        to="/pages/$id/edit"
+        params={{ id: item.id }}
+        className={linkClass}
+        onClick={onNavigate}
+      >
         {label}
       </Link>
     );
@@ -117,7 +122,7 @@ function Discard({ item }: { item: LiveChange }) {
 }
 
 /** Review, and Discard for a change to something live. */
-function Actions({
+export function Actions({
   item,
   onNavigate,
 }: {
@@ -137,7 +142,7 @@ function Actions({
  * "4 things to check", opening in place to say what each one is and how to fix
  * it, with the way into the editor where the checks stay open.
  */
-function ChecksNote({
+export function ChecksNote({
   pageId,
   checks,
   onNavigate,
@@ -228,7 +233,7 @@ function Row({
     </Field>
   );
   return (
-    <li className="flex flex-col gap-1 py-2">
+    <li className="flex flex-col gap-1 px-3 py-2.5">
       <div className="flex items-start gap-3">
         {name}
         <Actions item={item} onNavigate={onNavigate} />
@@ -253,7 +258,7 @@ function MediaRow({
   onNavigate?: (() => void) | undefined;
 }) {
   return (
-    <li className="flex items-start gap-3 py-2">
+    <li className="flex items-start gap-3 px-3 py-2.5">
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-medium">{itemName(item)}</span>
         <span className="text-label-compact text-txt-black-500 truncate">
@@ -267,7 +272,12 @@ function MediaRow({
   );
 }
 
-export function WaitingList({ onNavigate }: { onNavigate?: () => void }) {
+/**
+ * What the officer ticked and publishing it: the same choices wherever the
+ * waiting list is shown. Changes to live things start ticked, new pages don't,
+ * a page a check stops can't go, and replaced files always go along.
+ */
+export function useWaitingPublish() {
   const waiting = useWaiting();
   const checks = useChecksOf(
     waiting.items.flatMap((item) => (item.kind === "page" ? [item.id] : [])),
@@ -294,10 +304,11 @@ export function WaitingList({ onNavigate }: { onNavigate?: () => void }) {
         else next.add(key(item));
       return next;
     });
-  const [confirming, setConfirming] = useState(false);
-  const canPublish = useCan("content.publish");
 
+  // The three groups every list shows: changes to live things, replaced files, new pages.
+  const changes = waiting.items.filter((item) => !isNewPage(item) && item.kind !== "media");
   const files = waiting.items.filter((item) => item.kind === "media");
+  const fresh = waiting.items.filter(isNewPage);
   // A page a check stops can't go: it keeps the officer's tick, but shows unticked and isn't sent.
   const goes = (item: WaitingItem) => isChecked(item) && !stops(checksOf(item));
   const chosen = waiting.items.filter((item) => item.kind !== "media" && goes(item));
@@ -310,9 +321,132 @@ export function WaitingList({ onNavigate }: { onNavigate?: () => void }) {
     // The officer's ticks stay as they left them: what they left out stays left out.
     return siteApi.publish({ pageIds, docs });
   });
+
+  const count = chosen.length + files.length;
+  // Site documents ticked: they change every page.
+  const docs = chosen.filter((i) => i.kind !== "page");
+  const label =
+    files.length === 0 && docs.length === 0
+      ? t("waiting.publishPages", { count })
+      : t("waiting.publish", { count });
+
+  return {
+    waiting,
+    checksOf,
+    goes,
+    isChecked,
+    toggle,
+    setAll,
+    changes,
+    files,
+    fresh,
+    chosen,
+    docs,
+    count,
+    label,
+    sent,
+    outcome,
+    publish,
+    busy: outcome.status === "publishing",
+  };
+}
+export type WaitingPublish = ReturnType<typeof useWaitingPublish>;
+
+/** How the last publish ended, where Publish was pressed; read out when it arrives. */
+export function PublishOutcome({
+  state,
+  onNavigate,
+}: {
+  state: WaitingPublish;
+  onNavigate?: (() => void) | undefined;
+}) {
+  const { outcome, sent, publish } = state;
   // Proof on the site: the page itself when one page went live, else the home page.
   const only = sent.length === 1 ? sent[0] : undefined;
   const siteHref = useSiteHref(only?.kind === "page" ? only.path : "/");
+  return (
+    <div aria-live={outcome.status === "failed" ? "assertive" : "polite"}>
+      {outcome.status === "live" && (
+        <Outcome variant="success" title={t("outcome.live.title")}>
+          <p>{t("outcome.live.body", { items: listOf(sent.map(itemName)) })}</p>
+          <div>
+            <Button
+              variant="default-outline"
+              // oxlint-disable-next-line jsx-a11y/control-has-associated-label -- labelled by the Button's children
+              render={<a href={siteHref} target="_blank" rel="noopener" />}
+            >
+              {t("publish.view")}
+              <span className="sr-only"> {t("publish.newTab")}</span>
+            </Button>
+          </div>
+        </Outcome>
+      )}
+      {outcome.status === "failed" && (
+        <Outcome variant="danger" title={t("outcome.failed.title")}>
+          <p>{t("outcome.failed.body")}</p>
+          {outcome.error && (
+            <p className="text-txt-black-700">
+              {t("outcome.failed.reason", { reason: outcome.error })}
+            </p>
+          )}
+          <div className="flex flex-wrap items-center gap-3">
+            <Button variant="primary-fill" onClick={() => void publish()}>
+              {t("publish.retry")}
+            </Button>
+            <Link
+              to="/publishing"
+              search={{ tab: "history" }}
+              className={linkClass}
+              onClick={onNavigate}
+            >
+              {t("outcome.failed.log")}
+            </Link>
+          </div>
+        </Outcome>
+      )}
+    </div>
+  );
+}
+
+/** What goes public, by name, before it does. */
+export function PublishConfirm({
+  state,
+  open,
+  onOpenChange,
+}: {
+  state: WaitingPublish;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { chosen, docs, files, label, publish } = state;
+  return (
+    <ConfirmDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={t("waiting.confirm.title")}
+      description={t("waiting.confirm.description")}
+      confirm={label}
+      onConfirm={() => void publish()}
+    >
+      <div className="flex max-h-80 flex-col gap-3 overflow-y-auto">
+        <ConfirmGroup
+          title="waiting.confirm.updated"
+          items={chosen.filter((i) => !isNewPage(i) && i.kind === "page")}
+        />
+        <ConfirmGroup title="waiting.confirm.new" items={chosen.filter(isNewPage)} />
+        <ConfirmGroup title="waiting.confirm.siteWide" items={docs} />
+        <ConfirmGroup title="waiting.confirm.files" items={files} />
+      </div>
+    </ConfirmDialog>
+  );
+}
+
+export function WaitingList({ onNavigate }: { onNavigate?: () => void }) {
+  const state = useWaitingPublish();
+  const { waiting, checksOf, goes, isChecked, toggle, setAll, changes, files, fresh } = state;
+  const { count, label, outcome, busy } = state;
+  const [confirming, setConfirming] = useState(false);
+  const canPublish = useCan("content.publish");
 
   const group = (id: string, title: MessageKey, items: WaitingItem[]) => {
     if (items.length === 0) return null;
@@ -330,7 +464,7 @@ export function WaitingList({ onNavigate }: { onNavigate?: () => void }) {
             </button>
           )}
         </div>
-        <ul className="divide-otl-gray-200 m-0 list-none divide-y p-0">
+        <ul className="divide-otl-gray-200 border-otl-gray-200 bg-bg-white m-0 mt-2 list-none divide-y rounded-lg border p-0">
           {items.map((item) => (
             <Row
               key={key(item)}
@@ -346,54 +480,10 @@ export function WaitingList({ onNavigate }: { onNavigate?: () => void }) {
       </section>
     );
   };
-  const busy = outcome.status === "publishing";
-  const count = chosen.length + files.length;
-  const changes = chosen.filter((i) => !isNewPage(i) && i.kind === "page");
-  const fresh = chosen.filter(isNewPage);
-  const docs = chosen.filter((i) => i.kind !== "page");
-  const label =
-    files.length === 0 && docs.length === 0
-      ? t("waiting.publishPages", { count })
-      : t("waiting.publish", { count });
 
   return (
-    <div className="gap-stack-sm text-body-sm flex flex-col">
-      {/* The outcome, where Publish was pressed; read out when it arrives. */}
-      <div aria-live={outcome.status === "failed" ? "assertive" : "polite"}>
-        {outcome.status === "live" && (
-          <Outcome variant="success" title={t("outcome.live.title")}>
-            <p>{t("outcome.live.body", { items: listOf(sent.map(itemName)) })}</p>
-            <div>
-              <Button
-                variant="default-outline"
-                // oxlint-disable-next-line jsx-a11y/control-has-associated-label -- labelled by the Button's children
-                render={<a href={siteHref} target="_blank" rel="noopener" />}
-              >
-                {t("publish.view")}
-                <span className="sr-only"> {t("publish.newTab")}</span>
-              </Button>
-            </div>
-          </Outcome>
-        )}
-        {outcome.status === "failed" && (
-          <Outcome variant="danger" title={t("outcome.failed.title")}>
-            <p>{t("outcome.failed.body")}</p>
-            {outcome.error && (
-              <p className="text-txt-black-700">
-                {t("outcome.failed.reason", { reason: outcome.error })}
-              </p>
-            )}
-            <div className="flex flex-wrap items-center gap-3">
-              <Button variant="primary-fill" onClick={() => void publish()}>
-                {t("publish.retry")}
-              </Button>
-              <Link to="/publishing" className={linkClass} onClick={onNavigate}>
-                {t("outcome.failed.log")}
-              </Link>
-            </div>
-          </Outcome>
-        )}
-      </div>
+    <div className="gap-stack-md text-body-sm flex flex-col">
+      <PublishOutcome state={state} onNavigate={onNavigate} />
       {waiting.isPending ? (
         <output className="flex flex-col gap-2">
           <span className="sr-only">{t("waiting.loading")}</span>
@@ -404,24 +494,20 @@ export function WaitingList({ onNavigate }: { onNavigate?: () => void }) {
         outcome.status !== "live" && <p className="text-txt-black-700 m-0">{t("waiting.none")}</p>
       ) : (
         <>
-          {group(
-            "waiting-changes",
-            "waiting.changes",
-            waiting.items.filter((item) => !isNewPage(item) && item.kind !== "media"),
-          )}
+          {group("waiting-changes", "waiting.changes", changes)}
           {files.length > 0 && (
             <section aria-labelledby="waiting-media">
               <h3 id="waiting-media" className="text-txt-black-700 font-medium">
                 {t("waiting.media")}
               </h3>
-              <ul className="divide-otl-gray-200 m-0 list-none divide-y p-0">
+              <ul className="divide-otl-gray-200 border-otl-gray-200 bg-bg-white m-0 mt-2 list-none divide-y rounded-lg border p-0">
                 {files.map((item) => (
                   <MediaRow key={key(item)} item={item} onNavigate={onNavigate} />
                 ))}
               </ul>
             </section>
           )}
-          {group("waiting-new", "waiting.new", waiting.items.filter(isNewPage))}
+          {group("waiting-new", "waiting.new", fresh)}
         </>
       )}
       {waiting.items.length > 0 && !canPublish && (
@@ -429,7 +515,7 @@ export function WaitingList({ onNavigate }: { onNavigate?: () => void }) {
       )}
       {waiting.items.length > 0 && canPublish && outcome.status !== "failed" && (
         // Stays in reach while a long list scrolls under it.
-        <div className="bg-bg-white border-otl-gray-200 sticky bottom-0 flex flex-wrap items-center gap-3 border-t py-3">
+        <div className="bg-bg-white sticky bottom-0 flex flex-wrap items-center gap-3 py-2">
           <Button
             variant="primary-fill"
             disabled={busy || count === 0}
@@ -442,22 +528,7 @@ export function WaitingList({ onNavigate }: { onNavigate?: () => void }) {
           )}
         </div>
       )}
-      {/* What goes public, by name, before it does. */}
-      <ConfirmDialog
-        open={confirming}
-        onOpenChange={setConfirming}
-        title={t("waiting.confirm.title")}
-        description={t("waiting.confirm.description")}
-        confirm={label}
-        onConfirm={() => void publish()}
-      >
-        <div className="flex max-h-80 flex-col gap-3 overflow-y-auto">
-          <ConfirmGroup title="waiting.confirm.updated" items={changes} />
-          <ConfirmGroup title="waiting.confirm.new" items={fresh} />
-          <ConfirmGroup title="waiting.confirm.siteWide" items={docs} />
-          <ConfirmGroup title="waiting.confirm.files" items={files} />
-        </div>
-      </ConfirmDialog>
+      <PublishConfirm state={state} open={confirming} onOpenChange={setConfirming} />
     </div>
   );
 }

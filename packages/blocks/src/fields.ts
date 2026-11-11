@@ -10,6 +10,7 @@ export type Widget =
   | "textarea"
   | "richtext"
   | "select"
+  | "icon"
   | "link"
   | "list"
   | "group"
@@ -94,6 +95,13 @@ export const field = {
     options: T,
     optionLabels: Record<T[number], string>,
   ) => z.enum(options).meta(meta({ title, widget: "select", optionLabels })),
+
+  /** A choice of icon, by name: the panel shows the icons themselves. */
+  icon: <const T extends readonly [string, ...string[]]>(
+    title: string,
+    options: T,
+    optionLabels: Record<T[number], string>,
+  ) => z.enum(options).meta(meta({ title, widget: "icon", optionLabels })),
 
   /**
    * The band behind a block, from the FTDS tones it takes; the first is the

@@ -1,8 +1,7 @@
 /**
  * Edits to the navigation document, as pure functions. A selection is a
- * dotted path into the navbar: "2" an item, "2.l.0" a link of its list,
- * "2.g.1" a column, "2.g.1.l.3" a link in that column, "2.feature",
- * "2.footer".
+ * dotted path into the navbar: "2" an item (a dropdown opens whole), "2.l.0" a
+ * link of its list, "2.g.1.l.3" a link in its column 1.
  */
 import {
   type DropdownLayout,
@@ -18,23 +17,11 @@ export type Selection = string | null;
 export const parse = (selection: Selection) => {
   const parts = selection?.split(".") ?? [];
   const item = parts[0] === undefined ? undefined : Number(parts[0]);
-  if (parts[1] === "g") {
-    const group = Number(parts[2]);
-    const link = parts[3] === "l" ? Number(parts[4]) : undefined;
-    return {
-      item,
-      group,
-      link,
-      part: link === undefined ? ("group" as const) : ("groupLink" as const),
-    };
-  }
+  if (parts[1] === "g" && parts[3] === "l")
+    return { item, group: Number(parts[2]), link: Number(parts[4]), part: "groupLink" as const };
   if (parts[1] === "l") return { item, link: Number(parts[2]), part: "link" as const };
-  if (parts[1] === "feature") return { item, part: "feature" as const };
-  if (parts[1] === "footer") return { item, part: "footer" as const };
   return { item, part: item === undefined ? ("none" as const) : ("item" as const) };
 };
-
-const pageTarget = (pageId: string): LinkTarget => ({ kind: "page", pageId });
 
 export const newLink = (label: string, target: LinkTarget): NavLink => ({ label, target });
 
@@ -77,14 +64,6 @@ export function setLayout(item: NavDropdown, layout: DropdownLayout): NavDropdow
   return { ...item, layout, links, groups: [] };
 }
 
-export const turnIntoDropdown = (item: Extract<NavItem, { type: "link" }>): NavDropdown => ({
-  ...newDropdown(item.label),
-  links: [newLink(item.label, item.target)],
-  footerLink: { text: item.label, target: item.target },
-});
-
-export { pageTarget };
-
 /** Field problems, by dotted path ("navbar.0.label"), from the same rules the server applies on save. */
 export function problems(nav: Navigation): Map<string, string> {
   const result = Navigation.safeParse(nav);
@@ -112,15 +91,15 @@ export function uniqueLabel(base: string, nav: Navigation): string {
   return `${base} ${n}`;
 }
 
-/** The selection that a warning's path points at: "navbar.2.links.0" is "2.l.0". */
+/**
+ * The selection that a warning's path points at: "navbar.2.links.0" is "2.l.0".
+ * Anything else in a dropdown (its feature card, its footer link) opens the dropdown.
+ */
 export function selectionOf(path: string): Selection {
-  const [root, item, kind, a, , b] = path.split(".");
+  const [root, item, kind, a, links, b] = path.split(".");
   if (root !== "navbar" || item === undefined) return null;
-  if (kind === undefined) return item;
   if (kind === "links") return `${item}.l.${a}`;
-  if (kind === "groups") return `${item}.g.${a}.l.${b}`;
-  if (kind === "feature") return `${item}.feature`;
-  if (kind === "footerLink") return `${item}.footer`;
+  if (kind === "groups" && links === "links") return `${item}.g.${a}.l.${b}`;
   return item;
 }
 

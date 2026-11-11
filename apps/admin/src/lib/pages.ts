@@ -3,10 +3,23 @@ import type { PageSummary } from "@fiscal-sb/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { locale, t } from "@/i18n";
-import { isActive, pagesApi, siteApi } from "./api";
+import { historyApi, isActive, pagesApi, siteApi } from "./api";
 
 export const pagesQuery = { queryKey: ["pages"], queryFn: pagesApi.list } as const;
 export const usePages = () => useQuery(pagesQuery);
+
+/** A page's revisions; `updatedAt` refetches them after the page changes. */
+export const revisionsQuery = (pageId: string, updatedAt: string) => ({
+  queryKey: ["revisions", pageId, updatedAt],
+  queryFn: () => historyApi.revisions(pageId),
+});
+
+/** One revision with its content, once its id is known. */
+export const revisionQuery = (pageId: string, revisionId: string | undefined) => ({
+  queryKey: ["revision", pageId, revisionId],
+  queryFn: () => historyApi.revision(pageId, revisionId ?? ""),
+  enabled: revisionId !== undefined,
+});
 
 export function useSummary() {
   return useQuery({

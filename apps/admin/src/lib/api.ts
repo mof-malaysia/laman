@@ -42,6 +42,7 @@ import type {
   PublishSiteResult,
   UndoPublishResult,
   SearchDoc,
+  DraftSearchIndex,
   SettingsDoc,
   SiteDocName,
   SiteSearch,
@@ -199,6 +200,8 @@ export const siteApi = {
   discardAnnouncement: () => discardDoc<AnnouncementDoc>("announcement"),
   search: () => data<SearchDoc>(api.get("api/search")),
   saveSearch: (draft: SiteSearch) => saveDoc<SearchDoc>("search", draft),
+  /** The search index of every page's draft, built first when a draft has changed. */
+  draftSearch: () => data<DraftSearchIndex>(api.get("api/search/drafts")),
   discardSearch: () => discardDoc<SearchDoc>("search"),
   theme: () => data<ThemeDoc>(api.get("api/theme")),
   saveTheme: (draft: ThemeChoice) => saveDoc<ThemeDoc>("theme", draft),

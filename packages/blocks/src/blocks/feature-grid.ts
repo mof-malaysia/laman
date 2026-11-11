@@ -2,29 +2,160 @@ import { z } from "zod";
 import { field } from "../fields.js";
 import { defineBlock } from "../define.js";
 
-/** Icons a feature may use; the renderer maps each to its FTDS icon. */
-export const featureIcons = [
-  "money",
-  "document",
-  "calendar",
-  "user-group",
-  "govt-office",
-  "globe",
-  "check-shield",
-  "bell",
+/**
+ * Icons a feature, service or navbar link may use, in the picker's groups and order, with
+ * each group's English name. The renderer and the admin map each icon to its FTDS icon.
+ */
+export const featureIconGroups = [
+  {
+    label: "Places and people",
+    icons: [
+      "home",
+      "govt-office",
+      "putrajaya",
+      "map",
+      "pin",
+      "direction",
+      "globe",
+      "user",
+      "user-group",
+      "org-chart",
+      "accessible",
+    ],
+  },
+  {
+    label: "Documents and files",
+    icons: [
+      "document",
+      "document-add",
+      "forms",
+      "folder",
+      "book",
+      "pdf",
+      "attachment",
+      "download",
+      "upload",
+      "printer",
+      "qr-code",
+      "table",
+    ],
+  },
+  {
+    label: "Time and events",
+    icons: ["calendar", "clock", "video", "play", "trophy", "flag", "star", "heart"],
+  },
+  {
+    label: "Services and security",
+    icons: [
+      "money",
+      "check-shield",
+      "lock",
+      "setting",
+      "bolt",
+      "desktop",
+      "mobile",
+      "search",
+      "link",
+    ],
+  },
+  {
+    label: "Notices and status",
+    icons: ["bell", "megaphone", "info", "warning", "check-circle", "question-circle", "thumbs-up"],
+  },
+  {
+    label: "Contact and social",
+    icons: [
+      "email",
+      "phone",
+      "chat-bubble",
+      "share",
+      "whatsapp",
+      "telegram",
+      "facebook",
+      "instagram",
+      "twitter-x",
+      "youtube",
+      "tiktok",
+      "linkedin",
+      "rss",
+    ],
+  },
 ] as const;
 
-/** The icon select features and services share. */
-export const featureIcon = field.select("Icon", featureIcons, {
-  money: "Money",
-  document: "Document",
-  calendar: "Calendar",
-  "user-group": "People",
+type FeatureIcon = (typeof featureIconGroups)[number]["icons"][number];
+
+/** Every feature icon, in the picker's order: the one list, read from the groups. */
+export const featureIcons = featureIconGroups.flatMap((group) => group.icons) as [
+  FeatureIcon,
+  ...FeatureIcon[],
+];
+
+/** Each feature icon's name, in English: the admin translates it like other registry text. */
+export const featureIconLabels: Record<FeatureIcon, string> = {
+  home: "Home",
   "govt-office": "Government office",
+  putrajaya: "Putrajaya",
+  map: "Map",
+  pin: "Location",
+  direction: "Directions",
   globe: "Globe",
+  user: "Person",
+  "user-group": "People",
+  "org-chart": "Organisation",
+  accessible: "Accessibility",
+  document: "Document",
+  "document-add": "New document",
+  forms: "Form",
+  folder: "Folder",
+  book: "Book",
+  pdf: "PDF",
+  attachment: "Attachment",
+  download: "Download",
+  upload: "Upload",
+  printer: "Print",
+  "qr-code": "QR code",
+  table: "Table",
+  calendar: "Calendar",
+  clock: "Clock",
+  video: "Video",
+  play: "Play",
+  trophy: "Award",
+  flag: "Flag",
+  star: "Star",
+  heart: "Heart",
+  money: "Money",
   "check-shield": "Shield",
+  lock: "Lock",
+  setting: "Settings",
+  bolt: "Energy",
+  desktop: "Computer",
+  mobile: "Mobile",
+  search: "Search",
+  link: "Link",
   bell: "Bell",
-});
+  megaphone: "Announcement",
+  info: "Information",
+  warning: "Warning",
+  "check-circle": "Tick",
+  "question-circle": "Question",
+  "thumbs-up": "Thumbs up",
+  email: "Email",
+  phone: "Phone",
+  "chat-bubble": "Chat",
+  share: "Share",
+  whatsapp: "WhatsApp",
+  telegram: "Telegram",
+  facebook: "Facebook",
+  instagram: "Instagram",
+  "twitter-x": "X",
+  youtube: "YouTube",
+  tiktok: "TikTok",
+  linkedin: "LinkedIn",
+  rss: "RSS",
+};
+
+/** The icon choice features, services and navigation links share. */
+export const featureIcon = field.icon("Icon", featureIcons, featureIconLabels);
 
 const Feature = z.object({
   icon: featureIcon.optional(),

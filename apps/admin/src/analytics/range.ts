@@ -104,7 +104,9 @@ export function bucketLabel(at: string, interval: AnalyticsInterval, long = fals
   return (long ? fullDay : dayLabel).format(new Date(`${at}T00:00:00Z`));
 }
 
-const longDay = (day: string) => fullDay.format(new Date(`${day}T00:00:00Z`));
+/** One day, kept on one line: a range wraps between its days, never inside one. */
+const longDay = (day: string) =>
+  fullDay.format(new Date(`${day}T00:00:00Z`)).replaceAll(" ", "\u00a0");
 
 /** "Mon, 3 Nov 2026 – Tue, 2 Dec 2026", or one day. */
 export const rangeLabel = (from: string, to: string) =>

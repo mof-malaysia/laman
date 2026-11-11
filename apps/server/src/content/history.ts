@@ -5,7 +5,7 @@
  * so a restore can be undone. Deleted pages stay restorable for 30 days.
  */
 import { randomUUID } from "node:crypto";
-import type { PageDocument } from "@fiscal-sb/blocks";
+import { PageDocument, withDefaults } from "@fiscal-sb/blocks";
 import type { DeletedPage, Revision, RevisionDetail } from "@fiscal-sb/contracts";
 import { sql } from "kysely";
 import { type Db, now } from "../db/index.js";
@@ -165,7 +165,11 @@ export async function getRevision(
     .where("page_id", "=", pageId)
     .executeTakeFirst();
   if (!revision || !row) throw new HttpError(404, "revision_not_found", "No revision with that id");
-  return { ...revision, content: JSON.parse(row.content) as PageDocument };
+  // With defaults filled in, as the draft is: a field added since this was saved reads as it renders.
+  return {
+    ...revision,
+    content: withDefaults(PageDocument, JSON.parse(row.content) as PageDocument),
+  };
 }
 
 /** Restore as draft: the current draft becomes a revision first, so this can be undone. */

@@ -42,7 +42,7 @@ export function useRestoreDeleted() {
         title: t("trash.restored", { title: page.title }),
         ...(link && {
           description: (
-            <TextLink primary render={<Link to="/pages/$id" params={{ id: page.id }} />}>
+            <TextLink primary render={<Link to="/pages/$id/edit" params={{ id: page.id }} />}>
               {t("trash.openRestored")}
             </TextLink>
           ),

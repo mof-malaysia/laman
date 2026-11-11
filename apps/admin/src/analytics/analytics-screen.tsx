@@ -14,13 +14,14 @@ import {
 import { t } from "@/i18n";
 import type { RangeSearch } from "./range";
 import { AnalyticsReport, RangeControl, useAnalyticsStatus } from "./report";
+import { Screen } from "@/components/screen";
 
 export function AnalyticsScreen() {
   const range = useSearch({ strict: false }) as RangeSearch;
   const navigate = useNavigate();
   const status = useAnalyticsStatus();
   return (
-    <div className="p-surface gap-stack-lg mx-auto flex max-w-6xl flex-col">
+    <Screen>
       <PageHeader>
         <PageHeaderContent>
           <PageHeaderTitle size="headline">{t("nav.analytics")}</PageHeaderTitle>
@@ -35,6 +36,6 @@ export function AnalyticsScreen() {
         </PageHeaderActions>
       </PageHeader>
       <AnalyticsReport range={range} />
-    </div>
+    </Screen>
   );
 }

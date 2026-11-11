@@ -38,6 +38,12 @@ import {
   todayIn,
 } from "./range";
 
+/** One period's summary, under the key every screen shares, so they share the cache. */
+export const analyticsSummaryQuery = (query: AnalyticsQuery) => ({
+  queryKey: ["analytics", "summary", query],
+  queryFn: () => analyticsApi.summary(query),
+});
+
 export const useAnalyticsStatus = () =>
   useQuery({ queryKey: ["analytics", "status"], queryFn: analyticsApi.status });
 
@@ -126,10 +132,10 @@ function StatusNotes({ status }: { status: AnalyticsStatus | undefined }) {
   return null;
 }
 
-type Delta = { direction: "up" | "down" | "none"; text: string };
+export type Delta = { direction: "up" | "down" | "none"; text: string };
 
 /** The change on the period before: a percentage, or points for the bounce rate. */
-function delta(now: number, before: number, kind: "count" | "rate" | "time"): Delta {
+export function delta(now: number, before: number, kind: "count" | "rate" | "time"): Delta {
   if (kind === "rate") {
     const points = Math.round((now - before) * 100);
     if (!points) return { direction: "none", text: t("analytics.delta.same") };
@@ -151,10 +157,13 @@ function Figures({
   current,
   previous,
   page,
+  compare,
 }: {
   current: AnalyticsTotals;
   previous: AnalyticsTotals;
   page: boolean;
+  /** Whether the period before has anything to compare with; said once if not. */
+  compare: boolean;
 }) {
   const figures: {
     label: MessageKey;
@@ -198,19 +207,21 @@ function Figures({
         <Stat key={f.label} surface="well">
           <StatLabel>{t(f.label)}</StatLabel>
           <StatValue>{f.value}</StatValue>
-          <StatDelta
-            direction={f.delta.direction}
-            tone={
-              f.good && f.delta.direction !== "none"
-                ? f.delta.direction === "up"
-                  ? "success"
-                  : "danger"
-                : "neutral"
-            }
-            directionLabels={{ up: t("analytics.delta.up"), down: t("analytics.delta.down") }}
-          >
-            {f.delta.text}
-          </StatDelta>
+          {compare && (
+            <StatDelta
+              direction={f.delta.direction}
+              tone={
+                f.good && f.delta.direction !== "none"
+                  ? f.delta.direction === "up"
+                    ? "success"
+                    : "danger"
+                  : "neutral"
+              }
+              directionLabels={{ up: t("analytics.delta.up"), down: t("analytics.delta.down") }}
+            >
+              {f.delta.text}
+            </StatDelta>
+          )}
         </Stat>
       ))}
     </StatGroup>
@@ -236,15 +247,17 @@ function rowLabel(by: Breakdown, row: BreakdownRow): ReactNode {
     case "exit":
       return row.pageId ? (
         <Link
-          to="/pages/$id"
+          to="/pages/$id/edit"
           params={{ id: row.pageId }}
-          search={{ tab: "analytics" }}
+          search={{ panel: "analytics" }}
           className={`${linkClass} font-normal`}
         >
           {row.value}
         </Link>
       ) : (
-        <span title={t("analytics.pageGone")}>{row.value}</span>
+        <span title={t("analytics.pageGone")} className="text-txt-black-700">
+          {row.value}
+        </span>
       );
     case "device":
       return t(`analytics.device.${row.value}` as MessageKey);
@@ -282,10 +295,16 @@ function TopList({
   if (list.isError) return <p className="text-txt-danger text-body-sm">{t("common.tryAgain")}</p>;
   const { rows, total } = list.data;
   if (!rows.length)
-    return <p className="text-body-sm text-txt-black-700 py-6">{empty ?? t("analytics.none")}</p>;
+    return <p className="text-body-sm text-txt-black-700 py-4">{empty ?? t("analytics.none")}</p>;
   const max = Math.max(...rows.map((r) => r.count));
   return (
     <table className="text-body-sm w-full table-fixed border-collapse">
+      {/* table-fixed sizes columns from here, not from the (hidden) header row. */}
+      <colgroup>
+        <col />
+        <col className="w-16" />
+        <col className="w-14" />
+      </colgroup>
       <thead className="sr-only">
         <tr>
           <th scope="col">{t("analytics.item")}</th>
@@ -306,10 +325,10 @@ function TopList({
                 {rowLabel(by, row)}
               </span>
             </td>
-            <td className="text-txt-black-900 w-20 py-1.5 text-right font-medium tabular-nums">
+            <td className="text-txt-black-900 py-1.5 text-right font-medium tabular-nums">
               {formatCount(row.count)}
             </td>
-            <td className="text-txt-black-500 w-14 py-1.5 text-right tabular-nums">
+            <td className="text-txt-black-500 py-1.5 text-right tabular-nums">
               {formatPercent(total ? row.count / total : 0)}
             </td>
           </tr>
@@ -353,7 +372,7 @@ function TopCard({
         {tabs.map((tb) => (
           <TabsContent key={tb.by} value={tb.by} className="pt-2">
             {tb.unavailable ? (
-              <p className="text-body-sm text-txt-black-700 py-6">{tb.unavailable}</p>
+              <p className="text-body-sm text-txt-black-700 py-4">{tb.unavailable}</p>
             ) : (
               <TopList
                 query={query}
@@ -375,31 +394,35 @@ export function AnalyticsReport({ range, pageId }: { range: RangeSearch; pageId?
   const { from, to } = rangeDays(range, todayIn(timeZone));
   const query: AnalyticsQuery = { from, to, ...(pageId && { pageId }) };
   const summary = useQuery({
-    queryKey: ["analytics", "summary", query],
-    queryFn: () => analyticsApi.summary(query),
+    ...analyticsSummaryQuery(query),
     placeholderData: keepPreviousData,
     enabled: status.isSuccess,
   });
+  // Nothing in the period before: say so once, not under every figure.
+  const compare = Boolean(summary.data && summary.data.previous.views > 0);
   const noCountries =
     status.data && !status.data.countries ? t("analytics.noCountries") : undefined;
 
   return (
-    <div className="gap-stack-lg flex flex-col">
+    <div className="gap-stack-lg @container flex flex-col">
       <StatusNotes status={status.data} />
       {summary.data ? (
         <>
           <p className="text-body-sm text-txt-black-700">
-            {t("analytics.comparing", {
-              range: rangeLabel(from, to),
-              before: rangeLabel(summary.data.before.from, summary.data.before.to),
-            })}
+            {compare
+              ? t("analytics.comparing", {
+                  range: rangeLabel(from, to),
+                  before: rangeLabel(summary.data.before.from, summary.data.before.to),
+                })
+              : t("analytics.comparingNone", { range: rangeLabel(from, to) })}
           </p>
           <Figures
             current={summary.data.current}
             previous={summary.data.previous}
             page={Boolean(pageId)}
+            compare={compare}
           />
-          <p className="text-body-sm text-txt-black-700 -mt-3">{t("analytics.visitorsNote")}</p>
+          <p className="text-body-xs text-txt-black-500 -mt-3">{t("analytics.visitorsNote")}</p>
           <Panel>
             <h2 className="sr-only">{t("analytics.chart.title")}</h2>
             <TrafficChart summary={summary.data} />
@@ -417,7 +440,7 @@ export function AnalyticsReport({ range, pageId }: { range: RangeSearch; pageId?
         </>
       )}
       {status.isSuccess && (
-        <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-2">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-5 @3xl:grid-cols-2">
           {!pageId && (
             <TopCard
               title="analytics.top.pages"

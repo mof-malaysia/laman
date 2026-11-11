@@ -25,6 +25,7 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -75,8 +76,10 @@ import { UploadDialog } from "@/media/upload-dialog";
 import { type NavPart, navParts } from "@/site/navigation-screen";
 import { ShellContext, type ShellActions } from "./context";
 import { OpenPageDialog } from "./open-page-dialog";
+import { PageBreadcrumb } from "./page-breadcrumb";
+import { PersonAvatar } from "@/users/person";
 import { usersPages } from "@/users/users-tabs";
-import { PublishState, SiteInfo, WaitingDrawer } from "./site-status";
+import { PublishState, SiteInfo, ViewSite, WaitingDrawer } from "./site-status";
 
 type Section = { to: string; label: MessageKey; combo: string; icon: ReactNode };
 
@@ -109,17 +112,30 @@ const colours: Section = {
   icon: <PaletteIcon />,
 };
 
-const sections = [
-  dashboard,
-  { to: "/pages", label: "nav.pages", combo: "g p", icon: <DocumentIcon /> },
-  { to: "/media", label: "nav.media", combo: "g m", icon: <GalleryIcon /> },
-  navigation,
-  announcement,
-  search,
-  colours,
-  { to: "/publishing", label: "nav.publishing", combo: "g u", icon: <GlobeIcon /> },
-  { to: "/analytics", label: "nav.analytics", combo: "g v", icon: <EyeShowIcon /> },
-] satisfies Section[];
+/**
+ * The sidebar in the order of the work: what the site says, how the site is
+ * dressed, then putting it live and seeing who came. The dashboard stands alone.
+ */
+const groups: { label?: MessageKey; sections: Section[] }[] = [
+  { sections: [dashboard] },
+  {
+    label: "nav.group.content",
+    sections: [
+      { to: "/pages", label: "nav.pages", combo: "g p", icon: <DocumentIcon /> },
+      { to: "/media", label: "nav.media", combo: "g m", icon: <GalleryIcon /> },
+    ],
+  },
+  { label: "nav.group.site", sections: [navigation, announcement, search, colours] },
+  {
+    label: "nav.group.live",
+    sections: [
+      { to: "/publishing", label: "nav.publishing", combo: "g u", icon: <GlobeIcon /> },
+      { to: "/analytics", label: "nav.analytics", combo: "g v", icon: <EyeShowIcon /> },
+    ],
+  },
+];
+
+const sections = groups.flatMap((group) => group.sections);
 
 const settings: Section = {
   to: "/settings",
@@ -223,7 +239,10 @@ function UserMenu({ active }: { active: boolean }) {
             />
           }
         >
-          <UserIcon />
+          {/* In the icon column, so the name lines up with the items above. */}
+          <PersonAvatar name={me.displayName} className="-mx-0.5 size-6 shrink-0" />
+          {/* The rail keeps only icons, so it shows this in the avatar's place. */}
+          <UserIcon className="hidden group-data-[collapsible=icon]/sidebar:block" />
           <span className="flex min-w-0 flex-col text-left leading-tight">
             <span className="truncate">{me.displayName}</span>
             <span className="text-body-2xs text-txt-black-500 truncate">
@@ -295,19 +314,22 @@ function AdminSidebar({ active }: { active: Section }) {
         <AdminBrand />
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarMenu>
-            {sections.map((section) =>
-              section === navigation ? (
-                <NavigationItem key={section.to} active={section === active} />
-              ) : section === announcement ? (
-                <AnnouncementItem key={section.to} active={section === active} />
-              ) : (
-                <NavItem key={section.to} section={section} active={section === active} />
-              ),
-            )}
-          </SidebarMenu>
-        </SidebarGroup>
+        {groups.map((group) => (
+          <SidebarGroup key={group.label ?? "home"}>
+            {group.label && <SidebarGroupLabel>{t(group.label)}</SidebarGroupLabel>}
+            <SidebarMenu>
+              {group.sections.map((section) =>
+                section === navigation ? (
+                  <NavigationItem key={section.to} active={section === active} />
+                ) : section === announcement ? (
+                  <AnnouncementItem key={section.to} active={section === active} />
+                ) : (
+                  <NavItem key={section.to} section={section} active={section === active} />
+                ),
+              )}
+            </SidebarMenu>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
@@ -367,46 +389,26 @@ function SearchTrigger() {
 /** Screens below a section's own: the breadcrumb leads back to the section. */
 const subScreens = usersPages.filter((page) => page.to !== "/users");
 
-/** The section, or Pages › the selected page's title (Pages › listing › title for an entry). */
+/**
+ * The section, or a page's whole path: Pages › its parents › the page. A parent opens in
+ * the editor (a collection, at its entries); the page's own name opens the page switcher.
+ */
 function TopBarBreadcrumb({ section }: { section: Section }) {
   const pages = usePages();
   const matchRoute = useMatchRoute();
   const match = matchRoute({ to: "/pages/$id", fuzzy: true });
   const sub = subScreens.find((screen) => matchRoute({ to: screen.to }));
   const id = match ? match.id : undefined;
-  const inTree = pages.data?.find((p) => p.id === id);
-  // Entries aren't in the tree list; their own page query has them.
+  const inList = pages.data?.find((p) => p.id === id);
+  // Entries aren't in the page list; their own page query has them.
   const entry = useQuery({
     queryKey: ["page", id],
     queryFn: () => pagesApi.get(id ?? ""),
-    enabled: Boolean(id) && Boolean(pages.data) && !inTree,
+    enabled: Boolean(id) && Boolean(pages.data) && !inList,
   });
-  const page = inTree ?? entry.data;
-  const listing =
-    page?.kind === "entry" ? pages.data?.find((p) => p.id === page.parentId) : undefined;
+  const page = inList ?? entry.data;
 
-  if (page)
-    return (
-      <Breadcrumb>
-        <BreadcrumbItem>
-          <BreadcrumbLink render={<Link to="/pages" />}>{t("nav.pages")}</BreadcrumbLink>
-        </BreadcrumbItem>
-        <BreadcrumbSeparator />
-        {listing && (
-          <>
-            <BreadcrumbItem>
-              <BreadcrumbLink render={<Link to="/pages/$id" params={{ id: listing.id }} />}>
-                {listing.title}
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-          </>
-        )}
-        <BreadcrumbItem>
-          <BreadcrumbPage>{page.title || t("page.untitled")}</BreadcrumbPage>
-        </BreadcrumbItem>
-      </Breadcrumb>
-    );
+  if (page) return <PageBreadcrumb page={page} />;
   if (sub)
     return (
       <Breadcrumb>
@@ -469,6 +471,9 @@ function GlobalCommands({ actions }: { actions: ShellActions }) {
 export function AdminShell() {
   const { pathname } = useLocation();
   const active = sectionOf(pathname);
+  // The editor draws one bar of its own, with the page's path in it: the top bar steps
+  // aside there, except on a phone, where it holds the menu button.
+  const editing = /\/pages\/[^/]+\/edit$/.test(pathname);
   const navigate = useNavigate();
   const [openPage, setOpenPage] = useState(false);
   const [upload, setUpload] = useState<{ open: boolean; files: File[] }>({
@@ -496,11 +501,12 @@ export function AdminShell() {
           <GlobalCommands actions={actions} />
           <NavigationCommands active={active} />
           <AdminSidebar active={active} />
-          <AppShellHeader>
+          <AppShellHeader className={editing ? "md:hidden" : undefined}>
             <SidebarTrigger label={t("shell.toggleSidebar")} />
             <TopBarBreadcrumb section={active} />
             <span className="flex-1" />
             <PublishState onOpenWaiting={actions.openWaiting} />
+            <ViewSite />
             <SearchTrigger />
           </AppShellHeader>
           <AppShellMain id="main" tabIndex={-1} className="p-0">

@@ -39,6 +39,15 @@ export class SaveFirstError extends Error {}
 /** Where a thing stands on the site. */
 export type LiveState = "live" | "changed" | "new" | "scheduled";
 
+/**
+ * Scheduling publishes is hidden for now: publishing is manual only. Off, the
+ * Publishing screen has no schedule form, Settings has no default publish time,
+ * and an entry's date can't be set in the future. The server's support stays
+ * (the default time field comes back without its hint); anything already scheduled is still shown, so it can be
+ * cancelled. Set this to true to bring it all back.
+ */
+export const SCHEDULING_ENABLED = false;
+
 export const siteDocQuery = <N extends SiteDocName>(name: N) =>
   ({
     queryKey: [name],
@@ -126,6 +135,9 @@ export function siteHref(summary: Summary | undefined, path: string) {
   const base = summary?.site.url?.replace(/\/$/, "") ?? "";
   return `${base}${path}`;
 }
+
+/** An address without its scheme or trailing slash: "laman.gov.my/berita". */
+export const hostOf = (url: string) => url.replace(/^https?:\/\//, "").replace(/\/$/, "");
 
 export const useSiteHref = (path: string) => siteHref(useSummary().data, path);
 

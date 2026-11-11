@@ -27,6 +27,7 @@ import { formatDateTime } from "@/lib/pages";
 import { AgentTag, agentOf, describe, lookedOnly, nextBefore } from "./audit-entry";
 import { ANY, PersonFilter } from "./person";
 import { UsersHeader } from "./users-tabs";
+import { Screen } from "@/components/screen";
 
 /** Entries a download asks for at once: the most the server gives. */
 const DOWNLOAD_PAGE = 1000;
@@ -130,7 +131,7 @@ export function AuditScreen() {
   };
 
   return (
-    <div className="p-surface gap-stack-lg mx-auto flex max-w-6xl flex-col">
+    <Screen>
       <UsersHeader
         description={t("audit.intro")}
         actions={
@@ -232,7 +233,7 @@ export function AuditScreen() {
           {t("audit.more")}
         </Button>
       )}
-    </div>
+    </Screen>
   );
 }
 
