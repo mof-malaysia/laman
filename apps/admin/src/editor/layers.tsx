@@ -27,7 +27,8 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { type KeyboardEvent, type SVGProps, useRef } from "react";
+import { type KeyboardEvent, useRef } from "react";
+import { GripIcon } from "@/components/grip-icon";
 import { Button } from "@/components/ui/button";
 import { ArrowDownIcon } from "@/components/ui/icons/arrow-down";
 import { ArrowUpIcon } from "@/components/ui/icons/arrow-up";
@@ -372,17 +373,6 @@ function LayerItem(props: LayerItemProps) {
         </MenuContent>
       </Menu>
     </li>
-  );
-}
-
-/** Six dots: the handle a row is dragged by. */
-function GripIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 20 20" fill="currentColor" {...props}>
-      {[7, 13].flatMap((x) =>
-        [5, 10, 15].map((y) => <circle key={`${x}-${y}`} cx={x} cy={y} r={1.4} />),
-      )}
-    </svg>
   );
 }
 

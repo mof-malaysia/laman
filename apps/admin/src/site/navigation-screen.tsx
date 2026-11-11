@@ -17,30 +17,52 @@ import {
 import { featureIcons } from "@fiscal-sb/blocks";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { type ReactNode, useEffect, useId, useMemo, useRef, useState } from "react";
+import {
+  createContext,
+  type FunctionComponent,
+  type ReactNode,
+  type SVGProps,
+  useCallback,
+  useContext,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { PublishControl } from "@/components/publish-control";
 import { linkClass } from "@/components/text-link";
 import { Button } from "@/components/ui/button";
 import { Callout, CalloutTitle } from "@/components/ui/callout";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
-import { ArrowDownIcon } from "@/components/ui/icons/arrow-down";
-import { ArrowUpIcon } from "@/components/ui/icons/arrow-up";
+import { CheckIcon } from "@/components/ui/icons/check";
 import { ChevronDownIcon } from "@/components/ui/icons/chevron-down";
+import { ChevronRightIcon } from "@/components/ui/icons/chevron-right";
 import { HamburgerMenuIcon } from "@/components/ui/icons/hamburger-menu";
 import { InfoIcon } from "@/components/ui/icons/info";
+import { BellIcon } from "@/components/ui/icons/bell";
+import { CheckShieldIcon } from "@/components/ui/icons/check-shield";
+import { GlobeIcon } from "@/components/ui/icons/globe";
+import { GovtOfficeIcon } from "@/components/ui/icons/govt-office";
+import { UserGroupIcon } from "@/components/ui/icons/user-group";
+import { CalendarIcon } from "@/components/ui/icons/calendar";
+import { DocumentIcon } from "@/components/ui/icons/document";
+import { MoneyIcon } from "@/components/ui/icons/money";
 import { LinkIcon } from "@/components/ui/icons/link";
 import { PlusIcon } from "@/components/ui/icons/plus";
 import { TrashIcon } from "@/components/ui/icons/trash";
 import { WarningCircleIcon } from "@/components/ui/icons/warning-circle";
+import { Fieldset, FieldsetLegend } from "@/components/ui/fieldset";
 import { Input } from "@/components/ui/input";
+import { Radio, RadioButton } from "@/components/ui/radio";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { TextArea } from "@/components/ui/textarea";
 import { Menu, MenuContent, MenuItem, MenuTrigger } from "@/components/ui/menu";
-import { Select } from "@/components/ui/select";
 import { useShortcut, useShortcutScope } from "@/components/ui/shortcuts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SplitPane } from "@/components/ui/split-pane";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsCounter, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Tag } from "@/components/ui/tag";
 import { Toggle } from "@/components/ui/toggle";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 import { type MessageKey, t } from "@/i18n";
@@ -65,10 +87,10 @@ import {
   selectionOf,
   setItem,
   setLayout,
-  turnIntoDropdown,
   uniqueLabel,
 } from "./navigation-model";
 import { LivePreview } from "./live-preview";
+import { SortableList, shifted, sortId, sortIds, useSortableRow } from "./sortable";
 import { TargetField } from "./target-field";
 
 export type NavPart = "navbar" | "footer";
@@ -130,6 +152,7 @@ function Editor({ doc }: { doc: NavigationDoc }) {
   const dirty = JSON.stringify(draft) !== JSON.stringify(doc.draft);
   const local = useMemo(() => problems(draft), [draft]);
   const warnings = useDraftWarnings(draft, doc);
+  const destination = useDestinationOf();
 
   const setDraft = (update: (draft: Navigation) => Navigation) => {
     setRemoved(null);
@@ -255,7 +278,7 @@ function Editor({ doc }: { doc: NavigationDoc }) {
     footer: draft.footer.columns.length,
   };
   return (
-    <>
+    <DestinationContext.Provider value={destination}>
       <Tabs
         value={part}
         onValueChange={(value) =>
@@ -343,7 +366,10 @@ function Editor({ doc }: { doc: NavigationDoc }) {
                 />
               </TabsContent>
               <TabsContent value="footer" className="flex flex-col gap-4">
-                <FooterEditor {...editorProps} />
+                <FooterEditor
+                  {...editorProps}
+                  warnedPaths={warningsIn("footer").map((w) => w.path)}
+                />
               </TabsContent>
               {doc.previous && !dirty && !doc.changed && (
                 <PutBackPrevious
@@ -376,7 +402,7 @@ function Editor({ doc }: { doc: NavigationDoc }) {
       />
       {leaveGuard}
       {conflict.dialog}
-    </>
+    </DestinationContext.Provider>
   );
 }
 
@@ -515,8 +541,8 @@ function NavbarEditor({
   const selectedItem = sel.item === undefined ? undefined : draft.navbar[sel.item];
   const full = draft.navbar.length >= MAX_ITEMS;
   const duplicates = duplicateLabels(draft);
-  // Moves and removals are said out loud; the list itself doesn't announce them.
-  const [announcement, setAnnouncement] = useState("");
+  // The items with a warning anywhere in them: "3.l.1" marks item 3.
+  const warnedItems = new Set([...warned].map((w) => w?.split(".")[0]));
 
   const addTopLink = (kind: "page" | "url") => {
     if (full) return;
@@ -538,40 +564,15 @@ function NavbarEditor({
     setDraft((d) => ({ ...d, navbar: [...d.navbar, newDropdown(label)] }));
     setSelection(String(draft.navbar.length));
   };
-  const canAddColumn = selectedItem?.type === "dropdown" && selectedItem.layout === "grouped";
-  const addColumn = () => {
-    if (sel.item === undefined || selectedItem?.type !== "dropdown" || !canAddColumn) return;
-    const index = sel.item;
-    setDraft((d) =>
-      setItem(d, index, {
-        ...selectedItem,
-        groups: [...selectedItem.groups, { heading: t("navigation.newColumn"), links: [] }],
-      }),
-    );
-    setSelection(`${index}.g.${selectedItem.groups.length}`);
-  };
 
-  /** Moves item `from` by one, keeping focus on the button that moved it. */
-  const move = (from: number, by: -1 | 1, control?: "up" | "down") => {
-    const to = from + by;
-    const item = draft.navbar[from];
-    if (!item || to < 0 || to >= draft.navbar.length) return;
+  /** Moves item `from` to `to`; whatever is open goes with it. */
+  const moveTo = (from: number, to: number) => {
+    if (to < 0 || to >= draft.navbar.length || from === to) return;
     setDraft((d) => ({ ...d, navbar: moveItem(d.navbar, from, to) }));
-    setSelection(String(to));
-    setAnnouncement(
-      t("navigation.moved", {
-        label: item.label || t("navigation.noLabel"),
-        position: to + 1,
-        count: draft.navbar.length,
-      }),
-    );
-    requestAnimationFrame(() => {
-      const row = document.querySelector(`[data-nav-row="${to}"]`);
-      const button =
-        (control && row?.querySelector<HTMLElement>(`[data-move="${control}"]:not(:disabled)`)) ||
-        row?.querySelector<HTMLElement>("[data-select]");
-      button?.focus();
-    });
+    if (sel.item !== undefined && selection !== null) {
+      const [, ...rest] = selection.split(".");
+      setSelection([String(shifted(sel.item, from, to)), ...rest].join("."));
+    }
   };
 
   // alt+arrows reorder the selected item, or the selected link within its dropdown.
@@ -579,7 +580,7 @@ function NavbarEditor({
   const reorder = (by: -1 | 1) => {
     if (sel.item === undefined) return;
     const item = draft.navbar[sel.item];
-    if (sel.part === "item") return move(sel.item, by);
+    if (sel.part === "item") return moveTo(sel.item, sel.item + by);
     if (item?.type !== "dropdown" || sel.link === undefined) return;
     const index = sel.item;
     const j = sel.link;
@@ -606,23 +607,19 @@ function NavbarEditor({
 
   const editor =
     sel.item !== undefined && selectedItem ? (
-      <section
-        aria-label={t("navigation.selected")}
-        className="border-otl-gray-200 mt-1.5 flex flex-col gap-4 border-t px-2 pt-3 pb-2"
-      >
-        <SelectedEditor
-          key={selection}
-          item={selectedItem}
-          index={sel.item}
-          selection={sel}
-          issue={issue}
-          touch={touch}
-          duplicate={duplicates.has(sel.item)}
-          update={(next) => setDraft((d) => setItem(d, sel.item ?? 0, next))}
-          removeWith={(message, next) => remove(message, (d) => setItem(d, sel.item ?? 0, next))}
-          select={setSelection}
-        />
-      </section>
+      <SelectedEditor
+        key={sel.item}
+        item={selectedItem}
+        index={sel.item}
+        at={selection}
+        warned={warned}
+        issue={issue}
+        touch={touch}
+        duplicate={duplicates.has(sel.item)}
+        update={(next) => setDraft((d) => setItem(d, sel.item ?? 0, next))}
+        removeWith={(message, next) => remove(message, (d) => setItem(d, sel.item ?? 0, next))}
+        select={setSelection}
+      />
     ) : null;
 
   return (
@@ -651,97 +648,164 @@ function NavbarEditor({
             <MenuItem disabled={full} onClick={addDropdown}>
               {t("navigation.add.dropdown")}
             </MenuItem>
-            {canAddColumn && (
-              <MenuItem onClick={addColumn}>
-                {t("navigation.add.column", { label: selectedItem.label })}
-              </MenuItem>
-            )}
           </MenuContent>
         </Menu>
       </div>
       {full && <p className="text-body-sm text-txt-black-700">{t("navigation.full")}</p>}
-      <p aria-live="polite" className="sr-only">
-        {announcement}
-      </p>
-      <ol aria-labelledby="navbar-items" className="m-0 flex list-none flex-col gap-3 p-0">
-        {draft.navbar.map((item, i) => (
-          <NavTreeItem
-            // By position: a moved row keeps its element, and focus stays where the officer is.
-            // oxlint-disable-next-line react/no-array-index-key -- items have no ids
-            key={i}
-            item={item}
-            index={i}
-            count={draft.navbar.length}
-            selection={selection}
-            warned={warned}
-            editor={editor}
-            onSelect={setSelection}
-            onMove={(by) => move(i, by, by < 0 ? "up" : "down")}
-            onRemove={() => {
-              const label = item.label || t("navigation.noLabel");
-              const links = linkCount(item);
-              remove(
-                links
-                  ? t("navigation.removedWith", { label, count: links })
-                  : t("navigation.removed", { label }),
-                (d) => ({ ...d, navbar: d.navbar.filter((_, j) => j !== i) }),
-              );
-              setSelection(null);
-              requestAnimationFrame(() =>
-                document
-                  .querySelector<HTMLElement>(
-                    `[data-nav-row="${Math.min(i, draft.navbar.length - 2)}"] [data-select]`,
-                  )
-                  ?.focus(),
-              );
-            }}
-          />
-        ))}
-        {draft.navbar.length === 0 && (
-          <li
-            className={`${card} border-otl-gray-200 text-body-sm text-txt-black-700 border-dashed px-4 py-6 text-center shadow-none`}
-          >
-            {t("navigation.navbar.empty")}
-          </li>
-        )}
-      </ol>
+      <SortableList
+        ids={sortIds("navbar", draft.navbar.length)}
+        names={draft.navbar.map((item) => named(item.label))}
+        onMove={moveTo}
+      >
+        <ol aria-labelledby="navbar-items" className="m-0 flex list-none flex-col gap-3 p-0">
+          {draft.navbar.map((item, i) => (
+            <NavTreeItem
+              // By position: a moved row keeps its element, and focus stays where the officer is.
+              // oxlint-disable-next-line react/no-array-index-key -- items have no ids
+              key={i}
+              item={item}
+              index={i}
+              selection={selection}
+              warned={warnedItems.has(String(i))}
+              editor={editor}
+              onSelect={setSelection}
+              onRemove={() => {
+                remove(removedWith(item.label, linkCount(item)), (d) => ({
+                  ...d,
+                  navbar: d.navbar.filter((_, j) => j !== i),
+                }));
+                setSelection(null);
+                requestAnimationFrame(() =>
+                  document
+                    .querySelector<HTMLElement>(
+                      `[aria-labelledby="navbar-items"] > [data-card="${Math.min(i, draft.navbar.length - 2)}"] [data-select]`,
+                    )
+                    ?.focus(),
+                );
+              }}
+            />
+          ))}
+          {draft.navbar.length === 0 && (
+            <li
+              className={`${card} border-otl-gray-200 text-body-sm text-txt-black-700 border-dashed px-4 py-6 text-center shadow-none`}
+            >
+              {t("navigation.navbar.empty")}
+            </li>
+          )}
+        </ol>
+      </SortableList>
     </>
   );
 }
 
-function TreeRow({
-  depth,
-  selected,
-  warned,
-  onSelect,
-  children,
-  actions,
-  panel,
-}: {
-  depth: number;
-  selected: boolean;
-  warned?: boolean;
-  onSelect: () => void;
-  children: ReactNode;
-  actions?: ReactNode;
-  /** The selected item's editor, right under its row. */
-  panel?: ReactNode;
-}) {
+/** A label, or what to call it while it has none. */
+const named = (label: string) => label || t("navigation.noLabel");
+
+/** A row's label, or a placeholder while it has none. */
+function RowLabel({ text, className }: { text: string; className: string }) {
+  return text ? (
+    <span className={clx("truncate", className)}>{text}</span>
+  ) : (
+    <span className={clx("text-txt-black-500 truncate italic", className)}>{named(text)}</span>
+  );
+}
+
+/** "Removed …", saying how many links went with it. */
+const removedWith = (label: string, links: number) =>
+  links
+    ? t("navigation.removedWith", { label: named(label), count: links })
+    : t("navigation.removed", { label: named(label) });
+
+/** Where a link goes, as the officer knows it: the page's address, or the website's. */
+type Destination = (target: NavLink["target"]) => string;
+const DestinationContext = createContext<Destination>(() => "");
+const useDestination = () => useContext(DestinationContext);
+
+/** One look-up of the site's pages for every row of the editor, by id. */
+function useDestinationOf(): Destination {
+  const pages = usePages();
+  const paths = useMemo(() => new Map(pages.data?.map((p) => [p.id, p.path])), [pages.data]);
+  return useCallback(
+    (target) => {
+      if (target.kind === "url")
+        return (
+          target.url.replace(/^https?:\/\//, "").replace(/\/$/, "") || t("navigation.noTarget")
+        );
+      if (!target.pageId) return t("navigation.noTarget");
+      return paths.get(target.pageId) ?? t("navigation.pageGone");
+    },
+    [paths],
+  );
+}
+
+/** Remove, for a row that's open. Rows are reordered by their grips. */
+function RemoveButton({ name, onRemove }: { name: string; onRemove: () => void }) {
   return (
-    <>
+    <Button
+      variant="danger-ghost"
+      size="small"
+      iconOnly
+      className="shrink-0"
+      onClick={onRemove}
+      aria-label={t("navigation.remove", { label: name })}
+    >
+      <TrashIcon />
+    </Button>
+  );
+}
+
+/**
+ * An item of a top-level list, a navbar item or a footer column: a card with its
+ * grip and what it is (`children`); open, its remove button, and its editor under it.
+ */
+function SortableCard({
+  sortId: id,
+  index,
+  label,
+  open,
+  warned,
+  editor,
+  onToggle,
+  onRemove,
+  children,
+}: {
+  sortId: string;
+  index: number;
+  label: string;
+  open: boolean;
+  warned: boolean;
+  editor: ReactNode;
+  onToggle: () => void;
+  onRemove: () => void;
+  children: ReactNode;
+}) {
+  const name = named(label);
+  const { setNodeRef, style, dragging, handle } = useSortableRow(id, name);
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      data-card={index}
+      className={clx(
+        card,
+        "flex flex-col gap-0.5 p-2 transition-colors duration-150 motion-reduce:transition-none",
+        open ? "border-otl-primary-300" : "border-otl-gray-200",
+        dragging && "shadow-card relative z-10",
+      )}
+    >
       <div
         className={clx(
           "flex items-center rounded-sm",
-          selected ? "bg-bg-primary-50" : "hover:bg-bg-washed",
+          open ? "bg-bg-primary-50" : "hover:bg-bg-washed",
         )}
       >
+        {handle}
         <button
           type="button"
           data-select
-          aria-current={selected || undefined}
-          onClick={onSelect}
-          className="focus-ring flex min-w-0 flex-1 items-center gap-2 rounded-sm py-1.5 pr-2 text-left"
-          style={{ paddingLeft: `${8 + depth * 16}px` }}
+          aria-expanded={open}
+          onClick={onToggle}
+          className="focus-ring flex min-w-0 flex-1 items-center gap-2 rounded-sm px-2 py-1.5 text-left"
         >
           {children}
           {warned && (
@@ -751,171 +815,73 @@ function TreeRow({
             </>
           )}
         </button>
-        {/* Only the selected row's actions show: nothing appears under a passing pointer. */}
-        {selected && actions}
+        {/* Only the open card's actions show: nothing appears under a passing pointer. */}
+        {open && <RemoveButton name={name} onRemove={onRemove} />}
       </div>
-      {selected && panel}
-    </>
+      {open && (
+        <section
+          aria-label={name}
+          className="border-otl-gray-200 mt-1.5 flex flex-col gap-4 border-t px-2 pt-3 pb-2"
+        >
+          {editor}
+        </section>
+      )}
+    </li>
   );
 }
 
-/** A row's label, or a placeholder while it has none. */
-function RowLabel({ text, className }: { text: string; className: string }) {
-  return text ? (
-    <span className={clx("truncate", className)}>{text}</span>
-  ) : (
-    <span className={clx("text-txt-black-500 truncate italic", className)}>
-      {t("navigation.noLabel")}
-    </span>
-  );
-}
-
+/** A navbar item's card: a link with where it goes, or a dropdown with its style and size. */
 function NavTreeItem({
   item,
   index,
-  count,
   selection,
   warned,
   editor,
   onSelect,
-  onMove,
   onRemove,
 }: {
   item: NavItem;
   index: number;
-  count: number;
   selection: Selection;
-  warned: Set<Selection>;
+  warned: boolean;
   editor: ReactNode;
   onSelect: (s: Selection) => void;
-  onMove: (by: -1 | 1) => void;
   onRemove: () => void;
 }) {
   const id = String(index);
-  const name = item.label || t("navigation.noLabel");
-  const pages = usePages();
-  /** Where a link goes, as the officer knows it: the page's address, or the website's. */
-  const destination = (target: NavLink["target"]) => {
-    if (target.kind === "url")
-      return target.url.replace(/^https?:\/\//, "").replace(/\/$/, "") || t("navigation.noTarget");
-    if (!target.pageId) return t("navigation.noTarget");
-    return pages.data?.find((p) => p.id === target.pageId)?.path ?? t("navigation.pageGone");
-  };
-  const actions = (
-    <span className="flex">
-      <Button
-        variant="default-ghost"
-        size="small"
-        iconOnly
-        data-move="up"
-        disabled={index === 0}
-        onClick={() => onMove(-1)}
-        aria-label={t("navigation.up", { label: name })}
-      >
-        <ArrowUpIcon />
-      </Button>
-      <Button
-        variant="default-ghost"
-        size="small"
-        iconOnly
-        data-move="down"
-        disabled={index === count - 1}
-        onClick={() => onMove(1)}
-        aria-label={t("navigation.down", { label: name })}
-      >
-        <ArrowDownIcon />
-      </Button>
-      <Button
-        variant="danger-ghost"
-        size="small"
-        iconOnly
-        onClick={onRemove}
-        aria-label={t("navigation.remove", { label: name })}
-      >
-        <TrashIcon />
-      </Button>
-    </span>
-  );
-  const row = (path: string) => ({
-    selected: selection === path,
-    warned: warned.has(path),
-    onSelect: () => onSelect(path),
-    panel: editor,
-  });
+  const destination = useDestination();
+  // Open when the item, or anything in its dropdown, is selected.
+  const open = selection === id || Boolean(selection?.startsWith(`${id}.`));
   return (
-    <li
-      data-nav-row={index}
-      className={clx(
-        card,
-        "flex flex-col gap-0.5 p-2 transition-colors duration-150 motion-reduce:transition-none",
-        selection === id || selection?.startsWith(`${id}.`)
-          ? "border-otl-primary-300"
-          : "border-otl-gray-200",
-      )}
+    <SortableCard
+      sortId={sortId("navbar", index)}
+      index={index}
+      label={item.label}
+      open={open}
+      warned={warned}
+      editor={editor}
+      // The open item's card closes it again.
+      onToggle={() => onSelect(open ? null : id)}
+      onRemove={onRemove}
     >
-      <TreeRow depth={0} {...row(id)} actions={actions}>
-        {item.type === "dropdown" ? (
-          <ChevronDownIcon aria-hidden className="text-txt-black-500 size-4 shrink-0" />
-        ) : (
-          <LinkIcon aria-hidden className="text-txt-black-500 size-4 shrink-0" />
-        )}
-        <RowLabel text={item.label} className="text-label-sm font-medium" />
-        <span className="sr-only">, </span>
-        {item.type === "dropdown" ? (
-          <Tag size="small">{t(layoutTags[item.layout])}</Tag>
-        ) : (
-          <span className="text-label-compact text-txt-black-500 min-w-0 truncate font-normal">
-            <span className="sr-only">{t("navigation.link")}, </span>
-            {destination(item.target)}
-          </span>
-        )}
-      </TreeRow>
-      {item.type === "dropdown" && (
-        <ol className="m-0 list-none p-0">
-          {item.layout === "grouped"
-            ? item.groups.map((group, g) => (
-                <li key={`g${g}`}>
-                  <TreeRow depth={1} {...row(`${id}.g.${g}`)}>
-                    <RowLabel
-                      text={group.heading}
-                      className="text-label-sm text-txt-black-700 font-medium"
-                    />
-                  </TreeRow>
-                  {group.links.map((link, l) => (
-                    <TreeRow key={`l${l}`} depth={2} {...row(`${id}.g.${g}.l.${l}`)}>
-                      <RowLabel text={link.label} className="text-body-sm" />
-                    </TreeRow>
-                  ))}
-                </li>
-              ))
-            : item.links.map((link, l) => (
-                <li key={`l${l}`}>
-                  <TreeRow depth={1} {...row(`${id}.l.${l}`)}>
-                    <RowLabel text={link.label} className="text-body-sm" />
-                  </TreeRow>
-                </li>
-              ))}
-          {item.feature && (
-            <li>
-              <TreeRow depth={1} {...row(`${id}.feature`)}>
-                <span className="text-label-compact text-txt-black-700 truncate font-normal">
-                  {t("navigation.feature.summary", { title: item.feature.title })}
-                </span>
-              </TreeRow>
-            </li>
-          )}
-          {item.footerLink && (
-            <li>
-              <TreeRow depth={1} {...row(`${id}.footer`)}>
-                <span className="text-label-compact text-txt-black-700 truncate font-normal">
-                  {t("navigation.footerLink.summary", { text: item.footerLink.text })}
-                </span>
-              </TreeRow>
-            </li>
-          )}
-        </ol>
+      {item.type === "dropdown" ? (
+        <ChevronDownIcon aria-hidden className="text-txt-black-500 size-4 shrink-0" />
+      ) : (
+        <LinkIcon aria-hidden className="text-txt-black-500 size-4 shrink-0" />
       )}
-    </li>
+      <RowLabel text={item.label} className="text-label-sm font-medium" />
+      <span className="sr-only">, </span>
+      {item.type === "dropdown" ? (
+        <span className="text-label-compact text-txt-black-500 min-w-0 truncate font-normal">
+          {t(layoutTags[item.layout])} · {t("navigation.summary.links", { count: linkCount(item) })}
+        </span>
+      ) : (
+        <span className="text-label-compact text-txt-black-500 min-w-0 truncate font-normal">
+          <span className="sr-only">{t("navigation.link")}, </span>
+          {destination(item.target)}
+        </span>
+      )}
+    </SortableCard>
   );
 }
 
@@ -973,64 +939,282 @@ const touchTarget = (touch: Checks["touch"], path: string) => () => {
   touch(`${path}.pageId`);
 };
 
-/** "file-text" reads as "File text". */
-const iconOptions = featureIcons.map((icon) => {
-  const words = icon.replaceAll("-", " ");
-  return { value: icon, label: words.charAt(0).toUpperCase() + words.slice(1) };
-});
+type FeatureIcon = (typeof featureIcons)[number];
 
-function LinkEditor({
+/** The FTDS icon for each feature icon name, as the site draws it. */
+const featureIconComponents: Record<FeatureIcon, typeof MoneyIcon> = {
+  money: MoneyIcon,
+  document: DocumentIcon,
+  calendar: CalendarIcon,
+  "user-group": UserGroupIcon,
+  "govt-office": GovtOfficeIcon,
+  globe: GlobeIcon,
+  "check-shield": CheckShieldIcon,
+  bell: BellIcon,
+};
+
+/** "user-group" reads as "User group". */
+const iconName = (icon: FeatureIcon) => {
+  const words = icon.replaceAll("-", " ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
+};
+
+/** No icon: a circle struck through, drawn like the FTDS icons. */
+const NoIcon: FunctionComponent<SVGProps<SVGSVGElement>> = (props) => {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden {...props}>
+      <path
+        d="M4.87 4.87l10.26 10.26M17.25 10a7.25 7.25 0 1 1-14.5 0 7.25 7.25 0 0 1 14.5 0Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+};
+
+type Layout = NavDropdown["layout"];
+
+/**
+ * A dropdown's style in miniature: its menu title and chevron, and the open menu
+ * under it with the links laid out that way. Strong bars are what a visitor reads
+ * first (a link, a heading); faint ones are the rest (a description, the links under
+ * a heading). Colours come from the card, so the picked one turns primary.
+ */
+function LayoutSilhouette({ layout }: { layout: Layout }) {
+  const strong = "fill-current";
+  const faint = "fill-current opacity-30";
+  return (
+    <svg viewBox="0 0 96 64" aria-hidden className="h-auto w-full">
+      {/* The menu title and its chevron. */}
+      <rect x="6" y="5" width="20" height="3.5" rx="1.75" className={strong} />
+      <path
+        d="M29.5 5.5l2.25 2.25 2.25-2.25"
+        className="stroke-current"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+      {/* The open menu. */}
+      <rect
+        x="4.5"
+        y="14.5"
+        width="87"
+        height="45"
+        rx="4"
+        className="fill-bg-white stroke-otl-gray-200"
+        strokeWidth="1"
+      />
+      {layout === "list" &&
+        [22, 30, 38, 46].map((y, i) => (
+          <rect
+            key={y}
+            x="12"
+            y={y}
+            width={[40, 30, 46, 26][i]}
+            height="3.5"
+            rx="1.75"
+            className={strong}
+          />
+        ))}
+      {layout === "described" &&
+        [21, 33, 45].map((y) => (
+          <g key={y}>
+            <rect x="12" y={y} width="8" height="8" rx="2" className={faint} />
+            <rect x="24" y={y} width="30" height="3.5" rx="1.75" className={strong} />
+            <rect x="24" y={y + 5} width="52" height="2.5" rx="1.25" className={faint} />
+          </g>
+        ))}
+      {layout === "grouped" &&
+        [12, 38, 64].map((x) => (
+          <g key={x}>
+            <rect x={x} y="22" width="18" height="3.5" rx="1.75" className={strong} />
+            {[30, 37, 44].map((y, i) => (
+              <rect
+                key={y}
+                x={x}
+                y={y}
+                width={[16, 12, 14][i]}
+                height="2.5"
+                rx="1.25"
+                className={faint}
+              />
+            ))}
+          </g>
+        ))}
+    </svg>
+  );
+}
+
+/**
+ * Choices as cards, on the FTDS radio group, so the arrow keys move between them. Each
+ * card is its radio's label; `content` draws it, told whether it's the one picked.
+ */
+function RadioCards<T extends string>({
+  legend,
+  value,
+  options,
+  onChange,
+  className,
+  cardClassName,
+  idleClassName,
+  checkedMark,
+  describedBy,
+}: {
+  legend: string;
+  value: T;
+  options: { value: T; label: string; content: ReactNode }[];
+  onChange: (value: T) => void;
+  /** The cards' grid. */
+  className: string;
+  /** Each card's shape. */
+  cardClassName: string;
+  /** A card that isn't picked. */
+  idleClassName: string;
+  /** Drawn on the picked card too, such as a tick. */
+  checkedMark?: ReactNode;
+  describedBy?: string;
+}) {
+  const id = useId();
+  return (
+    <Fieldset
+      render={
+        <Radio
+          value={value}
+          onValueChange={(next) => onChange(next as T)}
+          aria-describedby={describedBy}
+          className="flex flex-col gap-2"
+        />
+      }
+    >
+      <FieldsetLegend className="font-body text-label-sm mb-2 font-medium">{legend}</FieldsetLegend>
+      <div className={className}>
+        {options.map((option) => {
+          const checked = option.value === value;
+          return (
+            <label
+              key={option.value}
+              htmlFor={`${id}-${option.value}`}
+              title={option.label}
+              className={clx(
+                "relative flex cursor-pointer border transition-[color,background-color,border-color,box-shadow] duration-150 motion-reduce:transition-none",
+                "has-[:focus-visible]:ring-fr-primary has-[:focus-visible]:ring",
+                cardClassName,
+                checked
+                  ? "border-otl-primary-300 bg-bg-primary-50 text-txt-primary"
+                  : idleClassName,
+              )}
+            >
+              <RadioButton
+                id={`${id}-${option.value}`}
+                value={option.value}
+                aria-label={option.label}
+                className="sr-only"
+              />
+              {option.content}
+              {checked && checkedMark}
+            </label>
+          );
+        })}
+      </div>
+    </Fieldset>
+  );
+}
+
+/**
+ * A dropdown's style, as cards showing each one's shape. Their names are for
+ * assistive technology and the tooltip; the line under them names the one picked
+ * and says what it's for.
+ */
+function StylePicker({ value, onChange }: { value: Layout; onChange: (layout: Layout) => void }) {
+  const id = useId();
+  const layouts: Layout[] = ["list", "described", "grouped"];
+  return (
+    <div className="flex flex-col gap-2">
+      <RadioCards
+        legend={t("navigation.style")}
+        value={value}
+        onChange={onChange}
+        describedBy={`${id}-hint`}
+        className="grid grid-cols-3 gap-2"
+        cardClassName="rounded-lg p-1.5"
+        idleClassName="border-otl-gray-200 bg-bg-washed text-txt-black-500 hover:border-otl-gray-300 hover:text-txt-black-700"
+        options={layouts.map((layout) => ({
+          value: layout,
+          label: t(`navigation.layout.${layout}`),
+          content: <LayoutSilhouette layout={layout} />,
+        }))}
+        checkedMark={
+          <span
+            aria-hidden
+            className="bg-bg-primary-600 text-txt-white absolute top-1.5 right-1.5 grid size-4 place-items-center rounded-full"
+          >
+            <CheckIcon className="size-3" />
+          </span>
+        }
+      />
+      <p id={`${id}-hint`} className="text-body-sm text-txt-black-700">
+        <span className="text-txt-black-900 font-medium">{t(`navigation.layout.${value}`)}.</span>{" "}
+        {t(`navigation.layout.${value}.hint`)}
+      </p>
+    </div>
+  );
+}
+
+function FeatureIconOf({ name }: { name: FeatureIcon }) {
+  const Icon = featureIconComponents[name];
+  return <Icon className="size-5" aria-hidden />;
+}
+
+/** A link's icon, as small cards showing the icons themselves. None comes first. */
+function IconPicker({
+  value,
+  onChange,
+}: {
+  value: FeatureIcon | undefined;
+  onChange: (icon: FeatureIcon | undefined) => void;
+}) {
+  return (
+    <RadioCards<FeatureIcon | "">
+      legend={t("navigation.icon")}
+      value={value ?? ""}
+      onChange={(next) => onChange(next || undefined)}
+      className="grid grid-cols-[repeat(auto-fill,minmax(2.5rem,1fr))] gap-1.5"
+      cardClassName="aspect-square items-center justify-center rounded-md"
+      idleClassName="border-otl-gray-200 bg-bg-white text-txt-black-700 hover:bg-bg-washed"
+      options={[
+        {
+          value: "",
+          label: t("editor.field.none"),
+          content: <NoIcon className="size-5" aria-hidden />,
+        },
+        ...featureIcons.map((name) => ({
+          value: name,
+          label: iconName(name),
+          content: <FeatureIconOf name={name} />,
+        })),
+      ]}
+    />
+  );
+}
+
+/** A link's own fields: its label, where it goes, and in a described dropdown its line and icon. */
+function LinkFields({
   link,
   path,
   described,
   issue,
   touch,
   onChange,
-  onRemove,
-  onMove,
 }: Checks & {
   link: NavLink;
   path: string;
   described: boolean;
   onChange: (link: NavLink) => void;
-  onRemove: () => void;
-  onMove: (by: -1 | 1) => void;
 }) {
-  const name = link.label || t("navigation.noLabel");
   return (
     <>
-      <div className="flex items-center justify-between">
-        <h2 className="text-label-md font-semibold">{t("navigation.link")}</h2>
-        <span className="flex">
-          <Button
-            variant="default-ghost"
-            size="small"
-            iconOnly
-            onClick={() => onMove(-1)}
-            aria-label={t("navigation.up", { label: name })}
-          >
-            <ArrowUpIcon />
-          </Button>
-          <Button
-            variant="default-ghost"
-            size="small"
-            iconOnly
-            onClick={() => onMove(1)}
-            aria-label={t("navigation.down", { label: name })}
-          >
-            <ArrowDownIcon />
-          </Button>
-          <Button
-            variant="danger-ghost"
-            size="small"
-            iconOnly
-            onClick={onRemove}
-            aria-label={t("navigation.remove", { label: name })}
-          >
-            <TrashIcon />
-          </Button>
-        </span>
-      </div>
       <TextInput
         name={`${path}.label`}
         label={t("navigation.label")}
@@ -1049,28 +1233,184 @@ function LinkEditor({
       />
       {described && (
         <>
-          <TextInput
+          <DescriptionField
             name={`${path}.description`}
-            label={t("navigation.description")}
-            value={link.description ?? ""}
+            value={link.description}
             max={120}
-            onChange={(description) => onChange({ ...link, description: description || undefined })}
+            onChange={(description) => onChange({ ...link, description })}
           />
-          <Field name={`${path}.icon`}>
-            <FieldLabel>{t("navigation.icon")}</FieldLabel>
-            <Select
-              items={iconOptions}
-              value={link.icon ?? ""}
-              clearable
-              placeholder={t("editor.field.none")}
-              onValueChange={(icon: string) =>
-                onChange({ ...link, icon: (icon || undefined) as NavLink["icon"] })
-              }
-            />
-          </Field>
+          <IconPicker value={link.icon} onChange={(icon) => onChange({ ...link, icon })} />
         </>
       )}
     </>
+  );
+}
+
+/** A description: two lines to start, growing with what's typed. Empty is none. */
+function DescriptionField({
+  name,
+  value,
+  max,
+  onChange,
+}: {
+  name: string;
+  value: string | undefined;
+  max: number;
+  onChange: (value: string | undefined) => void;
+}) {
+  return (
+    <Field name={name}>
+      <FieldLabel>{t("navigation.description")}</FieldLabel>
+      <TextArea
+        rows={2}
+        maxLength={max}
+        // FTDS gives a text area a taller minimum; here it's two lines.
+        className="field-sizing-content max-h-40 min-h-[calc(2lh+1.25rem+2px)]!"
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value || undefined)}
+      />
+    </Field>
+  );
+}
+
+/** A new, empty link: the officer picks where it goes, and its label follows a page's title. */
+const blankLink = () => newLink(t("navigation.newLink"), { kind: "url", url: "" });
+
+/** A link as a row: its grip reorders it, and the row opens its fields in a popover beside it. */
+function LinkRow({
+  link,
+  path,
+  open,
+  warned,
+  described,
+  dragId,
+  checks,
+  onToggle,
+  onChange,
+  onRemove,
+}: {
+  link: NavLink;
+  path: string;
+  open: boolean;
+  warned: boolean;
+  described: boolean;
+  /** Its id in its `SortableList`. */
+  dragId: string;
+  checks: Checks;
+  onToggle: () => void;
+  onChange: (link: NavLink) => void;
+  onRemove: () => void;
+}) {
+  const destination = useDestination();
+  const name = named(link.label);
+  const { setNodeRef, style, dragging, handle } = useSortableRow(dragId, name);
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      className={clx("flex items-center gap-1", dragging && "relative z-10")}
+    >
+      {handle}
+      <Popover open={open} onOpenChange={(next) => next !== open && onToggle()}>
+        <PopoverTrigger
+          // oxlint-disable-next-line jsx-a11y/control-has-associated-label -- labelled by its children
+          render={<button type="button" />}
+          className={clx(
+            "focus-ring flex min-w-0 flex-1 items-center gap-2 rounded-md border px-2.5 py-2 text-left transition-colors",
+            dragging && "shadow-card",
+            open
+              ? "border-otl-primary-300 bg-bg-primary-50"
+              : "border-otl-gray-200 bg-bg-white hover:bg-bg-washed",
+          )}
+        >
+          <RowLabel text={link.label} className="text-body-sm text-txt-black-900" />
+          <span className="text-label-compact text-txt-black-500 min-w-0 flex-1 truncate font-normal">
+            <span className="sr-only">, </span>
+            {destination(link.target)}
+          </span>
+          {warned && (
+            <>
+              <WarningCircleIcon className="text-txt-warning size-4 shrink-0" aria-hidden />
+              <span className="sr-only">{t("navigation.hasWarning")}</span>
+            </>
+          )}
+          <ChevronRightIcon aria-hidden className="text-txt-black-500 size-4 shrink-0" />
+        </PopoverTrigger>
+        {/* Beside the row, over the preview: the list stays put, with no scrolling to the fields. */}
+        <PopoverContent
+          side="right"
+          align="start"
+          sideOffset={12}
+          collisionPadding={16}
+          aria-label={name}
+          className="flex max-h-[min(36rem,var(--available-height))] w-80 flex-col overflow-y-auto p-0"
+        >
+          <div className="border-otl-gray-200 flex items-center gap-2 border-b py-1.5 pr-1.5 pl-4">
+            <h3 className="text-label-sm text-txt-black-900 min-w-0 flex-1 truncate font-semibold">
+              {name}
+            </h3>
+            <RemoveButton name={name} onRemove={onRemove} />
+          </div>
+          <div className="flex flex-col gap-4 p-4">
+            <LinkFields
+              link={link}
+              path={path}
+              described={described}
+              {...checks}
+              onChange={onChange}
+            />
+          </div>
+        </PopoverContent>
+      </Popover>
+    </li>
+  );
+}
+
+/** A titled part of the dropdown editor, in the order the dropdown shows them. */
+function EditorSection({
+  title,
+  aside,
+  children,
+}: {
+  title: string;
+  aside?: ReactNode;
+  children: ReactNode;
+}) {
+  const id = useId();
+  return (
+    <section aria-labelledby={id} className="flex flex-col gap-3">
+      <h3
+        id={id}
+        className="text-label-sm text-txt-black-900 flex items-baseline gap-1.5 font-semibold"
+      >
+        {title}
+        {aside}
+      </h3>
+      {children}
+    </section>
+  );
+}
+
+/** A dashed "add" button at the end of a list. */
+function AddRow({
+  disabled,
+  onClick,
+  children,
+}: {
+  disabled?: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <Button
+      variant="default-ghost"
+      size="small"
+      disabled={disabled}
+      onClick={onClick}
+      className="border-otl-gray-300 w-full justify-start border border-dashed"
+    >
+      <PlusIcon /> {children}
+    </Button>
   );
 }
 
@@ -1084,339 +1424,319 @@ const withTarget = <T extends { label: string }>(
 const editLink = (list: NavLink[], j: number, next: NavLink) =>
   list.map((l, k) => (k === j ? next : l));
 
-function SelectedEditor({
-  item,
-  index,
-  selection,
-  issue,
-  touch,
-  duplicate,
-  update,
-  removeWith,
-  select,
-}: Checks & {
+type ItemEditorProps = Checks & {
   item: NavItem;
   index: number;
-  selection: ReturnType<typeof parse>;
+  /** What's selected: the item, or a link in its dropdown. */
+  at: Selection;
+  warned: Set<Selection>;
   /** Another top-level item has the same label. */
   duplicate: boolean;
   update: (item: NavItem) => void;
   /** An update that removes something, which the officer can undo. */
   removeWith: (message: string, item: NavItem) => void;
   select: (s: Selection) => void;
-}) {
+};
+
+function SelectedEditor(props: ItemEditorProps) {
+  const { item, index, issue, touch, duplicate, update } = props;
+  if (item.type === "dropdown") return <DropdownEditor {...props} item={item} />;
   const base = `navbar.${index}`;
-  const labelIssue = issue(`${base}.label`);
-  const duplicateWarning = duplicate ? t("navigation.duplicate") : undefined;
-  if (item.type === "link")
-    return (
-      <>
-        <h2 className="text-body-md font-semibold">{t("navigation.topLink")}</h2>
-        <TextInput
-          name={`${base}.label`}
-          label={t("navigation.label")}
-          value={item.label}
-          max={60}
-          error={labelIssue}
-          warning={duplicateWarning}
-          onBlur={() => touch(`${base}.label`)}
-          onChange={(label) => update({ ...item, label })}
-        />
-        <TargetField
-          name={`${base}.target`}
-          value={item.target}
-          error={targetIssue(issue, `${base}.target`)}
-          onBlur={touchTarget(touch, `${base}.target`)}
-          onChange={(target, title) => update(withTarget(item, target, title))}
-        />
-        <div>
-          <Button
-            variant="default-outline"
-            size="small"
-            onClick={() => update(turnIntoDropdown(item))}
-          >
-            {t("navigation.toDropdown")}
-          </Button>
-        </div>
-      </>
-    );
-
-  const links = item.links;
-  if (selection.part === "link" && selection.link !== undefined) {
-    const j = selection.link;
-    const link = links[j];
-    if (!link) return null;
-    return (
-      <LinkEditor
-        link={link}
-        path={`${base}.links.${j}`}
-        described={item.layout === "described"}
-        issue={issue}
-        touch={touch}
-        onChange={(next) => update({ ...item, links: editLink(links, j, next) })}
-        onRemove={() => {
-          removeWith(t("navigation.removed", { label: link.label || t("navigation.noLabel") }), {
-            ...item,
-            links: links.filter((_, k) => k !== j),
-          });
-          select(String(index));
-        }}
-        onMove={(by) => {
-          update({ ...item, links: moveItem(links, j, j + by) });
-          if (j + by >= 0 && j + by < links.length) select(`${index}.l.${j + by}`);
-        }}
-      />
-    );
-  }
-  if (
-    (selection.part === "group" || selection.part === "groupLink") &&
-    selection.group !== undefined
-  ) {
-    const g = selection.group;
-    const group = item.groups[g];
-    if (!group) return null;
-    const withGroup = (next: typeof group) => ({
-      ...item,
-      groups: item.groups.map((x, k) => (k === g ? next : x)),
-    });
-    const setGroup = (next: typeof group) => update(withGroup(next));
-    if (selection.part === "groupLink" && selection.link !== undefined) {
-      const j = selection.link;
-      const link = group.links[j];
-      if (!link) return null;
-      return (
-        <LinkEditor
-          link={link}
-          path={`${base}.groups.${g}.links.${j}`}
-          described={false}
-          issue={issue}
-          touch={touch}
-          onChange={(next) => setGroup({ ...group, links: editLink(group.links, j, next) })}
-          onRemove={() => {
-            removeWith(
-              t("navigation.removed", { label: link.label || t("navigation.noLabel") }),
-              withGroup({ ...group, links: group.links.filter((_, k) => k !== j) }),
-            );
-            select(`${index}.g.${g}`);
-          }}
-          onMove={(by) => {
-            setGroup({ ...group, links: moveItem(group.links, j, j + by) });
-            if (j + by >= 0 && j + by < group.links.length) select(`${index}.g.${g}.l.${j + by}`);
-          }}
-        />
-      );
-    }
-    return (
-      <>
-        <div className="flex items-center justify-between">
-          <h2 className="text-body-md font-semibold">{t("navigation.column")}</h2>
-          <Button
-            variant="danger-ghost"
-            size="small"
-            iconOnly
-            aria-label={t("navigation.remove", { label: group.heading })}
-            onClick={() => {
-              const label = group.heading || t("navigation.noLabel");
-              removeWith(
-                group.links.length
-                  ? t("navigation.removedWith", { label, count: group.links.length })
-                  : t("navigation.removed", { label }),
-                { ...item, groups: item.groups.filter((_, k) => k !== g) },
-              );
-              select(String(index));
-            }}
-          >
-            <TrashIcon />
-          </Button>
-        </div>
-        <TextInput
-          name={`${base}.groups.${g}.heading`}
-          label={t("navigation.heading")}
-          value={group.heading}
-          max={60}
-          error={issue(`${base}.groups.${g}.heading`)}
-          onBlur={() => touch(`${base}.groups.${g}.heading`)}
-          onChange={(heading) => setGroup({ ...group, heading })}
-        />
-        <div>
-          <Button
-            variant="default-outline"
-            size="small"
-            disabled={group.links.length >= 12}
-            onClick={() => {
-              setGroup({
-                ...group,
-                links: [...group.links, newLink(t("navigation.newLink"), { kind: "url", url: "" })],
-              });
-              select(`${index}.g.${g}.l.${group.links.length}`);
-            }}
-          >
-            <PlusIcon /> {t("navigation.addLink")}
-          </Button>
-        </div>
-      </>
-    );
-  }
-  if (selection.part === "feature" && item.feature) {
-    const feature = item.feature;
-    const set = (next: Partial<typeof feature>) =>
-      update({ ...item, feature: { ...feature, ...next } });
-    return (
-      <>
-        <h2 className="text-body-md font-semibold">{t("navigation.feature")}</h2>
-        <TextInput
-          name={`${base}.feature.eyebrow`}
-          label={t("navigation.feature.eyebrow")}
-          value={feature.eyebrow ?? ""}
-          max={40}
-          onChange={(eyebrow) => set({ eyebrow: eyebrow || undefined })}
-        />
-        <TextInput
-          name={`${base}.feature.title`}
-          label={t("navigation.feature.title")}
-          value={feature.title}
-          max={80}
-          error={issue(`${base}.feature.title`)}
-          onBlur={() => touch(`${base}.feature.title`)}
-          onChange={(title) => set({ title })}
-        />
-        <TextInput
-          name={`${base}.feature.description`}
-          label={t("navigation.description")}
-          value={feature.description ?? ""}
-          max={200}
-          onChange={(description) => set({ description: description || undefined })}
-        />
-        <TargetField
-          name={`${base}.feature.target`}
-          value={feature.target}
-          error={targetIssue(issue, `${base}.feature.target`)}
-          onBlur={touchTarget(touch, `${base}.feature.target`)}
-          onChange={(target) => set({ target })}
-        />
-        <TextInput
-          name={`${base}.feature.linkText`}
-          label={t("navigation.feature.linkText")}
-          value={feature.linkText ?? ""}
-          max={40}
-          onChange={(linkText) => set({ linkText: linkText || undefined })}
-        />
-      </>
-    );
-  }
-  if (selection.part === "footer" && item.footerLink) {
-    const footer = item.footerLink;
-    return (
-      <>
-        <h2 className="text-body-md font-semibold">{t("navigation.footerLink")}</h2>
-        <TextInput
-          name={`${base}.footerLink.text`}
-          label={t("navigation.label")}
-          value={footer.text}
-          max={60}
-          error={issue(`${base}.footerLink.text`)}
-          onBlur={() => touch(`${base}.footerLink.text`)}
-          onChange={(text) => update({ ...item, footerLink: { ...footer, text } })}
-        />
-        <TargetField
-          name={`${base}.footerLink.target`}
-          value={footer.target}
-          error={targetIssue(issue, `${base}.footerLink.target`)}
-          onBlur={touchTarget(touch, `${base}.footerLink.target`)}
-          onChange={(target) => update({ ...item, footerLink: { ...footer, target } })}
-        />
-      </>
-    );
-  }
-
-  // The dropdown itself.
-  const firstTarget = links[0]?.target ??
-    item.groups[0]?.links[0]?.target ?? { kind: "url" as const, url: "" };
   return (
     <>
-      <h2 className="text-body-md font-semibold">{t("navigation.dropdown")}</h2>
       <TextInput
         name={`${base}.label`}
-        label={t("navigation.menuTitle")}
+        label={t("navigation.label")}
         value={item.label}
         max={60}
-        error={labelIssue}
-        warning={duplicateWarning}
+        error={issue(`${base}.label`)}
+        warning={duplicate ? t("navigation.duplicate") : undefined}
         onBlur={() => touch(`${base}.label`)}
         onChange={(label) => update({ ...item, label })}
       />
-      <Field name={`${base}.layout`}>
-        <FieldLabel>{t("navigation.style")}</FieldLabel>
-        <ToggleGroup
-          value={[item.layout]}
-          aria-label={t("navigation.style")}
-          onValueChange={(v) => v[0] && update(setLayout(item, v[0] as NavDropdown["layout"]))}
-        >
-          <Toggle value="list">{t("navigation.layout.list")}</Toggle>
-          <Toggle value="described">{t("navigation.layout.described")}</Toggle>
-          <Toggle value="grouped">{t("navigation.layout.grouped")}</Toggle>
-        </ToggleGroup>
-        <FieldDescription>{t(`navigation.layout.${item.layout}.hint`)}</FieldDescription>
-      </Field>
-      {item.layout === "list" && (
-        <Field name={`${base}.columns`}>
-          <FieldLabel>{t("navigation.columns")}</FieldLabel>
-          <ToggleGroup
-            value={[String(item.columns)]}
-            aria-label={t("navigation.columns")}
-            onValueChange={(v) => v[0] && update({ ...item, columns: Number(v[0]) as 1 | 2 | 3 })}
-          >
-            <Toggle value="1">1</Toggle>
-            <Toggle value="2">2</Toggle>
-            <Toggle value="3">3</Toggle>
-          </ToggleGroup>
-        </Field>
-      )}
-      {item.layout !== "grouped" && (
-        <div>
-          <Button
-            variant="default-outline"
-            size="small"
-            disabled={links.length >= 16}
-            onClick={() => {
-              update({
-                ...item,
-                links: [...links, newLink(t("navigation.newLink"), { kind: "url", url: "" })],
-              });
-              select(`${index}.l.${links.length}`);
-            }}
-          >
-            <PlusIcon /> {t("navigation.addLink")}
-          </Button>
-        </div>
-      )}
-      <SwitchRow
-        title={t("navigation.feature")}
-        hint={t("navigation.feature.hint")}
-        checked={Boolean(item.feature)}
-        onCheckedChange={(on) => {
-          update({
-            ...item,
-            feature: on ? { title: item.label, target: firstTarget } : undefined,
-          });
-          if (on) select(`${index}.feature`);
-        }}
-      />
-      <SwitchRow
-        title={t("navigation.footerLink")}
-        hint={t("navigation.footerLink.hint")}
-        checked={Boolean(item.footerLink)}
-        onCheckedChange={(on) => {
-          update({
-            ...item,
-            footerLink: on
-              ? { text: t("navigation.footerLink.default"), target: firstTarget }
-              : undefined,
-          });
-          if (on) select(`${index}.footer`);
-        }}
+      <TargetField
+        name={`${base}.target`}
+        value={item.target}
+        error={targetIssue(issue, `${base}.target`)}
+        onBlur={touchTarget(touch, `${base}.target`)}
+        onChange={(target, title) => update(withTarget(item, target, title))}
       />
     </>
+  );
+}
+
+/**
+ * A dropdown, all in one place and in the order visitors see it: what it's called
+ * and how it's laid out, its links (or columns of links), then its extras. A link
+ * opens in place to edit it; one at a time.
+ */
+function DropdownEditor({
+  item,
+  index,
+  at,
+  warned,
+  issue,
+  touch,
+  duplicate,
+  update,
+  removeWith,
+  select,
+}: ItemEditorProps & { item: NavDropdown }) {
+  const id = String(index);
+  const base = `navbar.${index}`;
+  const checks = { issue, touch };
+  const sel = parse(at);
+  const links = item.links;
+  const firstTarget = links[0]?.target ??
+    item.groups[0]?.links[0]?.target ?? { kind: "url" as const, url: "" };
+
+  const setGroup = (g: number, next: NavDropdown["groups"][number]) =>
+    update({ ...item, groups: item.groups.map((x, k) => (k === g ? next : x)) });
+
+  return (
+    <>
+      <EditorSection title={t("navigation.dropdown.menu")}>
+        <TextInput
+          name={`${base}.label`}
+          label={t("navigation.menuTitle")}
+          value={item.label}
+          max={60}
+          error={issue(`${base}.label`)}
+          warning={duplicate ? t("navigation.duplicate") : undefined}
+          onBlur={() => touch(`${base}.label`)}
+          onChange={(label) => update({ ...item, label })}
+        />
+        <StylePicker value={item.layout} onChange={(layout) => update(setLayout(item, layout))} />
+        {item.layout === "list" && (
+          <Field name={`${base}.columns`}>
+            <FieldLabel>{t("navigation.columns")}</FieldLabel>
+            <ToggleGroup
+              value={[String(item.columns)]}
+              aria-label={t("navigation.columns")}
+              onValueChange={(v) => v[0] && update({ ...item, columns: Number(v[0]) as 1 | 2 | 3 })}
+            >
+              <Toggle value="1">1</Toggle>
+              <Toggle value="2">2</Toggle>
+              <Toggle value="3">3</Toggle>
+            </ToggleGroup>
+          </Field>
+        )}
+      </EditorSection>
+
+      <hr className="border-otl-gray-200 m-0" />
+
+      {item.layout === "grouped" ? (
+        <EditorSection
+          title={t("navigation.columns")}
+          aside={
+            <span className="text-txt-black-500 font-normal tabular-nums">
+              {item.groups.length}
+            </span>
+          }
+        >
+          {item.groups.map((group, g) => {
+            const heading = named(group.heading);
+            const openHere = sel.part === "groupLink" && sel.group === g ? sel.link : undefined;
+            return (
+              <div
+                // oxlint-disable-next-line react/no-array-index-key -- columns have no ids
+                key={g}
+                className="bg-bg-washed border-otl-gray-200 rounded-lg border p-3"
+              >
+                <ColumnEditor
+                  path={`${base}.groups.${g}`}
+                  listId={`g${g}`}
+                  column={group}
+                  open={openHere}
+                  warnedLink={(j) => warned.has(`${id}.g.${g}.l.${j}`)}
+                  checks={checks}
+                  onChange={(next) => setGroup(g, next)}
+                  onOpen={(j) => select(j === null ? id : `${id}.g.${g}.l.${j}`)}
+                  onRemoveLink={(j) => {
+                    removeWith(removedWith(group.links[j]?.label ?? "", 0), {
+                      ...item,
+                      groups: item.groups.map((x, k) =>
+                        k === g ? { ...x, links: x.links.filter((_, m) => m !== j) } : x,
+                      ),
+                    });
+                    select(id);
+                  }}
+                  onRemove={() => {
+                    removeWith(removedWith(heading, group.links.length), {
+                      ...item,
+                      groups: item.groups.filter((_, k) => k !== g),
+                    });
+                    select(id);
+                  }}
+                />
+              </div>
+            );
+          })}
+          <AddRow
+            onClick={() =>
+              update({
+                ...item,
+                groups: [...item.groups, { heading: t("navigation.newColumn"), links: [] }],
+              })
+            }
+          >
+            {t("navigation.addColumn")}
+          </AddRow>
+        </EditorSection>
+      ) : (
+        <EditorSection
+          title={t("navigation.dropdown.links")}
+          aside={
+            <span className="text-txt-black-500 font-normal tabular-nums">{links.length}</span>
+          }
+        >
+          <LinkList
+            path={`${base}.links`}
+            listId="links"
+            links={links}
+            open={sel.part === "link" ? sel.link : undefined}
+            warnedLink={(j) => warned.has(`${id}.l.${j}`)}
+            described={item.layout === "described"}
+            max={16}
+            addLabel={t("navigation.addLink")}
+            checks={checks}
+            onChange={(next) => update({ ...item, links: next })}
+            onOpen={(j) => select(j === null ? id : `${id}.l.${j}`)}
+            onRemove={(j) => {
+              removeWith(removedWith(links[j]?.label ?? "", 0), {
+                ...item,
+                links: links.filter((_, k) => k !== j),
+              });
+              select(id);
+            }}
+          />
+        </EditorSection>
+      )}
+
+      <hr className="border-otl-gray-200 m-0" />
+
+      <EditorSection title={t("navigation.dropdown.extras")}>
+        <SwitchRow
+          title={t("navigation.feature")}
+          hint={t("navigation.feature.hint")}
+          checked={Boolean(item.feature)}
+          onCheckedChange={(on) =>
+            update({
+              ...item,
+              feature: on ? { title: item.label, target: firstTarget } : undefined,
+            })
+          }
+        />
+        {item.feature && (
+          <FeatureFields
+            feature={item.feature}
+            base={`${base}.feature`}
+            checks={checks}
+            onChange={(feature) => update({ ...item, feature })}
+          />
+        )}
+        <SwitchRow
+          title={t("navigation.footerLink")}
+          hint={t("navigation.footerLink.hint")}
+          checked={Boolean(item.footerLink)}
+          onCheckedChange={(on) =>
+            update({
+              ...item,
+              footerLink: on
+                ? { text: t("navigation.footerLink.default"), target: firstTarget }
+                : undefined,
+            })
+          }
+        />
+        {item.footerLink && (
+          <Extra>
+            <TextInput
+              name={`${base}.footerLink.text`}
+              label={t("navigation.label")}
+              value={item.footerLink.text}
+              max={60}
+              error={issue(`${base}.footerLink.text`)}
+              onBlur={() => touch(`${base}.footerLink.text`)}
+              onChange={(text) =>
+                item.footerLink && update({ ...item, footerLink: { ...item.footerLink, text } })
+              }
+            />
+            <TargetField
+              name={`${base}.footerLink.target`}
+              value={item.footerLink.target}
+              error={targetIssue(issue, `${base}.footerLink.target`)}
+              onBlur={touchTarget(touch, `${base}.footerLink.target`)}
+              onChange={(target) =>
+                item.footerLink && update({ ...item, footerLink: { ...item.footerLink, target } })
+              }
+            />
+          </Extra>
+        )}
+      </EditorSection>
+    </>
+  );
+}
+
+/** An extra's fields, right under the switch that turned it on. */
+function Extra({ children }: { children: ReactNode }) {
+  return (
+    <div className="bg-bg-washed border-otl-gray-200 -mt-1 flex flex-col gap-4 rounded-lg border p-3">
+      {children}
+    </div>
+  );
+}
+
+function FeatureFields({
+  feature,
+  base,
+  checks: { issue, touch },
+  onChange,
+}: {
+  feature: NonNullable<NavDropdown["feature"]>;
+  base: string;
+  checks: Checks;
+  onChange: (feature: NonNullable<NavDropdown["feature"]>) => void;
+}) {
+  const set = (next: Partial<typeof feature>) => onChange({ ...feature, ...next });
+  return (
+    <Extra>
+      <TextInput
+        name={`${base}.eyebrow`}
+        label={t("navigation.feature.eyebrow")}
+        value={feature.eyebrow ?? ""}
+        max={40}
+        onChange={(eyebrow) => set({ eyebrow: eyebrow || undefined })}
+      />
+      <TextInput
+        name={`${base}.title`}
+        label={t("navigation.feature.title")}
+        value={feature.title}
+        max={80}
+        error={issue(`${base}.title`)}
+        onBlur={() => touch(`${base}.title`)}
+        onChange={(title) => set({ title })}
+      />
+      <DescriptionField
+        name={`${base}.description`}
+        value={feature.description}
+        max={200}
+        onChange={(description) => set({ description })}
+      />
+      <TargetField
+        name={`${base}.target`}
+        value={feature.target}
+        error={targetIssue(issue, `${base}.target`)}
+        onBlur={touchTarget(touch, `${base}.target`)}
+        onChange={(target) => set({ target })}
+      />
+      <TextInput
+        name={`${base}.linkText`}
+        label={t("navigation.feature.linkText")}
+        value={feature.linkText ?? ""}
+        max={40}
+        onChange={(linkText) => set({ linkText: linkText || undefined })}
+      />
+    </Extra>
   );
 }
 
@@ -1457,174 +1777,278 @@ export function SwitchRow({
 
 const MAX_COLUMNS = 4;
 
-function FooterEditor({ draft, setDraft, remove, issue, touch }: EditorProps) {
-  const columns = draft.footer.columns;
-  const setColumns = (next: typeof columns) =>
-    setDraft((d) => ({ ...d, footer: { columns: next } }));
-  const withLinks = (c: number, update: (links: NavLink[]) => NavLink[]) =>
-    columns.map((x, k) => (k === c ? { ...x, links: update(x.links) } : x));
-  const setLinks = (c: number, update: (links: NavLink[]) => NavLink[]) =>
-    setColumns(withLinks(c, update));
+/**
+ * A list of links: each row dragged by its grip and opened in a popover, then a row
+ * to add one. A dropdown's links and a column's links are edited the same way.
+ */
+function LinkList({
+  path,
+  listId,
+  links,
+  open,
+  warnedLink,
+  described,
+  max,
+  addLabel,
+  checks,
+  onChange,
+  onOpen,
+  onRemove,
+}: {
+  /** Where the links are in the navigation, for their problems: "footer.columns.0.links". */
+  path: string;
+  /** The list's name, for dragging. */
+  listId: string;
+  links: NavLink[];
+  /** The link open in its popover. */
+  open: number | undefined;
+  warnedLink: (j: number) => boolean;
+  described: boolean;
+  max: number;
+  addLabel: string;
+  checks: Checks;
+  onChange: (links: NavLink[]) => void;
+  onOpen: (j: number | null) => void;
+  onRemove: (j: number) => void;
+}) {
   return (
     <>
-      <div className="flex flex-col gap-0.5">
-        <h2 className="text-label-sm text-txt-black-900 font-semibold">
-          {t("navigation.footer.columns")}{" "}
-          <span className="text-txt-black-500 font-normal tabular-nums">
-            {t("navigation.count", { count: columns.length, max: MAX_COLUMNS })}
-          </span>
-        </h2>
-        <p className="text-body-sm text-txt-black-700">{t("navigation.footer.hint")}</p>
+      {links.length > 0 && (
+        <SortableList
+          ids={sortIds(listId, links.length)}
+          names={links.map((l) => named(l.label))}
+          onMove={(from, to) => {
+            onChange(moveItem(links, from, to));
+            if (open !== undefined) onOpen(shifted(open, from, to));
+          }}
+        >
+          <ol className="m-0 flex list-none flex-col gap-1.5 p-0">
+            {links.map((link, j) => (
+              <LinkRow
+                // oxlint-disable-next-line react/no-array-index-key -- links have no ids
+                key={j}
+                link={link}
+                path={`${path}.${j}`}
+                open={open === j}
+                warned={warnedLink(j)}
+                described={described}
+                dragId={sortId(listId, j)}
+                checks={checks}
+                onToggle={() => onOpen(open === j ? null : j)}
+                onChange={(next) => onChange(editLink(links, j, next))}
+                onRemove={() => onRemove(j)}
+              />
+            ))}
+          </ol>
+        </SortableList>
+      )}
+      <AddRow
+        disabled={links.length >= max}
+        onClick={() => {
+          onChange([...links, blankLink()]);
+          onOpen(links.length);
+        }}
+      >
+        {addLabel}
+      </AddRow>
+    </>
+  );
+}
+
+type Column = { heading: string; links: NavLink[] };
+
+/**
+ * A titled column of links: its heading, its links (dragged by their grips, each
+ * opening in a popover), and a way to add one. A footer column and a column in a
+ * titled dropdown are the same thing, so they're edited the same way.
+ */
+function ColumnEditor({
+  path,
+  listId,
+  column,
+  open,
+  warnedLink,
+  checks,
+  onChange,
+  onOpen,
+  onRemoveLink,
+  onRemove,
+}: {
+  /** Where its fields are in the navigation, for their problems: "footer.columns.0". */
+  path: string;
+  /** Its links' list, for dragging. */
+  listId: string;
+  column: Column;
+  /** The link open in its popover. */
+  open: number | undefined;
+  warnedLink: (j: number) => boolean;
+  checks: Checks;
+  onChange: (column: Column) => void;
+  onOpen: (j: number | null) => void;
+  onRemoveLink: (j: number) => void;
+  /** A remove button beside the heading, where the column has no row of its own. */
+  onRemove?: () => void;
+}) {
+  const { issue, touch } = checks;
+  const { links } = column;
+  const heading = named(column.heading);
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-end gap-1">
+        <div className="min-w-0 flex-1">
+          <TextInput
+            name={`${path}.heading`}
+            label={t("navigation.heading")}
+            value={column.heading}
+            max={60}
+            error={issue(`${path}.heading`)}
+            onBlur={() => touch(`${path}.heading`)}
+            onChange={(next) => onChange({ ...column, heading: next })}
+          />
+        </div>
+        {onRemove && <RemoveButton name={heading} onRemove={onRemove} />}
       </div>
-      {columns.map((column, c) => {
-        const name = column.heading || t("navigation.noLabel");
-        return (
-          <section
-            key={`c${c}`}
-            aria-label={name}
-            className={`${card} border-otl-gray-200 flex flex-col`}
-          >
-            <div className="flex items-end gap-1 px-4 pt-4 pb-3">
-              <div className="min-w-0 flex-1">
-                <TextInput
-                  name={`footer.columns.${c}.heading`}
-                  label={t("navigation.heading")}
-                  value={column.heading}
-                  max={60}
-                  error={issue(`footer.columns.${c}.heading`)}
-                  onBlur={() => touch(`footer.columns.${c}.heading`)}
-                  onChange={(heading) =>
-                    setColumns(columns.map((x, k) => (k === c ? { ...x, heading } : x)))
-                  }
-                />
-              </div>
-              <Button
-                variant="default-ghost"
-                size="small"
-                iconOnly
-                disabled={c === 0}
-                onClick={() => setColumns(moveItem(columns, c, c - 1))}
-                aria-label={t("navigation.up", { label: name })}
-              >
-                <ArrowUpIcon />
-              </Button>
-              <Button
-                variant="default-ghost"
-                size="small"
-                iconOnly
-                disabled={c === columns.length - 1}
-                onClick={() => setColumns(moveItem(columns, c, c + 1))}
-                aria-label={t("navigation.down", { label: name })}
-              >
-                <ArrowDownIcon />
-              </Button>
-              <Button
-                variant="danger-ghost"
-                size="small"
-                iconOnly
-                onClick={() =>
-                  remove(
-                    column.links.length
-                      ? t("navigation.removedWith", { label: name, count: column.links.length })
-                      : t("navigation.removed", { label: name }),
-                    (d) => ({ ...d, footer: { columns: columns.filter((_, k) => k !== c) } }),
-                  )
-                }
-                aria-label={t("navigation.remove", { label: name })}
-              >
-                <TrashIcon />
-              </Button>
-            </div>
-            {column.links.length > 0 && (
-              <ol className="divide-otl-gray-200 border-otl-gray-200 m-0 list-none divide-y border-t px-4 py-0">
-                {column.links.map((link, j) => {
-                  const linkName = link.label || t("navigation.noLabel");
-                  return (
-                    <li key={`l${j}`} className="flex flex-col gap-3 py-4">
-                      <div className="flex items-end gap-1">
-                        <div className="min-w-0 flex-1">
-                          <TextInput
-                            name={`footer.columns.${c}.links.${j}.label`}
-                            label={t("navigation.label")}
-                            value={link.label}
-                            max={60}
-                            error={issue(`footer.columns.${c}.links.${j}.label`)}
-                            onBlur={() => touch(`footer.columns.${c}.links.${j}.label`)}
-                            onChange={(label) =>
-                              setLinks(c, (links) =>
-                                links.map((l, m) => (m === j ? { ...l, label } : l)),
-                              )
-                            }
-                          />
-                        </div>
-                        <Button
-                          variant="danger-ghost"
-                          size="small"
-                          iconOnly
-                          aria-label={t("navigation.remove", { label: linkName })}
-                          onClick={() =>
-                            remove(t("navigation.removed", { label: linkName }), (d) => ({
-                              ...d,
-                              footer: {
-                                columns: withLinks(c, (ls) => ls.filter((_, m) => m !== j)),
-                              },
-                            }))
-                          }
-                        >
-                          <TrashIcon />
-                        </Button>
-                      </div>
-                      <TargetField
-                        name={`footer.columns.${c}.links.${j}.target`}
-                        value={link.target}
-                        error={targetIssue(issue, `footer.columns.${c}.links.${j}.target`)}
-                        onBlur={touchTarget(touch, `footer.columns.${c}.links.${j}.target`)}
-                        onChange={(target, title) =>
-                          setLinks(c, (links) =>
-                            links.map((l, m) => (m === j ? withTarget(l, target, title) : l)),
-                          )
-                        }
-                      />
-                    </li>
-                  );
-                })}
-              </ol>
-            )}
-            <div className="border-otl-gray-200 bg-bg-washed flex items-center gap-3 border-t px-4 py-2">
-              <Button
-                variant="default-ghost"
-                size="small"
-                disabled={column.links.length >= 12}
-                onClick={() =>
-                  setLinks(c, (links) => [
-                    ...links,
-                    newLink(t("navigation.newLink"), { kind: "url", url: "" }),
-                  ])
-                }
-              >
-                <PlusIcon /> {t("navigation.addLink")}
-              </Button>
-              {column.links.length === 0 && (
-                <span className="text-body-sm text-txt-black-500">
-                  {t("navigation.footer.emptyColumn")}
-                </span>
-              )}
-            </div>
-          </section>
-        );
-      })}
-      <div>
+      <LinkList
+        path={`${path}.links`}
+        listId={listId}
+        links={links}
+        open={open}
+        warnedLink={warnedLink}
+        described={false}
+        max={12}
+        addLabel={t("navigation.addLinkTo", { label: heading })}
+        checks={checks}
+        onChange={(next) => onChange({ ...column, links: next })}
+        onOpen={onOpen}
+        onRemove={onRemoveLink}
+      />
+    </div>
+  );
+}
+
+function FooterEditor({
+  draft,
+  setDraft,
+  remove,
+  issue,
+  touch,
+  warnedPaths,
+}: EditorProps & {
+  /** Where the footer's warnings are: "footer.columns.0.links.1.target.pageId". */
+  warnedPaths: string[];
+}) {
+  const columns = draft.footer.columns;
+  const full = columns.length >= MAX_COLUMNS;
+  const setColumns = (next: typeof columns) =>
+    setDraft((d) => ({ ...d, footer: { columns: next } }));
+  const setColumn = (c: number, next: Column) =>
+    setColumns(columns.map((x, k) => (k === c ? next : x)));
+  // The column open, and the link open in it: one at a time, like the navbar's.
+  const [openColumn, setOpenColumn] = useState<number | null>(null);
+  const [openLink, setOpenLink] = useState<number | null>(null);
+  const warnedUnder = (prefix: string) => warnedPaths.some((w) => w.startsWith(prefix));
+
+  const addColumn = () => {
+    if (full) return;
+    setColumns([...columns, { heading: t("navigation.newColumn"), links: [] }]);
+    setOpenColumn(columns.length);
+    setOpenLink(null);
+  };
+
+  return (
+    <>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <h2 id="footer-columns" className="text-label-sm text-txt-black-900 font-semibold">
+            {t("navigation.footer.columns")}{" "}
+            <span className="text-txt-black-500 font-normal tabular-nums">
+              {t("navigation.count", { count: columns.length, max: MAX_COLUMNS })}
+            </span>
+          </h2>
+          <p className="text-body-sm text-txt-black-700">{t("navigation.footer.hint")}</p>
+        </div>
         <Button
           variant="primary-ghost"
           size="small"
-          disabled={columns.length >= MAX_COLUMNS}
-          onClick={() =>
-            setColumns([...columns, { heading: t("navigation.newColumn"), links: [] }])
-          }
+          disabled={full}
+          onClick={addColumn}
+          aria-label={t("navigation.addColumn")}
         >
-          <PlusIcon /> {t("navigation.addColumn")}
+          <PlusIcon /> {t("navigation.add")}
         </Button>
       </div>
+      <SortableList
+        ids={sortIds("footer", columns.length)}
+        names={columns.map((column) => named(column.heading))}
+        onMove={(from, to) => {
+          setColumns(moveItem(columns, from, to));
+          if (openColumn !== null) setOpenColumn(shifted(openColumn, from, to));
+        }}
+      >
+        <ol aria-labelledby="footer-columns" className="m-0 flex list-none flex-col gap-3 p-0">
+          {columns.map((column, c) => {
+            const open = openColumn === c;
+            return (
+              <SortableCard
+                // oxlint-disable-next-line react/no-array-index-key -- columns have no ids
+                key={c}
+                sortId={sortId("footer", c)}
+                index={c}
+                label={column.heading}
+                open={open}
+                warned={warnedUnder(`footer.columns.${c}.`)}
+                onToggle={() => {
+                  setOpenColumn(open ? null : c);
+                  setOpenLink(null);
+                }}
+                onRemove={() => {
+                  remove(removedWith(named(column.heading), column.links.length), (d) => ({
+                    ...d,
+                    footer: { columns: columns.filter((_, k) => k !== c) },
+                  }));
+                  setOpenColumn(null);
+                }}
+                editor={
+                  <ColumnEditor
+                    path={`footer.columns.${c}`}
+                    listId={`footer-${c}`}
+                    column={column}
+                    open={open ? (openLink ?? undefined) : undefined}
+                    warnedLink={(j) => warnedUnder(`footer.columns.${c}.links.${j}.`)}
+                    checks={{ issue, touch }}
+                    onChange={(next) => setColumn(c, next)}
+                    onOpen={setOpenLink}
+                    onRemoveLink={(j) => {
+                      remove(removedWith(column.links[j]?.label ?? "", 0), (d) => ({
+                        ...d,
+                        footer: {
+                          columns: columns.map((x, k) =>
+                            k === c ? { ...x, links: x.links.filter((_, m) => m !== j) } : x,
+                          ),
+                        },
+                      }));
+                      setOpenLink(null);
+                    }}
+                  />
+                }
+              >
+                <RowLabel text={column.heading} className="text-label-sm font-medium" />
+                <span className="sr-only">, </span>
+                <span className="text-label-compact text-txt-black-500 min-w-0 truncate font-normal">
+                  {t("navigation.summary.links", { count: column.links.length })}
+                </span>
+              </SortableCard>
+            );
+          })}
+          {columns.length === 0 && (
+            <li
+              className={`${card} border-otl-gray-200 text-body-sm text-txt-black-700 border-dashed px-4 py-6 text-center shadow-none`}
+            >
+              {t("navigation.footer.empty")}
+            </li>
+          )}
+        </ol>
+      </SortableList>
       <p className="text-body-sm text-txt-black-700 flex items-start gap-2">
         <InfoIcon className="text-txt-black-500 mt-0.5 size-4 shrink-0" aria-hidden />
         {t("navigation.footer.contact")}
@@ -1690,6 +2114,7 @@ function NavigationPreview({
   return (
     <LivePreview
       frame={frame}
+      focus={part === "footer" ? "footer" : "header"}
       render={(pageId, signal) => siteApi.renderWithSite(pageId, { navigation: draft }, signal)}
       renderKey={JSON.stringify(draft)}
       regions={["body header", "body footer"]}

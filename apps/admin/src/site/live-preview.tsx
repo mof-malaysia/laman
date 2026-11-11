@@ -15,6 +15,7 @@ export function LivePreview({
   render,
   renderKey,
   regions,
+  focus,
   caption,
   frame: given,
   onLoad,
@@ -26,6 +27,8 @@ export function LivePreview({
   renderKey: string;
   /** Selectors for the parts of the page the edits change, swapped in place. */
   regions: string[];
+  /** The part of the page being edited (a child of its body, such as "header"): the rest is greyed out. */
+  focus?: string;
   caption: ReactNode;
   /** The frame, for an editor that also reaches into the page (opening a dropdown, scrolling). */
   frame?: RefObject<HTMLIFrameElement | null>;
@@ -73,6 +76,31 @@ export function LivePreview({
     // oxlint-disable-next-line react-hooks/exhaustive-deps -- a new render only when the edits change
   }, [home?.id, renderKey]);
 
+  /**
+   * Greys out all but `focus`, as a style in the frame's head, which swapping the
+   * regions in after an edit leaves alone.
+   */
+  const highlight = () => {
+    const d = frame.current?.contentDocument;
+    if (!d?.head) return;
+    let style = d.getElementById("laman-focus");
+    if (!style) {
+      style = d.createElement("style");
+      style.id = "laman-focus";
+      d.head.append(style);
+    }
+    style.textContent = focus
+      ? `body > :not(${focus}):not(script) {
+          opacity: 0.35;
+          filter: grayscale(1);
+          pointer-events: none;
+          transition: opacity 150ms, filter 150ms;
+        }`
+      : "";
+  };
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- `frame` is a ref; a new style only when the focus changes
+  useEffect(highlight, [focus]);
+
   const scale = width ? Math.min(1, width / PAGE_WIDTH) : 1;
   return (
     <div className="flex h-full flex-col">
@@ -87,7 +115,10 @@ export function LivePreview({
             ref={frame}
             title={t("navigation.preview")}
             srcDoc={first}
-            onLoad={onLoad}
+            onLoad={() => {
+              highlight();
+              onLoad?.();
+            }}
             className="bg-bg-white origin-top-left"
             style={{ width: PAGE_WIDTH, height: height / scale, transform: `scale(${scale})` }}
           />

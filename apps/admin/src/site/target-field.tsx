@@ -1,11 +1,14 @@
-/** Where a link goes: a page picked from the tree (it follows renames and moves) or a web address. */
+/**
+ * Where a link goes: a page picked from the tree (it follows renames and moves), or,
+ * with the switch on, a web address on another website.
+ */
 import type { LinkTarget } from "@fiscal-sb/contracts";
+import { useId } from "react";
 import { PagePicker } from "@/components/page-picker";
-import { LiveTag, isLive } from "@/components/page-status";
+import { isLive } from "@/components/page-status";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Toggle } from "@/components/ui/toggle";
-import { ToggleGroup } from "@/components/ui/toggle-group";
+import { Switch } from "@/components/ui/switch";
 import { t } from "@/i18n";
 import { usePages } from "@/lib/pages";
 
@@ -25,36 +28,41 @@ export function TargetField({
   onChange: (target: LinkTarget, pageTitle?: string) => void;
   onBlur?: () => void;
 }) {
+  const id = useId();
   const pages = usePages();
   const chosen = value.kind === "page" ? pages.data?.find((p) => p.id === value.pageId) : undefined;
   // A page link whose page has gone (deleted or purged): say so, rather than show an empty picker.
   const gone = value.kind === "page" && Boolean(value.pageId) && Boolean(pages.data) && !chosen;
+  const external = value.kind === "url";
   return (
     <Field name={name} invalid={Boolean(error)}>
-      <FieldLabel>{label}</FieldLabel>
-      <ToggleGroup
-        size="small"
-        value={[value.kind]}
-        aria-label={label}
-        onValueChange={(v) => {
-          // Switching starts empty: the officer chooses the page or types the address.
-          if (v[0] === "page" && value.kind !== "page") onChange({ kind: "page", pageId: "" });
-          if (v[0] === "url" && value.kind !== "url") onChange({ kind: "url", url: "" });
-        }}
-      >
-        <Toggle value="page">{t("nav.target.page")}</Toggle>
-        <Toggle value="url">{t("nav.target.url")}</Toggle>
-      </ToggleGroup>
+      <div className="flex items-center justify-between gap-3">
+        <FieldLabel>{label}</FieldLabel>
+        <span className="flex items-center gap-2">
+          <label htmlFor={`${id}-external`} className="text-label-sm text-txt-black-700">
+            {t("nav.target.url")}
+          </label>
+          <Switch
+            id={`${id}-external`}
+            size="small"
+            checked={external}
+            // Switching starts empty: the officer chooses the page or types the address.
+            onCheckedChange={(on) =>
+              onChange(on ? { kind: "url", url: "" } : { kind: "page", pageId: "" })
+            }
+          />
+        </span>
+      </div>
       {value.kind === "page" ? (
         <PagePicker
           pages={pages.data ?? []}
           value={value.pageId || null}
           showStatus
-          onValueChange={(id) => {
+          onValueChange={(pageId) => {
             onBlur?.();
             onChange(
-              { kind: "page", pageId: id ?? "" },
-              pages.data?.find((p) => p.id === id)?.title,
+              { kind: "page", pageId: pageId ?? "" },
+              pages.data?.find((p) => p.id === pageId)?.title,
             );
           }}
         />
@@ -68,11 +76,9 @@ export function TargetField({
         />
       )}
       {gone && !error && <p className="text-body-sm text-txt-warning">{t("nav.target.gone")}</p>}
-      {chosen && !error && (
-        <p className="text-body-sm text-txt-black-700 flex items-center gap-2">
-          <LiveTag page={chosen} />
-          {t(isLive(chosen) ? "nav.target.live" : "nav.target.notLive")}
-        </p>
+      {/* Only the case that needs saying: a page visitors can't see yet, so neither the link. */}
+      {chosen && !isLive(chosen) && !error && (
+        <p className="text-body-sm text-txt-black-700">{t("nav.target.notLive")}</p>
       )}
       <FieldError>{error}</FieldError>
     </Field>
