@@ -48,7 +48,7 @@ export const toJob = (
 });
 
 /** Jobs with the name of whoever queued them. */
-const withCreator = (db: Db) =>
+export const withCreator = (db: Db) =>
   db
     .selectFrom("jobs")
     .leftJoin("users", "users.id", "jobs.created_by")

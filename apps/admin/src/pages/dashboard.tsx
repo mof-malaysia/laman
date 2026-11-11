@@ -266,7 +266,7 @@ function bannerLine(state: SiteState, fresh: number, lastAt: string | undefined)
       return (
         <>
           {t("home.status.failedBody")}{" "}
-          <Link to="/publishing" className={linkClass}>
+          <Link to="/publishing" search={{ tab: "history" }} className={linkClass}>
             {t("home.seeWhy")}
           </Link>
         </>

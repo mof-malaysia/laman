@@ -53,6 +53,10 @@ export const RichText = z.object({
 });
 export type RichText = z.infer<typeof RichText>;
 
+/** All of a node's text, run together as it reads: bold and links split it, not spaces. */
+export const richTextToText = (node: RichNode): string =>
+  node.text ?? (node.content ?? []).map(richTextToText).join("");
+
 /** A document with one paragraph per string. */
 export function paragraphs(...texts: string[]): RichText {
   return {

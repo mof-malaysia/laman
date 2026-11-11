@@ -8,7 +8,7 @@ import { Summary, envelope } from "../contract.js";
 import { mediaTotals } from "../content/media.js";
 import { listPages } from "../content/pages.js";
 import { waitingItems } from "../content/publishing.js";
-import { toJob } from "../jobs.js";
+import { toJob, withCreator } from "../jobs.js";
 import { type BackupOptions, backupStatus } from "./backups.js";
 import { renderHtml } from "../render.js";
 
@@ -81,12 +81,11 @@ export const summaryRoutes: FastifyPluginAsync<{
     async () => {
       const pages = await listPages(db);
       const [jobs, waiting, ok, media, backups] = await Promise.all([
-        db
-          .selectFrom("jobs")
-          .selectAll()
-          .where("kind", "=", "publish")
-          .where("run_at", "is", null)
-          .orderBy("created_at", "desc")
+        // With who queued each, as the publishing log has it.
+        withCreator(db)
+          .where("jobs.kind", "=", "publish")
+          .where("jobs.run_at", "is", null)
+          .orderBy("jobs.created_at", "desc")
           .limit(5)
           .execute(),
         waitingItems(db, pages),

@@ -58,10 +58,10 @@ export function* specStrings(specs: FieldSpec[]): Generator<string> {
 }
 
 /**
- * The label of the field a prop path points at (`title`, `items.0.label`),
- * in the admin's language: list indices are skipped.
+ * The spec of the field a prop path points at (`title`, `items.0.label`), in
+ * the admin's language: list indices are skipped.
  */
-export function fieldLabelAt(type: BlockType, path: string): string | undefined {
+function fieldSpecAt(type: BlockType, path: string): FieldSpec | undefined {
   let specs: FieldSpec[] | undefined = localBlockFields(type);
   let spec: FieldSpec | undefined;
   for (const part of path.split(".")) {
@@ -69,5 +69,9 @@ export function fieldLabelAt(type: BlockType, path: string): string | undefined 
     spec = specs?.find((s) => s.name === part);
     specs = spec?.fields;
   }
-  return spec?.title;
+  return spec;
 }
+
+/** The label of the field a prop path points at, in the admin's language. */
+export const fieldLabelAt = (type: BlockType, path: string): string | undefined =>
+  fieldSpecAt(type, path)?.title;

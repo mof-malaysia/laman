@@ -2,6 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "@rstest/core";
+import { blockFields, blocks, newBlock } from "@fiscal-sb/blocks";
 import { type App, signedInApp } from "./helpers.js";
 import { loadEnv } from "../src/env.js";
 
@@ -48,6 +49,15 @@ describe("history", () => {
     await work();
     revisions = (await call("GET", `/api/pages/${page.id}/revisions`)).json().data;
     expect(revisions[0]).toMatchObject({ kind: "published", live: true });
+  });
+
+  it("names who made each publish in the summary, as the log does", async () => {
+    const [latest] = (await call("GET", "/api/summary")).json().data.publishes;
+    const [logged] = (
+      await call("GET", "/api/jobs?kind=publish&scheduled=false&page=1&pageSize=1")
+    ).json().data.items;
+    expect(latest.createdBy).toBeTruthy();
+    expect(latest.createdBy).toBe(logged.createdBy);
   });
 
   it("restores a revision as the draft, keeping the current draft first", async () => {
@@ -97,6 +107,40 @@ describe("history", () => {
     const kept = revisions.find((r: { kind: string }) => r.kind === "draft");
     const detail = (await call("GET", `/api/pages/${page.id}/revisions/${kept.id}`)).json().data;
     expect(detail.content.ms.title).toBe("Buang ini");
+  });
+
+  it("returns a revision with defaults filled in, as drafts are", async () => {
+    // A block with a select whose default a stored revision may predate.
+    const type = blocks.find((b) =>
+      blockFields(b.type).some((f) => f.widget === "select" && f.defaultValue !== undefined),
+    )!.type;
+    const field = blockFields(type).find(
+      (f) => f.widget === "select" && f.defaultValue !== undefined,
+    )!;
+    const page = await create("Lalai", "lalai");
+    const { draft } = (await call("GET", `/api/pages/${page.id}`)).json().data;
+    await call("PUT", `/api/pages/${page.id}/draft`, {
+      draft: { ...draft, ms: { ...draft.ms, blocks: [newBlock(type, "lalai")] } },
+    });
+    await call("POST", `/api/pages/${page.id}/publish`);
+    await work();
+    const [live] = (await call("GET", `/api/pages/${page.id}/revisions`)).json().data;
+    // As a revision saved before the field existed would be stored.
+    const row = await app.db
+      .selectFrom("revisions")
+      .select("content")
+      .where("id", "=", live.id)
+      .executeTakeFirstOrThrow();
+    const stored = JSON.parse(row.content);
+    delete stored.ms.blocks[0].props[field.name];
+    await app.db
+      .updateTable("revisions")
+      .set({ content: JSON.stringify(stored) })
+      .where("id", "=", live.id)
+      .execute();
+
+    const detail = (await call("GET", `/api/pages/${page.id}/revisions/${live.id}`)).json().data;
+    expect(detail.content.ms.blocks[0].props[field.name]).toEqual(field.defaultValue);
   });
 
   it("restores deleted pages with their child pages", async () => {

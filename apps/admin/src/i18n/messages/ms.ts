@@ -1053,8 +1053,39 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "ago.hours": "{count} jam lalu",
   "ago.days": "{count} hari lalu",
 
-  "publishing.intro":
-    "Terbitkan perkara yang belum disiarkan, dan lihat atau buat asal penerbitan lalu.",
+  "diff.on": "Hidup",
+  "diff.off": "Mati",
+  "diff.title": "Tajuk halaman",
+  "diff.description": "Keterangan",
+  "diff.entry": "Butiran entri",
+  "diff.en": "Versi Bahasa Inggeris",
+  "diff.seo": "Carian dan perkongsian",
+  "diff.redirect": "Ubah hala",
+  "publishing.empty.body":
+    "Pelawat melihat setiap perubahan yang telah disimpan. Tiada apa untuk diterbitkan.",
+  "publishing.empty.last": "Penerbitan terakhir",
+  "publishing.empty.history": "Lihat sejarah",
+  "publishing.tab.ready": "Sedia diterbitkan",
+  "publishing.tab.history": "Sejarah",
+  "publishing.nothingTicked": "Tiada yang ditanda",
+  "publishing.compare.list": "Menunggu untuk disiarkan",
+  "publishing.compare.include": "Sertakan {name}",
+  "publishing.compare.block": "Blok",
+  "publishing.compare.now": "Di laman sekarang",
+  "publishing.compare.after": "Selepas diterbitkan",
+  "publishing.compare.nothing": "Tiada",
+  "publishing.compare.onlyChanges": "Perubahan sahaja",
+  "publishing.compare.unchanged": "Sama",
+  "publishing.compare.same": "{count} blok sama di kedua-dua belah.",
+  "publishing.compare.noChanges":
+    "Draf mempunyai kandungan yang sama dengan halaman yang disiarkan.",
+  "publishing.compare.new":
+    "Belum pernah diterbitkan: pelawat tidak dapat menemui halaman ini sehingga ia diterbitkan.",
+  "publishing.compare.doc":
+    "Perubahan pada {name} dipaparkan di setiap halaman laman. Semak untuk membukanya.",
+  "publishing.compare.media":
+    "Fail yang diganti disiarkan bersama penerbitan seterusnya, walau apa pun yang ditanda.",
+  "publishing.compare.loadFailed": "Perubahan ini tidak dapat dimuatkan untuk dibandingkan.",
   "publishing.scheduled": "Dijadualkan",
   "publishing.everything": "Semua",
   "publishing.missingPage": "Halaman yang dipadam",

@@ -24,6 +24,7 @@ import { ThemeScreen } from "./site/theme-screen";
 import { type NavPart, NavigationScreen, navParts } from "./site/navigation-screen";
 import { type SettingsSectionId, SettingsScreen, settingsSections } from "./site/settings-screen";
 import { PublishingScreen } from "./publishing/publishing-screen";
+import { type PublishingSearch, publishingSearch } from "./publishing/search";
 import { AnalyticsScreen } from "./analytics/analytics-screen";
 import { type RangeSearch, rangeSearch } from "./analytics/range";
 import { PagesScreen } from "./pages/site/pages-screen";
@@ -201,6 +202,7 @@ const themeRoute = createRoute({
 const publishingRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/publishing",
+  validateSearch: (search): PublishingSearch => publishingSearch(search),
   component: PublishingScreen,
 });
 const analyticsRoute = createRoute({

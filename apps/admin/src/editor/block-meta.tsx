@@ -3,7 +3,7 @@ import {
   type Block,
   type BlockGroup,
   type BlockIcon as BlockIconName,
-  type RichNode,
+  richTextToText,
   type RichText,
   blockFields,
 } from "@fiscal-sb/blocks";
@@ -80,13 +80,10 @@ export const groupLabels: Record<BlockGroup, MessageKey> = {
   listing: "editor.group.listing",
 };
 
-/** All of a node's text, run together as it reads: bold and links split it, not spaces. */
-const textOf = (node: RichNode): string => node.text ?? (node.content ?? []).map(textOf).join("");
-
 /** The first heading or paragraph with words in it, not the whole text run together. */
 function richTextExcerpt(doc: RichText): string {
   for (const node of doc.content) {
-    const text = textOf(node).replace(/\s+/g, " ").trim();
+    const text = richTextToText(node).replace(/\s+/g, " ").trim();
     if (text) return text;
   }
   return "";

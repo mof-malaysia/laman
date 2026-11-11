@@ -4,10 +4,10 @@
  * Restore as draft copies one into the draft (never publishing it), after
  * keeping the current draft as a revision, so a restore can be undone.
  */
-import type { Block, PageDocument } from "@fiscal-sb/blocks";
+import type { PageDocument } from "@fiscal-sb/blocks";
 import type { Page, Revision } from "@fiscal-sb/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { type ActivityEvent, ActivityTimeline } from "@/components/blocks/activity-timeline";
 import { Button } from "@/components/ui/button";
 import { Callout, CalloutTitle } from "@/components/ui/callout";
@@ -21,17 +21,14 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tag } from "@/components/ui/tag";
 import { locale, t } from "@/i18n";
-import { blockLabel, fieldLabelAt } from "@/i18n/registry";
 import { api, apiError, historyApi } from "@/lib/api";
+import { changeMarks, pageChanges } from "@/lib/page-diff";
 import useToast from "@/lib/ftds/hooks/use-toast";
-import { formatDateTime, useRefreshPages } from "@/lib/pages";
+import { formatDateTime, revisionQuery, revisionsQuery, useRefreshPages } from "@/lib/pages";
 import { Panel } from "./tab-layout";
 
 export function HistoryTab({ page }: { page: Page }) {
-  const revisions = useQuery({
-    queryKey: ["revisions", page.id, page.updatedAt],
-    queryFn: () => historyApi.revisions(page.id),
-  });
+  const revisions = useQuery(revisionsQuery(page.id, page.updatedAt));
   const refresh = useRefreshPages();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -113,40 +110,6 @@ export function HistoryTab({ page }: { page: Page }) {
   );
 }
 
-type Change = { kind: "added" | "removed" | "changed"; label: string; fields: string[] };
-
-const label = (block: Block) => blockLabel(block.type);
-/** A changed prop by its field label, in the admin's language; its key if it has none. */
-const fieldName = (block: Block, key: string) => fieldLabelAt(block.type, key) ?? key;
-
-/** Blocks added, removed or changed between two documents, with the changed fields' names. */
-function diff(before: PageDocument, after: PageDocument): Change[] {
-  const old = new Map(before.ms.blocks.map((b) => [b.id, b]));
-  const now = new Map(after.ms.blocks.map((b) => [b.id, b]));
-  const out: Change[] = [];
-  for (const block of after.ms.blocks) {
-    const was = old.get(block.id);
-    if (!was) out.push({ kind: "added", label: label(block), fields: [] });
-    else if (JSON.stringify(was) !== JSON.stringify(block)) {
-      const a = was.props as Record<string, unknown>;
-      const b = block.props as Record<string, unknown>;
-      const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
-      out.push({
-        kind: "changed",
-        label: label(block),
-        fields: [...keys]
-          .filter((k) => JSON.stringify(a[k]) !== JSON.stringify(b[k]))
-          .map((k) => fieldName(block, k)),
-      });
-    }
-  }
-  for (const block of before.ms.blocks)
-    if (!now.has(block.id)) out.push({ kind: "removed", label: label(block), fields: [] });
-  if (before.ms.title !== after.ms.title)
-    out.unshift({ kind: "changed", label: t("history.pageTitle"), fields: [] });
-  return out;
-}
-
 /** The HTML of a document, rendered by the renderer in preview mode. */
 function useRendered(pageId: string, doc: PageDocument | undefined) {
   const [html, setHtml] = useState<string>();
@@ -173,20 +136,15 @@ function CompareDialog({
   revision: Revision | null;
   onClose: () => void;
 }) {
-  const detail = useQuery({
-    queryKey: ["revision", page.id, revision?.id],
-    queryFn: () => historyApi.revision(page.id, revision?.id ?? ""),
-    enabled: revision !== null,
-  });
+  const detail = useQuery(revisionQuery(page.id, revision?.id));
   const before = detail.data?.content;
   const left = useRendered(page.id, before);
   const right = useRendered(page.id, revision ? page.draft : undefined);
-  const changes = before ? diff(before, page.draft) : [];
-  const verbs = {
-    added: t("history.added"),
-    removed: t("history.removed"),
-    changed: t("history.changed"),
-  };
+  // Blocks added, removed or changed, with the changed fields' names.
+  const changes = useMemo(
+    () => (before ? pageChanges(before, page.draft).filter((c) => c.kind !== "same") : []),
+    [before, page.draft],
+  );
 
   return (
     <Dialog open={revision !== null} onOpenChange={(open) => !open && onClose()}>
@@ -206,9 +164,13 @@ function CompareDialog({
               {changes.map((change, i) => (
                 // oxlint-disable-next-line react/no-array-index-key -- a summary, never reordered
                 <li key={i}>
-                  <span className="font-medium">{verbs[change.kind]}</span> {change.label}
+                  <span className="font-medium">{t(changeMarks[change.kind].label)}</span>{" "}
+                  {change.id === "title" ? t("history.pageTitle") : change.label}
                   {change.fields.length > 0 && (
-                    <span className="text-txt-black-700"> ({change.fields.join(", ")})</span>
+                    <span className="text-txt-black-700">
+                      {" "}
+                      ({change.fields.map((field) => field.label).join(", ")})
+                    </span>
                   )}
                 </li>
               ))}
