@@ -242,7 +242,7 @@ function Editor({ doc }: { doc: SearchDoc }) {
       <div className={clx(card, "border-otl-gray-200 shrink-0 p-4")}>
         <SwitchRow
           title={t("search.on")}
-          hint={draft.on ? t("search.onHint") : t("search.offHint")}
+          hint={draft.on ? undefined : t("search.offHint")}
           checked={draft.on}
           onCheckedChange={(on) => set({ on })}
         />

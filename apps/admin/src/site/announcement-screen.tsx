@@ -301,7 +301,6 @@ function Editor({ doc }: { doc: AnnouncementDoc }) {
       <div className={clx(card, "border-otl-gray-200 shrink-0 p-4")}>
         <SwitchRow
           title={t("navigation.announcement.on")}
-          hint={draft.on ? t("navigation.announcement.onHint") : t("announcement.offHint")}
           checked={draft.on}
           onCheckedChange={(on) => {
             // An urgent notice shouldn't stay up forever by default.

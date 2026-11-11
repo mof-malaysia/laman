@@ -127,6 +127,9 @@ export function siteHref(summary: Summary | undefined, path: string) {
   return `${base}${path}`;
 }
 
+/** An address without its scheme or trailing slash: "laman.gov.my/berita". */
+export const hostOf = (url: string) => url.replace(/^https?:\/\//, "").replace(/\/$/, "");
+
 export const useSiteHref = (path: string) => siteHref(useSummary().data, path);
 
 /** A page never published: listed as waiting, but not counted or ticked by default. */

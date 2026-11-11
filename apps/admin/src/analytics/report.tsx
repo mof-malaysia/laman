@@ -38,6 +38,12 @@ import {
   todayIn,
 } from "./range";
 
+/** One period's summary, under the key every screen shares, so they share the cache. */
+export const analyticsSummaryQuery = (query: AnalyticsQuery) => ({
+  queryKey: ["analytics", "summary", query],
+  queryFn: () => analyticsApi.summary(query),
+});
+
 export const useAnalyticsStatus = () =>
   useQuery({ queryKey: ["analytics", "status"], queryFn: analyticsApi.status });
 
@@ -126,10 +132,10 @@ function StatusNotes({ status }: { status: AnalyticsStatus | undefined }) {
   return null;
 }
 
-type Delta = { direction: "up" | "down" | "none"; text: string };
+export type Delta = { direction: "up" | "down" | "none"; text: string };
 
 /** The change on the period before: a percentage, or points for the bounce rate. */
-function delta(now: number, before: number, kind: "count" | "rate" | "time"): Delta {
+export function delta(now: number, before: number, kind: "count" | "rate" | "time"): Delta {
   if (kind === "rate") {
     const points = Math.round((now - before) * 100);
     if (!points) return { direction: "none", text: t("analytics.delta.same") };
@@ -388,8 +394,7 @@ export function AnalyticsReport({ range, pageId }: { range: RangeSearch; pageId?
   const { from, to } = rangeDays(range, todayIn(timeZone));
   const query: AnalyticsQuery = { from, to, ...(pageId && { pageId }) };
   const summary = useQuery({
-    queryKey: ["analytics", "summary", query],
-    queryFn: () => analyticsApi.summary(query),
+    ...analyticsSummaryQuery(query),
     placeholderData: keepPreviousData,
     enabled: status.isSuccess,
   });

@@ -57,7 +57,7 @@ import { Tabs, TabsContent, TabsCounter, TabsList, TabsTrigger } from "@/compone
 import { Toggle } from "@/components/ui/toggle";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 import { type MessageKey, t } from "@/i18n";
-import { siteDocQuery } from "@/lib/publish";
+import { hostOf, siteDocQuery } from "@/lib/publish";
 import { apiError, siteApi } from "@/lib/api";
 import { clx } from "@/lib/ftds/utils";
 import useToast from "@/lib/ftds/hooks/use-toast";
@@ -718,10 +718,7 @@ function useDestinationOf(): Destination {
   const paths = useMemo(() => new Map(pages.data?.map((p) => [p.id, p.path])), [pages.data]);
   return useCallback(
     (target) => {
-      if (target.kind === "url")
-        return (
-          target.url.replace(/^https?:\/\//, "").replace(/\/$/, "") || t("navigation.noTarget")
-        );
+      if (target.kind === "url") return hostOf(target.url) || t("navigation.noTarget");
       if (!target.pageId) return t("navigation.noTarget");
       return paths.get(target.pageId) ?? t("navigation.pageGone");
     },

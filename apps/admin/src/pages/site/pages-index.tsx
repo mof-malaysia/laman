@@ -383,7 +383,7 @@ function useEntryMatches(text: string) {
 }
 
 /** A link to the editor whose hit area is the whole row (the row is `relative`). */
-function EditLink({
+export function EditLink({
   id,
   className,
   children,

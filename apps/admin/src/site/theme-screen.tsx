@@ -236,7 +236,6 @@ function Editor({ doc }: { doc: ThemeDoc }) {
         ramp={generated.ramp}
         seedStep={preset === "custom" ? generated.seedStep : undefined}
       />
-      <p className="text-body-sm text-txt-black-700 px-1">{t("theme.fixed")}</p>
       {doc.previous && !dirty && !doc.changed && (
         <PutBackPrevious
           label={t("theme.previous.load")}
@@ -296,10 +295,7 @@ function Choose({
   const customSwatch = preset === "custom" && hexPattern.test(hex) ? hex : anyColour;
   return (
     <div className={clx(card, "border-otl-gray-200 flex shrink-0 flex-col gap-4 p-4")}>
-      <div className="flex flex-col gap-1">
-        <h2 className="text-label-lg text-txt-black-900 font-semibold">{t("theme.choose")}</h2>
-        <p className="text-body-sm text-txt-black-700">{t("theme.chooseHint")}</p>
-      </div>
+      <h2 className="text-label-lg text-txt-black-900 font-semibold">{t("theme.choose")}</h2>
       <Choice
         name="preset"
         legend={t("theme.choose")}

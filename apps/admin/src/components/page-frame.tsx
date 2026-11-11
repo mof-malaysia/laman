@@ -61,6 +61,7 @@ export function PageFrame({
         {scale > 0 && (
           <iframe
             sandbox="allow-same-origin"
+            loading="lazy"
             title={title}
             src={src}
             inert

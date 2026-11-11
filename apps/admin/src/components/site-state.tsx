@@ -51,7 +51,7 @@ export function useSiteState(live?: boolean) {
   };
 }
 
-const icons: Record<SiteState, ReactNode> = {
+export const siteStateIcons: Record<SiteState, ReactNode> = {
   publishing: <Spinner size="small" />,
   failed: <WarningCircleIcon className="text-txt-danger" />,
   notPublished: <ClockIcon className="text-txt-warning" />,
@@ -60,7 +60,7 @@ const icons: Record<SiteState, ReactNode> = {
   live: <CheckCircleIcon className="text-txt-success" />,
 };
 
-function sentenceOf(state: SiteState, count: number) {
+export function sentenceOf(state: SiteState, count: number) {
   switch (state) {
     case "publishing":
       return t("home.status.publishing");
@@ -107,7 +107,7 @@ export function SiteStateHeading({
           washes[state],
         )}
       >
-        {icons[state]}
+        {siteStateIcons[state]}
       </span>
       {/* One line sits level with the icon; with a second, the pair does. */}
       <div className="flex min-h-10 min-w-0 flex-col justify-center gap-0.5">
