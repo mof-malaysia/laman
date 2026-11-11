@@ -13,6 +13,7 @@ import { ChatBubbleIcon } from "@/components/ui/icons/chat-bubble";
 import { CheckIcon } from "@/components/ui/icons/check";
 import { CheckCircleIcon } from "@/components/ui/icons/check-circle";
 import { CheckShieldIcon } from "@/components/ui/icons/check-shield";
+import { DesktopIcon } from "@/components/ui/icons/desktop";
 import { DirectionIcon } from "@/components/ui/icons/direction";
 import { DocumentIcon } from "@/components/ui/icons/document";
 import { EyeShowIcon } from "@/components/ui/icons/eye-show";
@@ -65,6 +66,7 @@ const icons: Record<BlockIconName, Icon> = {
   "govt-office": GovtOfficeIcon,
   globe: GlobeIcon,
   calendar: CalendarIcon,
+  desktop: DesktopIcon,
 };
 
 /** A block's registry icon, by name. */

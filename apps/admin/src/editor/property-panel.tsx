@@ -32,6 +32,7 @@ import { type MessageKey, t } from "@/i18n";
 import { blockLabel, localBlockFields } from "@/i18n/registry";
 import { usePages } from "@/lib/pages";
 import { itemTitle } from "./block-meta";
+import { EmbedsAllowed } from "./embeds-allowed";
 import { MediaField } from "./media-field";
 import { RichTextField } from "./rich-text-field";
 import { moveItem } from "@/site/navigation-model";
@@ -197,6 +198,22 @@ function FieldEditor({ field, value: parent, path, issues, set }: FieldEditorPro
           )}
           <FieldError>{error}</FieldError>
         </Field>
+      );
+
+    case "embed":
+      return (
+        <div className="flex flex-col gap-1.5">
+          <Field name={path.join(".")} invalid={Boolean(error)}>
+            <FieldLabel>{field.title}</FieldLabel>
+            <Input
+              value={(value as string | undefined) ?? ""}
+              onChange={(e) => setText(e.target.value)}
+              maxLength={field.maxLength}
+            />
+            <FieldError>{error}</FieldError>
+          </Field>
+          <EmbedsAllowed />
+        </div>
       );
 
     case "select":

@@ -4083,6 +4083,119 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                   "props": {
                     "additionalProperties": false,
                     "properties": {
+                      "caption": {
+                        "inline": true,
+                        "maxLength": 300,
+                        "title": "Text under the frame",
+                        "type": "string",
+                        "widget": "textarea",
+                      },
+                      "details": {
+                        "help": "Facts shown under the frame, such as who owns it or when it was last updated.",
+                        "items": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "label": {
+                              "maxLength": 40,
+                              "title": "Label",
+                              "type": "string",
+                              "widget": "text",
+                            },
+                            "value": {
+                              "maxLength": 120,
+                              "title": "Value",
+                              "type": "string",
+                              "widget": "text",
+                            },
+                          },
+                          "required": [
+                            "label",
+                            "value",
+                          ],
+                          "type": "object",
+                        },
+                        "maxItems": 6,
+                        "minItems": 0,
+                        "title": "Details",
+                        "type": "array",
+                        "widget": "list",
+                      },
+                      "ratio": {
+                        "default": "wide",
+                        "enum": [
+                          "wide",
+                          "standard",
+                          "tall",
+                        ],
+                        "optionLabels": {
+                          "standard": "Standard (4:3)",
+                          "tall": "Tall",
+                          "wide": "Wide (16:9)",
+                        },
+                        "title": "Shape",
+                        "type": "string",
+                        "widget": "select",
+                      },
+                      "title": {
+                        "inline": true,
+                        "maxLength": 120,
+                        "title": "Title",
+                        "type": "string",
+                        "widget": "text",
+                      },
+                      "url": {
+                        "maxLength": 1000,
+                        "title": "Address to embed",
+                        "type": "string",
+                        "widget": "embed",
+                      },
+                      "width": {
+                        "default": "page",
+                        "enum": [
+                          "page",
+                          "article",
+                          "wide",
+                        ],
+                        "help": "Follow page lines the block up with the page's title.",
+                        "optionLabels": {
+                          "article": "Text column",
+                          "page": "Follow page",
+                          "wide": "Wide",
+                        },
+                        "title": "Width",
+                        "type": "string",
+                        "widget": "select",
+                      },
+                    },
+                    "required": [
+                      "title",
+                      "ratio",
+                      "width",
+                    ],
+                    "type": "object",
+                  },
+                  "type": {
+                    "const": "embed",
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "id",
+                  "type",
+                  "props",
+                ],
+                "type": "object",
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "pattern": "^[a-z0-9-]{1,40}$",
+                    "type": "string",
+                  },
+                  "props": {
+                    "additionalProperties": false,
+                    "properties": {
                       "contactLink": {
                         "additionalProperties": false,
                         "properties": {
@@ -7690,6 +7803,119 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                   "props": {
                     "additionalProperties": false,
                     "properties": {
+                      "caption": {
+                        "inline": true,
+                        "maxLength": 300,
+                        "title": "Text under the frame",
+                        "type": "string",
+                        "widget": "textarea",
+                      },
+                      "details": {
+                        "help": "Facts shown under the frame, such as who owns it or when it was last updated.",
+                        "items": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "label": {
+                              "maxLength": 40,
+                              "title": "Label",
+                              "type": "string",
+                              "widget": "text",
+                            },
+                            "value": {
+                              "maxLength": 120,
+                              "title": "Value",
+                              "type": "string",
+                              "widget": "text",
+                            },
+                          },
+                          "required": [
+                            "label",
+                            "value",
+                          ],
+                          "type": "object",
+                        },
+                        "maxItems": 6,
+                        "minItems": 0,
+                        "title": "Details",
+                        "type": "array",
+                        "widget": "list",
+                      },
+                      "ratio": {
+                        "default": "wide",
+                        "enum": [
+                          "wide",
+                          "standard",
+                          "tall",
+                        ],
+                        "optionLabels": {
+                          "standard": "Standard (4:3)",
+                          "tall": "Tall",
+                          "wide": "Wide (16:9)",
+                        },
+                        "title": "Shape",
+                        "type": "string",
+                        "widget": "select",
+                      },
+                      "title": {
+                        "inline": true,
+                        "maxLength": 120,
+                        "title": "Title",
+                        "type": "string",
+                        "widget": "text",
+                      },
+                      "url": {
+                        "maxLength": 1000,
+                        "title": "Address to embed",
+                        "type": "string",
+                        "widget": "embed",
+                      },
+                      "width": {
+                        "default": "page",
+                        "enum": [
+                          "page",
+                          "article",
+                          "wide",
+                        ],
+                        "help": "Follow page lines the block up with the page's title.",
+                        "optionLabels": {
+                          "article": "Text column",
+                          "page": "Follow page",
+                          "wide": "Wide",
+                        },
+                        "title": "Width",
+                        "type": "string",
+                        "widget": "select",
+                      },
+                    },
+                    "required": [
+                      "title",
+                      "ratio",
+                      "width",
+                    ],
+                    "type": "object",
+                  },
+                  "type": {
+                    "const": "embed",
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "id",
+                  "type",
+                  "props",
+                ],
+                "type": "object",
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "pattern": "^[a-z0-9-]{1,40}$",
+                    "type": "string",
+                  },
+                  "props": {
+                    "additionalProperties": false,
+                    "properties": {
                       "contactLink": {
                         "additionalProperties": false,
                         "properties": {
@@ -8549,6 +8775,47 @@ exports[`stored document schemas > settings 1`] = `
       ],
       "type": "object",
     },
+    "embeds": {
+      "additionalProperties": false,
+      "default": {
+        "hosts": [],
+        "services": [],
+      },
+      "properties": {
+        "hosts": {
+          "items": {
+            "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$",
+            "type": "string",
+          },
+          "maxItems": 50,
+          "type": "array",
+        },
+        "services": {
+          "default": [],
+          "items": {
+            "enum": [
+              "powerBi",
+              "lookerStudio",
+              "tableauPublic",
+              "youtube",
+              "vimeo",
+              "googleMaps",
+              "openStreetMap",
+              "microsoftForms",
+              "googleForms",
+            ],
+            "type": "string",
+          },
+          "maxItems": 9,
+          "type": "array",
+        },
+      },
+      "required": [
+        "services",
+        "hosts",
+      ],
+      "type": "object",
+    },
     "identity": {
       "additionalProperties": false,
       "properties": {
@@ -8722,6 +8989,7 @@ exports[`stored document schemas > settings 1`] = `
     "search",
     "publishing",
     "analytics",
+    "embeds",
   ],
   "type": "object",
 }

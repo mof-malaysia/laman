@@ -89,6 +89,9 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "checks.vagueLink": 'Teks pautan yang tidak bermakna dengan sendirinya: "{subject}"',
   "checks.vagueLink.fix":
     'Namakan destinasinya, contohnya "Borang permohonan lesen". Pengguna pembaca skrin sering mendengar pautan secara berasingan.',
+  "checks.embedNotAllowed": "Benaman yang tidak dibenarkan di laman ini: {subject}",
+  "checks.embedNotAllowed.fix":
+    "Admin boleh membenarkannya di Tetapan, Benaman, kemudian terbitkan tetapan. Sehingga itu, halaman yang diterbitkan tidak memaparkan blok ini.",
   "checks.review.title": "Sebelum halaman ini diterbitkan",
   "checks.review.warnings":
     "Beberapa perkara pada halaman ini mungkin tidak berfungsi untuk pelawat. Anda boleh terbitkan juga, atau betulkan dahulu.",
@@ -523,6 +526,14 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "settings.publishing.time": "Masa penerbitan berjadual",
   "settings.publishing.revisions": "Bilangan versi disimpan bagi setiap halaman",
   "settings.publishing.revisionsHint": "Versi yang diterbitkan sentiasa dikekalkan.",
+  "settings.embeds": "Benaman",
+  "settings.embeds.description": "Perkara yang boleh dipaparkan dalam bingkai oleh blok Benam.",
+  "settings.embeds.adminOnly": "Hanya Admin boleh mengubahnya.",
+  "settings.embeds.services": "Perkhidmatan",
+  "settings.embeds.hosts": "Laman lain",
+  "settings.embeds.hostsEmpty": "Taip alamat laman",
+  "settings.embeds.add": "Tambah {host}",
+  "settings.embeds.remove": "Buang {host}",
   "settings.analytics": "Analitik",
   "settings.analytics.on": "Kira pelawat",
   "settings.analytics.onHint": "Tanpa kuki, dan tiada sesiapa dikenal pasti.",
@@ -1418,6 +1429,10 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "editor.block.duplicate": "Salin blok",
   "editor.block.delete": "Padam blok",
   "editor.block.panel": "Buka dalam panel",
+  "editor.embeds.allowed": "Apa yang dibenarkan di laman ini",
+  "editor.embeds.none": "Belum ada. Admin membenarkan benaman di Tetapan.",
+  "editor.embeds.missing":
+    "Tidak jumpa perkhidmatan yang ingin dibenamkan? Minta Admin membenarkannya.",
   "editor.fields.content": "Kandungan",
   "editor.fields.actions": "Tindakan",
   "editor.fields.appearance": "Penampilan",

@@ -60,6 +60,20 @@ export const registryMs: Record<string, string> = {
     "Tarikh akhir, syarat atau petikan yang diasingkan daripada teks di sekelilingnya.",
   "Who said it (makes it a quote)": "Siapa yang berkata (menjadikannya petikan)",
 
+  // Embed
+  Embed: "Benam",
+  "A page from another website shown in a frame, such as a dashboard, a map or a form. Only what's allowed in Settings, Embeds can be shown.":
+    "Halaman dari laman web lain yang dipaparkan dalam bingkai, seperti papan pemuka, peta atau borang. Hanya yang dibenarkan di Tetapan, Benaman boleh dipaparkan.",
+  "Address to embed": "Alamat untuk dibenamkan",
+  "Text under the frame": "Teks di bawah bingkai",
+  "Facts shown under the frame, such as who owns it or when it was last updated.":
+    "Fakta yang dipaparkan di bawah bingkai, seperti pemiliknya atau bila kali terakhir dikemas kini.",
+  Value: "Nilai",
+  Shape: "Bentuk",
+  "Wide (16:9)": "Lebar (16:9)",
+  "Standard (4:3)": "Biasa (4:3)",
+  Tall: "Tinggi",
+
   // Details
   Details: "Butiran",
   "Short help behind a link, for what only some people need.":

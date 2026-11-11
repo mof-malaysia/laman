@@ -10,6 +10,7 @@ import CtaSplit from "./CtaSplit.astro";
 import Details from "./Details.astro";
 import DownloadList from "./DownloadList.astro";
 import Eligibility from "./Eligibility.astro";
+import Embed from "./Embed.astro";
 import EntryList from "./EntryList.astro";
 import EventDetails from "./EventDetails.astro";
 import Faq from "./Faq.astro";
@@ -65,3 +66,4 @@ const column = (b: { props: { width?: "page" | "article" | "wide" } }) => column
 {block.type === "partnerGrid" && <PartnerGrid block={block} edit={edit} lang={lang} media={media} siteUrl={site.url} />}
 {block.type === "logoCloud" && <LogoCloud block={block} edit={edit} media={media} />}
 {block.type === "eventDetails" && <EventDetails block={block} width={column(block)} lang={lang} />}
+{block.type === "embed" && <Embed block={block} width={column(block)} edit={edit} live={input.mode === "publish"} lang={lang} rules={site.embeds} />}

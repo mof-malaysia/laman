@@ -63,6 +63,7 @@ async function defaultSettings(db: Db): Promise<SiteSettings> {
     search: { hideSite: false, sitemap: true },
     publishing: { scheduleTime: "08:00", revisionsToKeep: 50 },
     analytics: { on: true, retentionDays: 395 },
+    embeds: { services: [], hosts: [] },
   };
 }
 
@@ -512,6 +513,7 @@ export async function siteContext(
     hideSite: settings.search.hideSite,
     ...(search.on && { search: true as const }),
     ...(siteUrl && { url: siteUrl }),
+    embeds: settings.embeds,
     ...(settings.analytics.on && { analytics: true }),
     theme: { primary: theme.primary },
   };

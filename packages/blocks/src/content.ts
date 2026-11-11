@@ -1,5 +1,6 @@
 /** Pages: a title and a tree (for now, a list) of blocks, per language. */
 import { z } from "zod";
+import type { EmbedRules } from "./blocks/embed.js";
 import type { featureIcons } from "./blocks/feature-grid.js";
 import { Block } from "./registry.js";
 import type { Ramp } from "./theme.js";
@@ -208,6 +209,8 @@ export type SiteContext = {
   search?: true;
   /** SITE_URL, for canonical and social links. */
   url?: string;
+  /** What the Embed block may frame (Settings, Embeds): built-in services switched on and the site's own hosts. */
+  embeds: EmbedRules;
   /** Count visitors: the layout writes the analytics beacon into pages it publishes. */
   analytics?: boolean;
   /** The site's colours: FTDS Blue unless the agency chose its own. */

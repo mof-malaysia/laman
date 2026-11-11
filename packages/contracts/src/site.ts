@@ -3,7 +3,14 @@
  * made live by its own publish, like pages. Page links are by id, so they
  * follow renames and moves.
  */
-import { featureIcons, hexPattern, rampSteps, themePresets } from "@fiscal-sb/blocks";
+import {
+  embedHostPattern,
+  embedServiceIds,
+  featureIcons,
+  hexPattern,
+  rampSteps,
+  themePresets,
+} from "@fiscal-sb/blocks";
 import { z } from "zod";
 
 const Id = z.uuid();
@@ -210,6 +217,26 @@ export const SiteSettings = z.object({
         .max(1095, "Keep at most 1095 days (3 years)"),
     })
     .default({ on: true, retentionDays: 395 }),
+  /** Sites from before embeds allow none until an officer lists some. */
+  embeds: z
+    .object({
+      /** Built-in services switched on: only each one's embed addresses are framed (`embedServices`). */
+      services: z.array(z.enum(embedServiceIds)).max(embedServiceIds.length).default([]),
+      /** The site's own hosts the Embed block may frame, whole: the exact name, not its subdomains. */
+      hosts: z
+        .array(
+          z
+            .string()
+            .trim()
+            .toLowerCase()
+            .regex(
+              embedHostPattern,
+              "Enter a host name like peta.agensi.gov.my, without https:// or anything after it",
+            ),
+        )
+        .max(50, "List at most 50 sites"),
+    })
+    .default({ services: [], hosts: [] }),
 });
 export type SiteSettings = z.infer<typeof SiteSettings>;
 

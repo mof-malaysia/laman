@@ -1,12 +1,14 @@
 /**
  * The check before a page goes live (docs/site-builder.md § Checks before
  * publishing): what in its draft would fail visitors, found by walking the
- * blocks' JSON rather than by a rule per block. Only a missing main heading
+ * blocks' JSON rather than by a rule per block (Embed's address is the one
+ * exception: whether the site allows it). Only a missing main heading
  * stops publishing; the rest are warnings an officer can publish past.
  */
 import {
   SYSTEM_PATHS,
   blocks,
+  embedDecision,
   hasHeading,
   linksOf,
   mediaUsesOf,
@@ -20,6 +22,7 @@ import { sql } from "kysely";
 import type { Db } from "../db/index.js";
 import { HttpError } from "../errors.js";
 import { getPage, listPages, sitePath } from "./pages.js";
+import { readDoc } from "./site.js";
 
 /** Every string in a value, with nothing else. */
 function stringsOf(value: unknown, out: string[] = []): string[] {
@@ -102,11 +105,14 @@ function looksLikeFile(alt: string, filename: string) {
  * The site's page list, its redirects and the media used are read once for all.
  */
 export async function pageChecks(db: Db, ids: readonly string[]) {
-  const [pages, redirects, drafts] = await Promise.all([
+  const [pages, redirects, drafts, settings] = await Promise.all([
     listPages(db),
     db.selectFrom("redirects").select("source_path").execute(),
     Promise.all(ids.map((id) => getPage(db, id))),
+    // The live settings: what a publish of the page will be rendered with.
+    readDoc(db, "settings", "published"),
   ]);
+  const embedRules = settings.embeds;
   const uses = drafts.flatMap((page) => page.draft.ms.blocks.flatMap((b) => mediaUsesOf(b.props)));
   const media = uses.length
     ? await db
@@ -153,6 +159,15 @@ export async function pageChecks(db: Db, ids: readonly string[]) {
           warn({ code: "linkNotLive", blockId, subject: path });
         else if (!target && !servedOtherwise(path))
           warn({ code: "linkMissing", blockId, subject: path });
+      }
+      if (block.type === "embed" && block.props.url) {
+        const decision = embedDecision(block.props.url, embedRules);
+        if (!decision.allowed)
+          warn({
+            code: "embedNotAllowed",
+            blockId,
+            subject: "host" in decision ? decision.host : block.props.url,
+          });
       }
       for (const text of new Set(stringsOf(block.props).map((t) => t.trim())))
         if (examples.has(text)) warn({ code: "placeholder", blockId, subject: text });

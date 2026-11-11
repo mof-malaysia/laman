@@ -12,6 +12,7 @@ import { ctaSplit } from "./blocks/cta-split.js";
 import { details } from "./blocks/details.js";
 import { downloadList } from "./blocks/download-list.js";
 import { eligibility } from "./blocks/eligibility.js";
+import { embed } from "./blocks/embed.js";
 import { entryList } from "./blocks/entry-list.js";
 import { eventDetails } from "./blocks/event-details.js";
 import { faq } from "./blocks/faq.js";
@@ -49,6 +50,7 @@ export const blocks = [
   partnerGrid,
   logoCloud,
   eventDetails,
+  embed,
   statsBand,
   impactStats,
   faq,
@@ -96,6 +98,7 @@ export const Block = z.discriminatedUnion("type", [
   blockSchema(partnerGrid),
   blockSchema(logoCloud),
   blockSchema(eventDetails),
+  blockSchema(embed),
   blockSchema(faq),
   blockSchema(contact),
   blockSchema(entryList),

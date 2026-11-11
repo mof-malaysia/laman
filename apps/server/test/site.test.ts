@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "@rstest/core";
-import { type App, signedInApp } from "./helpers.js";
+import { type App, sessionCookie, signedInApp } from "./helpers.js";
 import { loadEnv } from "../src/env.js";
 
 let dataDir: string;
@@ -322,5 +322,134 @@ describe("admin preferences", () => {
     expect((await call("GET", "/api/preferences")).json().data).toEqual({ language: "ms" });
     expect((await call("PUT", "/api/preferences", { language: "fr" })).statusCode).toBe(400);
     expect((await call("GET", "/api/settings")).json().data.changed).toBe(false);
+  });
+});
+
+describe("embeds", () => {
+  const address = "https://peta.agensi.gov.my/embed?id=42";
+  const frames = (html: string) => html.match(/<iframe[^>]*>/g) ?? [];
+  const checksOf = async (id: string) =>
+    (await call("GET", `/api/pages/checks?ids=${id}`)).json().data[id] as {
+      code: string;
+      subject?: string;
+    }[];
+  /** Saves the settings draft with these embeds, from its latest version. */
+  const putEmbeds = async (embeds: { services?: string[]; hosts?: string[] }) => {
+    const settings = (await call("GET", "/api/settings")).json().data;
+    return call("PUT", "/api/settings", {
+      draft: { ...settings.draft, embeds: { services: [], hosts: [], ...embeds } },
+      base: settings.version,
+    });
+  };
+  /** Adds blocks to the end of a page's draft. */
+  const addBlocks = async (pageId: string, blocks: object[]) => {
+    const { draft, draftVersion } = (await call("GET", `/api/pages/${pageId}`)).json().data;
+    return call("PUT", `/api/pages/${pageId}/draft`, {
+      draft: { ...draft, ms: { ...draft.ms, blocks: [...draft.ms.blocks, ...blocks] } },
+      base: draftVersion,
+    });
+  };
+
+  it("frames a site only once it's on the published list, and stops when it's taken off", async () => {
+    const page = await home();
+    const embed = { id: "peta", type: "embed", props: { title: "Peta pejabat", url: address } };
+    expect((await addBlocks(page.id, [embed])).statusCode).toBe(200);
+
+    // Not on the list: the check says so, and the published page leaves the block out.
+    expect(await checksOf(page.id)).toContainEqual(
+      expect.objectContaining({ code: "embedNotAllowed", subject: "peta.agensi.gov.my" }),
+    );
+    expect(frames(await publishHome())).toEqual([]);
+    expect(await live()).not.toContain("Peta pejabat");
+
+    // Listed in the draft only: still not framed, since the live list is what counts.
+    const put = await putEmbeds({ hosts: ["Peta.Agensi.gov.my"] });
+    expect(put.statusCode).toBe(200);
+    expect(put.json().data.draft.embeds.hosts).toEqual(["peta.agensi.gov.my"]);
+    expect((await checksOf(page.id)).map((c) => c.code)).toContain("embedNotAllowed");
+
+    // Published: every page is rendered again, now with the frame.
+    const html = await publishDoc("settings");
+    expect(frames(html)).toHaveLength(1);
+    expect(html).toContain('src="https://peta.agensi.gov.my/embed?id=42"');
+    expect(html).toContain('title="Peta pejabat"');
+    expect((await checksOf(page.id)).map((c) => c.code)).not.toContain("embedNotAllowed");
+
+    // The canvas and previews never frame another site: the builder's pages may frame only themselves.
+    for (const mode of ["edit", "preview"]) {
+      const render = await call("GET", `/render/pages/${page.id}?mode=${mode}&locale=ms`);
+      expect(frames(render.body)).toEqual([]);
+      expect(render.body).toContain("peta.agensi.gov.my");
+    }
+
+    // Taken off the list and published: the frame goes at once.
+    await putEmbeds({});
+    expect(frames(await publishDoc("settings"))).toEqual([]);
+  });
+
+  it("takes host names only on the list", async () => {
+    for (const host of [
+      "https://peta.agensi.gov.my",
+      "peta.agensi.gov.my/embed",
+      "*.gov.my",
+      "localhost",
+    ])
+      expect((await putEmbeds({ hosts: [host] })).statusCode, host).toBe(400);
+    expect((await putEmbeds({ services: ["tiada"] })).statusCode).toBe(400);
+  });
+
+  it("frames a built-in service's embed address once it's switched on, not the rest of its site", async () => {
+    const created = (await call("POST", "/api/pages", { title: "Video", slug: "video" })).json();
+    const page = { id: created.data.id as string };
+    const video = (id: string, url: string) => ({ id, type: "embed", props: { title: id, url } });
+    await addBlocks(page.id, [
+      video("benam", "https://www.youtube.com/embed/dQw4w9WgXcQ"),
+      video("tonton", "https://www.youtube.com/watch?v=dQw4w9WgXcQ"),
+    ]);
+    const published = () => readFile(join(dataDir, "public", "video", "index.html"), "utf8");
+    await call("POST", `/api/pages/${page.id}/publish`);
+    await build();
+    expect(frames(await published())).toEqual([]);
+    // Off the published site, the card says what to do about each.
+    const canvas = (await call("GET", `/render/pages/${page.id}?mode=edit&locale=en`)).body;
+    expect(canvas).toContain("t switched on for this site");
+
+    await putEmbeds({ services: ["youtube"] });
+    await publishDoc("settings");
+    const html = await published();
+    expect(frames(html)).toHaveLength(1);
+    expect(html).toContain('src="https://www.youtube.com/embed/dQw4w9WgXcQ"');
+    expect(html).not.toContain("watch?v=");
+    expect((await checksOf(page.id)).filter((c) => c.code === "embedNotAllowed")).toHaveLength(1);
+    const preview = (await call("GET", `/render/pages/${page.id}?mode=preview&locale=en`)).body;
+    expect(preview).toContain("t an address YouTube gives for embedding");
+  });
+
+  it("lets only an Admin change what may be embedded", async () => {
+    const settings = (await call("GET", "/api/settings")).json().data;
+    const as = async (role: "editor" | "contentManager" | "admin", draft: object) => {
+      const { cookie } = await sessionCookie(app, role);
+      const { version } = (await call("GET", "/api/settings")).json().data;
+      return app.inject({
+        method: "PUT",
+        url: "/api/settings",
+        headers: { cookie },
+        payload: { draft, base: version },
+      });
+    };
+    const withVimeo = {
+      ...settings.draft,
+      embeds: { ...settings.draft.embeds, services: [...settings.draft.embeds.services, "vimeo"] },
+    };
+    for (const role of ["editor", "contentManager"] as const) {
+      const refused = await as(role, withVimeo);
+      expect(refused.statusCode, role).toBe(403);
+      // The rest of the settings stay theirs to draft.
+      const renamed = { ...settings.draft, contact: { ...settings.draft.contact, hours: role } };
+      expect((await as(role, renamed)).statusCode, role).toBe(200);
+    }
+    const allowed = await as("admin", { ...withVimeo, contact: settings.draft.contact });
+    expect(allowed.statusCode).toBe(200);
+    expect(allowed.json().data.draft.embeds.services).toContain("vimeo");
   });
 });

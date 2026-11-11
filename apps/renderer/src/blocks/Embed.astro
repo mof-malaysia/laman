@@ -1,0 +1,129 @@
+---
+/**
+ * A page from another site, framed in this one, with a caption and details
+ * under it and a link that opens it on its own.
+ *
+ * Only what the site allows (`site.embeds`, from Settings, Embeds) is framed:
+ * an embed address of a built-in service it has switched on, or one of its
+ * own hosts. It's decided here, where the frame is drawn, so what's switched
+ * off or taken off the list stops showing at the next publish. The frame is
+ * drawn only on the published site (`live`). The builder's own pages may frame nothing but
+ * themselves (`frame-src 'self'` in the server's headers), so the canvas and
+ * previews show a card with a link to try, or why it won't show. With no
+ * address, or one that isn't allowed, the published page leaves the block out.
+ */
+import type { Column } from "./column";
+import { type BlockOf, type EmbedRules, type Locale, embedDecision } from "@fiscal-sb/blocks";
+import DesktopIcon from "@/components/ui/icons/desktop.astro";
+import Link from "@/components/ui/link.astro";
+import { clx } from "@/lib/ftds/utils";
+import Field from "./Field.astro";
+import TextColumn from "./TextColumn.astro";
+
+type Props = {
+  block: BlockOf<"embed">;
+  width: Column;
+  edit: boolean;
+  live: boolean;
+  lang: Locale;
+  rules: EmbedRules;
+};
+const { block, width, edit, live, lang, rules } = Astro.props;
+const p = block.props;
+const decision = p.url ? embedDecision(p.url, rules) : undefined;
+const host = decision && "host" in decision ? decision.host : undefined;
+const src = decision?.allowed ? p.url : undefined;
+
+const text = {
+  ms: {
+    open: (site: string) => `Buka terus di ${site}`,
+    preview: (site: string) => `Kandungan dari ${site} dipaparkan di sini pada laman yang diterbitkan.`,
+    notListed: (site: string) =>
+      `${site} tiada dalam senarai laman yang boleh dibenamkan, jadi bahagian ini tidak akan dipaparkan. Admin boleh menambahnya di Tetapan, Benaman, kemudian terbitkan tetapan.`,
+    serviceOff: (service: string) =>
+      `${service} belum dihidupkan untuk laman ini, jadi bahagian ini tidak akan dipaparkan. Admin boleh menghidupkannya di Tetapan, Benaman, kemudian terbitkan tetapan.`,
+    serviceAddress: (service: string) =>
+      `Ini bukan alamat yang diberikan oleh ${service} untuk membenam, jadi bahagian ini tidak akan dipaparkan. Salin alamat benam daripada ${service}.`,
+    test: "Uji alamat ini",
+    empty: "Tampal alamat web yang hendak dibenamkan dalam panel di sebelah.",
+    title: "Tajuk benaman",
+    caption: "Teks di bawah bingkai",
+  },
+  en: {
+    open: (site: string) => `Open it on ${site}`,
+    preview: (site: string) => `Content from ${site} shows here on the published site.`,
+    notListed: (site: string) =>
+      `${site} isn't on the list of sites that can be embedded, so this won't show. An Admin can add it in Settings, Embeds, then publish the settings.`,
+    serviceOff: (service: string) =>
+      `${service} isn't switched on for this site, so this won't show. An Admin can switch it on in Settings, Embeds, then publish the settings.`,
+    serviceAddress: (service: string) =>
+      `This isn't an address ${service} gives for embedding, so this won't show. Copy the embed address from ${service}.`,
+    test: "Try this address",
+    empty: "Paste the web address to embed in the panel beside the page.",
+    title: "Embed title",
+    caption: "Text under the frame",
+  },
+}[lang];
+
+/** What the card says where the frame would be, off the published site. */
+function cardText() {
+  if (!decision || !host) return text.empty;
+  if (decision.allowed) return text.preview(host);
+  if (decision.reason === "serviceOff") return text.serviceOff(decision.service.name);
+  if (decision.reason === "serviceAddress") return text.serviceAddress(decision.service.name);
+  return text.notListed(host);
+}
+
+const details = (p.details ?? []).filter((d) => d.label && d.value);
+const ratio = { wide: "aspect-video", standard: "aspect-[4/3]", tall: "aspect-[4/5] md:aspect-square" }[p.ratio];
+const frame = clx("bg-bg-washed w-full overflow-hidden rounded-lg", ratio);
+// Off the published site every state shows, so the officer sees why; on it, only what can be framed.
+const shown = live ? Boolean(src) : edit || Boolean(p.url);
+---
+
+{
+  shown && (
+    <TextColumn width={width}>
+      <div class="flex flex-col gap-4">
+        <h2 class="text-txt-black-900 text-heading-xs font-semibold text-balance">
+          <Field name="title" edit={edit} placeholder={text.title}>{p.title}</Field>
+        </h2>
+        {live ? (
+          <div class={frame}>
+            <iframe src={src} title={p.title} loading="lazy" allowfullscreen class="size-full border-0" />
+          </div>
+        ) : (
+          <div class={clx(frame, "text-txt-black-700 text-body-sm flex flex-col items-center justify-center gap-3 p-6 text-center")}>
+            <DesktopIcon class="size-8" aria-hidden="true" />
+            <p class="max-w-[60ch]">
+              {cardText()}
+            </p>
+            {host && (
+              <Link href={p.url} newTab primary lang={lang}>{text.test}</Link>
+            )}
+          </div>
+        )}
+        {(p.caption || edit) && (
+          <p class="text-txt-black-700 text-body-sm max-w-[70ch]">
+            <Field name="caption" edit={edit} placeholder={text.caption}>{p.caption}</Field>
+          </p>
+        )}
+        {details.length > 0 && (
+          <dl class="text-body-sm flex flex-wrap gap-x-8 gap-y-2">
+            {details.map((detail) => (
+              <div class="flex flex-col">
+                <dt class="text-txt-black-700">{detail.label}</dt>
+                <dd class="text-txt-black-900 font-medium">{detail.value}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+        {live && host && (
+          <p class="text-body-sm">
+            <Link href={src} newTab primary lang={lang}>{text.open(host)}</Link>
+          </p>
+        )}
+      </div>
+    </TextColumn>
+  )
+}
