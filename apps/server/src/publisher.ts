@@ -347,7 +347,10 @@ export async function publishSite({ db, dataDir, siteUrl, full = false }: Publis
         if (file.startsWith(`${SEARCH_INDEX_DIR}/`)) outputs[file] = value;
     } else {
       const files = await buildSearchIndex(
-        indexed.map((p) => ({ url: p.path, path: fileIn(next, pageFile(p.path)) })),
+        indexed.map((p) => ({
+          url: p.path,
+          read: () => readFile(fileIn(next, pageFile(p.path)), "utf8"),
+        })),
       );
       await inPool(files, (file) => {
         const path = `${SEARCH_INDEX_DIR}/${file.path}`;

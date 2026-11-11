@@ -1,6 +1,7 @@
 import { mkdtemp, readFile, readdir, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type { DraftSearchIndex } from "@fiscal-sb/contracts";
 import { afterAll, beforeAll, describe, expect, it } from "@rstest/core";
 import { type App, signedInApp } from "./helpers.js";
 import { loadEnv } from "../src/env.js";
@@ -219,5 +220,78 @@ describe("site search", () => {
     await publishSearch();
     expect(await exists("pagefind/pagefind.js")).toBe(true);
     expect(await read("index.html")).toContain('href="/carian"');
+  });
+});
+
+describe("draft search index", () => {
+  const drafts = async () =>
+    (await call("GET", "/api/search/drafts")).json().data as DraftSearchIndex;
+  const file = (version: string, path: string) =>
+    call("GET", `/api/search/drafts/${version}/${path}`);
+
+  it("indexes every page's draft, unpublished ones included, with each one's status", async () => {
+    const { version, pages } = await drafts();
+    expect(pages["/borang"]).toBe("draft");
+    expect(pages["/"]).toBe("published");
+    expect(pages["/berita/notis-1"]).toBe("published");
+
+    const script = await file(version, "pagefind.js");
+    expect(script.statusCode).toBe(200);
+    expect(script.headers["content-type"]).toContain("javascript");
+    const entry = JSON.parse((await file(version, "pagefind-entry.json")).body) as {
+      languages: Record<string, { page_count: number }>;
+    };
+    expect(entry.languages.ms?.page_count).toBe(Object.keys(pages).length);
+    expect((await file("not-a-version", "pagefind.js")).statusCode).toBe(404);
+  });
+
+  it("sends the index's files as they are: they're gzip data already, never labelled compressed", async () => {
+    const { version } = await drafts();
+    const wasm = await app.inject({
+      method: "GET",
+      url: `/api/search/drafts/${version}/wasm.unknown.pagefind`,
+      headers: { "accept-encoding": "gzip, br" },
+    });
+    expect(wasm.statusCode).toBe(200);
+    expect(wasm.headers["content-encoding"]).toBeUndefined();
+  });
+
+  it("builds again only after a draft changes, and keeps the last build's files", async () => {
+    const before = await drafts();
+    expect((await drafts()).version).toBe(before.version);
+
+    const page = (await call("GET", `/api/pages/${draftPage.id}`)).json().data;
+    await call("PUT", `/api/pages/${draftPage.id}/draft`, {
+      draft: { ...page.draft, ms: { ...page.draft.ms, description: "Borang permohonan lesen." } },
+    });
+    const after = await drafts();
+    expect(after.version).not.toBe(before.version);
+    // A search that started on the last version can still load it.
+    expect((await file(before.version, "pagefind.js")).statusCode).toBe(200);
+  });
+
+  it("leaves out pages hidden from search engines, as the live site does", async () => {
+    const page = (await call("GET", `/api/pages/${draftPage.id}`)).json().data;
+    await call("PUT", `/api/pages/${draftPage.id}/draft`, {
+      draft: { ...page.draft, seo: { ...page.draft.seo, noindex: true } },
+    });
+    expect((await drafts()).pages["/borang"]).toBeUndefined();
+  });
+
+  it("is for signed-in users only", async () => {
+    const { version } = await drafts();
+    const anonymous = { headers: { cookie: "" } };
+    expect(
+      (await app.inject({ method: "GET", url: "/api/search/drafts", ...anonymous })).statusCode,
+    ).toBe(401);
+    expect(
+      (
+        await app.inject({
+          method: "GET",
+          url: `/api/search/drafts/${version}/pagefind.js`,
+          ...anonymous,
+        })
+      ).statusCode,
+    ).toBe(401);
   });
 });

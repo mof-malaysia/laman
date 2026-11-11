@@ -123,17 +123,20 @@ export function toSummary(page: Omit<Page, "draftVersion">): PageSummary {
   return summary;
 }
 
+/** `rows` depth first from the home page, siblings in order, as the tree has them. */
+function inTreeOrder<T extends { id: string }>(rows: T[], tree: Tree): T[] {
+  const order = new Map(tree.all().map((node, i) => [node.id, i]));
+  return rows.toSorted((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
+}
+
 /** Every live page, depth first from the home page, siblings in order. */
 export async function listPages(db: Db): Promise<PageSummary[]> {
   const [rows, tree] = await Promise.all([select(db).execute(), loadTree(db)]);
-  const order = new Map(tree.all().map((node, i) => [node.id, i]));
   const entries = new Map<string, number>();
   for (const row of rows)
     if (row.kind === "entry" && row.parent_id)
       entries.set(row.parent_id, (entries.get(row.parent_id) ?? 0) + 1);
-  return rows
-    .toSorted((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
-    .map((row) => toSummary(toPage(row, tree, entries.get(row.id))));
+  return inTreeOrder(rows, tree).map((row) => toSummary(toPage(row, tree, entries.get(row.id))));
 }
 
 /**
@@ -833,15 +836,32 @@ export async function publishedPages(db: Db) {
       .execute(),
     loadTree(db),
   ]);
-  const order = new Map(tree.all().map((node, i) => [node.id, i]));
-  return rows
-    .filter((row) => row.kind !== "entry" || !scheduled(row.content))
-    .toSorted((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
-    .map((row) => ({
-      id: row.id,
-      kind: row.kind,
-      parentId: tree.get(row.id)?.parent_id ?? null,
-      path: tree.path(row.id),
-      content: JSON.parse(row.content) as PageDocument,
-    }));
+  return inTreeOrder(
+    rows.filter((row) => row.kind !== "entry" || !scheduled(row.content)),
+    tree,
+  ).map((row) => ({
+    id: row.id,
+    kind: row.kind,
+    parentId: tree.get(row.id)?.parent_id ?? null,
+    path: tree.path(row.id),
+    content: JSON.parse(row.content) as PageDocument,
+  }));
+}
+
+/**
+ * Every page as its draft would publish it, depth first like `publishedPages`,
+ * with its status: what the draft search index is built from.
+ */
+export async function draftPages(db: Db) {
+  const [rows, tree] = await Promise.all([select(db).execute(), loadTree(db)]);
+  return inTreeOrder(rows, tree).map((row) => {
+    const page = toPage(row, tree);
+    return {
+      id: page.id,
+      kind: page.kind,
+      path: page.path,
+      status: page.status,
+      content: withDefaults(PageDocument, page.draft),
+    };
+  });
 }

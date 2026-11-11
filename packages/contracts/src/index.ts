@@ -36,6 +36,17 @@ export type PageParams = z.infer<typeof PageParams>;
 export const PageStatus = z.enum(["draft", "changed", "published", "scheduled"]);
 export type PageStatus = z.infer<typeof PageStatus>;
 
+/**
+ * The search index of every page's draft (`GET /api/search/drafts`), for trying
+ * search before anything is published. Its files are under
+ * `/api/search/drafts/{version}/`; `pages` gives each indexed address's status.
+ */
+export const DraftSearchIndex = z.object({
+  version: z.string(),
+  pages: z.record(z.string(), PageStatus),
+});
+export type DraftSearchIndex = z.infer<typeof DraftSearchIndex>;
+
 export const PageSummary = z.object({
   id: Id,
   /** null for the home page, the root of the tree. */

@@ -4,10 +4,11 @@
  */
 import { type Navigation, NavigationCheck, SiteDocName } from "@fiscal-sb/contracts";
 import type { FastifyPluginAsync } from "fastify";
-import type { z } from "zod";
+import { z } from "zod";
 import {
   AnnouncementDoc,
   DocPublishResult,
+  DraftSearchIndex,
   NavigationDoc,
   SaveAnnouncementBody,
   SaveNavigationBody,
@@ -38,6 +39,9 @@ import {
   saveThemeDraft,
 } from "../content/site.js";
 import { prunePreview } from "../content/history.js";
+import { HttpError } from "../errors.js";
+import { draftSearchIndex } from "../draft-search.js";
+import { searchFileType } from "../search.js";
 import type { Db } from "../db/index.js";
 import type { Jobs } from "../jobs.js";
 import { audited } from "../auth/guard.js";
@@ -63,8 +67,11 @@ async function scheduleAnnouncement(app: { db: Db; jobs: Jobs }) {
       await app.jobs.enqueue("publish", { trigger: "announcement" }, { runAt });
 }
 
+const DraftIndexFile = z.object({ version: z.string(), "*": z.string() });
+
 export const siteRoutes: FastifyPluginAsync = async (app) => {
   const { db } = app;
+  const drafts = draftSearchIndex(db, (message, error) => app.log.warn({ err: error }, message));
 
   app.get(
     "/settings",
@@ -283,6 +290,45 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
     async () => {
       await discardDraft(db, "search");
       return { data: await getSearchDoc(db) };
+    },
+  );
+
+  app.get(
+    "/search/drafts",
+    {
+      config: { access: "signedIn" },
+      schema: {
+        summary: "Get the draft search index",
+        description:
+          "Site search over every page's draft, for trying search before publishing: built when asked for, and again only after a draft changes. Its Pagefind files are under `/search/drafts/{version}/`; `pages` gives each indexed address's status. Pages that redirect or are hidden from search engines are left out, as on the published site.",
+        tags: ["site"],
+        response: { 200: envelope(DraftSearchIndex) },
+      },
+    },
+    async () => {
+      const { version, pages } = await drafts.current();
+      return { data: { version, pages } };
+    },
+  );
+
+  app.get<{ Params: z.infer<typeof DraftIndexFile> }>(
+    "/search/drafts/:version/*",
+    {
+      // Pagefind's files are gzip data already: compressing would only mislabel them
+      // (see the note on @fastify/compress in app.ts).
+      compress: false,
+      config: { access: "signedIn" },
+      schema: { hide: true, params: DraftIndexFile },
+    },
+    async (request, reply) => {
+      const { version, "*": path } = request.params;
+      const file = drafts.file(version, path);
+      if (!file) throw new HttpError(404, "not_found", "No such file in the draft search index");
+      // A version's files never change; another officer's draft makes a new version.
+      return reply
+        .type(searchFileType(path))
+        .header("cache-control", "private, max-age=86400, immutable")
+        .send(Buffer.from(file));
     },
   );
 

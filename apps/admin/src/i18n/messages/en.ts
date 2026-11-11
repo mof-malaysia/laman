@@ -790,8 +790,13 @@ export const en = {
     '"{word}" is already pinned to another page above, so it stays with that one.',
   "search.warnings": "Some pinned results can't show yet",
   "search.try.title": "Try a search",
+  "search.try.hint.drafts":
+    "Searches every page's draft, as visitors will find them once published. Results not live yet are tagged.",
+  "search.try.hint.live":
+    "Searches the live site as a visitor would. Unpublished pages aren't found.",
+  "search.try.includeDrafts": "Include draft content",
+  "search.try.offNote": "Visitors can't search yet: publish search to turn it on.",
   "search.editor": "Search settings",
-  "search.try.hint": "Searches the live site as a visitor would. Unpublished pages aren't found.",
   "search.try.label": "Search for",
   "search.try.button": "Search",
   "search.try.notLive": "Search isn't live yet. Publish it, then try here.",
@@ -801,7 +806,6 @@ export const en = {
   "search.try.count": "{count} results for “{q}”",
   "search.try.count.one": "1 result for “{q}”",
   "search.try.pinned": "Pinned",
-  "search.try.draftPin": "Pinned, not published yet",
   "search.review.title": "Publish site search?",
   "search.review.description": "Search on the live site changes once published.",
   "search.review.on": "Visitors can search the site from the Cari button on every page.",

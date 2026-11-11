@@ -791,9 +791,13 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
     '"{word}" sudah disematkan pada halaman lain di atas, jadi ia kekal dengan halaman itu.',
   "search.warnings": "Sesetengah hasil disematkan belum boleh dipaparkan",
   "search.try.title": "Cuba carian",
+  "search.try.hint.drafts":
+    "Mencari draf setiap halaman, seperti yang akan ditemui pelawat selepas diterbitkan. Hasil yang belum disiarkan ditandakan.",
+  "search.try.hint.live":
+    "Mencari laman web yang disiarkan seperti pelawat. Halaman yang belum diterbitkan tidak ditemui.",
+  "search.try.includeDrafts": "Sertakan kandungan draf",
+  "search.try.offNote": "Pelawat belum boleh mencari: terbitkan carian untuk mengaktifkannya.",
   "search.editor": "Tetapan carian",
-  "search.try.hint":
-    "Mencari dalam laman yang diterbitkan seperti pelawat. Halaman yang belum diterbitkan tidak dijumpai.",
   "search.try.label": "Cari",
   "search.try.button": "Cari",
   "search.try.notLive": "Carian belum diterbitkan. Terbitkan, kemudian cuba di sini.",
@@ -802,7 +806,6 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "search.try.none": "Tiada hasil untuk “{q}”.",
   "search.try.count": "{count} hasil untuk “{q}”",
   "search.try.pinned": "Disematkan",
-  "search.try.draftPin": "Disematkan, belum diterbitkan",
   "search.review.title": "Terbitkan carian laman?",
   "search.review.description": "Carian di laman berubah sebaik diterbitkan.",
   "search.review.on": "Pelawat boleh mencari dalam laman melalui butang Cari pada setiap halaman.",
