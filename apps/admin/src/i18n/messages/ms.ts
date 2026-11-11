@@ -419,8 +419,6 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "status.announcement": "Pengumuman aktif",
   "status.announcementUntil": "Pengumuman hingga {date}",
 
-  "settings.intro":
-    "Perubahan yang disimpan kekal di sini. Terbitkan tetapan menghantarnya ke laman web.",
   "settings.publish": "Terbitkan tetapan",
   "settings.loadFailed": "Tetapan tidak dapat dimuatkan. Muat semula halaman untuk cuba lagi.",
   "settings.discard": "Buang perubahan",
@@ -432,6 +430,14 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "settings.saving": "Menyimpan…",
   "settings.saved": "Disimpan. Belum diterbitkan",
   "settings.savedApplied": "Disimpan. Digunakan sekarang",
+  "settings.sections": "Bahagian tetapan",
+  "settings.bar.unsaved": "Perubahan pada {section} belum disimpan",
+  "settings.bar.discard": "Buang",
+  "settings.applies.publish": "Digunakan selepas diterbitkan",
+  "settings.applies.save": "Digunakan selepas disimpan",
+  "settings.applies.now": "Digunakan serta-merta",
+  "settings.notLive": "disimpan, belum diterbitkan",
+  "account.sections": "Bahagian akaun",
   "settings.previous.load": "Kembalikan tetapan sebelum penerbitan terakhir",
   "settings.previous.done": "Tetapan terdahulu kini dalam draf. Semak, kemudian terbitkan.",
   "settings.previous.failed": "Tetapan terdahulu tidak dapat dikembalikan",
@@ -456,38 +462,31 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "settings.prune.confirm": "Simpan lebih sedikit",
   "settings.fixFields": "Semak medan yang ditandakan",
   "settings.identity": "Identiti",
-  "settings.identity.description":
-    "Pengendali laman web. Nama agensi ialah pemilik masthead dan kaki laman.",
   "settings.identity.siteName": "Nama laman web",
   "settings.identity.agencyName": "Nama agensi",
-  "settings.identity.agencyHint": "Nama penuh, contohnya Jabatan Perkhidmatan Awam Malaysia",
+  "settings.identity.agencyHint":
+    "Dipaparkan pada kaki laman. Tulis nama penuh, contohnya Jabatan Perkhidmatan Awam Malaysia",
   "settings.identity.logo": "Logo",
-  "settings.identity.logoHint":
-    "Dipaparkan pada bar navigasi dan kaki laman. SVG atau PNG berlatar belakang lut sinar.",
+  "settings.identity.logoHint": "SVG atau PNG berlatar belakang lut sinar.",
   "settings.identity.navbarName": "Papar nama laman pada bar navigasi",
-  "settings.identity.navbarNameHint":
-    "Matikan jika logo sudah memaparkan nama. Pembaca skrin masih mendengarnya.",
-  "settings.identity.navbarNameNoLogo":
-    "Tambah logo dahulu: tanpa logo, nama sahaja yang dipaparkan pada bar navigasi.",
+  "settings.identity.navbarNameHint": "Matikan jika logo sudah memaparkan nama.",
+  "settings.identity.navbarNameNoLogo": "Memerlukan logo dahulu.",
   "settings.identity.footerLogo": "Papar logo pada kaki laman",
-  "settings.identity.footerLogoHint": "Jika dimatikan, nama agensi sahaja dipaparkan.",
   "settings.identity.favicon": "Favikon",
-  "settings.identity.faviconHint":
-    "Ikon tab pelayar: PNG atau SVG segi empat sama, sekurang-kurangnya 64 px.",
+  "settings.identity.faviconHint": "PNG atau SVG segi empat sama, sekurang-kurangnya 64 px.",
   "settings.identity.socialImage": "Imej media sosial lalai",
-  "settings.identity.socialImageHint":
-    "Dipaparkan apabila halaman dikongsi, paling sesuai 1200 × 630 px.",
+  "settings.identity.socialImageHint": "Dipaparkan apabila halaman dikongsi. 1200 × 630 px.",
   "settings.contact": "Hubungi",
-  "settings.contact.description": "Digunakan oleh kaki laman dan blok hubungi.",
+  "settings.contact.description": "Dipaparkan pada kaki laman dan blok hubungi.",
   "settings.contact.address": "Alamat",
   "settings.contact.phone": "Telefon",
   "settings.contact.email": "E-mel",
   "settings.contact.hours": "Waktu pejabat",
   "settings.contact.hoursHint": "Contohnya, Isnin hingga Jumaat, 8.00 pagi hingga 5.00 petang",
   "settings.social": "Media sosial",
-  "settings.social.description": "Pautan ke akaun agensi, dipaparkan pada kaki laman.",
+  "settings.social.description": "Dipaparkan pada kaki laman.",
   "settings.social.add": "Tambah akaun",
-  "settings.social.none": "Belum ada akaun. Tambah satu untuk memaparkannya pada kaki laman.",
+  "settings.social.none": "Belum ada akaun.",
   "settings.social.choose": "Pilih platform",
   "settings.social.remove": "Buang {platform}",
   "settings.social.facebook": "Facebook",
@@ -498,55 +497,42 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "settings.social.linkedin": "LinkedIn",
   "settings.phase": "Sepanduk fasa",
   "settings.phase.description":
-    "Maklumkan kepada pelawat bahawa laman web ini baharu dan minta maklum balas. Bar pengumuman terdapat dalam Navigasi.",
+    "Sepanduk yang memaklumkan laman web ini baharu, dengan pautan maklum balas.",
   "settings.phase.label": "Fasa",
   "settings.phase.off": "Tiada",
   "settings.phase.alpha": "Alfa",
   "settings.phase.beta": "Beta",
-  "settings.phase.offHint": "Tiada sepanduk. Untuk laman web yang sudah siap.",
-  "settings.phase.alphaHint": "Versi awal untuk dicuba. Kandungan mungkin berubah atau hilang.",
-  "settings.phase.betaHint": "Hampir siap dan terbuka kepada semua, tetapi masih ditambah baik.",
+  "settings.phase.offHint": "Tiada sepanduk.",
+  "settings.phase.alphaHint": "Versi awal, masih berubah.",
+  "settings.phase.betaHint": "Hampir siap, masih ditambah baik.",
   "settings.phase.feedback": "Pautan maklum balas",
   "settings.phase.feedbackHint": "Halaman pada laman web (/maklum-balas) atau alamat web",
   "settings.search": "Enjin carian",
-  "settings.search.description":
-    "Cara enjin carian melihat keseluruhan laman web. Setiap halaman juga mempunyai tetapan SEO tersendiri.",
+  "settings.search.description": "Setiap halaman juga mempunyai tetapan SEO tersendiri.",
   "settings.search.address": "Alamat laman web",
   "settings.search.noAddressTitle": "Laman web belum mempunyai alamat",
   "settings.search.noAddressBody":
     "Selagi tiada alamat, peta laman tidak akan ditulis. Minta pentadbir ICT menetapkan alamat laman web pada pelayan. Mereka mengenalinya sebagai",
-  "settings.search.sitemapNoAddress": "Memerlukan alamat laman web, yang belum ditetapkan.",
+  "settings.search.sitemapNoAddress": "Memerlukan alamat laman web.",
   "settings.search.hide": "Sembunyikan keseluruhan laman web daripada enjin carian",
-  "settings.search.hideHint":
-    "Untuk laman web yang belum sedia. Setiap halaman meminta agar tidak diindeks.",
+  "settings.search.hideHint": "Untuk laman web yang belum sedia.",
   "settings.search.sitemap": "Tulis peta laman",
   "settings.search.sitemapHint":
-    "sitemap.xml menyenaraikan setiap halaman yang diterbitkan. Ia memerlukan alamat laman web.",
+    "Menyenaraikan setiap halaman yang diterbitkan untuk enjin carian.",
   "settings.publishing": "Penerbitan",
-  "settings.publishing.description":
-    "Nilai lalai untuk penerbitan berjadual dan sejarah halaman. Tetapan ini mengubah cara panel pentadbir berfungsi, bukan laman web, jadi ia berkuat kuasa sebaik sahaja disimpan.",
   "settings.publishing.time": "Masa penerbitan berjadual",
-  "settings.publishing.timeHint":
-    "Penerbitan berjadual baharu bermula pada masa ini melainkan masa lain dipilih.",
   "settings.publishing.revisions": "Bilangan versi disimpan bagi setiap halaman",
-  "settings.publishing.revisionsHint":
-    "Versi yang lebih lama dibuang. Versi yang diterbitkan sentiasa dikekalkan.",
+  "settings.publishing.revisionsHint": "Versi yang diterbitkan sentiasa dikekalkan.",
   "settings.analytics": "Analitik",
-  "settings.analytics.description":
-    "Mengira lawatan ke laman yang diterbitkan, tanpa kuki. Tempoh simpanan berkuat kuasa apabila disimpan; menghidupkan atau mematikan pengiraan berkuat kuasa apabila diterbitkan.",
   "settings.analytics.on": "Kira pelawat",
-  "settings.analytics.onHint":
-    "Mengira paparan, lawatan dan muat turun tanpa mengenal pasti sesiapa. Pelayar yang meminta untuk tidak dijejak tidak dikira.",
+  "settings.analytics.onHint": "Tanpa kuki, dan tiada sesiapa dikenal pasti.",
   "settings.analytics.retention": "Bilangan hari data disimpan",
-  "settings.analytics.retentionHint":
-    "30 hingga 1,095 hari; data lebih lama dipadam. Gunakan 395 untuk membandingkan sebulan dengan tahun lepas.",
+  "settings.analytics.retentionHint": "30 hingga 1,095 hari. Digunakan selepas disimpan.",
   "settings.about": "Perihal",
-  "settings.about.description": "Versi pembina ini, dan di mana ia menyimpan laman.",
   "settings.about.version": "Versi",
   "settings.about.dataDir": "Folder data",
   "settings.about.database": "Saiz pangkalan data",
   "settings.backups": "Sandaran",
-  "settings.backups.description": "Salinan seluruh laman: halaman, tetapan, akaun dan fail.",
   "settings.backups.ok": "Disandarkan {ago}",
   "settings.backups.never": "Belum disandarkan",
   "settings.backups.stale": "Sandaran terakhir {ago}",
@@ -564,7 +550,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "settings.backups.sameDisk":
     "Sandaran disimpan pada cakera yang sama dengan laman. Hubungi pentadbir ICT untuk memindahkannya.",
   "settings.backups.restore":
-    "Sandaran dipulihkan oleh pentadbir ICT. Pemulihan akan melog keluar semua pengguna.",
+    "Hanya pentadbir ICT boleh memulihkan sandaran. Semua pengguna akan dilog keluar.",
   "settings.backups.details": "Butiran teknikal",
   "settings.backups.details.folder": "Folder",
   "settings.backups.details.sameDisk": "Tetapkan BACKUP_DIR kepada cakera lain.",
@@ -1621,13 +1607,10 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "analytics.screen.xl": "Sangat besar (1440 px dan ke atas)",
 
   "settings.language": "Bahasa",
-  "settings.language.description":
-    "Bahasa panel pentadbir ini, untuk semua penggunanya. Ia berkuat kuasa sebaik sahaja disimpan; laman web itu sendiri tidak berubah.",
+  "settings.language.description": "Untuk semua pengguna panel ini. Laman web tidak berubah.",
   "settings.language.label": "Bahasa pentadbir",
   "settings.language.en": "English",
-  "settings.language.enHint": "Menu, butang dan mesej dalam bahasa Inggeris.",
   "settings.language.ms": "Bahasa Melayu",
-  "settings.language.msHint": "Menu, butang dan mesej dalam Bahasa Melayu.",
   "nav.users": "Pengguna",
   "nav.account": "Akaun",
   "shell.signOut": "Log keluar",
@@ -1753,17 +1736,13 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
 
   "account.agents": "Ejen",
   "account.agents.description":
-    "Ejen AI, seperti Claude atau Codex, yang mengusahakan laman atas nama akaun ini, dengan peranan yang sama. Setiap sambungan kekal selama {days} hari.",
+    "Ejen AI, seperti Claude atau Codex, yang mengusahakan laman atas nama anda. Sambungan kekal selama {days} hari.",
   "account.agents.switch": "Benarkan saya menyambungkan ejen",
-  "account.agents.switchHint":
-    "Hanya pemilik akaun boleh menetapkan ini. Mematikannya menamatkan sambungan ejen yang sedia ada.",
-  "account.agents.notOn":
-    "Anda tidak boleh menyambungkan ejen. Minta Pentadbir menghidupkan akses ejen untuk akaun ini.",
+  "account.agents.switchHint": "Mematikannya menamatkan semua sambungan.",
+  "account.agents.notOn": "Minta Pentadbir menghidupkan akses ejen untuk anda.",
   "account.agents.address": "Alamat untuk ejen",
-  "account.agents.addressHint":
-    "Dalam ejen, tambah penyambung tersuai atau pelayan MCP jauh dengan alamat ini. Ia membuka halaman ini untuk log masuk dan membenarkannya.",
-  "account.agents.none":
-    "Tiada ejen disambungkan. Ejen yang dibenarkan dipaparkan di sini sehingga sambungannya tamat.",
+  "account.agents.addressHint": "Tambahkannya dalam ejen sebagai pelayan MCP jauh.",
+  "account.agents.none": "Tiada ejen disambungkan.",
   "account.agents.copy": "Salin",
   "account.agents.copied": "Disalin",
   "account.agents.copiedStatus": "Alamat disalin",
@@ -1778,25 +1757,22 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "account.agents.off.body":
     "Sambungan ejen yang sedia ada tamat sekarang, dan ejen baharu tidak boleh disambungkan sehingga tetapan ini dihidupkan semula.",
   "account.agents.off.done": "Anda tidak boleh menyambungkan ejen sekarang",
-  "account.intro": "Log masuk sebagai {username}, {role}. Peranan ditetapkan oleh Pentadbir.",
+  "account.intro": "Log masuk sebagai {username}, {role}.",
   "account.name": "Nama",
-  "account.name.description":
-    "Ditunjukkan kepada orang lain dalam sejarah, Penerbitan dan Pengguna.",
+  "account.name.description": "Ditunjukkan dalam sejarah, Penerbitan dan Pengguna.",
   "account.password.description": "Menukarnya akan melog keluar akaun ini di semua tempat lain.",
   "account.password.submit": "Tukar kata laluan",
   "account.password.done": "Kata laluan telah ditukar",
   "account.twoFactor": "Log masuk dua faktor",
-  "account.twoFactor.on":
-    "Anda memasukkan kod daripada aplikasi pengesah semasa log masuk. Kod pemulihan baharu menggantikan yang lama.",
+  "account.twoFactor.on": "Anda memasukkan kod daripada aplikasi pengesah semasa log masuk.",
   "account.twoFactor.off":
-    "Tambah kod daripada aplikasi pengesah semasa log masuk, supaya kata laluan yang dicuri tidak mencukupi.",
+    "Kod daripada aplikasi pengesah, supaya kata laluan sahaja tidak mencukupi.",
   "account.twoFactor.setUp": "Sediakan dua faktor",
   "account.recovery.code": "Kod daripada aplikasi",
-  "account.recovery.hint": "Untuk membuat kod pemulihan baharu, masukkan kod semasa.",
+  "account.recovery.hint": "Kod baharu menggantikan yang lama.",
   "account.recovery.submit": "Buat kod pemulihan baharu",
   "account.sessions": "Sesi log masuk",
-  "account.sessions.description":
-    "Log keluar daripada pelayar yang tidak lagi digunakan, atau yang tidak dikenali.",
+  "account.sessions.description": "Log keluar daripada pelayar yang tidak dikenali.",
   "account.sessions.device": "{browser} pada {os}",
   "account.sessions.unknown": "Pelayar tidak dikenali",
   "account.sessions.this": "(pelayar ini)",
@@ -2139,11 +2115,9 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "audit.action.agentToolCall": "Ejen menggunakan alat",
 
   "settings.security": "Keselamatan",
-  "settings.security.description":
-    "Hanya pentadbir utama yang melihat ini. Ia berkuat kuasa sebaik sahaja ditukar.",
   "settings.security.require": "Wajibkan log masuk dua faktor untuk semua orang",
   "settings.security.requireHint":
-    "Semua orang memasukkan kod daripada aplikasi pengesah semasa log masuk. Mereka yang belum mempunyainya perlu menyediakannya sebelum boleh meneruskan.",
+    "Sesiapa yang belum mempunyainya perlu menyediakannya sebelum meneruskan.",
   "settings.security.yoursFirst": "Sediakan dua faktor untuk akaun ini dahulu",
   "settings.security.toAccount": "Pergi ke Akaun",
   "settings.security.confirm.title": "Wajibkan dua faktor untuk semua orang?",

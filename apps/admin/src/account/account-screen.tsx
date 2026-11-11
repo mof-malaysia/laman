@@ -5,17 +5,30 @@
  */
 import { type AgentConnection, CONNECTION_DAYS, type Me } from "@fiscal-sb/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { AuthField, AuthForm } from "@/auth/frame";
 import { NewPasswordForm } from "@/auth/sign-in-screens";
 import { RecoveryCodes, TwoFactorSetup } from "@/auth/two-factor";
-import { SettingsRow, SettingsSection } from "@/components/blocks/settings-layout";
+import { SettingsRow } from "@/components/blocks/settings-layout";
+import {
+  SavedNote,
+  SettingsCard,
+  SettingsColumns,
+  SettingsForm,
+  SettingsNav,
+  useScrollSpy,
+} from "@/components/settings-card";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { SwitchSetting } from "@/components/switch-setting";
 import { TwoFactorTag } from "@/components/two-factor-tag";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import { BoltIcon } from "@/components/ui/icons/bolt";
 import { CheckIcon } from "@/components/ui/icons/check";
+import { CheckShieldIcon } from "@/components/ui/icons/check-shield";
+import { DesktopIcon } from "@/components/ui/icons/desktop";
+import { LockIcon } from "@/components/ui/icons/lock";
+import { UserIcon } from "@/components/ui/icons/user";
 import { Input, InputAddon } from "@/components/ui/input";
 import {
   PageHeader,
@@ -31,7 +44,7 @@ import {
   SummaryListTerm,
 } from "@/components/ui/summary-list";
 import { Tag } from "@/components/ui/tag";
-import { t } from "@/i18n";
+import { type MessageKey, t } from "@/i18n";
 import { agentsApi, authApi, meQuery, roleLabels, useCan, useMe } from "@/lib/auth";
 import useToast from "@/lib/ftds/hooks/use-toast";
 import { formatAgo, formatDateTime } from "@/lib/pages";
@@ -45,8 +58,18 @@ function useSetMe() {
   return (me: Me) => queryClient.setQueryData(meQuery.queryKey, me);
 }
 
+/** Account's sections, in page order, for the index beside them. */
+const accountSections: { id: string; label: MessageKey; icon: ReactNode }[] = [
+  { id: "account-name", label: "account.name", icon: <UserIcon /> },
+  { id: "account-password", label: "auth.password", icon: <LockIcon /> },
+  { id: "account-two-factor", label: "account.twoFactor", icon: <CheckShieldIcon /> },
+  { id: "account-sessions", label: "account.sessions", icon: <DesktopIcon /> },
+  { id: "account-agents", label: "account.agents", icon: <BoltIcon /> },
+];
+
 export function AccountScreen() {
   const me = useMe();
+  const spy = useScrollSpy(accountSections.map((s) => s.id));
   return (
     <Screen>
       <PageHeader>
@@ -57,14 +80,28 @@ export function AccountScreen() {
           </PageHeaderDescription>
         </PageHeaderContent>
       </PageHeader>
-      {/* One person's settings: a readable column, under a header that lines up with every screen's. */}
-      <div className="gap-stack-lg flex max-w-3xl flex-col">
+      <SettingsColumns
+        nav={
+          <SettingsNav
+            label={t("account.sections")}
+            kind="location"
+            current={spy.current}
+            items={accountSections.map((section) => ({
+              id: section.id,
+              label: t(section.label),
+              icon: section.icon,
+              href: `#${section.id}`,
+            }))}
+            onSelect={spy.jump}
+          />
+        }
+      >
         <NameSection />
         <PasswordSection />
         <TwoFactorSection />
         <SessionsSection />
         <AgentsSection />
-      </div>
+      </SettingsColumns>
     </Screen>
   );
 }
@@ -75,41 +112,41 @@ function NameSection() {
   const [name, setName] = useState(me.displayName);
   const [saved, setSaved] = useState(false);
   const rename = useAction();
+  const dirty = name.trim() !== me.displayName;
   return (
-    <SettingsSection
+    <SettingsCard
+      id="account-name"
       title={t("account.name")}
       description={t("account.name.description")}
-      pending={rename.pending}
-      saved={saved}
-      error={rename.error}
-      labels={{
-        save: t("settings.save"),
-        saving: t("settings.saving"),
-        saved: t("settings.savedApplied"),
-      }}
-      onSave={() =>
-        void rename.run(
-          () => authApi.rename(name.trim()),
-          (next) => {
-            setMe(next);
-            setSaved(true);
-          },
-        )
-      }
+      aside={saved && !dirty && <SavedNote>{t("settings.savedApplied")}</SavedNote>}
     >
-      <Field name="displayName" className="max-w-md">
-        <FieldLabel>{t("auth.join.name")}</FieldLabel>
-        <Input
-          value={name}
-          maxLength={80}
-          autoComplete="name"
-          onChange={(event) => {
-            setName(event.target.value);
-            setSaved(false);
-          }}
-        />
-      </Field>
-    </SettingsSection>
+      <SettingsForm
+        dirty={dirty}
+        pending={rename.pending}
+        error={rename.error}
+        section={t("account.name")}
+        onSave={() =>
+          void rename.run(
+            () => authApi.rename(name.trim()),
+            (next) => {
+              setMe(next);
+              setSaved(true);
+            },
+          )
+        }
+        onDiscard={() => setName(me.displayName)}
+      >
+        <Field name="displayName" className="max-w-md">
+          <FieldLabel>{t("auth.join.name")}</FieldLabel>
+          <Input
+            value={name}
+            maxLength={80}
+            autoComplete="name"
+            onChange={(event) => setName(event.target.value)}
+          />
+        </Field>
+      </SettingsForm>
+    </SettingsCard>
   );
 }
 
@@ -119,7 +156,11 @@ function PasswordSection() {
   // A new form after each change, so the fields start empty.
   const [round, setRound] = useState(0);
   return (
-    <SettingsSection title={t("auth.password")} description={t("account.password.description")}>
+    <SettingsCard
+      id="account-password"
+      title={t("auth.password")}
+      description={t("account.password.description")}
+    >
       <div className="max-w-md">
         <NewPasswordForm
           key={round}
@@ -138,7 +179,7 @@ function PasswordSection() {
           }
         />
       </div>
-    </SettingsSection>
+    </SettingsCard>
   );
 }
 
@@ -151,14 +192,11 @@ function TwoFactorSection() {
   const regenerate = useAction();
 
   return (
-    <SettingsSection
-      title={
-        <span className="flex items-center gap-2">
-          {t("account.twoFactor")}
-          <TwoFactorTag on={me.twoFactor} />
-        </span>
-      }
+    <SettingsCard
+      id="account-two-factor"
+      title={t("account.twoFactor")}
       description={me.twoFactor ? t("account.twoFactor.on") : t("account.twoFactor.off")}
+      aside={<TwoFactorTag on={me.twoFactor} />}
     >
       <div className="max-w-md">
         {codes ? (
@@ -202,7 +240,7 @@ function TwoFactorSection() {
           </Button>
         )}
       </div>
-    </SettingsSection>
+    </SettingsCard>
   );
 }
 
@@ -210,7 +248,11 @@ function SessionsSection() {
   const queryClient = useQueryClient();
   const sessions = useQuery({ queryKey: ["sessions"], queryFn: authApi.sessions });
   return (
-    <SettingsSection title={t("account.sessions")} description={t("account.sessions.description")}>
+    <SettingsCard
+      id="account-sessions"
+      title={t("account.sessions")}
+      description={t("account.sessions.description")}
+    >
       <SummaryList>
         <SummaryListBody>
           {sessions.data?.map((session) => (
@@ -253,7 +295,7 @@ function SessionsSection() {
           ))}
         </SummaryListBody>
       </SummaryList>
-    </SettingsSection>
+    </SettingsCard>
   );
 }
 
@@ -326,21 +368,20 @@ function AgentsSection() {
   const [ending, setEnding] = useState<AgentConnection>();
 
   return (
-    <SettingsSection
-      // On or off beside the title, as Two-factor sign-in shows it.
-      title={
-        <span className="flex items-center gap-2">
-          {t("account.agents")}
-          {me.mcpEnabled ? (
-            <Tag size="small" variant="success">
-              {t("users.mcp.on")}
-            </Tag>
-          ) : (
-            <Tag size="small">{t("users.mcp.off")}</Tag>
-          )}
-        </span>
-      }
+    <SettingsCard
+      id="account-agents"
+      title={t("account.agents")}
       description={t("account.agents.description", { days: CONNECTION_DAYS })}
+      // On or off beside the title, as Two-factor sign-in shows it.
+      aside={
+        me.mcpEnabled ? (
+          <Tag size="small" variant="success">
+            {t("users.mcp.on")}
+          </Tag>
+        ) : (
+          <Tag size="small">{t("users.mcp.off")}</Tag>
+        )
+      }
     >
       <div>
         {ownSwitch ? (
@@ -419,6 +460,6 @@ function AgentsSection() {
           }
         />
       )}
-    </SettingsSection>
+    </SettingsCard>
   );
 }

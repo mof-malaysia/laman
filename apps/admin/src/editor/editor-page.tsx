@@ -75,6 +75,7 @@ import { PropertyPanel } from "./property-panel";
 import { type SaveState, PublishControl } from "@/components/publish-control";
 import type { LiveState } from "@/lib/publish";
 import { editorReducer, initialState } from "./state";
+import { useNow } from "@/lib/use-now";
 
 export function EditorPage() {
   const { id } = useParams({ from: "/signed-in/shell/pages/$id/edit" });
@@ -269,16 +270,6 @@ const publishedDetail = (page: Pick<Page, "status" | "publishedAt">) =>
   page.status === "draft" || !page.publishedAt
     ? t("editor.status.draft")
     : t("editor.status.published", { date: formatDateTime(page.publishedAt) });
-
-/** The time, every minute: whether an entry's date has come changes the publish button. */
-function useNow() {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 60_000);
-    return () => clearInterval(timer);
-  }, []);
-  return now;
-}
 
 const widthIcons = { desktop: DesktopIcon, tablet: TabletIcon, mobile: MobileIcon };
 

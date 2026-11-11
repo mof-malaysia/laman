@@ -7,7 +7,7 @@
 import type { Summary } from "@fiscal-sb/contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { SettingsSection } from "@/components/blocks/settings-layout";
+import { SettingsCard } from "@/components/settings-card";
 import { Button } from "@/components/ui/button";
 import { Callout, CalloutTitle } from "@/components/ui/callout";
 import { Details, DetailsContent, DetailsTrigger } from "@/components/ui/details";
@@ -83,7 +83,7 @@ export function BackupsSection() {
   };
 
   return (
-    <SettingsSection title={t("settings.backups")} description={t("settings.backups.description")}>
+    <SettingsCard title={t("settings.backups")}>
       {backup ? (
         <>
           <div className="border-otl-gray-200 flex flex-wrap items-center gap-x-4 gap-y-3 border-b pb-5">
@@ -112,7 +112,7 @@ export function BackupsSection() {
       ) : (
         <Skeleton className="h-16 w-full rounded-lg" />
       )}
-    </SettingsSection>
+    </SettingsCard>
   );
 }
 

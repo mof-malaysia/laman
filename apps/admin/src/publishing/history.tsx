@@ -47,7 +47,7 @@ import {
 import { Tag } from "@/components/ui/tag";
 import { type MessageKey, t } from "@/i18n";
 import { blockLabel } from "@/i18n/registry";
-import { siteDocQuery } from "@/lib/publish";
+import { SCHEDULING_ENABLED, siteDocQuery } from "@/lib/publish";
 import { apiError, jobsApi, siteApi, waitForJob } from "@/lib/api";
 import { useCan } from "@/lib/auth";
 import useToast from "@/lib/ftds/hooks/use-toast";
@@ -120,15 +120,6 @@ export function PublishingHistory() {
     </div>
   );
 }
-
-/**
- * Scheduling a site publish for later is hidden for now: publishing is manual
- * only. The form, its strings and the server's `runAt` support stay in place;
- * set this to true to bring the form back. Publishes scheduled elsewhere (an
- * entry dated in the future, a timed announcement) are still listed below so
- * they can be seen and cancelled.
- */
-const SCHEDULING_ENABLED = false;
 
 function Scheduled() {
   const canPublish = useCan("content.publish");

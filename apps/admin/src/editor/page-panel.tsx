@@ -15,10 +15,12 @@ import { Input } from "@/components/ui/input";
 import { ParentPrefix } from "@/components/parent-prefix";
 import { Select } from "@/components/ui/select";
 import { t } from "@/i18n";
+import { SCHEDULING_ENABLED } from "@/lib/publish";
 import { apiError, listingApi, pagesApi } from "@/lib/api";
 import useToast from "@/lib/ftds/hooks/use-toast";
 import { fixedAddress, useRefreshPages } from "@/lib/pages";
 import { MediaField } from "./media-field";
+import { useNow } from "@/lib/use-now";
 
 type EntryFields = NonNullable<PageDocument["entry"]>;
 
@@ -45,6 +47,8 @@ function EntryFieldsEditor({
     enabled: Boolean(page.parentId),
   });
   const categories = listing.data?.settings.categories ?? [];
+  // Without scheduling, an entry can be dated up to now at the latest.
+  const now = useNow();
   // Header changes show on the canvas, so these edits re-render it.
   const set = (next: Partial<EntryFields>, key: string) =>
     onDoc((d) => ({ ...d, entry: { ...(d.entry ?? entry), ...next } }), key, true);
@@ -58,14 +62,17 @@ function EntryFieldsEditor({
       </h3>
       <Field name="entry-publish-at">
         <FieldLabel>{t("entry.publishAt")}</FieldLabel>
-        <FieldDescription>{t("entry.publishAtHint")}</FieldDescription>
+        {SCHEDULING_ENABLED && <FieldDescription>{t("entry.publishAtHint")}</FieldDescription>}
         <Input
           type="datetime-local"
           value={localOf(entry.publishAt)}
+          // Without scheduling, a date in the future would quietly schedule the entry.
+          max={SCHEDULING_ENABLED ? undefined : localOf(new Date(now).toISOString())}
           onChange={(e) => {
             const date = new Date(e.target.value);
-            if (!Number.isNaN(date.getTime()))
-              set({ publishAt: date.toISOString() }, "entry.publishAt");
+            if (Number.isNaN(date.getTime())) return;
+            const at = SCHEDULING_ENABLED ? date : new Date(Math.min(date.getTime(), now));
+            set({ publishAt: at.toISOString() }, "entry.publishAt");
           }}
         />
       </Field>

@@ -78,8 +78,16 @@ export function DiscardEditsDialog({
   );
 }
 
+/**
+ * Putting back what was live before the last publish is hidden for now. The
+ * screens still pass what it needs, and the server keeps the previous version;
+ * set this to true to bring the link back.
+ */
+const PUT_BACK_ENABLED = false;
+
 /** "Published something by mistake?", at the foot of an editor with nothing unpublished. */
 export function PutBackPrevious({ label, onPutBack }: { label: string; onPutBack: () => void }) {
+  if (!PUT_BACK_ENABLED) return null;
   return (
     <p className="text-body-sm text-txt-black-700 border-otl-gray-200 mt-auto border-t pt-3">
       {t("navigation.previous.hint")}{" "}

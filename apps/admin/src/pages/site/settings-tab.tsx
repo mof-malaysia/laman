@@ -37,21 +37,7 @@ import type { SettingsSection } from "./search";
 import { tabCard } from "./tab-layout";
 import { UndoDelete } from "./trash-screen";
 import { useSaveDraft } from "./use-save-draft";
-
-/**
- * Scrolls the pane that holds `element` so it sits at the top. Not
- * scrollIntoView, which would also scroll the shell's fixed frame.
- */
-function scrollToTop(element: HTMLElement | null) {
-  if (!element) return;
-  for (let pane = element.parentElement; pane; pane = pane.parentElement) {
-    const { overflowY } = getComputedStyle(pane);
-    if ((overflowY === "auto" || overflowY === "scroll") && pane.scrollHeight > pane.clientHeight) {
-      pane.scrollTop += element.getBoundingClientRect().top - pane.getBoundingClientRect().top - 16;
-      return;
-    }
-  }
-}
+import { scrollToTop } from "@/lib/scroll";
 
 /** One row of the Settings list: what it does on the left, its action on the right, any options under both. */
 function Section({
