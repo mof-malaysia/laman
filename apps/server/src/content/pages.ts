@@ -82,9 +82,14 @@ const homeFixed = (what: string) =>
 
 /** An entry's published revision with a date still to come is scheduled, not live. */
 function scheduled(content: string | null) {
-  if (!content) return false;
-  const publishAt = (JSON.parse(content) as PageDocument).entry?.publishAt;
-  return publishAt !== undefined && Date.parse(publishAt) > Date.now();
+  const at = goesLiveAt(content);
+  return at !== undefined && at > Date.now();
+}
+
+/** When a published entry's revision goes live, by its publish date. */
+function goesLiveAt(content: string | null) {
+  const publishAt = content ? (JSON.parse(content) as PageDocument).entry?.publishAt : undefined;
+  return publishAt === undefined ? undefined : Date.parse(publishAt);
 }
 
 function statusOf(row: Row): PageStatus {
@@ -850,7 +855,8 @@ export async function publishedPages(db: Db) {
 
 /**
  * Every page as its draft would publish it, depth first like `publishedPages`,
- * with its status: what the draft search index is built from.
+ * with its status: what the draft search index is built from. A scheduled
+ * entry says when it goes live, the moment its status changes by itself.
  */
 export async function draftPages(db: Db) {
   const [rows, tree] = await Promise.all([select(db).execute(), loadTree(db)]);
@@ -861,6 +867,7 @@ export async function draftPages(db: Db) {
       kind: page.kind,
       path: page.path,
       status: page.status,
+      ...(page.status === "scheduled" && { goesLiveAt: goesLiveAt(row.published_content) }),
       content: withDefaults(PageDocument, page.draft),
     };
   });

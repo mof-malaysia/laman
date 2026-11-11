@@ -26,6 +26,9 @@ export const beforeBaseline = [
   "0013_utc_times",
 ];
 
+/** The tables a page's render reads, whose writes `content_changes` counts. */
+const contentTables = ["pages", "settings", "media", "redirects"] as const;
+
 export const migrations: Record<string, Migration> = {
   "0001_baseline": {
     async up(db: Kysely<unknown>) {
@@ -265,6 +268,29 @@ export const migrations: Record<string, Migration> = {
         .on("audit_log")
         .columns(["action", "at"])
         .execute();
+    },
+  },
+  /**
+   * A count of every write to what a page's render reads: pages (drafts, the
+   * tree, publishes), site documents, media and redirects. Triggers bump it,
+   * so every writer counts (routes, agents, jobs) and none can be missed; the
+   * draft search index reads it to know when nothing changed.
+   */
+  "0003_content_changes": {
+    async up(db) {
+      await db.schema
+        .createTable("content_changes")
+        .addColumn("id", "integer", (c) => c.primaryKey().check(sql`id = 1`))
+        .addColumn("n", "integer", (c) => c.notNull())
+        .execute();
+      await sql`INSERT INTO content_changes (id, n) VALUES (1, 0)`.execute(db);
+      for (const table of contentTables)
+        for (const event of ["insert", "update", "delete"])
+          await sql
+            .raw(
+              `CREATE TRIGGER ${table}_${event}_counts AFTER ${event.toUpperCase()} ON ${table} BEGIN UPDATE content_changes SET n = n + 1 WHERE id = 1; END`,
+            )
+            .execute(db);
     },
   },
 };

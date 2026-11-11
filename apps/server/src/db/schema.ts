@@ -112,6 +112,12 @@ export type MediaTable = {
   created_by: Generated<string | null>;
 };
 
+/** One row: a count of writes to what a page's render reads (migration 0003_content_changes). */
+export type ContentChangesTable = {
+  id: number;
+  n: number;
+};
+
 export type MediaUsageTable = {
   media_id: string;
   /** "page:<id>" or "settings". */
@@ -239,5 +245,6 @@ export type Database = {
   redirects: RedirectsTable;
   revisions: RevisionsTable;
   settings: SettingsTable;
+  content_changes: ContentChangesTable;
   jobs: JobsTable;
 };

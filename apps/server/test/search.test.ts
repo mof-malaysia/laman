@@ -5,6 +5,7 @@ import type { DraftSearchIndex } from "@fiscal-sb/contracts";
 import { afterAll, beforeAll, describe, expect, it } from "@rstest/core";
 import { type App, signedInApp } from "./helpers.js";
 import { loadEnv } from "../src/env.js";
+import { draftSearchIndex } from "../src/draft-search.js";
 
 let dataDir: string;
 let app: App;
@@ -276,6 +277,72 @@ describe("draft search index", () => {
       draft: { ...page.draft, seo: { ...page.draft.seo, noindex: true } },
     });
     expect((await drafts()).pages["/borang"]).toBeUndefined();
+  });
+
+  it("counts every write to what a render reads, whoever makes it", async () => {
+    const count = async () =>
+      (await app.db.selectFrom("content_changes").select("n").executeTakeFirstOrThrow()).n;
+    const at = new Date().toISOString();
+    const writes = [
+      () =>
+        app.db.updateTable("pages").set({ position: 0 }).where("id", "=", draftPage.id).execute(),
+      () => app.db.updateTable("settings").set({ updated_by: null }).execute(),
+      () =>
+        app.db
+          .insertInto("media")
+          .values({
+            id: "counted",
+            filename: "a.png",
+            type: "image/png",
+            ext: "png",
+            size: 1,
+            width: 1,
+            height: 1,
+            status: "ready",
+            deleted_at: null,
+            replaced_at: null,
+            previous: null,
+            created_at: at,
+            updated_at: at,
+          })
+          .execute(),
+      () => app.db.deleteFrom("media").where("id", "=", "counted").execute(),
+      () =>
+        app.db
+          .insertInto("redirects")
+          .values({
+            id: "counted",
+            source_path: "/lama",
+            target_page_id: null,
+            target_url: "https://www.gov.my",
+            status: 301,
+            page_id: null,
+            created_at: at,
+          })
+          .execute(),
+      () => app.db.deleteFrom("redirects").where("id", "=", "counted").execute(),
+    ];
+    for (const write of writes) {
+      const before = await count();
+      await write();
+      expect(await count()).toBeGreaterThan(before);
+    }
+  });
+
+  it("keeps the index as it is while nothing it reads changes", async () => {
+    const index = draftSearchIndex(app.db, () => {});
+    const first = await index.current();
+    await index.current();
+    expect(index.builds()).toBe(1);
+
+    const page = (await call("GET", `/api/pages/${draftPage.id}`)).json().data;
+    await call("PUT", `/api/pages/${draftPage.id}/draft`, {
+      draft: { ...page.draft, ms: { ...page.draft.ms, title: "Borang dan permohonan" } },
+    });
+    await index.current();
+    expect(index.builds()).toBe(2);
+    expect((await index.current()).key).not.toBe(first.key);
+    expect(index.builds()).toBe(2);
   });
 
   it("is for signed-in users only", async () => {
