@@ -10,7 +10,15 @@
  * environment; DEMO_NEW_PASS is the password it must change to at first
  * sign-in (pass the same one again to run the script a second time).
  */
-import { type Block, newBlock, type PageDocument, templateById } from "@fiscal-sb/blocks";
+import {
+  type Block,
+  type ListingSettings,
+  type PageDocument,
+  addDays,
+  dayOf,
+  newBlock,
+  templateById,
+} from "@fiscal-sb/blocks";
 import type { Announcement, Me, PageSummary, SiteSettings } from "@fiscal-sb/contracts";
 
 const base = process.env.DEMO_URL ?? "http://127.0.0.1:3020";
@@ -70,6 +78,8 @@ await site<SiteSettings>("settings", (d) => ({
     siteName: "Jabatan Contoh",
     agencyName: "Jabatan Contoh (agensi rekaan)",
   },
+  // Dashboards and maps from these services may be framed (Settings, Embeds).
+  embeds: { services: ["powerBi", "lookerStudio", "youtube", "openStreetMap"], hosts: [] },
   contact: {
     address: "Aras 3, Menara Contoh\nJalan Contoh 1, Presint 9\n62000 Putrajaya",
     phone: "03-0000 0000",
@@ -85,9 +95,151 @@ const filled: Partial<Record<Block["type"], Record<string, string>>> = {
   hero: { footnote: "Perkhidmatan dalam talian dibuka 24 jam sehari." },
   serviceHighlights: { description: "Urusan yang paling kerap dibuat oleh orang ramai." },
 };
+// The Takwim: a calendar of the agency's events, by team and location, dated from today.
+const takwim = await create("Takwim", "takwim", "takwim");
+const { settings: takwimSettings } = await call<{ settings: ListingSettings }>(
+  "GET",
+  `/api/pages/${takwim}/listing`,
+);
+await call("PUT", `/api/pages/${takwim}/listing`, {
+  settings: {
+    ...takwimSettings,
+    categories: [
+      { slug: "khidmat-pelanggan", name: "Khidmat Pelanggan" },
+      { slug: "teknologi", name: "Teknologi Maklumat" },
+      { slug: "pengurusan", name: "Pengurusan" },
+    ],
+    locations: [
+      { slug: "ibu-pejabat", name: "Ibu pejabat" },
+      { slug: "cawangan", name: "Cawangan Seksyen 9" },
+      { slug: "dalam-talian", name: "Dalam talian" },
+    ],
+  },
+});
+await change(takwim, (d) => ({
+  ...d,
+  ms: {
+    ...d.ms,
+    blocks: d.ms.blocks.map((b) =>
+      b.type === "eventCalendar"
+        ? ({ ...b, props: { ...b.props, categoryLabel: "Bahagian" } } as Block)
+        : b,
+    ),
+  },
+}));
+await publish(takwim);
+const today = dayOf(Date.now());
+const at = (days: number, time: string) => `${addDays(today, days)}T${time}:00+08:00`;
+const events: {
+  title: string;
+  category: string;
+  start: string;
+  end?: string;
+  allDay?: boolean;
+  location: string;
+  venue: string;
+  pinned?: boolean;
+}[] = [
+  {
+    title: "Mesyuarat pengurusan bulanan",
+    category: "pengurusan",
+    start: at(-6, "09:00"),
+    end: at(-6, "11:00"),
+    location: "ibu-pejabat",
+    venue: "Bilik Mesyuarat Utama, Aras 3",
+  },
+  {
+    title: "Taklimat sistem temu janji baharu",
+    category: "teknologi",
+    start: at(-2, "14:30"),
+    end: at(-2, "16:00"),
+    location: "dalam-talian",
+    venue: "Microsoft Teams",
+  },
+  {
+    title: "Hari Bertemu Pelanggan",
+    category: "khidmat-pelanggan",
+    start: at(1, "00:00"),
+    end: at(2, "00:00"),
+    allDay: true,
+    location: "cawangan",
+    venue: "Dewan Serbaguna, Seksyen 9",
+    pinned: true,
+  },
+  {
+    title: "Latihan kaunter untuk staf baharu",
+    category: "khidmat-pelanggan",
+    start: at(1, "09:00"),
+    end: at(1, "12:30"),
+    location: "ibu-pejabat",
+    venue: "Bilik Latihan, Aras 2",
+  },
+  {
+    title: "Klinik papan pemuka untuk pemilik laporan",
+    category: "teknologi",
+    start: at(3, "14:30"),
+    end: at(3, "16:00"),
+    location: "dalam-talian",
+    venue: "Microsoft Teams",
+  },
+  {
+    title: "Mesyuarat jawatankuasa keselamatan",
+    category: "pengurusan",
+    start: at(6, "10:00"),
+    end: at(6, "12:00"),
+    location: "ibu-pejabat",
+    venue: "Bilik Lembaga, Aras 5",
+  },
+  {
+    title: "Sesi libat urus penduduk",
+    category: "khidmat-pelanggan",
+    start: at(9, "20:00"),
+    end: at(9, "22:00"),
+    location: "cawangan",
+    venue: "Balai Raya Seksyen 9",
+  },
+  {
+    title: "Penyelenggaraan sistem dalam talian",
+    category: "teknologi",
+    start: at(13, "00:00"),
+    allDay: true,
+    location: "dalam-talian",
+    venue: "Semua perkhidmatan dalam talian",
+  },
+  {
+    title: "Majlis penghargaan warga jabatan",
+    category: "pengurusan",
+    start: at(16, "19:30"),
+    end: at(16, "22:30"),
+    location: "ibu-pejabat",
+    venue: "Dewan Utama",
+  },
+];
+const { items: takwimEntries } = await call<{ items: { id: string; title: string }[] }>(
+  "GET",
+  `/api/pages/${takwim}/entries?pageSize=100`,
+);
+for (const { title, category, pinned, ...event } of events) {
+  const id =
+    takwimEntries.find((e) => e.title === title)?.id ??
+    (await call<{ id: string }>("POST", `/api/pages/${takwim}/entries`, { title })).id;
+  await change(id, (d) => ({
+    ...d,
+    entry: { ...d.entry!, category, ...(pinned && { pinned }), event },
+  }));
+  await publish(id);
+}
+await publish(takwim);
+
 const homeBlocks = templateById("utama")
   .blocks("Perkhidmatan Jabatan Contoh, di satu tempat")
   .map((b) => ({ ...b, props: { ...b.props, ...filled[b.type] } }) as Block);
+// The next events from the Takwim, before the last block.
+const upcoming = {
+  ...newBlock("upcomingEvents"),
+  props: { ...newBlock("upcomingEvents").props, listing: takwim },
+} as Block;
+homeBlocks.splice(homeBlocks.length - 1, 0, upcoming);
 await change(home, (d) => ({ ...d, ms: { ...d.ms, blocks: homeBlocks } }));
 await publish(home);
 await publish(await create("Perkhidmatan", "perkhidmatan", "perkhidmatan"));

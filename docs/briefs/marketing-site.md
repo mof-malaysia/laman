@@ -2,7 +2,7 @@
 
 Status: phases 1 to 3 done, 4 Nov 2026, with Ejen AI and Hubungi from phase 4. Built in `apps/www`: the home page in the "data-centre boundary" structure the owner chose (direction contract in `apps/www/.impeccable/surfaces/`), and Kedaulatan, Banding, Pasang, Ejen AI and Hubungi as long-form pages, in BM and English. Still to write: Ciri, Keselamatan, Kebolehcapaian and Soalan lazim.
 
-Screenshots are real: `apps/server/scripts/demo-site.ts` seeds a made-up agency (Jabatan Contoh) into a throwaway builder, and `apps/www/scripts/screenshots.mjs` captures the admin in BM and English and the published site into `apps/www/public/shots/`. Re-run both when the admin changes. The figures on the home page (6.7 KB of HTML, 12 KB of CSS) were measured on that demo on 4 Nov 2026.
+Screenshots are real: `apps/server/scripts/demo-site.ts` seeds a made-up agency (Jabatan Contoh) into a throwaway builder, and `apps/www/scripts/screenshots.mjs` captures the admin in BM and English and the published site into `apps/www/public/shots/`. Re-run both when the admin changes. The figures on the home page (7.2 KB of HTML, 12 KB of CSS) were measured on that demo on 12 Nov 2026, with Upcoming events on its home page.
 
 A static site that makes a Malaysian government agency want to try Laman instead of starting (or staying) on WordPress, Joomla or Drupal. Hosted on GitHub Pages, built from this monorepo.
 
@@ -76,7 +76,9 @@ Every claim on the site comes from this table. Anything not in it needs a source
 
 **Can say (built, in the code or docs):**
 
-- 26 FTDS blocks; page kinds (page, listing, entry) that limit which blocks fit; templates with real BM starting content (Utama, Perkhidmatan, Hubungi, Berita, Pengumuman, Tender dan sebut harga, Acara).
+- 29 FTDS blocks; page kinds (page, listing, entry) that limit which blocks fit; templates with real BM starting content (Utama, Perkhidmatan, Hubungi, Berita, Pengumuman, Tender dan sebut harga, Acara, Takwim).
+- Embeds: a page frames a dashboard, map, video or form from Power BI, Looker Studio, Tableau Public, YouTube, Vimeo, Google Maps, OpenStreetMap, Microsoft Forms or Google Forms, or the agency's own hosts. Off until an Admin switches each service on; only the services' embed addresses, never the rest of their sites. The framed service handles its own sign-in.
+- Events: entries with a date, time, location and venue. An event calendar by month (a wall planner or a planner), filtered by category and location, with a published page per month and filter and no script needed; an upcoming events block with days left; a daily republish so "today" stays right. Event details on an event entry shows the entry's own date and time.
 - Live canvas editing with inline text, a property panel, undo and redo, and a preview identical to the published page.
 - Checks before publishing: a page with no h1 can't go live; warnings for missing or meaningless alt text ("IMG_2041.png", "gambar"), "klik sini" links, broken links, and template text left in.
 - Static output: incremental publishing, atomic swap (a failed build leaves the live site untouched), brotli and gzip at publish (home page about 32 KB to 7 KB), a 404 page, sitemap, RSS.

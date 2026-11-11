@@ -177,10 +177,10 @@ visitors:
     { image: /shots/site-phone.webp, width: 390, height: 844, alt: Halaman yang sama di telefon. }
   address: www.jabatancontoh.gov.my
   figures:
-    - { value: "6.7 KB", label: HTML halaman utama selepas dimampatkan }
+    - { value: "7.2 KB", label: HTML halaman utama selepas dimampatkan }
     - { value: "12 KB", label: CSS untuk seluruh laman web }
     - { value: "0", label: "kuki, jadi tiada sepanduk persetujuan" }
-  figuresNote: Diukur pada 4 November 2026, pada laman web contoh yang diterbitkan oleh Laman.
+  figuresNote: Diukur pada 12 November 2026, pada laman web contoh yang diterbitkan oleh Laman.
 
 sovereignty:
   title: Dan semuanya kekal di pelayan anda
