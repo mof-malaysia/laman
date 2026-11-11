@@ -5,14 +5,14 @@ import { type BlockOf, type Locale, richTextToHtml } from "@fiscal-sb/blocks";
 import EventDetails from "@/components/blocks/event-details.astro";
 import Prose from "@/components/ui/prose.astro";
 import { action } from "./action";
-import { type EventInfo, dayRange, isMultiDay, timeLabel, timeRange, whereLabel } from "./events";
+import { type EventInfo, dayRange, detailsTime, whereLabel } from "./events";
 
 type Props = { block: BlockOf<"eventDetails">; width: Column; lang: Locale; event?: EventInfo | undefined };
 const { block, width, lang, event } = Astro.props;
 const p = block.props;
 // On an event entry, its own date and time: one place to change them, and the calendar agrees.
 const date = event ? dayRange(event, lang) : (p.date ?? "");
-const time = event ? (isMultiDay(event) ? (event.allDay ? undefined : timeLabel(event.start, lang)) : timeRange(event, lang)) : p.time;
+const time = event ? detailsTime(event, lang) : p.time;
 const venue = p.venue || (event && whereLabel(event)) || undefined;
 ---
 

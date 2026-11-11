@@ -21,13 +21,14 @@ import {
   SEARCH_INDEX_DIR,
   SEARCH_PATH,
   calendarPath,
+  listingPagePath,
   mediaIdsOf,
 } from "@fiscal-sb/blocks";
 import type { PublishLogEntry } from "@fiscal-sb/contracts";
 import { mediaFolders } from "./content/media.js";
 import { publishedPages } from "./content/pages.js";
 import { type LiveRedirect, liveRedirects } from "./content/redirects.js";
-import { listingPagePath, rssFeed } from "./content/entries.js";
+import { rssFeed } from "./content/entries.js";
 import { newLoads } from "./content/loads.js";
 import { renderInputFor } from "./content/render-input.js";
 import { readDoc, siteContext } from "./content/site.js";
@@ -297,7 +298,7 @@ export async function publishSite({ db, dataDir, siteUrl, full = false }: Publis
       ]) {
         const by = filter && { [filter.kind]: filter.slug };
         if (filter) await write(page, calendarPath(page.path, { filter }), by);
-        for (const { month } of calendar.months)
+        for (const month of calendar.months)
           await write(page, calendarPath(page.path, { month, filter }), { ...by, month });
       }
     } else

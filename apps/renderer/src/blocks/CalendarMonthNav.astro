@@ -9,9 +9,6 @@ import { monthLabel } from "./events";
 type Props = { calendar: CalendarRender; lang: "ms" | "en"; size?: "lg" | "sm" };
 const { calendar, lang, size = "lg" } = Astro.props;
 const en = lang === "en";
-const current = calendar.today.startsWith(calendar.month);
-// "This month" goes to the current month under the same filter: its address is the month-less one.
-const thisMonth = calendar.months.find((m) => calendar.today.startsWith(m.month));
 const arrow = "focus-ring text-txt-black-700 hover:bg-bg-washed grid size-9 shrink-0 place-items-center rounded-full";
 ---
 
@@ -39,8 +36,8 @@ const arrow = "focus-ring text-txt-black-700 hover:bg-bg-washed grid size-9 shri
     }
   </div>
   {
-    size === "lg" && !current && thisMonth && (
-      <a href={thisMonth.href} class="focus-ring text-label-md border-otl-gray-200 text-txt-black-900 hover:bg-bg-washed bg-bg-white rounded-full border px-4 py-1.5 font-medium">
+    size === "lg" && calendar.thisMonth && (
+      <a href={calendar.thisMonth} class="focus-ring text-label-md border-otl-gray-200 text-txt-black-900 hover:bg-bg-washed bg-bg-white rounded-full border px-4 py-1.5 font-medium">
         {en ? "This month" : "Bulan ini"}
       </a>
     )

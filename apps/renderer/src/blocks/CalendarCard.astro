@@ -6,19 +6,19 @@
  * EventCalendar's script closes the others and closes it on Escape or a click
  * outside.
  */
-import type { CalendarRender, EntryItem } from "@fiscal-sb/blocks";
+import type { EntryItem } from "@fiscal-sb/blocks";
 import { dayOf } from "@fiscal-sb/blocks";
+import Tag from "@/components/ui/tag.astro";
 import ArrowForward from "@/components/ui/icons/arrow-forward.astro";
 import ClockIcon from "@/components/ui/icons/clock.astro";
 import PinIcon from "@/components/ui/icons/pin.astro";
 import UserGroup from "@/components/ui/icons/user-group.astro";
 import { clx } from "@/lib/ftds/utils";
-import { type Tone, dayLabel, isMultiDay, whenShort } from "./events";
+import { type Tone, dayLabel, dayRange, isMultiDay, timeRange, whereLabel } from "./events";
 
 type Props = {
   item: EntryItem;
   tone: Tone;
-  calendar: CalendarRender;
   lang: "ms" | "en";
   /** A multi-day event's bar, rather than a chip in its day. */
   bar?: boolean;
@@ -27,10 +27,10 @@ type Props = {
   /** Which edge of the chip the card lines up with: "end" near the right of the grid. */
   align?: "start" | "end";
 };
-const { item, tone, calendar, lang, bar = false, solid = false, align = "start" } = Astro.props;
+const { item, tone, lang, bar = false, solid = false, align = "start" } = Astro.props;
 const event = item.event!;
 const en = lang === "en";
-const where = [event.location, event.venue].filter(Boolean).join(" · ");
+const where = whereLabel(event);
 ---
 
 <details class="relative" data-calendar-card>
@@ -45,17 +45,16 @@ const where = [event.location, event.venue].filter(Boolean).join(" · ");
   <div class={clx("bg-bg-white border-otl-gray-200 shadow-context-menu absolute top-full z-30 mt-1 flex w-80 flex-col gap-3 rounded-lg border p-4", align === "end" ? "end-0" : "start-0")}>
     {
       event.location && (
-        <span class={clx("text-label-compact inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-0.5 font-medium", tone.soft.replace(/border-\S+/, ""))}>
-          <span class={clx("size-1.5 rounded-full", tone.dot)} aria-hidden="true" />
+        <Tag variant={tone.tag} size="small" dot class="w-fit">
           {event.location}
-        </span>
+        </Tag>
       )
     }
     <p class="text-body-md text-txt-black-900 font-semibold text-pretty">{item.title}</p>
     <dl class="text-body-sm text-txt-black-700 grid grid-cols-[1rem_1fr] gap-x-2 gap-y-1.5">
       <dt><ClockIcon class="text-txt-black-500 mt-0.5 size-4" aria-label={en ? "When" : "Masa"} /></dt>
       <dd>
-        {isMultiDay(event) ? whenShort(event, lang) : <>{dayLabel(dayOf(event.start), lang)}<br />{whenShort(event, lang)}</>}
+        {isMultiDay(event) ? dayRange(event, lang) : <>{dayLabel(dayOf(event.start), lang)}<br />{timeRange(event, lang)}</>}
       </dd>
       {
         where && (

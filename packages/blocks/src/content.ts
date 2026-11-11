@@ -349,18 +349,24 @@ export type EntryItem = {
  * The listing's own address shows the current month.
  */
 export type CalendarRender = {
-  /** The day it was published, in Malaysia: YYYY-MM-DD. */
-  today: string;
+  /**
+   * The day it was published, in Malaysia: YYYY-MM-DD. Only on the current
+   * month and the months either side, so other months' pages don't change
+   * every day.
+   */
+  today?: string;
   /** The month shown: YYYY-MM. */
   month: string;
+  /** The current month under the same filter, when another month is shown. */
+  thisMonth?: string;
   /** The category or location this address filters by. */
   filter?: { kind: "category" | "location"; slug: string };
   /** The same month unfiltered, and filtered by each category and location. */
   all: string;
   categories: { slug: string; name: string; href: string }[];
   locations: { slug: string; name: string; href: string }[];
-  /** Every month with a page, oldest first, under the same filter. */
-  months: { month: string; href: string }[];
+  /** Every month with a page, oldest first: YYYY-MM. */
+  months: string[];
   /** The month pages either side, when there are any. */
   prev?: { month: string; href: string };
   next?: { month: string; href: string };

@@ -15,6 +15,7 @@ export { featureIconGroups, featureIconLabels, featureIcons } from "./blocks/fea
 export { LATEST_MAX } from "./blocks/latest-entries.js";
 export { UPCOMING_MAX } from "./blocks/upcoming-events.js";
 export * from "./events.js";
+export * from "./listing-paths.js";
 export { blockIcons } from "./define.js";
 export type { BlockDefinition, BlockGroup, BlockIcon } from "./define.js";
 export * from "./templates.js";

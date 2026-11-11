@@ -238,7 +238,7 @@ export async function discardPageDraft(db: Db, pageId: string) {
 async function fullTree(db: Db) {
   const rows = await db
     .selectFrom("pages")
-    .select(["id", "parent_id", "slug", "position"])
+    .select(["id", "parent_id", "slug", "position", "kind"])
     .execute();
   return new Tree(rows);
 }

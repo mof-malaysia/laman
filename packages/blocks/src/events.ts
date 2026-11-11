@@ -1,6 +1,6 @@
 /**
  * Event dates as the calendar reads them: days and months in Malaysia's time
- * (UTC+8, no daylight saving), and the addresses of a calendar's pages. The
+ * (UTC+8, no daylight saving). The
  * server and the renderer share these, so a day means the same to both.
  */
 import type { EntryEvent } from "./content.js";
@@ -46,7 +46,7 @@ export function eventDays(event: Pick<EntryEvent, "start" | "end">): string[] {
 }
 
 /** When an event is over: its end, or for an all-day event the end of its last day. */
-export function eventEndsAt(event: Pick<EntryEvent, "start" | "end" | "allDay">): number {
+function eventEndsAt(event: Pick<EntryEvent, "start" | "end" | "allDay">): number {
   const end = event.end ?? event.start;
   if (event.allDay) return Date.parse(`${dayOf(end)}T23:59:59.999+08:00`);
   return Date.parse(end);
@@ -56,27 +56,14 @@ export function eventEndsAt(event: Pick<EntryEvent, "start" | "end" | "allDay">)
 export const isUpcoming = (event: Pick<EntryEvent, "start" | "end" | "allDay">, now: number) =>
   eventEndsAt(event) >= now;
 
-/** A month page's address segment: "2026-11". */
-export const MONTH_SEGMENT = /^\d{4}-(0[1-9]|1[0-2])$/;
+/** A wall-clock time in Malaysia as an ISO time: ("2026-11-12", "09:00") → "2026-11-12T09:00:00+08:00". */
+export const atSiteTime = (day: string, time = "00:00") => `${day}T${time}:00+08:00`;
 
-/** Where a filtered calendar's pages sit: /takwim/kategori/pasukan-a, /takwim/lokasi/sabah. */
-export const calendarFilterSegment = { category: "kategori", location: "lokasi" } as const;
+/** An instant as Malaysia's wall clock, "YYYY-MM-DDTHH:MM": what a date-time input shows. */
+export const siteClock = (iso: string | number) =>
+  new Date((typeof iso === "number" ? iso : Date.parse(iso)) + OFFSET_MS)
+    .toISOString()
+    .slice(0, 16);
 
-/**
- * The address of one of a calendar's pages: the agenda or a month, unfiltered
- * or by one category or location. As the publisher writes them.
- */
-export function calendarPath(
-  base: string,
-  options: {
-    month?: string | undefined;
-    filter?: { kind: "category" | "location"; slug: string } | undefined;
-  } = {},
-) {
-  const root = base === "/" ? "" : base;
-  const filtered = options.filter
-    ? `${root}/${calendarFilterSegment[options.filter.kind]}/${options.filter.slug}`
-    : root;
-  if (options.month) return `${filtered}/${options.month}`;
-  return filtered || "/";
-}
+/** When a new event starts: tomorrow at nine in Malaysia. */
+export const newEventStart = (now = Date.now()) => atSiteTime(addDays(dayOf(now), 1), "09:00");

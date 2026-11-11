@@ -3,7 +3,15 @@
  * fixed fields), its address and the SEO fields. They're part of the draft the
  * editor is saving, so they change through it like any block.
  */
-import { type PageDocument, Slug } from "@fiscal-sb/blocks";
+import {
+  type EntryEvent,
+  type PageDocument,
+  Slug,
+  atSiteTime,
+  dayOf,
+  newEventStart,
+  siteClock,
+} from "@fiscal-sb/blocks";
 import type { Page } from "@fiscal-sb/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -123,21 +131,6 @@ function EntryFieldsEditor({
   );
 }
 
-type EntryEvent = NonNullable<EntryFields["event"]>;
-
-/** A date input's value (local day) from an ISO time. */
-const dayInputOf = (iso: string) => localOf(iso).slice(0, 10);
-/** An all-day event's day as stored: midnight in Malaysia. */
-const allDayAt = (day: string) => `${day}T00:00:00+08:00`;
-
-/** A new event: tomorrow at nine. */
-function newEvent(): EntryEvent {
-  const start = new Date();
-  start.setDate(start.getDate() + 1);
-  start.setHours(9, 0, 0, 0);
-  return { start: start.toISOString() };
-}
-
 /**
  * An entry's event: when and where. The event calendar and upcoming events
  * read these. A synced event's come from its calendar, so they're read-only.
@@ -155,14 +148,14 @@ function EntryEventEditor({
   const synced = event?.source;
   const change = (next: Partial<EntryEvent>, key: string) =>
     event && set({ event: { ...event, ...next } }, `entry.event.${key}`);
-  /** A time from its input: a day for an all-day event, else a local date and time. */
+  // Events are in Malaysia's time wherever the officer is: a day (all-day) or a wall-clock time there.
   const timeOf = (value: string) => {
-    if (!value) return undefined;
-    if (event?.allDay) return allDayAt(value);
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+    if (!/^\d{4}-\d\d-\d\d/.test(value)) return undefined;
+    return event?.allDay
+      ? atSiteTime(value.slice(0, 10))
+      : atSiteTime(value.slice(0, 10), value.slice(11, 16));
   };
-  const inputOf = (iso: string) => (event?.allDay ? dayInputOf(iso) : localOf(iso));
+  const inputOf = (iso: string) => (event?.allDay ? dayOf(iso) : siteClock(iso));
   return (
     <section
       className="border-otl-gray-200 flex flex-col gap-3 border-t pt-5"
@@ -180,7 +173,9 @@ function EntryEventEditor({
           <FieldItem>
             <Checkbox
               checked={Boolean(event)}
-              onCheckedChange={(on) => set({ event: on ? newEvent() : undefined }, "entry.event")}
+              onCheckedChange={(on) =>
+                set({ event: on ? { start: newEventStart() } : undefined }, "entry.event")
+              }
             />
             <FieldLabel>{t("entry.event.on")}</FieldLabel>
           </FieldItem>
@@ -197,8 +192,8 @@ function EntryEventEditor({
                     allDay
                       ? {
                           allDay: true,
-                          start: allDayAt(dayInputOf(event.start)),
-                          end: event.end && allDayAt(dayInputOf(event.end)),
+                          start: atSiteTime(dayOf(event.start)),
+                          end: event.end && atSiteTime(dayOf(event.end)),
                         }
                       : { allDay: undefined },
                     "allDay",

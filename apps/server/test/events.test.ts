@@ -280,4 +280,12 @@ describe("events and the event calendar", () => {
     const checks = (await call("GET", `/api/pages/checks?ids=${entry.id}`)).json().data[entry.id];
     expect(checks.map((c: { code: string }) => c.code)).toContain("eventNoDate");
   });
+  it("keeps a listing's own addresses (kategori, lokasi, months) from its entries", async () => {
+    const entry = (
+      await call("POST", `/api/pages/${listing.id}/entries`, { title: "Lokasi" })
+    ).json().data;
+    expect(entry.path).toBe("/takwim/lokasi-2");
+    const moved = await call("POST", `/api/pages/${entry.id}/move`, { slug: "2026-11" });
+    expect(moved.json().error.code).toBe("slug_reserved");
+  });
 });

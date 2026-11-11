@@ -273,7 +273,7 @@ export async function getMedia(db: Db, id: string): Promise<MediaDetail> {
     // Every page, deleted or not, so a deleted page's old address can be named.
     db
       .selectFrom("pages")
-      .select(["id", "parent_id", "slug", "position"])
+      .select(["id", "parent_id", "slug", "position", "kind"])
       .execute()
       .then((rows) => new Tree(rows)),
     pageIds.length
