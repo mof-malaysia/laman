@@ -1,6 +1,7 @@
 /**
  * What happens to the page as a whole, from least to most destructive:
  * redirect, duplicate, move, unpublish, delete. The home page only duplicates.
+ * A collection's own settings come first.
  */
 import type { PageRedirect, RedirectStatus } from "@fiscal-sb/blocks";
 import type { DeletePreview, Page, PageSummary } from "@fiscal-sb/contracts";
@@ -18,7 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Field, FieldDescription, FieldError, FieldItem, FieldLabel } from "@/components/ui/field";
+import { Field, FieldError, FieldItem, FieldLabel } from "@/components/ui/field";
 import { Fieldset, FieldsetLegend } from "@/components/ui/fieldset";
 import { Input } from "@/components/ui/input";
 import { Radio, RadioButton, RadioItem, RadioLabel } from "@/components/ui/radio";
@@ -30,6 +31,7 @@ import { apiError, listingApi, pagesApi } from "@/lib/api";
 import { useCan } from "@/lib/auth";
 import useToast from "@/lib/ftds/hooks/use-toast";
 import { isHome, subtreeIds, useRefreshPages } from "@/lib/pages";
+import { CollectionSettings } from "./listing";
 import { PathChanges } from "./move";
 import type { SettingsSection } from "./search";
 import { tabCard } from "./tab-layout";
@@ -80,14 +82,17 @@ function Section({
     >
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
         <div className="flex min-w-0 flex-1 basis-72 flex-col gap-0.5">
-          {/* The type of FTDS's SettingsRow: a medium-weight title over its description, one size. */}
+          {/* Semibold, a step above the medium-weight field labels under it. */}
           <h3
             id={`settings-${id}-title`}
-            className={`text-content font-medium ${danger ? "text-txt-danger" : "text-txt-black-900"}`}
+            className={`text-content font-semibold ${danger ? "text-txt-danger" : "text-txt-black-900"}`}
           >
             {t(`settings.${id}.title`)}
           </h3>
-          <p className="text-content text-txt-black-700">{t(`settings.${id}.description`)}</p>
+          {/* The collection's rows say it all; every other section has a line. */}
+          {id !== "collection" && (
+            <p className="text-content text-txt-black-700">{t(`settings.${id}.description`)}</p>
+          )}
         </div>
         {action && <div className="flex flex-wrap items-center gap-2">{action}</div>}
       </div>
@@ -170,6 +175,11 @@ export function SettingsTab({
   return (
     <div className="flex max-w-5xl flex-col gap-6">
       <SectionList>
+        {page.kind === "listing" && (
+          <Section {...row("collection")}>
+            <CollectionSettings listing={page} />
+          </Section>
+        )}
         {homeOr(
           "redirect",
           <RedirectForm
@@ -286,7 +296,6 @@ function RedirectForm({
           {mode === "page" && (
             <Field name="redirect-page" invalid={Boolean(error)}>
               <FieldLabel>{t("settings.redirect.pageLabel")}</FieldLabel>
-              <FieldDescription>{t("settings.redirect.pageHint")}</FieldDescription>
               <PagePicker
                 pages={pages}
                 value={target}
@@ -299,7 +308,6 @@ function RedirectForm({
           {mode === "url" && (
             <Field name="redirect-url" invalid={Boolean(error)}>
               <FieldLabel>{t("settings.redirect.urlLabel")}</FieldLabel>
-              <FieldDescription>{t("settings.redirect.urlHint")}</FieldDescription>
               <Input type="url" value={url} onChange={(e) => setUrl(e.target.value)} />
               <FieldError>{error}</FieldError>
             </Field>
@@ -471,7 +479,6 @@ function MoveForm({ row, page, pages }: { row: Row; page: Page; pages: PageSumma
       toast({
         variant: "success",
         title: t("settings.move.done"),
-        description: t("settings.whenLive"),
       });
     } catch (error) {
       await fail(t("move.failed"), error);
@@ -553,7 +560,6 @@ function UnpublishForm({
       toast({
         variant: "success",
         title: t("settings.unpublish.done"),
-        description: t("settings.whenLive"),
       });
     } catch (error) {
       await fail(t("settings.unpublish.failed"), error);
@@ -655,11 +661,7 @@ function DeleteDialogContent({
       toast({
         variant: "success",
         title: t("delete.done", { title: page.title }),
-        description: (
-          <>
-            {t("settings.whenLive")} <UndoDelete id={page.id} />
-          </>
-        ),
+        description: <UndoDelete id={page.id} />,
       });
       // Back to every page: the one deleted is gone from the list, and Undo is in the toast.
       await navigate({ to: "/pages" });

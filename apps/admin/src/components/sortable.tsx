@@ -1,5 +1,6 @@
 /**
- * Drag to reorder, for the navigation's lists: each row has a grip, moved by the
+ * Drag to reorder, for the admin's lists (the navigation's, the property panel's): each
+ * row has a grip, moved by the
  * pointer or the keyboard (Space or Enter to pick up, the arrows, Space or Enter to
  * put down), and said aloud as it goes. Rows have no ids, so they're keyed by
  * position within their own list; each list is its own context, so lists nest.
@@ -62,18 +63,18 @@ export function SortableList({
   const announcements: Announcements = {
     onDragStart: ({ active }) => {
       spoken.current = active.id;
-      return t("navigation.drag.start", { label: label(active.id), ...where(active.id) });
+      return t("drag.start", { label: label(active.id), ...where(active.id) });
     },
     onDragOver: ({ active, over }) => {
       if (!over || over.id === spoken.current) return undefined;
       spoken.current = over.id;
-      return t("navigation.drag.over", { label: label(active.id), ...where(over.id) });
+      return t("drag.over", { label: label(active.id), ...where(over.id) });
     },
     onDragEnd: ({ active, over }) =>
       over
-        ? t("navigation.drag.end", { label: label(active.id), ...where(over.id) })
-        : t("navigation.drag.cancel", { label: label(active.id) }),
-    onDragCancel: ({ active }) => t("navigation.drag.cancel", { label: label(active.id) }),
+        ? t("drag.end", { label: label(active.id), ...where(over.id) })
+        : t("drag.cancel", { label: label(active.id) }),
+    onDragCancel: ({ active }) => t("drag.cancel", { label: label(active.id) }),
   };
   const onDragEnd = ({ active, over }: DragEndEvent) => {
     if (over && active.id !== over.id) onMove(indexOf(active.id), indexOf(over.id));
@@ -85,7 +86,7 @@ export function SortableList({
       onDragEnd={onDragEnd}
       accessibility={{
         announcements,
-        screenReaderInstructions: { draggable: t("navigation.drag.instructions") },
+        screenReaderInstructions: { draggable: t("drag.instructions") },
       }}
     >
       <SortableContext items={ids} strategy={verticalListSortingStrategy}>
@@ -110,7 +111,7 @@ export function useSortableRow(id: string, label: string) {
     isDragging,
   } = useSortable({
     id,
-    attributes: { roleDescription: t("navigation.drag.sortable") },
+    attributes: { roleDescription: t("drag.sortable") },
   });
   return {
     setNodeRef,
@@ -126,7 +127,7 @@ export function useSortableRow(id: string, label: string) {
         ref={setActivatorNodeRef}
         {...attributes}
         {...listeners}
-        aria-label={t("navigation.drag.handle", { label })}
+        aria-label={t("drag.handle", { label })}
         className={clx(
           "focus-ring text-txt-black-500 hover:text-txt-black-900 hover:bg-bg-washed flex size-6 shrink-0 touch-none items-center justify-center rounded-sm",
           isDragging ? "cursor-grabbing" : "cursor-grab",

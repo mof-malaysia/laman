@@ -3,6 +3,8 @@
  * the block registry (`blockFields`), or the page's own settings when no block
  * is selected. Problems are the schema's own messages, shown on the field.
  */
+import { IconPicker } from "@/components/icon-picker";
+import { featureIconSections } from "@/lib/feature-icons";
 import {
   type Block,
   type FieldSpec,
@@ -11,26 +13,19 @@ import {
   blockDefinition,
   fieldShown,
 } from "@fiscal-sb/blocks";
-import { useId } from "react";
+import { type ReactNode, useId } from "react";
+import { SortableList, sortId, sortIds, useSortableRow } from "@/components/sortable";
+import { clx } from "@/lib/ftds/utils";
 import { Button } from "@/components/ui/button";
 import { PagePicker } from "@/components/page-picker";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldDescription, FieldError, FieldItem, FieldLabel } from "@/components/ui/field";
 import { Fieldset } from "@/components/ui/fieldset";
-import { ArrowDownIcon } from "@/components/ui/icons/arrow-down";
-import { ArrowUpIcon } from "@/components/ui/icons/arrow-up";
 import { ChevronDownIcon } from "@/components/ui/icons/chevron-down";
 import { EllipsisVerticalIcon } from "@/components/ui/icons/ellipsis-vertical";
 import { TrashIcon } from "@/components/ui/icons/trash";
 import { Input } from "@/components/ui/input";
-import {
-  Menu,
-  MenuContent,
-  MenuItem,
-  MenuItemIcon,
-  MenuSeparator,
-  MenuTrigger,
-} from "@/components/ui/menu";
+import { Menu, MenuContent, MenuItem, MenuItemIcon, MenuTrigger } from "@/components/ui/menu";
 import { Select } from "@/components/ui/select";
 import { TextArea } from "@/components/ui/textarea";
 import { type MessageKey, t } from "@/i18n";
@@ -39,6 +34,7 @@ import { usePages } from "@/lib/pages";
 import { itemTitle } from "./block-meta";
 import { MediaField } from "./media-field";
 import { RichTextField } from "./rich-text-field";
+import { moveItem } from "@/site/navigation-model";
 import { getAt, setAt } from "./state";
 
 type Issues = Map<string, string>;
@@ -218,6 +214,22 @@ function FieldEditor({ field, value: parent, path, issues, set }: FieldEditorPro
         </Field>
       );
 
+    case "icon":
+      return (
+        <div className="flex flex-col gap-1.5">
+          <IconPicker
+            label={field.title}
+            value={value as string | undefined}
+            // The one icon field is the feature icons'; the type checker holds them to the registry.
+            sections={featureIconSections()}
+            clearable={!field.required && field.defaultValue === undefined}
+            invalid={Boolean(error)}
+            onChange={(next) => set(path, next)}
+          />
+          {error && <p className="text-body-sm text-txt-danger">{error}</p>}
+        </div>
+      );
+
     case "richtext":
       return (
         <div className="flex flex-col gap-2">
@@ -294,89 +306,89 @@ function FieldEditor({ field, value: parent, path, issues, set }: FieldEditorPro
       const fields = field.fields ?? [];
       const max = field.maxItems ?? Infinity;
       const min = field.minItems ?? 0;
-      const move = (from: number, to: number) => {
-        const moved = items[from];
-        set(path, items.toSpliced(from, 1).toSpliced(to, 0, moved));
-      };
+      const move = (from: number, to: number) => set(path, moveItem(items, from, to));
+      const listId = path.join(".");
+      const titles = items.map(itemTitle);
+      // Each item as the panel names it, said aloud while it moves.
+      const names = titles.map(
+        (title, index) => t("editor.list.item", { n: index + 1 }) + (title ? ` · ${title}` : ""),
+      );
       return (
         <Fieldset className="gap-3">
           <legend className="text-label-md float-left mb-1 w-full font-semibold">
             {field.title}
           </legend>
           {error && <p className="text-body-sm text-txt-danger">{error}</p>}
-          <ol className="flex flex-col gap-3">
-            {items.map((item, index) => (
-              // Items have no ids of their own; their position is their identity here.
-              // oxlint-disable-next-line react/no-array-index-key
-              <li key={index} className="bg-bg-washed rounded-md">
-                <details open={items.length <= 2 || undefined} className="group/item flex flex-col">
-                  <summary className="focus-ring flex cursor-pointer list-none items-center justify-between gap-2 rounded-md p-2">
-                    <span className="text-label-sm text-txt-black-700 line-clamp-2 min-w-0 font-medium">
-                      {t("editor.list.item", { n: index + 1 })}
-                      {itemTitle(item) && (
-                        <span className="text-txt-black-900"> · {itemTitle(item)}</span>
-                      )}
-                    </span>
-                    {/* The buttons act; they don't open or close the item. */}
-                    {/* oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
-                    <div className="shrink-0" onClick={(event) => event.preventDefault()}>
-                      <Menu>
-                        <MenuTrigger
-                          render={
-                            <Button
-                              variant="default-ghost"
-                              size="small"
-                              iconOnly
-                              aria-label={t("editor.list.actions", { n: index + 1 })}
-                            />
-                          }
-                        >
-                          <EllipsisVerticalIcon />
-                        </MenuTrigger>
-                        <MenuContent>
-                          <MenuItem disabled={index === 0} onClick={() => move(index, index - 1)}>
-                            <MenuItemIcon>
-                              <ArrowUpIcon />
-                            </MenuItemIcon>
-                            {t("editor.block.up")}
-                          </MenuItem>
-                          <MenuItem
-                            disabled={index === items.length - 1}
-                            onClick={() => move(index, index + 1)}
-                          >
-                            <MenuItemIcon>
-                              <ArrowDownIcon />
-                            </MenuItemIcon>
-                            {t("editor.block.down")}
-                          </MenuItem>
-                          <MenuSeparator />
-                          <MenuItem
-                            variant="danger"
-                            disabled={items.length <= min}
-                            onClick={() => set(path, items.toSpliced(index, 1))}
-                          >
-                            <MenuItemIcon>
-                              <TrashIcon />
-                            </MenuItemIcon>
-                            {t("editor.list.remove", { n: index + 1 })}
-                          </MenuItem>
-                        </MenuContent>
-                      </Menu>
-                    </div>
-                  </summary>
-                  <div className="px-3 pb-3">
-                    <Fields
-                      fields={fields}
-                      value={item}
-                      path={[...path, String(index)]}
-                      issues={issues}
-                      set={set}
-                    />
-                  </div>
-                </details>
-              </li>
-            ))}
-          </ol>
+          {/* Reordered by dragging an item's grip, with the pointer or the keyboard. */}
+          <SortableList ids={sortIds(listId, items.length)} names={names} onMove={move}>
+            <ol className="flex flex-col gap-3">
+              {items.map((item, index) => (
+                // Items have no ids of their own; their position is their identity here.
+                // oxlint-disable-next-line react/no-array-index-key
+                <SortableItem key={index} id={sortId(listId, index)} name={names[index] ?? ""}>
+                  {(handle) => (
+                    <details
+                      open={items.length <= 2 || undefined}
+                      className="group/item flex flex-col"
+                    >
+                      <summary
+                        className="focus-ring flex cursor-pointer list-none items-center gap-1 rounded-md p-2 pl-1"
+                        // The grip and the actions button act; they don't open or close the item.
+                        onClick={(event) => {
+                          if ((event.target as Element).closest("button")) event.preventDefault();
+                        }}
+                      >
+                        <span className="flex shrink-0">{handle}</span>
+                        <span className="text-label-sm text-txt-black-700 line-clamp-2 min-w-0 flex-1 font-medium">
+                          {t("editor.list.item", { n: index + 1 })}
+                          {titles[index] && (
+                            <span className="text-txt-black-900"> · {titles[index]}</span>
+                          )}
+                        </span>
+                        <div className="shrink-0">
+                          <Menu>
+                            <MenuTrigger
+                              render={
+                                <Button
+                                  variant="default-ghost"
+                                  size="small"
+                                  iconOnly
+                                  aria-label={t("editor.list.actions", { n: index + 1 })}
+                                />
+                              }
+                            >
+                              <EllipsisVerticalIcon />
+                            </MenuTrigger>
+                            <MenuContent>
+                              <MenuItem
+                                variant="danger"
+                                disabled={items.length <= min}
+                                onClick={() => set(path, items.toSpliced(index, 1))}
+                              >
+                                <MenuItemIcon>
+                                  <TrashIcon />
+                                </MenuItemIcon>
+                                {t("editor.list.remove", { n: index + 1 })}
+                              </MenuItem>
+                            </MenuContent>
+                          </Menu>
+                        </div>
+                      </summary>
+                      <div className="px-3 pb-3">
+                        <Fields
+                          fields={fields}
+                          value={item}
+                          path={[...path, String(index)]}
+                          issues={issues}
+                          set={set}
+                        />
+                      </div>
+                    </details>
+                  )}
+                </SortableItem>
+              ))}
+            </ol>
+          </SortableList>
           <div>
             <Button
               variant="default-outline"
@@ -422,5 +434,27 @@ function PageField({
       />
       <FieldError>{error}</FieldError>
     </Field>
+  );
+}
+
+/** A list item that drags by its grip; `children` places the grip. */
+function SortableItem({
+  id,
+  name,
+  children,
+}: {
+  id: string;
+  name: string;
+  children: (handle: ReactNode) => ReactNode;
+}) {
+  const { setNodeRef, style, dragging, handle } = useSortableRow(id, name);
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      className={clx("bg-bg-washed rounded-md", dragging && "shadow-card relative z-10")}
+    >
+      {children(handle)}
+    </li>
   );
 }

@@ -471,14 +471,11 @@ function RowMenu({ page }: { page: Target }) {
         </MenuItem>
         <MenuItem
           onClick={() =>
-            // A collection's settings are on its own screen; a page's, in the editor's drawer.
-            void (page.kind === "listing"
-              ? navigate({ to: "/pages/$id", params: { id: page.id }, search: { tab: "settings" } })
-              : navigate({
-                  to: "/pages/$id/edit",
-                  params: { id: page.id },
-                  search: { panel: "settings" },
-                }))
+            void navigate({
+              to: "/pages/$id/edit",
+              params: { id: page.id },
+              search: { panel: "settings" },
+            })
           }
         >
           <SlidersGlyph className="size-4" /> {t("pages.index.settings")}
@@ -598,7 +595,11 @@ function SectionCard({ section }: { section: TreeItem }) {
             variant="default-outline"
             size="small"
             render={
-              <Link to="/pages/$id" params={{ id: section.id }} search={{ tab: "entries" }} />
+              <Link
+                to="/pages/$id/edit"
+                params={{ id: section.id }}
+                search={{ panel: "entries" }}
+              />
             }
           >
             {t("pages.index.entries")}

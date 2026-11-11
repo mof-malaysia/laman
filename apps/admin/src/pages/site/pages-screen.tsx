@@ -1,7 +1,7 @@
 /**
- * Pages: with no page open, the index of every page. A collection opens on its own
- * screen (its entries, then its settings); a page or an entry opens in the editor,
- * where its settings, history and analytics are in the page drawer.
+ * Pages: with no page open, the index of every page. Any page opens in the editor,
+ * where its settings, history and analytics (and a collection's entries) are in the
+ * page drawer; `/pages/$id`, the old page screen, leads there.
  */
 import { useQuery } from "@tanstack/react-query";
 import { Link, Navigate, useParams, useSearch } from "@tanstack/react-router";
@@ -18,7 +18,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { t } from "@/i18n";
 import { pagesApi } from "@/lib/api";
 import { formatAgo, usePages } from "@/lib/pages";
-import { PageDetail } from "./detail";
 import { PagesIndex } from "./pages-index";
 import type { DetailSearch } from "./search";
 import { useTrash } from "./trash-screen";
@@ -37,7 +36,6 @@ export function PagesScreen() {
     retry: false,
   });
   const showDetail = Boolean(id) && (exists || entry.data?.kind === "entry");
-  const kind = pages.data?.find((p) => p.id === id)?.kind ?? entry.data?.kind;
 
   // A failed refetch keeps the screen; only a load with nothing to show is an error.
   if (pages.isError && !pages.data)
@@ -77,11 +75,9 @@ export function PagesScreen() {
           <Skeleton className="h-12 w-80 rounded-2xl" />
           <Skeleton className="h-64 w-full rounded-2xl" />
         </div>
-      ) : showDetail && kind !== "listing" ? (
+      ) : showDetail ? (
         // A page's details live in the editor's drawer now: an old link lands there, on its tab.
         <Navigate to="/pages/$id/edit" params={{ id }} search={drawerFor(search)} replace />
-      ) : showDetail ? (
-        <PageDetail key={id} id={id} pages={pages.data} search={search} />
       ) : (
         <Missing id={id} />
       )}
@@ -126,6 +122,8 @@ function Missing({ id }: { id: string }) {
 
 /** The drawer tab an old page-screen link meant; with none, just the editor. */
 function drawerFor(search: DetailSearch): PanelSearch {
+  if (search.tab === "entries") return { panel: "entries" };
+  if (search.tab === "listing") return { panel: "settings", section: "collection" };
   if (search.tab === "details") return { panel: "details" };
   if (search.tab === "settings")
     return { panel: "settings", ...(search.section && { section: search.section }) };

@@ -4,6 +4,7 @@
  * address (and for a collection, what its entries are called), check, create.
  * A live preview of the page as it will start sits beside every step.
  */
+import { choiceCard } from "@/components/card";
 import {
   type TemplateId,
   Slug,
@@ -339,10 +340,6 @@ function StepHeading({ heading, title, intro }: Heading & { title: string; intro
   );
 }
 
-/** The choice cards: a radio each, with the whole card as its label. */
-const choiceCard =
-  "border-otl-gray-200 bg-bg-white hover:border-otl-gray-300 has-[[data-checked]]:border-otl-primary-300 has-[[data-checked]]:bg-bg-primary-50 has-[:focus-visible]:ring-fr-primary flex cursor-pointer items-start gap-3 rounded-lg border p-4 has-[:focus-visible]:ring-3";
-
 function KindStep({
   heading,
   value,
@@ -633,9 +630,9 @@ function Done({ page, heading, onAnother }: Heading & { page: Page; onAnother: (
           variant="default-outline"
           onClick={() =>
             void navigate({
-              to: "/pages/$id",
+              to: "/pages/$id/edit",
               params: { id: page.id },
-              search: kind === "listing" ? { tab: "entries" } : {},
+              search: kind === "listing" ? { panel: "entries" } : { panel: "details" },
             })
           }
         >

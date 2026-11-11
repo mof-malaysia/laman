@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it } from "@rstest/core";
-import { blockFields, blocks, templates } from "@fiscal-sb/blocks";
+import { blockFields, blocks, featureIconGroups, templates } from "@fiscal-sb/blocks";
 import { rt, setLanguage } from "../src/i18n";
 import { registryMs } from "../src/i18n/messages/registry-ms";
 import { blockLabel, fieldLabelAt, localBlockFields, specStrings } from "../src/i18n/registry";
 
-/** Every string the admin shows from the block registry and the page templates. */
+/** Every string the admin shows from the block registry, the page templates and the icon picker's groups. */
 function registryStrings(): Set<string> {
   const out = new Set<string>();
   for (const block of blocks) {
@@ -16,6 +16,7 @@ function registryStrings(): Set<string> {
     out.add(template.name);
     out.add(template.description);
   }
+  for (const group of featureIconGroups) out.add(group.label);
   return out;
 }
 

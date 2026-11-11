@@ -6,6 +6,8 @@
  * live by its own Publish, which first says what will change. The
  * announcement has a screen of its own.
  */
+import { IconPicker } from "@/components/icon-picker";
+import { featureIconSections } from "@/lib/feature-icons";
 import {
   type NavDropdown,
   type NavItem,
@@ -14,14 +16,11 @@ import {
   type NavigationDoc,
   type NavWarning,
 } from "@fiscal-sb/contracts";
-import { featureIcons } from "@fiscal-sb/blocks";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import {
   createContext,
-  type FunctionComponent,
   type ReactNode,
-  type SVGProps,
   useCallback,
   useContext,
   useEffect,
@@ -40,14 +39,6 @@ import { ChevronDownIcon } from "@/components/ui/icons/chevron-down";
 import { ChevronRightIcon } from "@/components/ui/icons/chevron-right";
 import { HamburgerMenuIcon } from "@/components/ui/icons/hamburger-menu";
 import { InfoIcon } from "@/components/ui/icons/info";
-import { BellIcon } from "@/components/ui/icons/bell";
-import { CheckShieldIcon } from "@/components/ui/icons/check-shield";
-import { GlobeIcon } from "@/components/ui/icons/globe";
-import { GovtOfficeIcon } from "@/components/ui/icons/govt-office";
-import { UserGroupIcon } from "@/components/ui/icons/user-group";
-import { CalendarIcon } from "@/components/ui/icons/calendar";
-import { DocumentIcon } from "@/components/ui/icons/document";
-import { MoneyIcon } from "@/components/ui/icons/money";
 import { LinkIcon } from "@/components/ui/icons/link";
 import { PlusIcon } from "@/components/ui/icons/plus";
 import { TrashIcon } from "@/components/ui/icons/trash";
@@ -90,7 +81,7 @@ import {
   uniqueLabel,
 } from "./navigation-model";
 import { LivePreview } from "./live-preview";
-import { SortableList, shifted, sortId, sortIds, useSortableRow } from "./sortable";
+import { SortableList, shifted, sortId, sortIds, useSortableRow } from "@/components/sortable";
 import { TargetField } from "./target-field";
 
 export type NavPart = "navbar" | "footer";
@@ -939,40 +930,6 @@ const touchTarget = (touch: Checks["touch"], path: string) => () => {
   touch(`${path}.pageId`);
 };
 
-type FeatureIcon = (typeof featureIcons)[number];
-
-/** The FTDS icon for each feature icon name, as the site draws it. */
-const featureIconComponents: Record<FeatureIcon, typeof MoneyIcon> = {
-  money: MoneyIcon,
-  document: DocumentIcon,
-  calendar: CalendarIcon,
-  "user-group": UserGroupIcon,
-  "govt-office": GovtOfficeIcon,
-  globe: GlobeIcon,
-  "check-shield": CheckShieldIcon,
-  bell: BellIcon,
-};
-
-/** "user-group" reads as "User group". */
-const iconName = (icon: FeatureIcon) => {
-  const words = icon.replaceAll("-", " ");
-  return words.charAt(0).toUpperCase() + words.slice(1);
-};
-
-/** No icon: a circle struck through, drawn like the FTDS icons. */
-const NoIcon: FunctionComponent<SVGProps<SVGSVGElement>> = (props) => {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" aria-hidden {...props}>
-      <path
-        d="M4.87 4.87l10.26 10.26M17.25 10a7.25 7.25 0 1 1-14.5 0 7.25 7.25 0 0 1 14.5 0Z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-};
-
 type Layout = NavDropdown["layout"];
 
 /**
@@ -1162,43 +1119,6 @@ function StylePicker({ value, onChange }: { value: Layout; onChange: (layout: La
   );
 }
 
-function FeatureIconOf({ name }: { name: FeatureIcon }) {
-  const Icon = featureIconComponents[name];
-  return <Icon className="size-5" aria-hidden />;
-}
-
-/** A link's icon, as small cards showing the icons themselves. None comes first. */
-function IconPicker({
-  value,
-  onChange,
-}: {
-  value: FeatureIcon | undefined;
-  onChange: (icon: FeatureIcon | undefined) => void;
-}) {
-  return (
-    <RadioCards<FeatureIcon | "">
-      legend={t("navigation.icon")}
-      value={value ?? ""}
-      onChange={(next) => onChange(next || undefined)}
-      className="grid grid-cols-[repeat(auto-fill,minmax(2.5rem,1fr))] gap-1.5"
-      cardClassName="aspect-square items-center justify-center rounded-md"
-      idleClassName="border-otl-gray-200 bg-bg-white text-txt-black-700 hover:bg-bg-washed"
-      options={[
-        {
-          value: "",
-          label: t("editor.field.none"),
-          content: <NoIcon className="size-5" aria-hidden />,
-        },
-        ...featureIcons.map((name) => ({
-          value: name,
-          label: iconName(name),
-          content: <FeatureIconOf name={name} />,
-        })),
-      ]}
-    />
-  );
-}
-
 /** A link's own fields: its label, where it goes, and in a described dropdown its line and icon. */
 function LinkFields({
   link,
@@ -1239,7 +1159,12 @@ function LinkFields({
             max={120}
             onChange={(description) => onChange({ ...link, description })}
           />
-          <IconPicker value={link.icon} onChange={(icon) => onChange({ ...link, icon })} />
+          <IconPicker
+            label={t("navigation.icon")}
+            value={link.icon}
+            sections={featureIconSections()}
+            onChange={(icon) => onChange({ ...link, icon })}
+          />
         </>
       )}
     </>

@@ -30,8 +30,6 @@ import { CSS } from "@dnd-kit/utilities";
 import { type KeyboardEvent, useRef } from "react";
 import { GripIcon } from "@/components/grip-icon";
 import { Button } from "@/components/ui/button";
-import { ArrowDownIcon } from "@/components/ui/icons/arrow-down";
-import { ArrowUpIcon } from "@/components/ui/icons/arrow-up";
 import { DuplicateIcon } from "@/components/ui/icons/duplicate";
 import { EllipsisVerticalIcon } from "@/components/ui/icons/ellipsis-vertical";
 import { PlusIcon } from "@/components/ui/icons/plus";
@@ -194,11 +192,7 @@ function Layers({
               tabbable={block.id === current}
               onKeyDown={(event) => onRowKey(event, index)}
               required={required?.(block) ?? false}
-              first={index === 0}
-              last={index === blocks.length - 1}
               onSelect={() => onSelect(block.id)}
-              onUp={() => onMove(index, index - 1)}
-              onDown={() => onMove(index, index + 1)}
               onDuplicate={() => onDuplicate(block.id)}
               onRemove={() => onRemove(block.id)}
             />
@@ -216,11 +210,7 @@ type LayerItemProps = {
   tabbable: boolean;
   onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
   required: boolean;
-  first: boolean;
-  last: boolean;
   onSelect: () => void;
-  onUp: () => void;
-  onDown: () => void;
   onDuplicate: () => void;
   onRemove: () => void;
 };
@@ -345,18 +335,6 @@ function LayerItem(props: LayerItemProps) {
           <EllipsisVerticalIcon />
         </MenuTrigger>
         <MenuContent>
-          <MenuItem disabled={props.first} onClick={props.onUp}>
-            <MenuItemIcon>
-              <ArrowUpIcon />
-            </MenuItemIcon>
-            {t("editor.block.up")}
-          </MenuItem>
-          <MenuItem disabled={props.last} onClick={props.onDown}>
-            <MenuItemIcon>
-              <ArrowDownIcon />
-            </MenuItemIcon>
-            {t("editor.block.down")}
-          </MenuItem>
           <MenuItem disabled={required} onClick={props.onDuplicate}>
             <MenuItemIcon>
               <DuplicateIcon />

@@ -53,7 +53,7 @@ function EntryFieldsEditor({
       className="border-otl-gray-200 flex flex-col gap-3 border-t pt-5"
       aria-labelledby="entry-fields"
     >
-      <h3 id="entry-fields" className="text-label-compact text-txt-black-500 font-medium uppercase">
+      <h3 id="entry-fields" className="text-label-md text-txt-black-900 font-semibold">
         {t("entry.fields")}
       </h3>
       <Field name="entry-publish-at">
@@ -121,8 +121,9 @@ export function PagePanel({ page, doc, onDoc }: PagePanelProps) {
   return (
     <div className="flex flex-col gap-5">
       <Field name="page-title">
-        <FieldLabel>{t("editor.page.titleLabel")}</FieldLabel>
-        <FieldDescription>{t("editor.page.titleHint")}</FieldDescription>
+        <FieldLabel>
+          {t(page.kind === "entry" ? "entry.title" : "editor.page.titleLabel")}
+        </FieldLabel>
         <Input
           value={doc.ms.title}
           maxLength={160}
@@ -132,9 +133,6 @@ export function PagePanel({ page, doc, onDoc }: PagePanelProps) {
           }}
         />
       </Field>
-      {page.kind === "entry" && doc.entry && (
-        <EntryFieldsEditor page={page} entry={doc.entry} onDoc={onDoc} />
-      )}
       {fixedAddress(page) ? (
         <Field name="page-path">
           <FieldLabel>{t("editor.page.address")}</FieldLabel>
@@ -142,6 +140,9 @@ export function PagePanel({ page, doc, onDoc }: PagePanelProps) {
         </Field>
       ) : (
         <SlugField key={page.slug} page={page} />
+      )}
+      {page.kind === "entry" && doc.entry && (
+        <EntryFieldsEditor page={page} entry={doc.entry} onDoc={onDoc} />
       )}
       <section
         className="border-otl-gray-200 flex flex-col gap-3 border-t pt-5"

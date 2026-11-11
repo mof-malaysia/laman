@@ -1,7 +1,9 @@
-/** The page detail's tab and Settings section live in the address, so the More menu can link to them. */
-import type { PageKind } from "@fiscal-sb/blocks";
+/**
+ * The page drawer's Settings sections, and the tabs of the old page screen: its
+ * address still opens, and lands on the matching drawer tab in the editor.
+ */
 
-// SEO sits under Details, so a page has four tabs and a collection six.
+/** The old page screen's tabs, which old links and bookmarks may still name. */
 export const detailTabs = [
   "entries",
   "listing",
@@ -11,12 +13,9 @@ export const detailTabs = [
   "settings",
 ] as const;
 export type DetailTab = (typeof detailTabs)[number];
-const pageTabs: readonly DetailTab[] = ["details", "analytics", "history", "settings"];
-/** The tabs a page of this kind has; the first opens by default. */
-export const tabsFor = (kind: PageKind): readonly DetailTab[] =>
-  kind === "listing" ? detailTabs : pageTabs;
 
 export const settingsSections = [
+  "collection",
   "redirect",
   "listing",
   "duplicate",

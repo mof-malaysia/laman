@@ -386,14 +386,8 @@ function Editor({ page, onReload }: { page: Page; onReload: () => Promise<void> 
   const duplicate = (id: string) => {
     if (!isRequired(id)) dispatch({ type: "duplicate", id });
   };
-  const moveBy = (id: string, by: number) => {
-    const from = blocks.findIndex((b) => b.id === id);
-    dispatch({ type: "move", from, to: from + by });
-  };
   const blockAction = (action: BlockAction, id: string) => {
-    if (action === "up") moveBy(id, -1);
-    else if (action === "down") moveBy(id, 1);
-    else if (action === "duplicate") duplicate(id);
+    if (action === "duplicate") duplicate(id);
     else if (action === "delete") remove(id);
     else dispatch({ type: "select", id });
   };

@@ -38,11 +38,12 @@ export function PageBreadcrumb({ page }: { page: Pick<PageSummary, "id" | "title
           <BreadcrumbItem>
             <BreadcrumbLink
               render={
-                parent.kind === "listing" ? (
-                  <Link to="/pages/$id" params={{ id: parent.id }} search={{ tab: "entries" }} />
-                ) : (
-                  <Link to="/pages/$id/edit" params={{ id: parent.id }} />
-                )
+                <Link
+                  to="/pages/$id/edit"
+                  params={{ id: parent.id }}
+                  // A collection opens at its entries.
+                  search={parent.kind === "listing" ? { panel: "entries" } : {}}
+                />
               }
             >
               {parent.title || t("page.untitled")}

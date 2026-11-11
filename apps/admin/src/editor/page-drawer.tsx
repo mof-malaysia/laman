@@ -1,8 +1,9 @@
 /**
  * The page drawer: everything about the page beyond its blocks, without leaving the
- * editor. Details (its title, address and SEO, and what's known about it), Settings
- * (redirect, collection, duplicate, move, unpublish, delete), History and Analytics. The address says which is open (`?panel=`), so a
- * link can open it straight to the right place.
+ * editor. For a collection, its Entries first; then Details (its title, address and SEO,
+ * and what's known about it), Settings (the collection's own settings, redirect,
+ * duplicate, move, unpublish, delete), History and Analytics. The address says which is
+ * open (`?panel=`), so a link can open it straight to the right place.
  */
 import type { Page } from "@fiscal-sb/contracts";
 import type { ReactNode } from "react";
@@ -14,17 +15,22 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsCounter, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { t } from "@/i18n";
 import { usePages } from "@/lib/pages";
 import { HistoryTab } from "@/pages/site/history-tab";
+import { EntriesTab } from "@/pages/site/listing";
 import type { SettingsSection } from "@/pages/site/search";
-import { AboutPanel } from "@/pages/site/detail";
+import { AboutPanel } from "@/pages/site/about-panel";
 import { type DraftLink, SettingsTab } from "@/pages/site/settings-tab";
 import { Panel } from "@/pages/site/tab-layout";
 
-export const panelTabs = ["details", "settings", "history", "analytics"] as const;
+export const panelTabs = ["entries", "details", "settings", "history", "analytics"] as const;
 export type PanelTab = (typeof panelTabs)[number];
+
+/** The tabs a page of this kind has: only a collection has entries. */
+const tabsFor = (page: Page) =>
+  panelTabs.filter((tab) => tab !== "entries" || page.kind === "listing");
 
 export type PanelSearch = { panel?: PanelTab; section?: SettingsSection };
 
@@ -47,6 +53,9 @@ export function PageDrawer({
   onPanel: (panel: PanelTab | undefined, section?: SettingsSection) => void;
 }) {
   const pages = usePages().data ?? [];
+  const tabs = tabsFor(page);
+  // A tab the page lacks (Entries, from a link to another kind of page) opens Details.
+  const tab = panel && tabs.includes(panel) ? panel : "details";
   return (
     <Drawer
       side="right"
@@ -57,26 +66,25 @@ export function PageDrawer({
       <DrawerContent className="bg-bg-gray-50 w-full sm:max-w-[37.5rem]">
         <DrawerHeader className="bg-bg-white gap-3 pb-0">
           <DrawerTitle className="truncate">{page.title || t("page.untitled")}</DrawerTitle>
-          <Tabs
-            value={panel ?? "details"}
-            onValueChange={(value) => onPanel(value as PanelTab)}
-            className="gap-0"
-          >
+          <Tabs value={tab} onValueChange={(value) => onPanel(value as PanelTab)} className="gap-0">
             <TabsList width="full">
-              {panelTabs.map((value) => (
+              {tabs.map((value) => (
                 <TabsTrigger key={value} value={value}>
                   {t(`detail.tab.${value}`)}
+                  {value === "entries" && <TabsCounter>{page.entryCount ?? 0}</TabsCounter>}
                 </TabsTrigger>
               ))}
             </TabsList>
           </Tabs>
         </DrawerHeader>
         <DrawerBody className="py-5">
-          {panel === "history" ? (
+          {tab === "entries" ? (
+            <EntriesTab listing={page} />
+          ) : tab === "history" ? (
             <HistoryTab page={page} />
-          ) : panel === "analytics" ? (
+          ) : tab === "analytics" ? (
             <PageAnalyticsTab pageId={page.id} />
-          ) : panel === "settings" ? (
+          ) : tab === "settings" ? (
             <SettingsTab page={page} pages={pages} section={section} draft={draft} />
           ) : (
             <div className="flex flex-col gap-6">
@@ -85,7 +93,7 @@ export function PageDrawer({
                 page={page}
                 pages={pages}
                 collection={pages.find((p) => p.id === page.parentId && page.kind === "entry")}
-                onHistory={() => onPanel("history")}
+                onPanel={onPanel}
               />
             </div>
           )}
