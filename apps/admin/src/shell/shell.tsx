@@ -76,6 +76,7 @@ import { UploadDialog } from "@/media/upload-dialog";
 import { type NavPart, navParts } from "@/site/navigation-screen";
 import { ShellContext, type ShellActions } from "./context";
 import { OpenPageDialog } from "./open-page-dialog";
+import { PageBreadcrumb } from "./page-breadcrumb";
 import { PersonAvatar } from "@/users/person";
 import { usersPages } from "@/users/users-tabs";
 import { PublishState, SiteInfo, ViewSite, WaitingDrawer } from "./site-status";
@@ -388,46 +389,26 @@ function SearchTrigger() {
 /** Screens below a section's own: the breadcrumb leads back to the section. */
 const subScreens = usersPages.filter((page) => page.to !== "/users");
 
-/** The section, or Pages › the selected page's title (Pages › listing › title for an entry). */
+/**
+ * The section, or a page's whole path: Pages › its parents › the page. A parent opens in
+ * the editor (a collection, at its entries); the page's own name opens the page switcher.
+ */
 function TopBarBreadcrumb({ section }: { section: Section }) {
   const pages = usePages();
   const matchRoute = useMatchRoute();
   const match = matchRoute({ to: "/pages/$id", fuzzy: true });
   const sub = subScreens.find((screen) => matchRoute({ to: screen.to }));
   const id = match ? match.id : undefined;
-  const inTree = pages.data?.find((p) => p.id === id);
-  // Entries aren't in the tree list; their own page query has them.
+  const inList = pages.data?.find((p) => p.id === id);
+  // Entries aren't in the page list; their own page query has them.
   const entry = useQuery({
     queryKey: ["page", id],
     queryFn: () => pagesApi.get(id ?? ""),
-    enabled: Boolean(id) && Boolean(pages.data) && !inTree,
+    enabled: Boolean(id) && Boolean(pages.data) && !inList,
   });
-  const page = inTree ?? entry.data;
-  const listing =
-    page?.kind === "entry" ? pages.data?.find((p) => p.id === page.parentId) : undefined;
+  const page = inList ?? entry.data;
 
-  if (page)
-    return (
-      <Breadcrumb>
-        <BreadcrumbItem>
-          <BreadcrumbLink render={<Link to="/pages" />}>{t("nav.pages")}</BreadcrumbLink>
-        </BreadcrumbItem>
-        <BreadcrumbSeparator />
-        {listing && (
-          <>
-            <BreadcrumbItem>
-              <BreadcrumbLink render={<Link to="/pages/$id" params={{ id: listing.id }} />}>
-                {listing.title}
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-          </>
-        )}
-        <BreadcrumbItem>
-          <BreadcrumbPage>{page.title || t("page.untitled")}</BreadcrumbPage>
-        </BreadcrumbItem>
-      </Breadcrumb>
-    );
+  if (page) return <PageBreadcrumb page={page} />;
   if (sub)
     return (
       <Breadcrumb>
@@ -490,6 +471,9 @@ function GlobalCommands({ actions }: { actions: ShellActions }) {
 export function AdminShell() {
   const { pathname } = useLocation();
   const active = sectionOf(pathname);
+  // The editor draws one bar of its own, with the page's path in it: the top bar steps
+  // aside there, except on a phone, where it holds the menu button.
+  const editing = /\/pages\/[^/]+\/edit$/.test(pathname);
   const navigate = useNavigate();
   const [openPage, setOpenPage] = useState(false);
   const [upload, setUpload] = useState<{ open: boolean; files: File[] }>({
@@ -517,7 +501,7 @@ export function AdminShell() {
           <GlobalCommands actions={actions} />
           <NavigationCommands active={active} />
           <AdminSidebar active={active} />
-          <AppShellHeader>
+          <AppShellHeader className={editing ? "md:hidden" : undefined}>
             <SidebarTrigger label={t("shell.toggleSidebar")} />
             <TopBarBreadcrumb section={active} />
             <span className="flex-1" />

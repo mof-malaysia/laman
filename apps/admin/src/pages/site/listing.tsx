@@ -48,7 +48,7 @@ import { clx } from "@/lib/ftds/utils";
 import useToast from "@/lib/ftds/hooks/use-toast";
 import { formatDateTime, useRefreshPages } from "@/lib/pages";
 import { BlockIcon } from "@/editor/block-meta";
-import { FormRow, Panel, card } from "./tab-layout";
+import { FormRow, Panel, tabCard } from "./tab-layout";
 
 export const useListing = (id: string) =>
   useQuery({ queryKey: ["listing", id], queryFn: () => listingApi.get(id) });
@@ -170,7 +170,7 @@ export function EntriesTab({ listing }: { listing: Page }) {
   useShortcut("e", () => edit(items[index]), { scope: "entries" });
 
   return (
-    <div className={`${card} border-otl-gray-200`}>
+    <div className={clx(tabCard, "border-otl-gray-200")}>
       <div className="border-otl-gray-200 flex flex-wrap items-center gap-2 border-b px-4 py-3">
         <Input
           type="search"
@@ -243,7 +243,7 @@ export function EntriesTab({ listing }: { listing: Page }) {
               >
                 <TableCell>
                   <Link
-                    to="/pages/$id"
+                    to="/pages/$id/edit"
                     params={{ id: entry.id }}
                     className="text-txt-primary focus-ring rounded-xs text-left font-medium underline underline-offset-[3px]"
                   >

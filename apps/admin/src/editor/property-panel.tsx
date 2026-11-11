@@ -34,7 +34,7 @@ import {
 import { Select } from "@/components/ui/select";
 import { TextArea } from "@/components/ui/textarea";
 import { type MessageKey, t } from "@/i18n";
-import { blockDescription, blockLabel, localBlockFields } from "@/i18n/registry";
+import { blockLabel, localBlockFields } from "@/i18n/registry";
 import { usePages } from "@/lib/pages";
 import { itemTitle } from "./block-meta";
 import { MediaField } from "./media-field";
@@ -73,23 +73,16 @@ export function PropertyPanel({ block, onChange, onRemove }: PropertyPanelProps)
     onChange(setAt(block.props, path, value) as Block["props"], path.join("."));
 
   const fields = localBlockFields(block.type);
-  const inline = fields.some((f) => f.inline);
 
   return (
     <div className="flex flex-col">
-      <div className="flex flex-col gap-1 p-4">
-        <h2 className="text-title font-semibold">{blockLabel(definition.type)}</h2>
-        <p className="text-body-sm text-txt-black-700">{blockDescription(definition.type)}</p>
-        {/* Said once here, not under every field it applies to. */}
-        {inline && (
-          <p className="bg-bg-primary-50 text-body-sm text-txt-black-900 mt-2 rounded-md px-3 py-2">
-            {t("editor.field.inlineOnce")}
-          </p>
-        )}
-      </div>
       {fieldGroups(fields.filter((f) => fieldShown(f, block.props, fields))).map(
         ([group, list]) => (
-          <details key={group} open className="group/section border-otl-gray-200 border-t">
+          <details
+            key={group}
+            open
+            className="group/section border-otl-gray-200 border-t first:border-t-0"
+          >
             <summary className="focus-ring-inset hover:bg-bg-washed flex cursor-pointer list-none items-center justify-between px-4 py-3">
               <h3 className="text-label-md text-txt-black-900 font-semibold">{t(group)}</h3>
               <ChevronDownIcon

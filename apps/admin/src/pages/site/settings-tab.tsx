@@ -32,7 +32,7 @@ import useToast from "@/lib/ftds/hooks/use-toast";
 import { isHome, subtreeIds, useRefreshPages } from "@/lib/pages";
 import { PathChanges } from "./move";
 import type { SettingsSection } from "./search";
-import { card } from "./tab-layout";
+import { tabCard } from "./tab-layout";
 import { UndoDelete } from "./trash-screen";
 import { useSaveDraft } from "./use-save-draft";
 
@@ -99,7 +99,7 @@ function Section({
 /** A bordered list of Settings rows. */
 const SectionList = ({ danger, children }: { danger?: boolean; children: ReactNode }) => (
   <div
-    className={`${card} flex flex-col divide-y ${danger ? "border-otl-danger-200 divide-otl-danger-200" : "border-otl-gray-200 divide-otl-gray-200"}`}
+    className={`${tabCard} flex flex-col divide-y ${danger ? "border-otl-danger-200 divide-otl-danger-200" : "border-otl-gray-200 divide-otl-gray-200"}`}
   >
     {children}
   </div>
@@ -118,14 +118,30 @@ function useFailure() {
   };
 }
 
+/**
+ * Settings open inside the editor share the draft the editor is saving: the redirect is
+ * part of it, and making a listing or unpublishing changes it on the server. So there
+ * the redirect goes through the editor's own draft, and those two actions save the
+ * editor's edits first and reload its page after, instead of racing its autosave.
+ */
+export type DraftLink = {
+  redirect: PageRedirect | null;
+  setRedirect: (redirect: PageRedirect | null) => void;
+  beforeChange: () => Promise<unknown>;
+  afterChange: () => Promise<unknown>;
+};
+
 export function SettingsTab({
   page,
   pages,
   section,
+  draft,
 }: {
   page: Page;
   pages: PageSummary[];
   section: SettingsSection | undefined;
+  /** In the editor: its draft (see `DraftLink`). */
+  draft?: DraftLink | undefined;
 }) {
   const home = isHome(page);
   const row = (id: SettingsSection) => ({ id, focus: section === id });
@@ -156,10 +172,16 @@ export function SettingsTab({
       <SectionList>
         {homeOr(
           "redirect",
-          <RedirectForm key={page.updatedAt} row={row("redirect")} page={page} pages={pages} />,
+          <RedirectForm
+            key={page.updatedAt}
+            row={row("redirect")}
+            page={page}
+            pages={pages}
+            draft={draft}
+          />,
         )}
         {page.kind === "page" && !home && (
-          <MakeListing row={row("listing")} page={page} pages={pages} />
+          <MakeListing row={row("listing")} page={page} pages={pages} draft={draft} />
         )}
         <DuplicateForm row={row("duplicate")} page={page} pages={pages} />
         {/* An entry stays in its collection, so it has nothing to move. */}
@@ -171,7 +193,10 @@ export function SettingsTab({
           {t("settings.danger")}
         </h2>
         <SectionList danger>
-          {liveOr("unpublish", <UnpublishForm row={row("unpublish")} page={page} pages={pages} />)}
+          {liveOr(
+            "unpublish",
+            <UnpublishForm row={row("unpublish")} page={page} pages={pages} draft={draft} />,
+          )}
           {liveOr("delete", <DeleteAction row={row("delete")} page={page} pages={pages} />)}
         </SectionList>
       </section>
@@ -183,10 +208,20 @@ type Row = { id: SettingsSection; focus: boolean };
 
 type RedirectMode = "off" | "page" | "url";
 
-function RedirectForm({ row, page, pages }: { row: Row; page: Page; pages: PageSummary[] }) {
+function RedirectForm({
+  row,
+  page,
+  pages,
+  draft,
+}: {
+  row: Row;
+  page: Page;
+  pages: PageSummary[];
+  draft: DraftLink | undefined;
+}) {
   const save = useSaveDraft(page);
   const { toast } = useToast();
-  const current = page.draft.redirect ?? null;
+  const current = (draft ? draft.redirect : page.draft.redirect) ?? null;
   const [mode, setMode] = useState<RedirectMode>(current?.to ?? "off");
   const [target, setTarget] = useState<string | null>(
     current?.to === "page" ? current.pageId : null,
@@ -212,7 +247,9 @@ function RedirectForm({ row, page, pages }: { row: Row; page: Page; pages: PageS
       redirect = { to: "url", url: url.trim(), status };
     }
     try {
-      await save.mutateAsync((draft) => ({ ...draft, redirect }));
+      // In the editor, its autosave saves it with the rest of the draft.
+      if (draft) draft.setRedirect(redirect);
+      else await save.mutateAsync((doc) => ({ ...doc, redirect }));
       toast({
         variant: "success",
         title: redirect ? t("settings.redirect.saved") : t("settings.redirect.off"),
@@ -309,7 +346,17 @@ function RedirectForm({ row, page, pages }: { row: Row; page: Page; pages: PageS
   );
 }
 
-function MakeListing({ row, page, pages }: { row: Row; page: Page; pages: PageSummary[] }) {
+function MakeListing({
+  row,
+  page,
+  pages,
+  draft,
+}: {
+  row: Row;
+  page: Page;
+  pages: PageSummary[];
+  draft: DraftLink | undefined;
+}) {
   const refresh = useRefreshPages();
   const fail = useFailure();
   const { toast } = useToast();
@@ -323,8 +370,10 @@ function MakeListing({ row, page, pages }: { row: Row; page: Page; pages: PageSu
   const make = async () => {
     setBusy(true);
     try {
+      await draft?.beforeChange();
       await listingApi.make(page.id);
       await refresh(page.id);
+      await draft?.afterChange();
       toast({ variant: "success", title: t("settings.listing.done") });
     } catch (error) {
       await fail(t("settings.listing.failed"), error);
@@ -359,7 +408,8 @@ function DuplicateForm({ row, page, pages }: { row: Row; page: Page; pages: Page
       const copy = await pagesApi.duplicate(page.id, { includeChildren: withChildren });
       await refresh();
       toast({ variant: "success", title: t("settings.duplicate.done", { title: copy.title }) });
-      await navigate({ to: "/pages/$id", params: { id: copy.id } });
+      // The copy, ready to edit.
+      await navigate({ to: "/pages/$id/edit", params: { id: copy.id } });
     } catch (error) {
       await fail(t("settings.duplicate.failed"), error);
     } finally {
@@ -468,7 +518,17 @@ function MoveForm({ row, page, pages }: { row: Row; page: Page; pages: PageSumma
   );
 }
 
-function UnpublishForm({ row, page, pages }: { row: Row; page: Page; pages: PageSummary[] }) {
+function UnpublishForm({
+  row,
+  page,
+  pages,
+  draft,
+}: {
+  row: Row;
+  page: Page;
+  pages: PageSummary[];
+  draft: DraftLink | undefined;
+}) {
   const refresh = useRefreshPages();
   const fail = useFailure();
   const { toast } = useToast();
@@ -486,8 +546,10 @@ function UnpublishForm({ row, page, pages }: { row: Row; page: Page; pages: Page
   const unpublish = async () => {
     setBusy(true);
     try {
+      await draft?.beforeChange();
       await pagesApi.unpublish(page.id, redirect && target ? { redirectTo: target } : {});
       await refresh(page.id);
+      await draft?.afterChange();
       toast({
         variant: "success",
         title: t("settings.unpublish.done"),
@@ -599,7 +661,8 @@ function DeleteDialogContent({
           </>
         ),
       });
-      await navigate({ to: "/pages/$id", params: { id: page.parentId ?? page.id } });
+      // Back to every page: the one deleted is gone from the list, and Undo is in the toast.
+      await navigate({ to: "/pages" });
     } catch (error) {
       await fail(t("delete.failed"), error);
     } finally {

@@ -839,7 +839,7 @@ function JobDrawer({
                             <span className="flex min-w-0 flex-col">
                               {entry.pageId ? (
                                 <Link
-                                  to="/pages/$id"
+                                  to="/pages/$id/edit"
                                   params={{ id: entry.pageId }}
                                   className={clx("truncate", linkClass)}
                                 >

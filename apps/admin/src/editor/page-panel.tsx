@@ -1,6 +1,7 @@
 /**
- * The properties panel with nothing selected: the page's title and address,
- * and the SEO fields from the Pages screen.
+ * The page's own fields, in the page drawer's Details tab: its title (and an entry's
+ * fixed fields), its address and the SEO fields. They're part of the draft the
+ * editor is saving, so they change through it like any block.
  */
 import { type PageDocument, Slug } from "@fiscal-sb/blocks";
 import type { Page } from "@fiscal-sb/contracts";
@@ -11,6 +12,7 @@ import { CharacterCount } from "@/components/character-count";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldDescription, FieldError, FieldItem, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { ParentPrefix } from "@/components/parent-prefix";
 import { Select } from "@/components/ui/select";
 import { t } from "@/i18n";
 import { apiError, listingApi, pagesApi } from "@/lib/api";
@@ -117,10 +119,7 @@ type PagePanelProps = {
 
 export function PagePanel({ page, doc, onDoc }: PagePanelProps) {
   return (
-    <div className="flex flex-col gap-5 p-4">
-      <p className="bg-bg-primary-50 text-body-sm text-txt-black-900 rounded-md px-3 py-2">
-        {t("editor.page.hint")}
-      </p>
+    <div className="flex flex-col gap-5">
       <Field name="page-title">
         <FieldLabel>{t("editor.page.titleLabel")}</FieldLabel>
         <FieldDescription>{t("editor.page.titleHint")}</FieldDescription>
@@ -229,9 +228,13 @@ function SlugField({ page }: { page: Page }) {
   return (
     <Field name="page-slug" invalid={Boolean(error)}>
       <FieldLabel>{t("editor.page.address")}</FieldLabel>
-      <FieldDescription>{t("editor.page.addressHint", { path: page.path })}</FieldDescription>
       <div className="flex gap-2">
-        <Input value={slug} onChange={(e) => setSlug(e.target.value)} />
+        <Input
+          className="min-w-0 flex-1"
+          value={slug}
+          onChange={(e) => setSlug(e.target.value)}
+          prepend={<ParentPrefix path={page.path} />}
+        />
         <Button
           variant="default-outline"
           disabled={busy || slug === page.slug}

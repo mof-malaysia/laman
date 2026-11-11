@@ -10,6 +10,7 @@ import {
   redirect,
 } from "@tanstack/react-router";
 import { EditorPage } from "./editor/editor-page";
+import { type PanelSearch, panelTabs } from "./editor/page-drawer";
 import { RootLayout } from "./layout";
 import { AdminShell } from "./shell/shell";
 import { DashboardPage } from "./pages/dashboard";
@@ -27,7 +28,11 @@ import { AnalyticsScreen } from "./analytics/analytics-screen";
 import { type RangeSearch, rangeSearch } from "./analytics/range";
 import { PagesScreen } from "./pages/site/pages-screen";
 import { TrashScreen } from "./pages/site/trash-screen";
-import { type DetailSearch, detailSearch } from "./pages/site/search";
+import {
+  type DetailSearch,
+  detailSearch,
+  settingsSections as pageSections,
+} from "./pages/site/search";
 import { NewPageScreen } from "./pages/new-page/new-page-screen";
 import { type NewPageSearch, newPageSearch } from "./pages/new-page/search";
 import { AccountScreen } from "./account/account-screen";
@@ -150,7 +155,17 @@ const editorRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/pages/$id/edit",
   // `checks`: open what the check before publishing found, as the publish list's link does.
-  validateSearch: (search): { checks?: true } => (search.checks ? { checks: true } : {}),
+  // `panel` (and `section`): open the page drawer at that tab, as links to a page's settings,
+  // history or analytics do.
+  validateSearch: (search): { checks?: true } & PanelSearch => {
+    const panel = panelTabs.find((tab) => tab === search.panel);
+    const section = pageSections.find((s) => s === search.section);
+    return {
+      ...(search.checks ? { checks: true as const } : {}),
+      ...(panel && { panel }),
+      ...(panel && section && { section }),
+    };
+  },
   component: EditorPage,
 });
 

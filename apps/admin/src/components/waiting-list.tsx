@@ -47,7 +47,12 @@ function Review({ item, onNavigate }: { item: WaitingItem; onNavigate?: () => vo
   );
   if (item.kind === "page")
     return (
-      <Link to="/pages/$id" params={{ id: item.id }} className={linkClass} onClick={onNavigate}>
+      <Link
+        to="/pages/$id/edit"
+        params={{ id: item.id }}
+        className={linkClass}
+        onClick={onNavigate}
+      >
         {label}
       </Link>
     );

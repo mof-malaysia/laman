@@ -5,7 +5,7 @@
 import { type BlockType, type PageDocument, blocksFor } from "@fiscal-sb/blocks";
 import type { DraftConflict, Page } from "@fiscal-sb/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate, useParams, useSearch } from "@tanstack/react-router";
+import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
 import { redirectTarget } from "@/components/page-status";
 import { Button } from "@/components/ui/button";
@@ -25,14 +25,10 @@ import {
 import { MobileIcon } from "@/components/ui/icons/mobile";
 import { RedoIcon } from "@/components/ui/icons/redo";
 import { TabletIcon } from "@/components/ui/icons/tablet";
-import { ColumnCollapseIcon } from "@/components/ui/icons/column-collapse";
-import { ColumnExpandIcon } from "@/components/ui/icons/column-expand";
 import { UndoIcon } from "@/components/ui/icons/undo";
 import { useCommands } from "@/components/ui/shortcuts";
 import { Spinner } from "@/components/ui/spinner";
 import { Toggle } from "@/components/ui/toggle";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ToggleGroup } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSidebar } from "@/components/ui/app-shell";
 import { t } from "@/i18n";
@@ -47,15 +43,33 @@ import {
   usePageChecks,
 } from "@/components/page-checks";
 import { apiError, conflictOf, pagesApi, statusOf } from "@/lib/api";
-import { useMe } from "@/lib/auth";
+import { useCan, useMe } from "@/lib/auth";
+import { PageBreadcrumb } from "@/shell/page-breadcrumb";
 import { localDrafts } from "@/lib/local-drafts";
 import { sessionLost } from "@/lib/session";
 import { useStore } from "@/lib/store";
 import { useMediaQuery } from "@/lib/ftds/hooks/use-media-query";
-import { formatDateTime, previewHref, usePages, useRefreshPages } from "@/lib/pages";
+import { formatDateTime, isHome, previewHref, usePages, useRefreshPages } from "@/lib/pages";
+import {
+  Menu,
+  MenuContent,
+  MenuGroup,
+  MenuGroupLabel,
+  MenuItem,
+  MenuRadioGroup,
+  MenuRadioItem,
+  MenuSeparator,
+  MenuTrigger,
+} from "@/components/ui/menu";
+import { ChevronDownIcon } from "@/components/ui/icons/chevron-down";
+import { EllipsisVerticalIcon } from "@/components/ui/icons/ellipsis-vertical";
+import type { SettingsSection } from "@/pages/site/search";
+import { PageDrawer, type PanelSearch, type PanelTab } from "./page-drawer";
+import { SettingIcon } from "@/components/ui/icons/setting";
 import { BlockPicker } from "./block-picker";
 import { type BlockAction, Canvas, type CanvasWidth, type CanvasZoom } from "./canvas";
 import { LeftColumn } from "./layers";
+import { EmptyPanel } from "./empty-panel";
 import { PagePanel } from "./page-panel";
 import { PropertyPanel } from "./property-panel";
 import { type SaveState, PublishControl } from "@/components/publish-control";
@@ -283,11 +297,21 @@ function Editor({ page, onReload }: { page: Page; onReload: () => Promise<void> 
   // Checked as saved: each save refreshes it, and Publish shows it first.
   const checks = usePageChecks(page.id);
   const stopped = stops(checks.data);
+  const canPublish = useCan("content.publish");
   // What the checks found, on hand while editing; open on arrival from the publish list.
   // Open while the address says so, as the publish list's link does: closing it
   // drops `?checks`, so a reload or Back doesn't bring it back.
-  const showChecks = (useSearch({ strict: false }) as { checks?: boolean }).checks === true;
+  const search = useSearch({ strict: false }) as { checks?: boolean } & PanelSearch;
+  const showChecks = search.checks === true;
   const navigate = useNavigate();
+  /** Opens the page drawer at a tab (and a Settings section), or closes it. */
+  const setPanel = (panel?: PanelTab, section?: SettingsSection) =>
+    void navigate({
+      to: "/pages/$id/edit",
+      params: { id: page.id },
+      search: panel ? { panel, ...(section && { section }) } : {},
+      replace: true,
+    });
   const setShowChecks = (open: boolean) =>
     void navigate({
       to: "/pages/$id/edit",
@@ -326,7 +350,6 @@ function Editor({ page, onReload }: { page: Page; onReload: () => Promise<void> 
     }
   };
   // On a phone, whether the page's own settings are open in place of the block list.
-  const [phonePage, setPhonePage] = useState(false);
   // The canvas needs the room: the sidebar folds to its icons while editing, and is put
   // back as the officer had it when they leave.
   const sidebar = useSidebar();
@@ -348,11 +371,6 @@ function Editor({ page, onReload }: { page: Page; onReload: () => Promise<void> 
   const [picker, setPicker] = useState<{ at: number } | null>(null);
   const blocks = state.doc.ms.blocks;
   const selected = blocks.find((b) => b.id === state.selected) ?? null;
-  // The Block switch returns to the block last worked on.
-  const lastSelected = useRef<string | null>(null);
-  useEffect(() => {
-    if (state.selected) lastSelected.current = state.selected;
-  }, [state.selected]);
   const summary = pages.data?.find((p) => p.id === page.id) ?? page;
   const allowed = blocksFor(page.kind);
   const isRequired = (id: string) => blocks.some((b) => b.id === id && required(b));
@@ -475,6 +493,13 @@ function Editor({ page, onReload }: { page: Page; onReload: () => Promise<void> 
       run: () => setWidth("mobile"),
     },
     { id: "editor.preview", title: t("editor.preview"), group, run: preview },
+    {
+      id: "editor.pageSettings",
+      title: t("editor.drawer.open"),
+      group,
+      combo: "shift+s",
+      run: () => setPanel("details"),
+    },
     ...allowed.map((type) => ({
       id: `editor.insert.${type}`,
       title: t("editor.insert.block", { block: blockLabel(type) }),
@@ -483,6 +508,8 @@ function Editor({ page, onReload }: { page: Page; onReload: () => Promise<void> 
     })),
   ]);
 
+  // Where the publish control puts its status: by undo and redo, once the bar is drawn.
+  const [statusSlot, setStatusSlot] = useState<HTMLElement | null>(null);
   const publishControl = (
     <PublishControl
       live={liveState[summary.status]}
@@ -506,6 +533,13 @@ function Editor({ page, onReload }: { page: Page; onReload: () => Promise<void> 
       onPublish={() => pagesApi.publish(page.id)}
       viewPath={summary.path}
       pageId={page.id}
+      statusIn={statusSlot}
+      compact
+      badge={
+        checks.data?.length
+          ? { count: checks.data.length, label: checksLabel(checks.data), danger: stopped }
+          : undefined
+      }
       label={
         page.kind !== "entry"
           ? t("editor.publish")
@@ -517,6 +551,9 @@ function Editor({ page, onReload }: { page: Page; onReload: () => Promise<void> 
       }
     />
   );
+  // Whether Publish can be pressed: something to publish, by someone who may.
+  const publishable =
+    canPublish && !(liveState[summary.status] === "live" && autosave.state === "saved");
   const bringBack = () => {
     if (!kept) return;
     // Saved from the version they started from, so a page someone has saved since asks first.
@@ -628,97 +665,110 @@ function Editor({ page, onReload }: { page: Page; onReload: () => Promise<void> 
 
   return (
     <div className="flex h-full flex-col">
+      {/* One bar, three parts: where am I (and undo), how I see it, the page itself. */}
       <div
         role="toolbar"
         aria-label={t("editor.toolbar")}
-        className="border-otl-gray-200 flex shrink-0 flex-wrap items-center gap-2 border-b px-3 py-2 md:h-12 md:flex-nowrap md:gap-3 md:py-0"
+        className="bg-bg-gray-50 border-otl-gray-200 flex shrink-0 flex-wrap items-center gap-2 border-b px-3 py-2 md:h-12 md:flex-nowrap md:gap-3 md:py-0"
       >
-        <div className="flex shrink-0 items-center gap-1">
+        {/* The part that gives way when the bar is narrow. On a phone the shell's bar has the path. */}
+        <div className="flex min-w-0 items-center gap-2 md:flex-1">
+          <div className="hidden min-w-0 md:block">
+            <PageBreadcrumb page={summary} />
+          </div>
+          <span aria-hidden className="bg-otl-gray-200 hidden h-5 w-px shrink-0 md:block" />
+          <div className="flex shrink-0 items-center">
+            <ToolButton
+              label={t("editor.undo")}
+              disabled={state.past.length === 0}
+              onClick={() => dispatch({ type: "undo" })}
+            >
+              <UndoIcon />
+            </ToolButton>
+            <ToolButton
+              label={t("editor.redo")}
+              disabled={state.future.length === 0}
+              onClick={() => dispatch({ type: "redo" })}
+            >
+              <RedoIcon />
+            </ToolButton>
+          </div>
+          {/* Saved, live, and what Publish just did: beside undo, with the editing it reports on. */}
+          <div ref={setStatusSlot} className="flex shrink-0 items-center gap-2" />
+        </div>
+        {/* How the canvas is shown: its own group, set apart by a hairline either side. */}
+        <span aria-hidden className="bg-otl-gray-200 hidden h-5 w-px shrink-0 md:block" />
+        <div className="hidden shrink-0 items-center gap-1 md:flex">
           {wide && (
-            <>
-              <ToolButton
-                label={t(showStructure ? "editor.left.hide" : "editor.left.show")}
-                disabled={false}
-                pressed={showStructure}
-                onClick={toggleStructure}
-              >
-                {showStructure ? <ColumnCollapseIcon /> : <ColumnExpandIcon />}
-              </ToolButton>
-              <span aria-hidden className="bg-otl-gray-200 mx-1 h-5 w-px" />
-            </>
+            <Toggle
+              pressed={showStructure}
+              onPressedChange={toggleStructure}
+              aria-label={t("editor.layers")}
+              // The toolbar's buttons draw their icons at 20px; the toggle's own default is 16.
+              className="[&_svg]:size-5"
+            >
+              <LayersIcon />
+              <span className="max-xl:sr-only">{t("editor.layers")}</span>
+            </Toggle>
           )}
-          <ToolButton
-            label={t("editor.undo")}
-            disabled={state.past.length === 0}
-            onClick={() => dispatch({ type: "undo" })}
-          >
-            <UndoIcon />
-          </ToolButton>
-          <ToolButton
-            label={t("editor.redo")}
-            disabled={state.future.length === 0}
-            onClick={() => dispatch({ type: "redo" })}
-          >
-            <RedoIcon />
-          </ToolButton>
+          <CanvasMenu width={width} zoom={zoom} onWidth={setWidth} onZoom={setZoom} />
         </div>
-        {/* How the canvas is shown: one quiet group, apart from the page's own actions. */}
-        <div className="bg-bg-washed hidden shrink-0 items-center gap-1 rounded-md p-0.5 md:flex">
-          <ToggleGroup
-            value={[width]}
-            onValueChange={(value) => value[0] && setWidth(value[0] as CanvasWidth)}
-            aria-label={t("editor.width")}
-            size="small"
-          >
-            {(["desktop", "tablet", "mobile"] as const).map((w) => {
-              const Icon = widthIcons[w];
-              return (
-                <Tooltip key={w}>
-                  <TooltipTrigger render={<Toggle value={w} aria-label={t(`editor.width.${w}`)} />}>
-                    <Icon />
-                  </TooltipTrigger>
-                  <TooltipContent>{t(`editor.width.${w}`)}</TooltipContent>
-                </Tooltip>
-              );
-            })}
-          </ToggleGroup>
-          <span aria-hidden className="bg-otl-gray-200 h-5 w-px" />
-          <ToggleGroup
-            value={[zoom]}
-            onValueChange={(value) => value[0] && setZoom(value[0] as CanvasZoom)}
-            aria-label={t("editor.zoom")}
-            size="small"
-          >
-            <Toggle value="fit">{t("editor.zoom.fit")}</Toggle>
-            <Toggle value="100">100%</Toggle>
-          </ToggleGroup>
-        </div>
-        <span className="flex-1" />
-        {checks.data && checks.data.length > 0 && (
+        <span aria-hidden className="bg-otl-gray-200 hidden h-5 w-px shrink-0 md:block" />
+        {/* The page: its other screens, a preview, then its state and Publish. */}
+        <div className="flex shrink-0 items-center gap-2 max-md:w-full max-md:flex-wrap">
+          {/* With Publish unavailable, the checks keep a way in of their own. */}
+          {checks.data && checks.data.length > 0 && !publishable && (
+            <Button
+              variant="default-ghost"
+              size="small"
+              aria-haspopup="dialog"
+              aria-label={checksLabel(checks.data)}
+              title={checksLabel(checks.data)}
+              onClick={() => setShowChecks(true)}
+            >
+              <WarningCircleIcon className={stopped ? "text-txt-danger" : "text-txt-warning"} />
+              <span className="tabular-nums">{checks.data.length}</span>
+            </Button>
+          )}
+          {/* Quiet icons first (the page's settings, then everything else), then the two that
+              act: Preview, and Publish in blue. */}
           <Button
             variant="default-ghost"
             size="small"
             aria-haspopup="dialog"
-            onClick={() => setShowChecks(true)}
+            aria-expanded={search.panel !== undefined}
+            title={t("editor.drawer.hint")}
+            onClick={() => setPanel("details")}
           >
-            <WarningCircleIcon className={stopped ? "text-txt-danger" : "text-txt-warning"} />
-            {checksLabel(checks.data)}
+            <SettingIcon /> <span className="max-xl:sr-only">{t("editor.drawer.button")}</span>
           </Button>
-        )}
-        <Button
-          variant="default-ghost"
-          size="small"
-          className="max-md:hidden"
-          render={<Link to="/pages/$id" params={{ id: page.id }} search={{ tab: "history" }} />}
-        >
-          {t("detail.tab.history")}
-        </Button>
-        <Button variant="default-outline" size="small" onClick={preview}>
-          <EyeShowIcon /> {t("editor.preview")}
-        </Button>
-        {publishControl}
+          <PageMoreMenu page={page} onPanel={setPanel} />
+          <Button variant="default-outline" size="small" onClick={preview}>
+            <EyeShowIcon /> {t("editor.preview")}
+          </Button>
+          {publishControl}
+        </div>
       </div>
       {stoppedNotice || keptNotice}
+      <PageDrawer
+        page={{ ...page, ...summary }}
+        panel={search.panel}
+        section={search.section}
+        onPanel={setPanel}
+        fields={pagePanel}
+        draft={{
+          redirect: state.doc.redirect ?? null,
+          setRedirect: (next) =>
+            dispatch({
+              type: "setDoc",
+              update: (doc) => ({ ...doc, redirect: next }),
+              key: "page.redirect",
+              rerender: true,
+            }),
+          beforeChange: autosave.ensureSaved,
+          afterChange: onReload,
+        }}
+      />
       {checks.data?.length ? (
         <Drawer side="right" open={showChecks} onOpenChange={setShowChecks}>
           <DrawerContent className="w-full sm:max-w-md">
@@ -777,53 +827,57 @@ function Editor({ page, onReload }: { page: Page; onReload: () => Promise<void> 
             aria-label={t("editor.properties")}
             className="border-otl-gray-200 flex w-[22rem] shrink-0 flex-col border-l"
           >
-            {/* The panel does one of two jobs; the switch says which, and changes it. */}
-            <Tabs
-              value={selected ? "block" : "page"}
-              onValueChange={(value) =>
-                dispatch({
-                  type: "select",
-                  id: value === "page" ? null : (lastSelected.current ?? blocks[0]?.id ?? null),
-                })
-              }
-            >
-              <TabsList width="full" className="shrink-0 px-2">
-                <TabsTrigger value="page">{t("editor.panel.page")}</TabsTrigger>
-                <TabsTrigger value="block" disabled={blocks.length === 0}>
-                  {selected ? blockLabel(selected.type) : t("editor.panel.block")}
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-            <div className="relative min-h-0 flex-1 overflow-y-auto">
-              {selected ? propertyPanel : pagePanel}
-            </div>
+            {/* The selected block's properties. The page's own fields are in the drawer. */}
+            {selected ? (
+              <>
+                <h2 className="border-otl-gray-200 text-label-md text-txt-black-900 shrink-0 border-b px-4 py-3 font-semibold">
+                  {blockLabel(selected.type)}
+                </h2>
+                <div className="relative min-h-0 flex-1 overflow-y-auto">{propertyPanel}</div>
+              </>
+            ) : (
+              <div className="min-h-0 flex-1 overflow-y-auto">
+                <EmptyPanel
+                  blocks={blocks.length}
+                  checks={checks.data?.length ?? 0}
+                  checksLabel={checks.data ? checksLabel(checks.data) : ""}
+                  stopped={stopped}
+                  layers={showStructure}
+                  onAddBlock={() => setPicker({ at: blocks.length })}
+                  onPageDetails={() => setPanel("details")}
+                  onChecks={() => setShowChecks(true)}
+                />
+              </div>
+            )}
           </aside>
         </div>
       ) : (
         <>
           {redirectNotice}
           <div className="min-h-0 flex-1 overflow-y-auto">
-            {selected || phonePage ? (
+            {selected ? (
               <>
-                <div className="border-otl-gray-200 border-b px-3 py-2">
+                <div className="border-otl-gray-200 flex items-center gap-2 border-b px-3 py-2">
                   <Button
                     variant="default-ghost"
                     size="small"
                     onClick={() => {
-                      setPhonePage(false);
                       dispatch({ type: "select", id: null });
                     }}
                   >
                     <ArrowBackIcon /> {t("editor.phone.back")}
                   </Button>
+                  <h2 className="text-label-md text-txt-black-900 font-semibold">
+                    {blockLabel(selected.type)}
+                  </h2>
                 </div>
-                {selected ? propertyPanel : pagePanel}
+                {propertyPanel}
               </>
             ) : (
               <nav aria-label={t("editor.left")} className="flex flex-col">
                 <div className="border-otl-gray-200 border-b p-3">
-                  <Button variant="default-outline" onClick={() => setPhonePage(true)}>
-                    {t("editor.panel.page")}
+                  <Button variant="default-outline" onClick={() => setPanel("details")}>
+                    {t("editor.panel.pageDetails")}
                   </Button>
                 </div>
                 {leftColumn}
@@ -874,5 +928,120 @@ function ToolButton({
       </TooltipTrigger>
       <TooltipContent>{label}</TooltipContent>
     </Tooltip>
+  );
+}
+
+/**
+ * The page's other screens and actions, from the editor: its settings and analytics,
+ * then duplicate, move, unpublish and delete (each opens where it's done today, on
+ * the page's Settings tab).
+ */
+function PageMoreMenu({
+  page,
+  onPanel,
+}: {
+  page: Page;
+  onPanel: (panel: PanelTab, section?: SettingsSection) => void;
+}) {
+  return (
+    <Menu>
+      <MenuTrigger
+        render={
+          <Button variant="default-ghost" size="small" iconOnly aria-label={t("detail.more")} />
+        }
+      >
+        <EllipsisVerticalIcon />
+      </MenuTrigger>
+      <MenuContent align="end">
+        <MenuItem onClick={() => onPanel("settings", "duplicate")}>
+          {t("settings.duplicate.title")}
+        </MenuItem>
+        {page.kind !== "entry" && (
+          <MenuItem disabled={isHome(page)} onClick={() => onPanel("settings", "move")}>
+            {t("detail.moveTo")}
+          </MenuItem>
+        )}
+        <MenuItem
+          disabled={isHome(page) || page.status === "draft"}
+          onClick={() => onPanel("settings", "unpublish")}
+        >
+          {t("settings.unpublish.title")}
+        </MenuItem>
+        <MenuSeparator />
+        <MenuItem
+          variant="danger"
+          disabled={isHome(page)}
+          onClick={() => onPanel("settings", "delete")}
+        >
+          {t("settings.delete.title")}
+        </MenuItem>
+      </MenuContent>
+    </Menu>
+  );
+}
+
+/** The layers column's toggle: stacked layers, drawn like the FTDS icons (20px, 1.5px stroke). */
+function LayersIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden className="size-5">
+      <path
+        d="m10 3.5 6.5 3.25L10 10 3.5 6.75 10 3.5ZM3.5 10.25 10 13.5l6.5-3.25M3.5 13.5 10 16.75l6.5-3.25"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/** How the canvas is shown, in one menu: the device's width, then the zoom. */
+function CanvasMenu({
+  width,
+  zoom,
+  onWidth,
+  onZoom,
+}: {
+  width: CanvasWidth;
+  zoom: CanvasZoom;
+  onWidth: (width: CanvasWidth) => void;
+  onZoom: (zoom: CanvasZoom) => void;
+}) {
+  const Icon = widthIcons[width];
+  return (
+    <Menu>
+      <MenuTrigger render={<Button variant="default-ghost" size="small" />}>
+        <Icon />
+        <span className="max-xl:sr-only">{t(`editor.width.${width}`)}</span>
+        <span className="text-txt-black-500 max-xl:hidden">
+          · {zoom === "fit" ? t("editor.zoom.fit") : "100%"}
+        </span>
+        <ChevronDownIcon className="text-txt-black-500 size-4" />
+      </MenuTrigger>
+      <MenuContent align="center">
+        <MenuGroup>
+          <MenuGroupLabel>{t("editor.width")}</MenuGroupLabel>
+          <MenuRadioGroup value={width} onValueChange={(value) => onWidth(value as CanvasWidth)}>
+            {(["desktop", "tablet", "mobile"] as const).map((w) => (
+              <MenuRadioItem key={w} value={w} closeOnClick>
+                {t(`editor.width.${w}`)}
+              </MenuRadioItem>
+            ))}
+          </MenuRadioGroup>
+        </MenuGroup>
+        <MenuSeparator />
+        <MenuGroup>
+          <MenuGroupLabel>{t("editor.zoom")}</MenuGroupLabel>
+          <MenuRadioGroup value={zoom} onValueChange={(value) => onZoom(value as CanvasZoom)}>
+            <MenuRadioItem value="fit" closeOnClick>
+              {t("editor.zoom.fit")}
+            </MenuRadioItem>
+            <MenuRadioItem value="100" closeOnClick>
+              100%
+            </MenuRadioItem>
+          </MenuRadioGroup>
+        </MenuGroup>
+      </MenuContent>
+    </Menu>
   );
 }

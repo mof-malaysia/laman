@@ -482,7 +482,7 @@ function FileDetails({
                       {page.title}
                     </Link>
                   ) : (
-                    <Link to="/pages/$id" params={{ id: page.id }} className={linkClass}>
+                    <Link to="/pages/$id/edit" params={{ id: page.id }} className={linkClass}>
                       {page.title}
                     </Link>
                   )}

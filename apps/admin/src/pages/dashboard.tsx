@@ -545,7 +545,7 @@ function RecentEdits({
           {pages.slice(0, 6).map((page) => (
             <li key={page.id}>
               <Link
-                to="/pages/$id"
+                to="/pages/$id/edit"
                 params={{ id: page.id }}
                 className="hover:bg-bg-washed focus-ring-inset flex items-center gap-3 px-4 py-2.5 no-underline"
               >

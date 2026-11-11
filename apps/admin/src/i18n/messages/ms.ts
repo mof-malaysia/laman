@@ -17,6 +17,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "shell.goTo": "Pergi ke {label}",
   "shell.navigationGroup": "Pergi ke",
   "shell.palettePlaceholder": "Taip arahan atau cari…",
+  "shell.switchPage": "Buka halaman lain",
   "nav.dashboard": "Papan pemuka",
   "nav.pages": "Halaman",
   "nav.media": "Media",
@@ -108,7 +109,9 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
     "Tidak dapat disimpan, jadi tiada apa-apa yang diterbitkan. Semak medan yang ditandakan.",
   "live.live": "Diterbitkan",
   "live.changed": "Perubahan belum diterbitkan",
+  "live.changed.short": "Belum diterbitkan",
   "live.new": "Belum di laman web",
+  "live.new.short": "Belum di laman",
   "live.scheduled": "Dijadualkan",
   "outcome.live.title": "Perubahan telah diterbitkan",
   "outcome.live.body": "{items}: pelawat dapat melihatnya sekarang.",
@@ -949,8 +952,8 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
 
   "pages.loadFailed": "Halaman tidak dapat dimuatkan.",
   "pages.missing": "Halaman itu tiada di sini",
-  "pages.chooseBody":
-    "Pilih halaman dalam pepohon untuk melihat butirannya, atau tambah halaman baharu.",
+  "pages.missingBody":
+    "Halaman ini mungkin telah dialihkan atau alamatnya berubah. Cari dalam senarai semua halaman.",
   "pages.back": "Semua halaman",
   "pages.index.title": "Apa yang sedang anda usahakan?",
   "pages.index.intro":
@@ -986,21 +989,10 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
     "Halaman ini dipadam {time} dan berada dalam Baru dipadam, tempat ia boleh dilihat dan dipulihkan.",
   "pages.deletedOpen": "Buka dalam Baru dipadam",
 
-  "tree.label": "Pepohon halaman",
-  "tree.filter": "Tapis halaman",
-  "tree.filterLabel": "Tapis halaman mengikut tajuk atau alamat",
-  "tree.newChild": "Halaman baharu di bawah halaman yang dipilih",
-  "tree.moreActions": "Tindakan halaman lain",
-  "tree.noMatches": "Tiada halaman atau entri yang sepadan.",
   "tree.entries": "Entri",
   "tree.entryIn": "Entri dalam {collection}",
-  "tree.liveNote": "Halaman tanpa tag telah diterbitkan.",
-  "tree.hint": "Seret untuk alihkan · alt+anak panah untuk alihkan · Enter membuka editor",
 
   "move.becomes": "menjadi",
-  "move.confirm.title": "Alihkan {title}?",
-  "move.confirm.body": "Alamat berikut berubah di laman web sekarang:",
-  "move.confirm.action": "Alihkan dan terbitkan",
   "move.redirect": "Ubah hala alamat lama ke sini",
   "move.failed": "Halaman tidak dialihkan",
 
@@ -1009,7 +1001,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "detail.kind.page": "Halaman",
   "detail.kind.listing": "Senarai",
   "detail.kind.entry": "Entri",
-  "detail.loadFailed": "Halaman ini tidak dapat dimuatkan. Pilih semula dalam pepohon.",
+  "detail.loadFailed": "Halaman ini tidak dapat dimuatkan. Buka semula dari Halaman.",
   "detail.openEditor": "Buka dalam editor",
   "detail.preview": "Pratonton",
   "detail.snapshot.title": "Pratonton {title}",
@@ -1020,7 +1012,6 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "detail.moveTo": "Alihkan ke…",
   "detail.redirects": "Ubah hala ke {target}",
   "detail.saved": "Disimpan {time}",
-  "detail.backToEntries": "Entri {title}",
   "detail.tab.details": "Butiran",
   "detail.tab.seo": "SEO",
   "detail.tab.settings": "Tetapan",
@@ -1054,7 +1045,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
 
   "trash.open": "Pulihkan yang dipadam",
   "trash.title": "Baru dipadam",
-  "trash.back": "Kembali ke pepohon halaman",
+  "trash.back": "Kembali ke semua halaman",
   "trash.kept": "Disimpan selama 30 hari, kemudian dipadam terus",
   "trash.label": "Halaman yang dipadam",
   "trash.empty": "Tiada yang dipadam",
@@ -1223,7 +1214,8 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
 
   "settings.whenLive": "Tekan Terbitkan navigasi apabila ia sedia untuk dilihat pelawat.",
   "settings.home.redirect": "Halaman utama tidak boleh ubah hala: di situlah laman web bermula.",
-  "settings.home.move": "Halaman utama ialah akar pepohon, jadi ia tidak boleh dialihkan.",
+  "settings.home.move":
+    "Setiap halaman terletak di bawah halaman utama, jadi ia tidak boleh dialihkan.",
   "settings.home.unpublish": "Halaman utama tidak boleh dinyahterbitkan: laman web memerlukannya.",
   "settings.home.delete": "Halaman utama tidak boleh dipadam: laman web memerlukannya.",
   "settings.danger": "Zon bahaya",
@@ -1271,12 +1263,12 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "settings.unpublish.failed": "Halaman tidak dinyahterbitkan",
   "settings.delete.title": "Padam",
   "settings.delete.description":
-    "Keluarkan halaman ini dari pepohon dan dari laman web sekarang. Anda boleh memulihkannya dari Baru dipadam dalam tempoh 30 hari.",
+    "Keluarkan halaman ini dari senarai Halaman dan dari laman web sekarang. Anda boleh memulihkannya dari Baru dipadam dalam tempoh 30 hari.",
   "settings.delete.action": "Padam halaman",
 
   "delete.title": "Padam {title}?",
   "delete.body":
-    "Halaman ini akan dikeluarkan daripada pepohon halaman dan laman web sebaik sahaja disahkan. Anda boleh memulihkannya daripada Baru dipadam dalam tempoh 30 hari.",
+    "Halaman ini akan dikeluarkan daripada senarai Halaman dan laman web sebaik sahaja disahkan. Anda boleh memulihkannya daripada Baru dipadam dalam tempoh 30 hari.",
   "delete.checking": "Menyemak apa yang menggunakan halaman ini…",
   "delete.children.legend":
     "Halaman ini ada {count} subhalaman. Apakah yang perlu dilakukan kepadanya?",
@@ -1382,6 +1374,10 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "editor.undo": "Buat asal",
   "editor.redo": "Buat semula",
   "editor.preview": "Pratonton",
+  "editor.layers": "Lapisan",
+  "editor.drawer.hint": "Tetapan, sejarah dan analitik (⇧S)",
+  "editor.drawer.button": "Tetapan",
+  "editor.drawer.open": "Tetapan, sejarah dan analitik halaman",
   "editor.publish": "Terbitkan halaman",
   "editor.toolbar": "Editor",
   "editor.left": "Struktur halaman",
@@ -1436,8 +1432,6 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "editor.fields.content": "Kandungan",
   "editor.fields.actions": "Tindakan",
   "editor.fields.appearance": "Penampilan",
-  "editor.page.addressHint":
-    "Kini di {path}. Mengubahnya akan terus mengubah alamat di laman web, dan menghantar alamat lama ke alamat baharu.",
   "editor.page.changeAddress": "Ubah",
   "editor.page.moved": "Alamat diubah untuk {count} halaman",
 
@@ -1482,17 +1476,25 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "editor.layers.drag.cancel": "Alihan dibatalkan. {block} kembali ke tempat asalnya.",
 
   "editor.block.remove": "Buang {block}",
-  "editor.field.inlineOnce": "Anda juga boleh menaip teks blok ini terus pada halaman.",
   "editor.field.none": "Tiada",
   "editor.list.item": "Item {n}",
   "editor.list.remove": "Buang item {n}",
   "editor.list.add": "Tambah item",
   "editor.list.actions": "Tindakan untuk item {n}",
 
-  "editor.page.hint":
-    "Tetapan untuk keseluruhan halaman. Untuk mengubah blok, pilih blok itu pada halaman.",
-  "editor.panel.page": "Tetapan halaman",
-  "editor.panel.block": "Blok",
+  "editor.panel.pageDetails": "Butiran halaman",
+  "editor.empty.title": "Tiada yang dipilih",
+  "editor.empty.body": "Klik blok pada halaman untuk mengubahnya.",
+  "editor.empty.bodyLayers":
+    "Klik blok pada halaman, atau dalam lapisan di sebelah kiri, untuk mengubahnya.",
+  "editor.empty.onPage": "Pada halaman ini",
+  "editor.empty.blocks": "Blok",
+  "editor.empty.checks": "Semakan",
+  "editor.empty.review": "Semak",
+  "editor.empty.noChecks": "Semua baik",
+  "editor.empty.keys": "Papan kekunci",
+  "editor.empty.keyStep": "Pilih blok pertama",
+  "editor.empty.keySave": "Simpan sekarang",
   "editor.page.titleLabel": "Tajuk halaman",
   "editor.page.titleHint": "Dipaparkan dalam navigasi dan tab pelayar.",
   "editor.page.address": "Alamat",
@@ -1538,6 +1540,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "analytics.range.from": "Dari",
   "analytics.range.to": "Hingga",
   "analytics.comparing": "{range}, berbanding {before}.",
+  "analytics.comparingNone": "{range}. Tiada data tempoh sebelumnya untuk dibandingkan.",
   "analytics.visitors": "Pelawat",
   "analytics.views": "Paparan",
   "analytics.visits": "Lawatan",

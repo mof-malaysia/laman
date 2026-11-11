@@ -1,8 +1,10 @@
-/** The layout the page detail tabs share: white panels on the washed pane, a form beside an aside. */
+/** The layout the page tabs share: white cards on the grey canvas, a form beside an aside. */
 import { type ReactNode, useId } from "react";
 import { card } from "@/components/card";
+import { clx } from "@/lib/ftds/utils";
 
-export { card };
+/** The admin's card, rounded like the Pages index's. */
+export const tabCard = clx(card, "rounded-2xl");
 
 /** The tab's form, with context beside it on wide screens and under it on narrow ones. */
 export function TabColumns({
@@ -16,11 +18,15 @@ export function TabColumns({
   split?: "aside" | "half";
 }) {
   return (
-    <div
-      className={`grid items-start gap-5 ${split === "half" ? "max-w-7xl lg:grid-cols-2" : "max-w-5xl lg:grid-cols-[minmax(0,1fr)_20rem]"}`}
-    >
-      <div className="flex min-w-0 flex-col gap-5">{children}</div>
-      {aside && <aside className="flex min-w-0 flex-col gap-5">{aside}</aside>}
+    // Columns by the room the tab has, not the screen's: the same tab sits full width on
+    // the page's screen and in the editor's page drawer.
+    <div className="@container">
+      <div
+        className={`grid items-start gap-5 ${split === "half" ? "max-w-7xl @3xl:grid-cols-2" : "max-w-5xl @3xl:grid-cols-[minmax(0,1fr)_20rem]"}`}
+      >
+        <div className="flex min-w-0 flex-col gap-5">{children}</div>
+        {aside && <aside className="flex min-w-0 flex-col gap-5">{aside}</aside>}
+      </div>
     </div>
   );
 }
@@ -40,7 +46,10 @@ export function Panel({
 }) {
   const id = useId();
   return (
-    <section aria-labelledby={title ? id : undefined} className={`${card} border-otl-gray-200`}>
+    <section
+      aria-labelledby={title ? id : undefined}
+      className={clx(tabCard, "border-otl-gray-200")}
+    >
       {title && (
         <div className="flex items-baseline justify-between gap-3 px-5 pt-4">
           <h2 id={id} className="text-label-sm text-txt-black-900 font-semibold">
@@ -49,7 +58,9 @@ export function Panel({
           {aside}
         </div>
       )}
-      <div className={`flex flex-col gap-4 px-5 pb-5 ${title ? "pt-3" : "pt-5"}`}>{children}</div>
+      <div className={`@container flex flex-col gap-4 px-5 pb-5 ${title ? "pt-3" : "pt-5"}`}>
+        {children}
+      </div>
       {footer && (
         <div className="border-otl-gray-200 bg-bg-washed flex flex-wrap items-center gap-3 border-t px-5 py-3">
           {footer}
@@ -73,7 +84,7 @@ export function FormRow({
   return (
     <fieldset
       aria-labelledby={id}
-      className="border-otl-gray-200 m-0 grid min-w-0 gap-3 border-0 border-t px-0 py-5 first:border-t-0 first:pt-0 last:pb-0 md:grid-cols-[14rem_minmax(0,1fr)] md:gap-6"
+      className="border-otl-gray-200 m-0 grid min-w-0 gap-3 border-0 border-t px-0 py-5 first:border-t-0 first:pt-0 last:pb-0 @xl:grid-cols-[14rem_minmax(0,1fr)] @xl:gap-6"
     >
       <div className="flex flex-col gap-0.5">
         {/* The type of FTDS's SettingsRow, as on the Settings tab. */}

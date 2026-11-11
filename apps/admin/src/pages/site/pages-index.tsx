@@ -33,6 +33,7 @@ import {
   TrashGlyph,
   UploadGlyph,
 } from "./line-icons";
+import { StateDot, StateLabel as SharedStateLabel } from "./page-state";
 import { useTrash } from "./trash-screen";
 
 /** Waiting tiles shown before "Show all". */
@@ -144,12 +145,7 @@ export function PagesIndex({ pages }: { pages: PageSummary[] }) {
                 {searching ? t("pages.index.enter") : "/"}
               </kbd>
             </label>
-            <Button
-              variant="primary-fill"
-              size="large"
-              className="h-12 rounded-full px-5"
-              onClick={() => shell.newPage()}
-            >
+            <Button variant="primary-fill" size="large" onClick={() => shell.newPage()}>
               <PlusGlyph className="size-5" /> {t("commands.newPage")}
             </Button>
           </div>
@@ -212,7 +208,8 @@ export function PagesIndex({ pages }: { pages: PageSummary[] }) {
                   </div>
                   <Button
                     variant="default-outline"
-                    className="bg-bg-white hover:bg-bg-gray-50 rounded-full"
+                    // Sheet on the tray's Well, so it still reads as a button.
+                    className="bg-bg-white hover:bg-bg-gray-50"
                     onClick={() => shell.openWaiting()}
                   >
                     <UploadGlyph className="size-[18px]" /> {t("pages.index.publish")}
@@ -250,7 +247,6 @@ export function PagesIndex({ pages }: { pages: PageSummary[] }) {
                           <Button
                             variant="default-outline"
                             size="small"
-                            className="rounded-full"
                             render={
                               // oxlint-disable-next-line jsx-a11y/anchor-has-content, jsx-a11y/control-has-associated-label -- the Button fills it with its label
                               <a href={previewHref(item.id)} target="_blank" rel="noopener" />
@@ -265,11 +261,12 @@ export function PagesIndex({ pages }: { pages: PageSummary[] }) {
                   })}
                 </ul>
                 {waiting.length > CAP && (
-                  <button
-                    type="button"
+                  <Button
+                    variant="default-ghost"
+                    size="small"
                     aria-expanded={allWaiting}
                     onClick={() => setAllWaiting((all) => !all)}
-                    className="text-body-sm text-txt-black-700 hover:text-txt-black-900 focus-ring flex items-center justify-center gap-1 rounded-full py-1.5 font-medium"
+                    className="self-center"
                   >
                     {allWaiting
                       ? t("pages.index.showFewer")
@@ -280,7 +277,7 @@ export function PagesIndex({ pages }: { pages: PageSummary[] }) {
                         allWaiting ? "-rotate-90" : "rotate-90",
                       )}
                     />
-                  </button>
+                  </Button>
                 )}
               </section>
             ) : (
@@ -409,30 +406,9 @@ function EditLink({
   );
 }
 
-/** Hollow: never published. Filled amber: edited since. Primary ring: scheduled. */
-function Dot({ state }: { state: State }) {
-  return (
-    <span
-      aria-hidden
-      className={clx(
-        "size-2 shrink-0 rounded-full",
-        state === "draft" && "border-txt-black-400 border-[1.5px]",
-        state === "changed" && "bg-bg-warning-600",
-        state === "scheduled" && "border-txt-primary border-[1.5px]",
-      )}
-    />
-  );
-}
-
-/** The state as a dot and a word; nothing for a live page. */
+/** The state as a dot and a word; nothing for a live page, which is the usual case. */
 function StateLabel({ state }: { state: State | null }) {
-  if (!state) return null;
-  return (
-    <span className="text-body-sm text-txt-black-500 flex shrink-0 items-center gap-1.5">
-      <Dot state={state} />
-      {t(`pages.index.state.${state}`)}
-    </span>
-  );
+  return state ? <SharedStateLabel state={state} /> : null;
 }
 
 /** State, then when and who: "Draft · 25m ago · farid.h". */
@@ -447,7 +423,7 @@ function StateLine({
 }) {
   return (
     <span className="text-body-sm text-txt-black-500 flex min-w-0 items-center gap-1.5">
-      {state && <Dot state={state} />}
+      {state && <StateDot state={state} />}
       <span className="truncate">
         {[state && t(`pages.index.state.${state}`), formatAgo(updatedAt), editedBy]
           .filter(Boolean)
@@ -475,10 +451,12 @@ function RowMenu({ page }: { page: Target }) {
     <Menu>
       <MenuTrigger
         render={
-          <button
-            type="button"
+          <Button
+            variant="default-ghost"
+            size="small"
+            iconOnly
             aria-label={t("pages.index.moreFor", { title })}
-            className="text-txt-black-500 hover:bg-bg-washed hover:text-txt-black-900 focus-ring data-[popup-open]:bg-bg-washed relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full transition-colors duration-150 ease-out"
+            className="relative z-10"
           />
         }
       >
@@ -491,7 +469,18 @@ function RowMenu({ page }: { page: Target }) {
         <MenuItem onClick={() => window.open(previewHref(page.id), "_blank", "noopener")}>
           <EyeGlyph className="size-4" /> {t("pages.index.preview")}
         </MenuItem>
-        <MenuItem onClick={() => void navigate({ to: "/pages/$id", params: { id: page.id } })}>
+        <MenuItem
+          onClick={() =>
+            // A collection's settings are on its own screen; a page's, in the editor's drawer.
+            void (page.kind === "listing"
+              ? navigate({ to: "/pages/$id", params: { id: page.id }, search: { tab: "settings" } })
+              : navigate({
+                  to: "/pages/$id/edit",
+                  params: { id: page.id },
+                  search: { panel: "settings" },
+                }))
+          }
+        >
           <SlidersGlyph className="size-4" /> {t("pages.index.settings")}
         </MenuItem>
         {page.kind === "page" && (
@@ -582,15 +571,17 @@ function SectionCard({ section }: { section: TreeItem }) {
             <StateLabel state={stateOf(section)} />
           </span>
           {!collection && (
-            <button
-              type="button"
+            <Button
+              variant="default-ghost"
+              size="small"
+              iconOnly
               aria-label={t("pages.index.addTo", { title })}
               title={t("pages.index.addTo", { title })}
               onClick={() => shell.newPage(section.id)}
-              className="text-txt-black-500 hover:bg-bg-washed hover:text-txt-black-900 focus-ring relative z-10 flex size-8 items-center justify-center rounded-full transition-colors duration-150 ease-out"
+              className="relative z-10"
             >
               <PlusGlyph className="size-[18px]" />
-            </button>
+            </Button>
           )}
           <span className="relative z-10">
             <RowMenu page={section} />
@@ -606,7 +597,6 @@ function SectionCard({ section }: { section: TreeItem }) {
           <Button
             variant="default-outline"
             size="small"
-            className="rounded-full"
             render={
               <Link to="/pages/$id" params={{ id: section.id }} search={{ tab: "entries" }} />
             }
