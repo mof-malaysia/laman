@@ -366,6 +366,8 @@ export type CalendarRender = {
   next?: { month: string; href: string };
   /** The events on any of the month's days, soonest first. */
   items: EntryItem[];
+  /** How many of the month's events each filter would show, unfiltered otherwise. */
+  counts: { all: number; categories: Record<string, number>; locations: Record<string, number> };
 };
 
 /** The entries an entry list shows on this page of its listing. */

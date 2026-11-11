@@ -1,0 +1,82 @@
+---
+/**
+ * An event in the Wall planner: a chip (or a bar, for one that runs over
+ * several days) that opens a card with its day and time, place and category,
+ * and a link to its page. A native <details>, so it opens without a script;
+ * EventCalendar's script closes the others and closes it on Escape or a click
+ * outside.
+ */
+import type { CalendarRender, EntryItem } from "@fiscal-sb/blocks";
+import { dayOf } from "@fiscal-sb/blocks";
+import ArrowForward from "@/components/ui/icons/arrow-forward.astro";
+import ClockIcon from "@/components/ui/icons/clock.astro";
+import PinIcon from "@/components/ui/icons/pin.astro";
+import UserGroup from "@/components/ui/icons/user-group.astro";
+import { clx } from "@/lib/ftds/utils";
+import { type Tone, dayLabel, isMultiDay, whenShort } from "./events";
+
+type Props = {
+  item: EntryItem;
+  tone: Tone;
+  calendar: CalendarRender;
+  lang: "ms" | "en";
+  /** A multi-day event's bar, rather than a chip in its day. */
+  bar?: boolean;
+  /** A pinned event's bar: filled with its colour. */
+  solid?: boolean | undefined;
+  /** Which edge of the chip the card lines up with: "end" near the right of the grid. */
+  align?: "start" | "end";
+};
+const { item, tone, calendar, lang, bar = false, solid = false, align = "start" } = Astro.props;
+const event = item.event!;
+const en = lang === "en";
+const where = [event.location, event.venue].filter(Boolean).join(" · ");
+---
+
+<details class="relative" data-calendar-card>
+  <summary
+    class={clx(
+      "focus-ring text-body-xs flex h-6 min-w-0 cursor-pointer list-none items-center gap-1.5 rounded-xs [&::-webkit-details-marker]:hidden",
+      bar ? clx("border-s-[3px] px-2", solid ? tone.solid : tone.soft) : "text-txt-black-900 hover:bg-bg-washed px-1.5",
+    )}
+  >
+    <slot />
+  </summary>
+  <div class={clx("bg-bg-white border-otl-gray-200 shadow-context-menu absolute top-full z-30 mt-1 flex w-80 flex-col gap-3 rounded-lg border p-4", align === "end" ? "end-0" : "start-0")}>
+    {
+      event.location && (
+        <span class={clx("text-label-compact inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-0.5 font-medium", tone.soft.replace(/border-\S+/, ""))}>
+          <span class={clx("size-1.5 rounded-full", tone.dot)} aria-hidden="true" />
+          {event.location}
+        </span>
+      )
+    }
+    <p class="text-body-md text-txt-black-900 font-semibold text-pretty">{item.title}</p>
+    <dl class="text-body-sm text-txt-black-700 grid grid-cols-[1rem_1fr] gap-x-2 gap-y-1.5">
+      <dt><ClockIcon class="text-txt-black-500 mt-0.5 size-4" aria-label={en ? "When" : "Masa"} /></dt>
+      <dd>
+        {isMultiDay(event) ? whenShort(event, lang) : <>{dayLabel(dayOf(event.start), lang)}<br />{whenShort(event, lang)}</>}
+      </dd>
+      {
+        where && (
+          <>
+            <dt><PinIcon class="text-txt-black-500 mt-0.5 size-4" aria-label={en ? "Where" : "Tempat"} /></dt>
+            <dd>{where}</dd>
+          </>
+        )
+      }
+      {
+        item.category && (
+          <>
+            <dt><UserGroup class="text-txt-black-500 mt-0.5 size-4" aria-label={en ? "Category" : "Kategori"} /></dt>
+            <dd>{item.category}</dd>
+          </>
+        )
+      }
+    </dl>
+    <a href={item.href} class="focus-ring text-label-md text-txt-primary border-otl-gray-200 flex w-full items-center justify-end gap-1 rounded-xs border-t pt-3 font-medium hover:underline">
+      {en ? "Details" : "Butiran"}
+      <ArrowForward class="size-4" aria-hidden="true" />
+    </a>
+  </div>
+</details>

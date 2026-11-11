@@ -224,7 +224,15 @@ describe("listing pages and entries", () => {
     ).json().data;
     expect(entry.draft.ms.blocks.map((b: { type: string }) => b.type)).toEqual(["eventDetails"]);
     const html = (await call("GET", `/render/pages/${entry.id}`)).body;
-    expect(html).toContain("Khamis, 12 November 2026");
+    // A new event starts tomorrow, and Event details shows the entry's own date.
+    const tomorrow = new Intl.DateTimeFormat("ms-MY", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      timeZone: "Asia/Kuala_Lumpur",
+    }).format(new Date(Date.now() + 86_400_000));
+    expect(html).toContain(tomorrow);
     expect(html).toContain("Pendaftaran");
   });
 

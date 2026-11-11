@@ -45,14 +45,6 @@ export const monthLabel = (month: string, lang: Lang) =>
     timeZone: EVENT_TIME_ZONE,
   }).format(noon(`${month}-15`));
 
-/** "Nov 2026", from YYYY-MM: the calendar's row of months. */
-export const shortMonthLabel = (month: string, lang: Lang) =>
-  new Intl.DateTimeFormat(locale(lang), {
-    month: "short",
-    year: "numeric",
-    timeZone: EVENT_TIME_ZONE,
-  }).format(noon(`${month}-15`));
-
 /** "Nov", from a YYYY-MM-DD. */
 export const monthAbbr = (day: string, lang: Lang) =>
   new Intl.DateTimeFormat(locale(lang), { month: "short", timeZone: EVENT_TIME_ZONE }).format(
@@ -131,3 +123,62 @@ export function daysToGo(today: string, day: string, lang: Lang) {
 /** Where an event is, in one line: its location and venue. */
 export const whereLabel = (event: EventInfo) =>
   [event.location, event.venue].filter(Boolean).join(" · ");
+
+/** A month's days with their events: an event on every day of the month it runs. */
+export function monthDays(items: EntryItem[], month: string) {
+  const days = new Map<string, EntryItem[]>();
+  for (const item of items)
+    for (const day of eventDays(item.event!))
+      if (day.startsWith(month)) days.set(day, [...(days.get(day) ?? []), item]);
+  return days;
+}
+
+/** The weeks a month's grid shows, Monday first, with the days either side that square it off. */
+export function monthWeeks(month: string): string[][] {
+  const first = `${month}-01`;
+  // 2026-11-02 is a Monday: days since then, modulo 7, is the weekday from Monday.
+  const lead = ((daysBetween("2026-11-02", first) % 7) + 7) % 7;
+  const weeks: string[][] = [];
+  for (let day = addDays(first, -lead); day.slice(0, 7) <= month; day = addDays(day, 7))
+    weeks.push(Array.from({ length: 7 }, (_, i) => addDays(day, i)));
+  return weeks;
+}
+
+/** A weekday from Monday: 0 to 6. */
+export const weekdayOf = (day: string) => ((daysBetween("2026-11-02", day) % 7) + 7) % 7;
+
+/**
+ * Each location's colour, in the order the listing lists them, from four FTDS
+ * tones; events with no location are grey. Full class names, so Tailwind sees them.
+ */
+const tones = [
+  {
+    dot: "bg-bg-primary-600",
+    soft: "bg-bg-primary-50 text-txt-primary border-bg-primary-600",
+    solid: "bg-bg-primary-600 text-txt-white border-bg-primary-600",
+  },
+  {
+    dot: "bg-bg-success-600",
+    soft: "bg-bg-success-50 text-txt-success border-bg-success-600",
+    solid: "bg-bg-success-600 text-txt-white border-bg-success-600",
+  },
+  {
+    dot: "bg-bg-warning-600",
+    soft: "bg-bg-warning-50 text-txt-warning border-bg-warning-600",
+    solid: "bg-bg-warning-600 text-txt-white border-bg-warning-600",
+  },
+  {
+    dot: "bg-bg-black-500",
+    soft: "bg-bg-washed text-txt-black-700 border-bg-black-500",
+    solid: "bg-bg-black-700 text-txt-white border-bg-black-700",
+  },
+] as const;
+export type Tone = (typeof tones)[number];
+export const toneOf = (locations: { slug: string }[], slug: string | undefined): Tone => {
+  const index = slug ? locations.findIndex((l) => l.slug === slug) : -1;
+  return index === -1 ? tones[3] : tones[index % tones.length]!;
+};
+
+/** When an event is, in a card or a list row: its days if it runs over several, else its time. */
+export const whenShort = (event: EventInfo, lang: Lang) =>
+  isMultiDay(event) ? dayRange(event, lang) : timeRange(event, lang);

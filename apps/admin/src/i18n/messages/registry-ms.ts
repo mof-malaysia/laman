@@ -361,8 +361,14 @@ export const registryMs: Record<string, string> = {
 
   // Event calendar
   "Event calendar": "Kalendar acara",
-  "This listing's events by month: a calendar with the month's events listed under it, filtered by category and location.":
-    "Acara senarai ini mengikut bulan: kalendar dengan acara bulan itu disenaraikan di bawahnya, ditapis mengikut kategori dan lokasi.",
+  "This listing's events by month, as a wall planner or a planner, filtered by category and location.":
+    "Acara senarai ini mengikut bulan, sebagai perancang dinding atau perancang, ditapis mengikut kategori dan lokasi.",
+  "Wall planner: the month as a large grid": "Perancang dinding: bulan sebagai grid besar",
+  "Planner: a small calendar beside the month's events":
+    "Perancang: kalendar kecil di sebelah acara bulan itu",
+  "What the categories are called": "Nama bagi kategori",
+  "Shown over the category filter, e.g. Pasukan. “Kategori” if left empty.":
+    "Dipaparkan di atas penapis kategori, contohnya Pasukan. “Kategori” jika dibiarkan kosong.",
   "Show the location filter": "Tunjukkan penapis lokasi",
   "Text when a month has no events": "Teks apabila tiada acara pada bulan itu",
 

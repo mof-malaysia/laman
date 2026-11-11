@@ -135,41 +135,57 @@ describe("events and the event calendar", () => {
     await call("POST", `/api/pages/${listing.id}/publish`);
     await work();
 
-    // Tomorrow's month: its own page, whether or not it's this month.
+    // Wall planner, the default. Tomorrow's month has its own page, whether or not it's this month.
     const soon = monthOf(Date.parse(`${addDays(today, 1)}T12:00:00+08:00`));
     const month = await read(`takwim/${soon}/index.html`);
     expect(month).toContain("Taklimat Sabah");
     expect(month).not.toContain("Bengkel lalu");
-    expect(month).toContain("Esok");
+    // Each event opens a card with its time and place, linking to its page.
+    expect(month).toMatch(/<details[^>]*data-calendar-card/);
     expect(month).toContain("9.00 pagi – 12.30 tengah hari");
-    expect(month).toContain("Dewan Kinabalu");
-    // The day in the calendar links down to it in the list under it.
-    expect(month).toContain(`href="#hari-${addDays(today, 1)}"`);
-    expect(month).toContain(`id="hari-${addDays(today, 1)}"`);
+    expect(month).toContain("Sabah · Dewan Kinabalu");
+    // The category filter is a menu with each category's count for the month.
+    expect(month).toContain(`/takwim/kategori/pasukan-a`);
 
-    // The listing's own address is the current month, with no agenda/month switch.
+    // The listing's own address is the current month.
     const home = await read("takwim/index.html");
-    expect(home).toContain(`<caption class="sr-only">`);
     expect(home).not.toContain("Persidangan dalam talian");
 
-    // Months from last month to six ahead, stretched to the events; arrows and the row of months link them.
+    // Months from last month to six ahead, stretched to the events, linked by arrows.
     const past = await read(`takwim/${lastMonth}/index.html`);
     expect(past).toContain("Bengkel lalu");
     expect(past).toContain('href="/takwim"');
     expect(past).not.toContain("Bulan sebelumnya");
+    expect(past).toContain("Bulan ini");
     await read(`takwim/${addMonths(thisMonth, 6)}/index.html`);
-    expect(home).toContain(`href="/takwim/${addMonths(thisMonth, 6)}"`);
     const later = await read(`takwim/${inTwoMonths}/index.html`);
     expect(later).toContain("Persidangan dalam talian");
-    expect(later).toContain(
-      `Acara ${new Intl.DateTimeFormat("ms-MY", { month: "long", year: "numeric" }).format(new Date(`${inTwoMonths}-15T12:00:00+08:00`))}`,
-    );
 
     const sabah = await read(`takwim/lokasi/sabah/${soon}/index.html`);
     expect(sabah).toContain("Taklimat Sabah");
     await read("takwim/lokasi/sabah/index.html");
     const team = await read(`takwim/kategori/pasukan-a/${inTwoMonths}/index.html`);
     expect(team).not.toContain("Persidangan dalam talian");
+
+    // Planner: a small calendar whose days link down to them in the month's list.
+    const page = (await call("GET", `/api/pages/${listing.id}`)).json().data;
+    const blocks = page.draft.ms.blocks.map((b: { type: string; props: object }) =>
+      b.type === "eventCalendar"
+        ? { ...b, props: { ...b.props, layout: "planner", categoryLabel: "Pasukan" } }
+        : b,
+    );
+    await call("PUT", `/api/pages/${listing.id}/draft`, {
+      draft: { ...page.draft, ms: { ...page.draft.ms, blocks } },
+    });
+    await call("POST", `/api/pages/${listing.id}/publish`);
+    await work();
+    const planner = await read(`takwim/${soon}/index.html`);
+    expect(planner).not.toMatch(/<details[^>]*data-calendar-card/);
+    expect(planner).toContain(`href="#hari-${addDays(today, 1)}"`);
+    expect(planner).toContain(`id="hari-${addDays(today, 1)}"`);
+    expect(planner).toContain("Esok");
+    expect(planner).toContain("Semua pasukan");
+    expect(planner).toContain("Dewan Kinabalu");
 
     // An event's own page heads it with when and where, not the publish date.
     const entries = (await call("GET", `/api/pages/${listing.id}/entries`)).json().data.items;

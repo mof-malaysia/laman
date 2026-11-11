@@ -433,17 +433,26 @@ export function calendarRenderOf(
       : undefined;
   const months = calendarMonths(all, at);
   const month = options.month && months.includes(options.month) ? options.month : monthOf(at);
-  const items = all
+  const inMonth = all.filter(
+    (item) => item.event && eventDays(item.event).some((day) => day.startsWith(month)),
+  );
+  const items = inMonth
     .filter(
       (item) =>
-        item.event &&
-        (!filter ||
-          (filter.kind === "category"
-            ? item.categorySlug === filter.slug
-            : item.event.locationSlug === filter.slug)) &&
-        eventDays(item.event).some((day) => day.startsWith(month)),
+        !filter ||
+        (filter.kind === "category"
+          ? item.categorySlug === filter.slug
+          : item.event!.locationSlug === filter.slug),
     )
     .toSorted((a, b) => Date.parse(a.event!.start) - Date.parse(b.event!.start));
+  const tally = (key: (item: EntryItem) => string | undefined) => {
+    const out: Record<string, number> = {};
+    for (const item of inMonth) {
+      const k = key(item);
+      if (k) out[k] = (out[k] ?? 0) + 1;
+    }
+    return out;
+  };
   // The current month's links go to the listing's own address (or its filter's), the rest to their month.
   const monthHref = (m: string, f: typeof filter) =>
     calendarPath(base, { month: m === monthOf(at) ? undefined : m, filter: f });
@@ -467,6 +476,11 @@ export function calendarRenderOf(
     ...(prev && { prev: { month: prev, href: monthHref(prev, filter) } }),
     ...(next && { next: { month: next, href: monthHref(next, filter) } }),
     items,
+    counts: {
+      all: inMonth.length,
+      categories: tally((item) => item.categorySlug),
+      locations: tally((item) => item.event?.locationSlug),
+    },
   };
 }
 

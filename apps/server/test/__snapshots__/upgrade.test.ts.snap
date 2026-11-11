@@ -4614,12 +4614,33 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                         "type": "boolean",
                         "widget": "toggle",
                       },
+                      "categoryLabel": {
+                        "help": "Shown over the category filter, e.g. Pasukan. “Kategori” if left empty.",
+                        "maxLength": 40,
+                        "title": "What the categories are called",
+                        "type": "string",
+                        "widget": "text",
+                      },
                       "emptyText": {
                         "default": "Tiada acara pada bulan ini.",
                         "maxLength": 200,
                         "title": "Text when a month has no events",
                         "type": "string",
                         "widget": "text",
+                      },
+                      "layout": {
+                        "default": "wall",
+                        "enum": [
+                          "wall",
+                          "planner",
+                        ],
+                        "optionLabels": {
+                          "planner": "Planner: a small calendar beside the month's events",
+                          "wall": "Wall planner: the month as a large grid",
+                        },
+                        "title": "Layout",
+                        "type": "string",
+                        "widget": "select",
                       },
                       "locationFilter": {
                         "default": true,
@@ -4644,6 +4665,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                       },
                     },
                     "required": [
+                      "layout",
                       "categoryFilter",
                       "locationFilter",
                       "emptyText",
@@ -8553,12 +8575,33 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                         "type": "boolean",
                         "widget": "toggle",
                       },
+                      "categoryLabel": {
+                        "help": "Shown over the category filter, e.g. Pasukan. “Kategori” if left empty.",
+                        "maxLength": 40,
+                        "title": "What the categories are called",
+                        "type": "string",
+                        "widget": "text",
+                      },
                       "emptyText": {
                         "default": "Tiada acara pada bulan ini.",
                         "maxLength": 200,
                         "title": "Text when a month has no events",
                         "type": "string",
                         "widget": "text",
+                      },
+                      "layout": {
+                        "default": "wall",
+                        "enum": [
+                          "wall",
+                          "planner",
+                        ],
+                        "optionLabels": {
+                          "planner": "Planner: a small calendar beside the month's events",
+                          "wall": "Wall planner: the month as a large grid",
+                        },
+                        "title": "Layout",
+                        "type": "string",
+                        "widget": "select",
                       },
                       "locationFilter": {
                         "default": true,
@@ -8583,6 +8626,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                       },
                     },
                     "required": [
+                      "layout",
                       "categoryFilter",
                       "locationFilter",
                       "emptyText",
