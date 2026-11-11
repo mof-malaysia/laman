@@ -1,5 +1,7 @@
 import type { PageDocument } from "@fiscal-sb/blocks";
 import type {
+  CalendarSource,
+  SaveCalendarSourceBody,
   AdminPreferences,
   AnalyticsQuery,
   AnalyticsStatus,
@@ -345,6 +347,20 @@ export const listingApi = {
         searchParams: { search, ...(limit !== undefined && { limit: String(limit) }) },
       }),
     ),
+};
+
+export const calendarApi = {
+  list: (listingId: string) =>
+    data<CalendarSource[]>(api.get(`api/pages/${listingId}/calendar-sources`)),
+  add: (listingId: string, body: SaveCalendarSourceBody) =>
+    data<CalendarSource>(api.post(`api/pages/${listingId}/calendar-sources`, { json: body })),
+  save: (id: string, body: SaveCalendarSourceBody) =>
+    data<CalendarSource>(api.put(`api/calendar-sources/${id}`, { json: body })),
+  remove: async (id: string) => {
+    await api.delete(`api/calendar-sources/${id}`);
+  },
+  accept: (id: string) => data<Job>(api.post(`api/calendar-sources/${id}/accept`)),
+  sync: () => data<Job>(api.post("api/calendar-sources/sync")),
 };
 
 export const analyticsApi = {

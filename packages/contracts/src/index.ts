@@ -17,6 +17,7 @@ import { SiteDocName, savable } from "./site.js";
 export * from "./agents.js";
 export * from "./analytics.js";
 export * from "./auth.js";
+export * from "./calendar.js";
 export * from "./preferences.js";
 export * from "./site.js";
 
@@ -282,6 +283,8 @@ export const PublishTrigger = z.enum([
   "restore",
   /** Just after midnight, on a site with event calendars or upcoming events, so "today" and what's coming stay right. */
   "daily",
+  /** A calendar sync changed some events. */
+  "calendar",
 ]);
 export type PublishTrigger = z.infer<typeof PublishTrigger>;
 

@@ -41,6 +41,7 @@ catalog:
   cmdk: "^1.1.1"
   "fastify": "^5.12.7"
   "happy-dom": "^20.14.6"
+  "ical.js": "^2.2.1"
   isbot: "^5.2.2"
   "ky": "^2.2.0"
   "kysely": "^0.29.7"

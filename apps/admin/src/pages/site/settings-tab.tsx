@@ -29,8 +29,10 @@ import { ToggleGroup } from "@/components/ui/toggle-group";
 import { type MessageKey, t } from "@/i18n";
 import { apiError, listingApi, pagesApi } from "@/lib/api";
 import { useCan } from "@/lib/auth";
+import { useFailure } from "@/lib/use-failure";
 import useToast from "@/lib/ftds/hooks/use-toast";
 import { isHome, subtreeIds, useRefreshPages } from "@/lib/pages";
+import { CalendarSources, SyncNowButton } from "./calendar-sources";
 import { CollectionSettings } from "./listing";
 import { PathChanges } from "./move";
 import type { SettingsSection } from "./search";
@@ -100,15 +102,6 @@ const Note = ({ message }: { message: MessageKey }) => (
   <p className="text-content text-txt-black-700">{t(message)}</p>
 );
 
-/** Toasts the server's message, or a generic one. */
-function useFailure() {
-  const { toast } = useToast();
-  return async (title: string, error: unknown) => {
-    const body = await apiError(error);
-    toast({ variant: "error", title, description: body?.message ?? t("common.tryAgain") });
-  };
-}
-
 /**
  * Settings open inside the editor share the draft the editor is saving: the redirect is
  * part of it, and making a listing or unpublishing changes it on the server. So there
@@ -164,6 +157,11 @@ export function SettingsTab({
         {page.kind === "listing" && (
           <Section {...row("collection")}>
             <CollectionSettings listing={page} />
+          </Section>
+        )}
+        {page.kind === "listing" && canPublish && (
+          <Section {...row("calendars")} action={<SyncNowButton listing={page} />}>
+            <CalendarSources listing={page} />
           </Section>
         )}
         {homeOr(

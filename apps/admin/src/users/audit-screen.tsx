@@ -73,6 +73,8 @@ const actionGroups = {
   pageRestored: "site",
   backupStarted: "site",
   backupRestored: "site",
+  calendarSourceChanged: "site",
+  calendarSynced: "site",
   agentConnected: "agents",
   agentRevoked: "agents",
   agentToolCall: "agents",

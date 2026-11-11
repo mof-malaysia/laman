@@ -9090,6 +9090,7 @@ exports[`stored document schemas > publish jobs 1`] = `
         "rebuild",
         "restore",
         "daily",
+        "calendar",
       ],
       "type": "string",
     },

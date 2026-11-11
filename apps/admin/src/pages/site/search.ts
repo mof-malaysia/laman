@@ -16,6 +16,7 @@ export type DetailTab = (typeof detailTabs)[number];
 
 export const settingsSections = [
   "collection",
+  "calendars",
   "redirect",
   "listing",
   "duplicate",

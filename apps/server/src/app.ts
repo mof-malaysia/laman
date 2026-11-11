@@ -15,6 +15,10 @@ import { type Db, openDatabase } from "./db/index.js";
 import type { Env } from "./env.js";
 import { errorHandler, notFoundHandler } from "./errors.js";
 import { Jobs } from "./jobs.js";
+import { type FeedFetcher, fetchFeed } from "./calendar/fetch.js";
+import { sourcesDue } from "./calendar/sources.js";
+import { syncCalendars } from "./calendar/sync.js";
+import { audit } from "./auth/audit.js";
 import { type AnalyticsDb, openAnalyticsDatabase } from "./analytics/db.js";
 import { Collector } from "./analytics/collector.js";
 import { readDoc } from "./content/site.js";
@@ -39,6 +43,7 @@ import { authRoutes } from "./routes/auth.js";
 import { backupRoutes } from "./routes/backups.js";
 import { healthRoutes } from "./routes/health.js";
 import { jobRoutes } from "./routes/jobs.js";
+import { calendarRoutes } from "./routes/calendar.js";
 import { mcpRoutes } from "./routes/mcp.js";
 import { oauthRoutes } from "./routes/oauth.js";
 import { mediaRoutes } from "./routes/media.js";
@@ -60,6 +65,9 @@ declare module "fastify" {
   }
 }
 
+/** How often listings' calendar sources are read. */
+export const CALENDAR_SYNC_MS = 30 * 60_000;
+
 export type AppOptions = {
   env: Env;
   /** Defaults to DATA_DIR/site.db. Tests pass ":memory:". */
@@ -68,6 +76,8 @@ export type AppOptions = {
   analyticsPath?: string;
   /** Work the job queue in the background. Tests turn it off and call `jobs.poke()`. */
   runJobs?: boolean;
+  /** How calendar feeds are fetched; tests pass their own instead of the network. */
+  fetchFeed?: FeedFetcher;
 };
 
 function logger(env: Env): FastifyServerOptions["logger"] {
@@ -212,6 +222,32 @@ export async function buildApp(options: AppOptions) {
     void showsEvents(db)
       .then((shows) => (shows ? jobs.enqueue("publish", { trigger: "daily" }) : undefined))
       .catch((error: unknown) => app.log.error({ err: error }, "couldn't queue the daily publish"));
+  /**
+   * Calendar sources: every half hour while any listing reads a calendar, and
+   * once at start. A sync that changed events publishes them.
+   */
+  jobs.handle("calendar.sync", async () => {
+    const counts = await syncCalendars(db, options.fetchFeed ?? fetchFeed);
+    const changed = counts.created + counts.updated + counts.removed;
+    if (changed) {
+      await audit(db, {
+        userId: null,
+        action: "calendarSynced",
+        detail: { created: counts.created, updated: counts.updated, removed: counts.removed },
+      });
+      await jobs.enqueue("publish", { trigger: "calendar" });
+    }
+    app.log.info(counts, "calendars synced");
+    return counts;
+  });
+  /**
+   * Queues a sync when a source is due (not read for nearly a half hour, so a
+   * restart doesn't read every calendar again), unless one is already waiting.
+   */
+  const syncSoon = () =>
+    void sourcesDue(db, CALENDAR_SYNC_MS - 60_000)
+      .then((due) => (due ? jobs.enqueueOnce("calendar.sync") : undefined))
+      .catch((error: unknown) => app.log.error({ err: error }, "couldn't queue the calendar sync"));
   jobs.handle("backup", async () => {
     const backup = await makeBackup({ dataDir, backupDir, keep, database: databasePath });
     app.log.info({ file: backup.file, bytes: backup.bytes }, "backup made");
@@ -234,7 +270,11 @@ export async function buildApp(options: AppOptions) {
     app.addHook("onReady", async () => {
       if (schedule) await scheduleBackups(schedule);
       everyDayAt(DAILY_REFRESH, publishDaily);
+      const every = { current: setInterval(syncSoon, CALENDAR_SYNC_MS) as NodeJS.Timeout };
+      every.current.unref();
+      timers.push(every);
       await jobs.start();
+      syncSoon();
     });
   app.addHook("onReady", () => collector.start());
   app.addHook("onClose", async () => {
@@ -276,6 +316,7 @@ export async function buildApp(options: AppOptions) {
     await builder.register(userRoutes, { prefix: "/api" });
     await builder.register(pageRoutes, { prefix: "/api" });
     await builder.register(jobRoutes, { prefix: "/api" });
+    await builder.register(calendarRoutes, { prefix: "/api" });
     await builder.register(backupRoutes, { prefix: "/api" });
     const maxBytes = env.MEDIA_MAX_MB * 1024 * 1024;
     await builder.register(multipart, { limits: { fileSize: maxBytes + 1, files: 1 } });

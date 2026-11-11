@@ -207,6 +207,10 @@ export const AuditAction = z.enum([
   "pageRestored",
   "backupStarted",
   "backupRestored",
+  /** An admin added, changed or removed a listing's calendar source. */
+  "calendarSourceChanged",
+  /** A calendar sync changed what's live: who is null, the counts are in the detail. */
+  "calendarSynced",
   /** An officer allowed an agent (docs/mcp.md). */
   "agentConnected",
   /** A connection ended: revoked, or its refresh token was used twice. */
