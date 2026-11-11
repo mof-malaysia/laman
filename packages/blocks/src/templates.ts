@@ -136,7 +136,7 @@ export const templates = {
   acara: {
     name: "Acara",
     description: "Briefings, workshops, open days, with date and venue.",
-    listing: { startingBlocks: ["eventDetails"] },
+    listing: { startingBlocks: ["eventDetails"], sort: "eventStart" },
     blocks: (title) => [
       block("pageIntro", { title, description: "Taklimat, bengkel dan hari terbuka kami." }),
       block("entryList", { style: "cards", emptyText: "Belum ada acara lagi." }),

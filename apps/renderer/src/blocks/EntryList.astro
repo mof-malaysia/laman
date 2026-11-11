@@ -19,7 +19,8 @@ const p = block.props;
 const items = (listing?.items ?? []).map((item) => ({
   title: item.title,
   href: item.href,
-  date: p.showDate ? isoDay(item.date) : "",
+  // An event shows its own day, not the day it was published.
+  date: p.showDate ? isoDay(item.event?.start ?? item.date) : "",
   ...(item.category && { category: item.category }),
   ...(p.showSummary && item.summary && { summary: item.summary }),
   ...(p.style === "cards" && item.image && { image: item.image }),

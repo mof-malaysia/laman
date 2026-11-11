@@ -210,4 +210,28 @@ describe("events and the event calendar", () => {
     expect(pinned).toContain("Persidangan dalam talian");
     expect(pinned).not.toContain("Taklimat Sabah");
   });
+  it("starts Acara entries as events, and lists them by their own day", async () => {
+    const acara = (
+      await call("POST", "/api/pages", { title: "Acara", slug: "acara", template: "acara" })
+    ).json().data;
+    const settings = (await call("GET", `/api/pages/${acara.id}/listing`)).json().data.settings;
+    expect(settings.sort).toBe("eventStart");
+    const entry = (
+      await call("POST", `/api/pages/${acara.id}/entries`, { title: "Hari terbuka" })
+    ).json().data;
+    const draft = (await call("GET", `/api/pages/${entry.id}`)).json().data.draft;
+    expect(draft.entry.event).toEqual({ start: `${addDays(today, 1)}T09:00:00+08:00` });
+    expect(draft.ms.blocks.map((b: { type: string }) => b.type)).toEqual(["eventDetails"]);
+    // Moved to next month, it lists under that day, not today's publish date.
+    const day = `${addMonths(thisMonth, 1)}-20`;
+    await call("PUT", `/api/pages/${entry.id}/draft`, {
+      draft: { ...draft, entry: { ...draft.entry, event: { start: `${day}T10:00:00+08:00` } } },
+    });
+    await call("POST", `/api/pages/${entry.id}/publish`);
+    await call("POST", `/api/pages/${acara.id}/publish`);
+    await work();
+    const html = await read("acara/index.html");
+    expect(html).toContain(`datetime="${day}"`);
+    expect(html).not.toContain(`datetime="${today}"`);
+  });
 });

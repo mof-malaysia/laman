@@ -17,6 +17,7 @@ import {
   LATEST_MAX,
   type PageDocument,
   UPCOMING_MAX,
+  addDays,
   addMonths,
   blocksFor,
   calendarPath,
@@ -148,7 +149,13 @@ export async function createEntry(db: Db, listingId: string, title: string) {
     parentId: listingId,
     kind: "entry",
     blocks: (starting.length ? starting : ["prose" as const]).map((type) => newBlock(type)),
-    entry: { publishAt: now() },
+    // A listing ordered by event date holds events: a new entry starts as one, tomorrow at nine.
+    entry: {
+      publishAt: now(),
+      ...(settings.sort === "eventStart" && {
+        event: { start: `${addDays(dayOf(Date.now()), 1)}T09:00:00+08:00` },
+      }),
+    },
   });
 }
 

@@ -33,7 +33,8 @@ const items = (source?.items ?? [])
   .map((item) => ({
     title: item.title,
     href: item.href,
-    date: isoDay(item.date),
+    // An event shows its own day, not the day it was published.
+    date: isoDay(item.event?.start ?? item.date),
     ...(item.category && { category: item.category }),
     ...(p.style !== "compact" && item.summary && { summary: item.summary }),
     ...(p.style === "grid" && item.image && { image: item.image }),
