@@ -1,9 +1,9 @@
-/** Pages: the tree on the left, the selected page's detail on the right. */
-import type { PageSummary } from "@fiscal-sb/contracts";
+/**
+ * Pages: with no page open, the index of every page; with one open, the tree on
+ * the left and the page's detail on the right.
+ */
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams, useSearch } from "@tanstack/react-router";
-import { card } from "@/components/card";
-import { PageKindIcon, PageStatusTag } from "@/components/page-status";
 import { Backlink } from "@/components/ui/backlink";
 import { Button } from "@/components/ui/button";
 import { Callout, CalloutAction, CalloutContent, CalloutTitle } from "@/components/ui/callout";
@@ -13,17 +13,14 @@ import {
   EmptyStateDescription,
   EmptyStateTitle,
 } from "@/components/ui/empty-state";
-import { ChevronRightIcon } from "@/components/ui/icons/chevron-right";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SplitPane } from "@/components/ui/split-pane";
 import { t } from "@/i18n";
 import { pagesApi } from "@/lib/api";
 import { useMediaQuery } from "@/lib/ftds/hooks/use-media-query";
-import { clx } from "@/lib/ftds/utils";
 import { formatAgo, usePages } from "@/lib/pages";
-import { isNewPage, useWaiting } from "@/lib/publish";
-import { useShell } from "@/shell/context";
 import { PageDetail } from "./detail";
+import { PagesIndex } from "./pages-index";
 import type { DetailSearch } from "./search";
 import { useTrash } from "./trash-screen";
 import { PageTree } from "./tree";
@@ -86,20 +83,30 @@ export function PagesScreen() {
       <PageDetail key={id} id={id} pages={pages.data} search={search} />
     ) : id ? (
       <Missing id={id} />
+    ) : null;
+
+  // No page open: the index, at any width.
+  if (!id)
+    return pages.data ? (
+      <PagesIndex pages={pages.data} />
     ) : (
-      <NoSelection pages={pages.data} />
+      <div className="bg-bg-gray-50 h-full">
+        <div className="mx-auto flex w-full max-w-5xl flex-col items-center gap-5 px-6 pt-12">
+          <Skeleton className="h-8 w-72" />
+          <Skeleton className="h-12 w-full max-w-2xl rounded-full" />
+          <Skeleton className="h-48 w-full rounded-3xl" />
+        </div>
+      </div>
     );
 
   if (!wide)
-    return id ? (
+    return (
       <div className="flex h-full flex-col">
         <div className="px-surface pt-3">
           <Backlink render={<Link to="/pages" />}>{t("pages.back")}</Backlink>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto">{detail}</div>
       </div>
-    ) : (
-      tree
     );
 
   return (
@@ -142,74 +149,5 @@ function Missing({ id }: { id: string }) {
         </Button>
       </EmptyStateActions>
     </EmptyState>
-  );
-}
-
-/**
- * Nothing selected: the pages and entries that aren't live yet, since those are the
- * ones an officer usually came to finish. It's the list the status bar counts, so the
- * two agree. With none, an invitation to pick or add a page.
- */
-function NoSelection({ pages }: { pages: PageSummary[] }) {
-  const shell = useShell();
-  const notLive = useWaiting().items.filter((item) => item.kind === "page");
-  if (notLive.length === 0)
-    return (
-      <EmptyState className="h-full">
-        <EmptyStateTitle>{t("pages.choose")}</EmptyStateTitle>
-        <EmptyStateDescription>{t("pages.chooseBody")}</EmptyStateDescription>
-        <EmptyStateActions>
-          <Button variant="default-outline" onClick={() => shell.newPage()}>
-            {t("commands.newPage")}
-          </Button>
-        </EmptyStateActions>
-      </EmptyState>
-    );
-  return (
-    <section
-      aria-labelledby="not-live-heading"
-      className="p-surface text-body-sm flex max-w-2xl flex-col gap-4"
-    >
-      <div className="flex flex-col gap-1">
-        <h2 id="not-live-heading" className="text-title font-semibold">
-          {t("pages.notLive")}
-        </h2>
-        <p className="text-txt-black-700">{t("pages.notLiveBody")}</p>
-      </div>
-      {/* One framed list, each row its page's link: the same rows as the dashboard's recent edits. */}
-      <ul
-        className={clx(
-          card,
-          "border-otl-gray-200 divide-otl-gray-200 m-0 flex list-none flex-col divide-y p-0",
-        )}
-      >
-        {notLive.map((item) => (
-          <li key={item.id}>
-            <Link
-              to="/pages/$id"
-              params={{ id: item.id }}
-              className="focus-ring-inset hover:bg-bg-washed flex items-center gap-3 px-4 py-2.5 no-underline transition-colors duration-150 motion-reduce:transition-none"
-            >
-              {/* Entries aren't in the tree's list: they get the page icon. */}
-              <PageKindIcon
-                page={pages.find((page) => page.id === item.id) ?? { kind: "entry" }}
-                aria-hidden
-                className="text-txt-black-500 size-4 shrink-0"
-              />
-              <span className="flex min-w-0 flex-1 flex-col">
-                <span className="text-txt-black-900 truncate font-medium">
-                  {item.title || t("page.untitled")}
-                </span>
-                <span className="text-label-compact text-txt-black-500 truncate">{item.path}</span>
-              </span>
-              <span className="flex shrink-0">
-                <PageStatusTag status={isNewPage(item) ? "draft" : "changed"} />
-              </span>
-              <ChevronRightIcon aria-hidden className="text-txt-black-500 size-4 shrink-0" />
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </section>
   );
 }
