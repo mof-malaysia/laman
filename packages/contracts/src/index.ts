@@ -124,6 +124,7 @@ export const PageCheckCode = z.enum([
   "placeholder",
   "vagueLink",
   "embedNotAllowed",
+  "eventNoDate",
 ]);
 export type PageCheckCode = z.infer<typeof PageCheckCode>;
 

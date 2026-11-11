@@ -289,7 +289,7 @@ export async function publishSite({ db, dataDir, siteUrl, full = false }: Publis
     const input = await writeListing();
     const calendar = input.listing?.calendar;
     if (calendar) {
-      // An event calendar: its agenda and each month, the same again per category and location.
+      // An event calendar: the current month at its own address, then each month, the same again per category and location.
       for (const filter of [
         undefined,
         ...calendar.categories.map((c) => ({ kind: "category" as const, slug: c.slug })),
@@ -297,7 +297,7 @@ export async function publishSite({ db, dataDir, siteUrl, full = false }: Publis
       ]) {
         const by = filter && { [filter.kind]: filter.slug };
         if (filter) await write(page, calendarPath(page.path, { filter }), by);
-        for (const month of calendar.months)
+        for (const { month } of calendar.months)
           await write(page, calendarPath(page.path, { month, filter }), { ...by, month });
       }
     } else

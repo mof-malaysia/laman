@@ -169,6 +169,9 @@ export async function pageChecks(db: Db, ids: readonly string[]) {
             subject: "host" in decision ? decision.host : block.props.url,
           });
       }
+      // Event details shows an event entry's own date; anywhere else it needs one typed in.
+      if (block.type === "eventDetails" && !block.props.date?.trim() && !page.draft.entry?.event)
+        warn({ code: "eventNoDate", blockId });
       for (const text of new Set(stringsOf(block.props).map((t) => t.trim())))
         if (examples.has(text)) warn({ code: "placeholder", blockId, subject: text });
     }

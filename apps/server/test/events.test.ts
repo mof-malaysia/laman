@@ -135,29 +135,39 @@ describe("events and the event calendar", () => {
     await call("POST", `/api/pages/${listing.id}/publish`);
     await work();
 
-    const agenda = await read("takwim/index.html");
-    expect(agenda).toContain("Taklimat Sabah");
-    expect(agenda).toContain("Persidangan dalam talian");
-    expect(agenda).not.toContain("Bengkel lalu");
-    // Soonest first, tomorrow says so, and the multi-day event gives its days.
-    expect(agenda.indexOf("Taklimat Sabah")).toBeLessThan(
-      agenda.indexOf("Persidangan dalam talian"),
-    );
-    expect(agenda).toContain("Esok");
-    expect(agenda).toContain("9.00 pagi – 12.30 tengah hari");
-    expect(agenda).toContain("Dewan Kinabalu");
+    // Tomorrow's month: its own page, whether or not it's this month.
+    const soon = monthOf(Date.parse(`${addDays(today, 1)}T12:00:00+08:00`));
+    const month = await read(`takwim/${soon}/index.html`);
+    expect(month).toContain("Taklimat Sabah");
+    expect(month).not.toContain("Bengkel lalu");
+    expect(month).toContain("Esok");
+    expect(month).toContain("9.00 pagi – 12.30 tengah hari");
+    expect(month).toContain("Dewan Kinabalu");
+    // The day in the calendar links down to it in the list under it.
+    expect(month).toContain(`href="#hari-${addDays(today, 1)}"`);
+    expect(month).toContain(`id="hari-${addDays(today, 1)}"`);
 
-    // Months from the earliest event's to the latest's, with links either side.
+    // The listing's own address is the current month, with no agenda/month switch.
+    const home = await read("takwim/index.html");
+    expect(home).toContain(`<caption class="sr-only">`);
+    expect(home).not.toContain("Persidangan dalam talian");
+
+    // Months from last month to six ahead, stretched to the events; arrows and the row of months link them.
     const past = await read(`takwim/${lastMonth}/index.html`);
     expect(past).toContain("Bengkel lalu");
-    expect(past).toContain(`/takwim/${addMonths(lastMonth, 1)}`);
+    expect(past).toContain('href="/takwim"');
+    expect(past).not.toContain("Bulan sebelumnya");
+    await read(`takwim/${addMonths(thisMonth, 6)}/index.html`);
+    expect(home).toContain(`href="/takwim/${addMonths(thisMonth, 6)}"`);
     const later = await read(`takwim/${inTwoMonths}/index.html`);
     expect(later).toContain("Persidangan dalam talian");
-    await read(`takwim/${thisMonth}/index.html`);
+    expect(later).toContain(
+      `Acara ${new Intl.DateTimeFormat("ms-MY", { month: "long", year: "numeric" }).format(new Date(`${inTwoMonths}-15T12:00:00+08:00`))}`,
+    );
 
-    const sabah = await read("takwim/lokasi/sabah/index.html");
+    const sabah = await read(`takwim/lokasi/sabah/${soon}/index.html`);
     expect(sabah).toContain("Taklimat Sabah");
-    expect(sabah).not.toContain("Persidangan dalam talian");
+    await read("takwim/lokasi/sabah/index.html");
     const team = await read(`takwim/kategori/pasukan-a/${inTwoMonths}/index.html`);
     expect(team).not.toContain("Persidangan dalam talian");
 
@@ -233,5 +243,25 @@ describe("events and the event calendar", () => {
     const html = await read("acara/index.html");
     expect(html).toContain(`datetime="${day}"`);
     expect(html).not.toContain(`datetime="${today}"`);
+    // Its Event details block shows the entry's own date and time, with none typed in.
+    const article = await read(`${entry.path.slice(1)}/index.html`);
+    expect(article).toContain("10.00 pagi");
+    expect(article).toContain("20 ");
+    const checks = (await call("GET", `/api/pages/checks?ids=${entry.id}`)).json().data[entry.id];
+    expect(checks.map((c: { code: string }) => c.code)).not.toContain("eventNoDate");
+  });
+
+  it("warns when Event details has no date and the entry isn't an event", async () => {
+    const acara = (await call("GET", "/api/pages"))
+      .json()
+      .data.find((p: { path: string }) => p.path === "/acara");
+    const entry = (
+      await call("POST", `/api/pages/${acara.id}/entries`, { title: "Tanpa tarikh" })
+    ).json().data;
+    const draft = (await call("GET", `/api/pages/${entry.id}`)).json().data.draft;
+    const { event: _, ...plain } = draft.entry;
+    await call("PUT", `/api/pages/${entry.id}/draft`, { draft: { ...draft, entry: plain } });
+    const checks = (await call("GET", `/api/pages/checks?ids=${entry.id}`)).json().data[entry.id];
+    expect(checks.map((c: { code: string }) => c.code)).toContain("eventNoDate");
   });
 });

@@ -45,6 +45,14 @@ export const monthLabel = (month: string, lang: Lang) =>
     timeZone: EVENT_TIME_ZONE,
   }).format(noon(`${month}-15`));
 
+/** "Nov 2026", from YYYY-MM: the calendar's row of months. */
+export const shortMonthLabel = (month: string, lang: Lang) =>
+  new Intl.DateTimeFormat(locale(lang), {
+    month: "short",
+    year: "numeric",
+    timeZone: EVENT_TIME_ZONE,
+  }).format(noon(`${month}-15`));
+
 /** "Nov", from a YYYY-MM-DD. */
 export const monthAbbr = (day: string, lang: Lang) =>
   new Intl.DateTimeFormat(locale(lang), { month: "short", timeZone: EVENT_TIME_ZONE }).format(

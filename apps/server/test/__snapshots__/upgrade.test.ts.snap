@@ -3974,6 +3974,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                         "widget": "richtext",
                       },
                       "date": {
+                        "help": "Leave empty on an event entry: its own date and time show here.",
                         "maxLength": 60,
                         "title": "Date as people read it, e.g. Khamis, 12 November 2026",
                         "type": "string",
@@ -4059,6 +4060,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                         "widget": "text",
                       },
                       "time": {
+                        "help": "Leave empty on an event entry.",
                         "maxLength": 60,
                         "title": "Time",
                         "type": "string",
@@ -4089,7 +4091,6 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                       },
                     },
                     "required": [
-                      "date",
                       "about",
                       "width",
                     ],
@@ -4614,21 +4615,15 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                         "widget": "toggle",
                       },
                       "emptyText": {
-                        "default": "Tiada acara akan datang.",
+                        "default": "Tiada acara pada bulan ini.",
                         "maxLength": 200,
-                        "title": "Text when there are no coming events",
+                        "title": "Text when a month has no events",
                         "type": "string",
                         "widget": "text",
                       },
                       "locationFilter": {
                         "default": true,
                         "title": "Show the location filter",
-                        "type": "boolean",
-                        "widget": "toggle",
-                      },
-                      "monthView": {
-                        "default": true,
-                        "title": "Offer a month view",
                         "type": "boolean",
                         "widget": "toggle",
                       },
@@ -4649,7 +4644,6 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                       },
                     },
                     "required": [
-                      "monthView",
                       "categoryFilter",
                       "locationFilter",
                       "emptyText",
@@ -7919,6 +7913,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                         "widget": "richtext",
                       },
                       "date": {
+                        "help": "Leave empty on an event entry: its own date and time show here.",
                         "maxLength": 60,
                         "title": "Date as people read it, e.g. Khamis, 12 November 2026",
                         "type": "string",
@@ -8004,6 +7999,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                         "widget": "text",
                       },
                       "time": {
+                        "help": "Leave empty on an event entry.",
                         "maxLength": 60,
                         "title": "Time",
                         "type": "string",
@@ -8034,7 +8030,6 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                       },
                     },
                     "required": [
-                      "date",
                       "about",
                       "width",
                     ],
@@ -8559,21 +8554,15 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                         "widget": "toggle",
                       },
                       "emptyText": {
-                        "default": "Tiada acara akan datang.",
+                        "default": "Tiada acara pada bulan ini.",
                         "maxLength": 200,
-                        "title": "Text when there are no coming events",
+                        "title": "Text when a month has no events",
                         "type": "string",
                         "widget": "text",
                       },
                       "locationFilter": {
                         "default": true,
                         "title": "Show the location filter",
-                        "type": "boolean",
-                        "widget": "toggle",
-                      },
-                      "monthView": {
-                        "default": true,
-                        "title": "Offer a month view",
                         "type": "boolean",
                         "widget": "toggle",
                       },
@@ -8594,7 +8583,6 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                       },
                     },
                     "required": [
-                      "monthView",
                       "categoryFilter",
                       "locationFilter",
                       "emptyText",

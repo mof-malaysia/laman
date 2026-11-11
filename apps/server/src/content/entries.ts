@@ -377,7 +377,7 @@ export function listingRenderOf(
       items: [],
       page: 1,
       pages: 1,
-      calendar: calendarRenderOf(settings, base, calendar, all, options),
+      calendar: calendarRenderOf(settings, base, all, options),
     };
   const block = doc.ms.blocks.find((b): b is BlockOf<"entryList"> => b.type === "entryList");
   const perPage = Number(block?.props.perPage ?? 12);
@@ -388,17 +388,21 @@ export function listingRenderOf(
 
 /** Month pages reach at most this far either side of the current month. */
 const MONTHS_AROUND = 12;
+/** However few events there are, the calendar can go this far back and ahead. */
+const MONTHS_BACK = 1;
+const MONTHS_AHEAD = 6;
 
 /**
- * The months a calendar has a page for: from its first event's month to its
- * last, always with the current one, at most a year either side of it.
+ * The months a calendar has a page for: at least last month to six months
+ * ahead, stretched to its first and last event's months, at most a year
+ * either side of the current one.
  */
 export function calendarMonths(all: EntryItem[], at: number): string[] {
   const current = monthOf(at);
   const earliest = addMonths(current, -MONTHS_AROUND);
   const latest = addMonths(current, MONTHS_AROUND);
-  let first = current;
-  let last = current;
+  let first = addMonths(current, -MONTHS_BACK);
+  let last = addMonths(current, MONTHS_AHEAD);
   for (const item of all) {
     if (!item.event) continue;
     const days = eventDays(item.event);
@@ -414,11 +418,10 @@ export function calendarMonths(all: EntryItem[], at: number): string[] {
   return months;
 }
 
-/** What an event calendar shows on one of its addresses. */
+/** What an event calendar shows on one of its addresses: a month, the current one by default. */
 export function calendarRenderOf(
   settings: ListingSettings,
   base: string,
-  block: BlockOf<"eventCalendar">,
   all: EntryItem[],
   options: Pick<ListingOptions, "category" | "location" | "month" | "now"> = {},
 ): CalendarRender {
@@ -428,49 +431,41 @@ export function calendarRenderOf(
     : options.location
       ? ({ kind: "location", slug: options.location } as const)
       : undefined;
-  const months = block.props.monthView ? calendarMonths(all, at) : [];
-  const month = options.month && months.includes(options.month) ? options.month : undefined;
-  const shown = all.filter(
-    (item) =>
-      item.event &&
-      (!filter ||
-        (filter.kind === "category"
-          ? item.categorySlug === filter.slug
-          : item.event.locationSlug === filter.slug)),
-  );
-  const items = month
-    ? shown
-        .filter((item) => eventDays(item.event!).some((day) => day.startsWith(month)))
-        .toSorted((a, b) => Date.parse(a.event!.start) - Date.parse(b.event!.start))
-    : upcomingOf(shown, at);
-  const hrefFor = (f: typeof filter) => calendarPath(base, { month, filter: f });
-  const index = month ? months.indexOf(month) : -1;
+  const months = calendarMonths(all, at);
+  const month = options.month && months.includes(options.month) ? options.month : monthOf(at);
+  const items = all
+    .filter(
+      (item) =>
+        item.event &&
+        (!filter ||
+          (filter.kind === "category"
+            ? item.categorySlug === filter.slug
+            : item.event.locationSlug === filter.slug)) &&
+        eventDays(item.event).some((day) => day.startsWith(month)),
+    )
+    .toSorted((a, b) => Date.parse(a.event!.start) - Date.parse(b.event!.start));
+  // The current month's links go to the listing's own address (or its filter's), the rest to their month.
+  const monthHref = (m: string, f: typeof filter) =>
+    calendarPath(base, { month: m === monthOf(at) ? undefined : m, filter: f });
+  const index = months.indexOf(month);
   const prev = index > 0 ? months[index - 1] : undefined;
   const next = index >= 0 && index < months.length - 1 ? months[index + 1] : undefined;
   return {
-    view: month ? "month" : "agenda",
     today: dayOf(at),
-    ...(month && { month }),
+    month,
     ...(filter && { filter }),
-    all: hrefFor(undefined),
+    all: monthHref(month, undefined),
     categories: settings.categories.map((c) => ({
       ...c,
-      href: hrefFor({ kind: "category", slug: c.slug }),
+      href: monthHref(month, { kind: "category", slug: c.slug }),
     })),
     locations: settings.locations.map((l) => ({
       ...l,
-      href: hrefFor({ kind: "location", slug: l.slug }),
+      href: monthHref(month, { kind: "location", slug: l.slug }),
     })),
-    agendaHref: calendarPath(base, { filter }),
-    ...(months.length && {
-      monthHref: calendarPath(base, {
-        month: months.includes(monthOf(at)) ? monthOf(at) : months[0],
-        filter,
-      }),
-    }),
-    months,
-    ...(prev && { prev: { month: prev, href: calendarPath(base, { month: prev, filter }) } }),
-    ...(next && { next: { month: next, href: calendarPath(base, { month: next, filter }) } }),
+    months: months.map((m) => ({ month: m, href: monthHref(m, filter) })),
+    ...(prev && { prev: { month: prev, href: monthHref(prev, filter) } }),
+    ...(next && { next: { month: next, href: monthHref(next, filter) } }),
     items,
   };
 }

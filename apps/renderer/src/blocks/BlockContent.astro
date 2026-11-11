@@ -69,5 +69,5 @@ const column = (b: { props: { width?: "page" | "article" | "wide" } }) => column
 {block.type === "ctaSplit" && <CtaSplit block={block} edit={edit} media={media} />}
 {block.type === "partnerGrid" && <PartnerGrid block={block} edit={edit} lang={lang} media={media} siteUrl={site.url} />}
 {block.type === "logoCloud" && <LogoCloud block={block} edit={edit} media={media} />}
-{block.type === "eventDetails" && <EventDetails block={block} width={column(block)} lang={lang} />}
+{block.type === "eventDetails" && <EventDetails block={block} width={column(block)} lang={lang} event={input.entry?.event} />}
 {block.type === "embed" && <Embed block={block} width={column(block)} edit={edit} live={input.mode === "publish"} lang={lang} rules={site.embeds} />}

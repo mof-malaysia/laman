@@ -92,6 +92,9 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "checks.embedNotAllowed": "Benaman yang tidak dibenarkan di laman ini: {subject}",
   "checks.embedNotAllowed.fix":
     "Admin boleh membenarkannya di Tetapan, Benaman, kemudian terbitkan tetapan. Sehingga itu, halaman yang diterbitkan tidak memaparkan blok ini.",
+  "checks.eventNoDate": "Butiran acara tanpa tarikh",
+  "checks.eventNoDate.fix":
+    "Taip tarikh dalam blok, atau pada entri, tandakan “Entri ini ialah acara” dan tetapkan tarikhnya di situ.",
   "checks.review.title": "Sebelum halaman ini diterbitkan",
   "checks.review.warnings":
     "Beberapa perkara pada halaman ini mungkin tidak berfungsi untuk pelawat. Anda boleh terbitkan juga, atau betulkan dahulu.",

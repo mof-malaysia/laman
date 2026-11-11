@@ -87,6 +87,9 @@ export const en = {
   "checks.embedNotAllowed": "An embed that isn't allowed on this site: {subject}",
   "checks.embedNotAllowed.fix":
     "An Admin can allow it in Settings, Embeds, then publish the settings. Until then the published page leaves this block out.",
+  "checks.eventNoDate": "Event details with no date",
+  "checks.eventNoDate.fix":
+    "Type the date in the block, or, on an entry, tick “This entry is an event” and set its date there.",
   "checks.review.title": "Before this page goes live",
   "checks.review.warnings":
     "Some things on this page may not work for visitors. You can publish anyway, or fix them first.",

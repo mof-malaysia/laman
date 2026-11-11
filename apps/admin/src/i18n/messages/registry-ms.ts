@@ -233,6 +233,9 @@ export const registryMs: Record<string, string> = {
 
   // Event details
   "Event details": "Butiran acara",
+  "Leave empty on an event entry: its own date and time show here.":
+    "Biarkan kosong pada entri acara: tarikh dan masanya sendiri dipaparkan di sini.",
+  "Leave empty on an event entry.": "Biarkan kosong pada entri acara.",
   "An event's date, time, venue, fee and registration, beside what it's about and its programme.":
     "Tarikh, masa, tempat, yuran dan pendaftaran acara, di sebelah perihal acara dan aturcaranya.",
   "Date as people read it, e.g. Khamis, 12 November 2026":
@@ -358,11 +361,10 @@ export const registryMs: Record<string, string> = {
 
   // Event calendar
   "Event calendar": "Kalendar acara",
-  "This listing's events by date: what's coming, day by day, and a month view, filtered by category and location.":
-    "Acara senarai ini mengikut tarikh: apa yang akan datang, hari demi hari, dan paparan bulan, ditapis mengikut kategori dan lokasi.",
-  "Offer a month view": "Tawarkan paparan bulan",
+  "This listing's events by month: a calendar with the month's events listed under it, filtered by category and location.":
+    "Acara senarai ini mengikut bulan: kalendar dengan acara bulan itu disenaraikan di bawahnya, ditapis mengikut kategori dan lokasi.",
   "Show the location filter": "Tunjukkan penapis lokasi",
-  "Text when there are no coming events": "Teks apabila tiada acara akan datang",
+  "Text when a month has no events": "Teks apabila tiada acara pada bulan itu",
 
   // Upcoming events
   "Upcoming events": "Acara akan datang",
@@ -396,6 +398,6 @@ export const registryMs: Record<string, string> = {
   "Briefings, workshops, open days, with date and venue.":
     "Taklimat, bengkel, hari terbuka, dengan tarikh dan tempat.",
   Takwim: "Takwim",
-  "A calendar of events: what's coming, day by day, and a page per month.":
-    "Kalendar acara: apa yang akan datang, hari demi hari, dan satu halaman setiap bulan.",
+  "A calendar of events, a month at a time, with each month's events listed under it.":
+    "Kalendar acara, sebulan demi sebulan, dengan acara setiap bulan disenaraikan di bawahnya.",
 };

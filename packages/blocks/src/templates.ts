@@ -144,7 +144,8 @@ export const templates = {
   },
   takwim: {
     name: "Takwim",
-    description: "A calendar of events: what's coming, day by day, and a page per month.",
+    description:
+      "A calendar of events, a month at a time, with each month's events listed under it.",
     listing: { startingBlocks: ["prose"], sort: "eventStart" },
     blocks: (title) => [
       block("pageIntro", { title, description: "Acara dan program yang akan datang." }),

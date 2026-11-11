@@ -344,28 +344,27 @@ export type EntryItem = {
   };
 };
 
-/** What an event calendar shows on this address: the agenda or one month, perhaps filtered. */
+/**
+ * What an event calendar shows on this address: one month, perhaps filtered.
+ * The listing's own address shows the current month.
+ */
 export type CalendarRender = {
-  view: "agenda" | "month";
   /** The day it was published, in Malaysia: YYYY-MM-DD. */
   today: string;
-  /** The month view's month: YYYY-MM. */
-  month?: string;
+  /** The month shown: YYYY-MM. */
+  month: string;
   /** The category or location this address filters by. */
   filter?: { kind: "category" | "location"; slug: string };
-  /** The same view unfiltered, and filtered by each category and location. */
+  /** The same month unfiltered, and filtered by each category and location. */
   all: string;
   categories: { slug: string; name: string; href: string }[];
   locations: { slug: string; name: string; href: string }[];
-  /** The agenda and month view of the same filter; month is absent when the block offers no month view. */
-  agendaHref: string;
-  monthHref?: string;
-  /** Every month with a page, oldest first: YYYY-MM. Empty when the block offers no month view. */
-  months: string[];
+  /** Every month with a page, oldest first, under the same filter. */
+  months: { month: string; href: string }[];
   /** The month pages either side, when there are any. */
   prev?: { month: string; href: string };
   next?: { month: string; href: string };
-  /** The agenda: coming events, soonest first. A month: the events on any of its days. */
+  /** The events on any of the month's days, soonest first. */
   items: EntryItem[];
 };
 
