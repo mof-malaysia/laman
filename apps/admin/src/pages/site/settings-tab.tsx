@@ -108,6 +108,8 @@ const Note = ({ message }: { message: MessageKey }) => (
  * editor's edits first and reload its page after, instead of racing its autosave.
  */
 export type DraftLink = {
+  /** The editor's blocks, which may be ahead of the saved draft. */
+  blocks: { type: string }[];
   redirect: PageRedirect | null;
   setRedirect: (redirect: PageRedirect | null) => void;
   beforeChange: () => Promise<unknown>;
@@ -128,6 +130,10 @@ export function SettingsTab({
 }) {
   const home = isHome(page);
   const row = (id: SettingsSection) => ({ id, focus: section === id });
+  // Calendar sources feed an Event calendar: a listing with an Entry list doesn't offer them.
+  const hasEventCalendar = (draft?.blocks ?? page.draft.ms.blocks).some(
+    (b) => b.type === "eventCalendar",
+  );
   // The home page can't do these: its row says why in place of the form.
   const homeOr = (id: "redirect" | "move" | "unpublish" | "delete", form: ReactNode) =>
     home ? (
@@ -158,7 +164,7 @@ export function SettingsTab({
             <CollectionSettings listing={page} />
           </Section>
         )}
-        {page.kind === "listing" && canPublish && (
+        {page.kind === "listing" && canPublish && hasEventCalendar && (
           <Section {...row("calendars")} action={<SyncNowButton listing={page} />}>
             <CalendarSources listing={page} />
           </Section>

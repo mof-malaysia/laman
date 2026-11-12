@@ -752,6 +752,7 @@ function Editor({ page, onReload }: { page: Page; onReload: () => Promise<void> 
         onPanel={setPanel}
         fields={pagePanel}
         draft={{
+          blocks,
           redirect: state.doc.redirect ?? null,
           setRedirect: (next) =>
             dispatch({
