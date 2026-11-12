@@ -155,7 +155,7 @@ export function useGuard(app: FastifyInstance, db: Db) {
         stage: request.auth.session.stage,
       });
     if (!allows(request.auth.user.role, access))
-      throw new HttpError(403, "forbidden", "Your role can't do this.", { needs: access });
+      throw new HttpError(403, "forbidden", "This role can't do this.", { needs: access });
   });
 
   app.addHook("onResponse", async (request, reply) => {

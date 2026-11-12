@@ -92,7 +92,11 @@ export const agentRoutes: FastifyPluginAsync = async (app) => {
       const origin = originOf(request);
       const { client, redirectUri } = await checked(query, origin);
       if (allow && !user.mcp_enabled)
-        throw new HttpError(403, "mcp_not_enabled", "Ask an Admin to turn on MCP access for you.");
+        throw new HttpError(
+          403,
+          "mcp_not_enabled",
+          "Ask an Admin to turn on MCP access for this account.",
+        );
       const params = allow
         ? {
             code: makeCode({

@@ -97,7 +97,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
     "Taip tarikh dalam blok, atau pada entri, tandakan “Entri ini ialah acara” dan tetapkan tarikhnya di situ.",
   "checks.review.title": "Sebelum halaman ini diterbitkan",
   "checks.review.warnings":
-    "Beberapa perkara pada halaman ini mungkin tidak berfungsi untuk pelawat. Anda boleh terbitkan juga, atau betulkan dahulu.",
+    "Beberapa perkara pada halaman ini mungkin tidak berfungsi untuk pelawat. Terbitkan juga, atau betulkan dahulu.",
   "checks.review.stopped":
     "Halaman ini tidak boleh diterbitkan sehingga perkara pertama di bawah dibetulkan.",
   "checks.publishAnyway": "Terbitkan juga",
@@ -258,7 +258,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "media.retry": "Cuba lagi",
   "media.none.title": "Belum ada fail",
   "media.none.body":
-    "Muat naik imej dan PDF yang diperlukan oleh halaman, atau lepaskan fail di mana-mana pada skrin ini. Anda akan menerangkan setiap imej semasa ia dimuat naik.",
+    "Muat naik imej dan PDF yang diperlukan oleh halaman, atau lepaskan fail di mana-mana pada skrin ini. Setiap imej diterangkan semasa ia dimuat naik.",
   "media.none.filtered": "Tiada fail yang sepadan",
   "media.none.filteredBody":
     "Tiada apa-apa dalam pustaka yang sepadan dengan carian atau penapis ini.",
@@ -342,13 +342,13 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "media.replace.none":
     "Belum ada halaman yang menggunakan fail ini, jadi tiada apa-apa di laman web yang berubah.",
   "media.replace.live":
-    "Draf dan editor menunjukkan fail baharu serta-merta. Pelawat melihatnya selepas penerbitan yang seterusnya. Anda boleh mengembalikan fail lama.",
+    "Draf dan editor menunjukkan fail baharu serta-merta. Pelawat melihatnya selepas penerbitan yang seterusnya. Fail lama boleh dikembalikan.",
   "media.replace.confirm": "Ganti fail",
   "media.replaced": "Fail telah diganti",
   "media.replacedBody": "Pelawat melihatnya selepas penerbitan yang seterusnya.",
   "media.notLive.title": "Pelawat masih melihat fail lama",
   "media.notLive.body":
-    "Anda menggantikan fail ini pada {time}. Halaman di sini menunjukkan fail baharu; laman web yang diterbitkan berubah selepas penerbitan.",
+    "Diganti pada {time}. Halaman di sini menunjukkan fail baharu; laman web yang diterbitkan berubah selepas penerbitan.",
   "media.notLive.link": "Pergi ke Penerbitan",
   "media.previous": "Diganti pada {time}. Fail sebelumnya ialah {name}.",
   "media.previous.name": "Fail sebelumnya ialah {name}.",
@@ -363,9 +363,9 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "media.previous.restored": "{name} telah dikembalikan",
   "media.delete": "Padam fail",
   "media.deleteInUseHint":
-    "Anda tidak boleh memadam fail yang sedang digunakan. Alih keluar fail daripada halaman di atas dahulu.",
+    "Fail yang sedang digunakan tidak boleh dipadam. Alih keluar fail daripada halaman di atas dahulu.",
   "media.deleted": "{name} kini dalam Baru dipadam",
-  "media.deletedBody": "Anda boleh memulihkannya dari sana dalam tempoh {days} hari.",
+  "media.deletedBody": "Ia boleh dipulihkan dari sana dalam tempoh {days} hari.",
   "media.failedNotice": "Salinan untuk telefon tidak dapat dibuat",
   "media.failedNoticeBody":
     "Halaman menggunakan fail asal, yang mungkin lambat dimuatkan pada telefon. Gunakan Ganti fail dengan salinan baharu imej untuk mencuba lagi.",
@@ -376,7 +376,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "media.restore": "Pulihkan fail",
   "media.restored": "{name} kembali dalam pustaka",
   "media.discard.title": "Buang perubahan?",
-  "media.discard.body": "Anda telah mengubah butiran {name} tetapi belum menyimpannya.",
+  "media.discard.body": "Butiran {name} telah diubah tetapi belum disimpan.",
   "media.discard.keep": "Teruskan menyunting",
   "media.discard.confirm": "Buang perubahan",
   "media.upload.title": "Muat naik fail",
@@ -452,7 +452,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "settings.review.hiding":
     "Enjin carian akan diminta mengecualikan setiap halaman laman web. Pelawat yang mencari agensi tidak akan menemuinya.",
   "settings.review.undo":
-    "Jika ada yang tidak kena selepas itu, anda boleh mengembalikan tetapan sebelumnya.",
+    "Jika ada yang tidak kena selepas itu, tetapan sebelumnya boleh dikembalikan.",
   "settings.prune.title": "Simpan lebih sedikit versi?",
   "settings.prune.body":
     "{drafts} draf lama yang disimpan merentas {pages} halaman akan dibuang, setiap satu apabila halamannya disimpan kali seterusnya. Draf ini tidak boleh dikembalikan. Versi yang diterbitkan dikekalkan.",
@@ -627,7 +627,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "navigation.review.none": "Tiada perubahan pada bar navigasi atau kaki laman",
   "navigation.review.leftOut": "{count} pautan tidak dimasukkan sehingga halamannya diterbitkan.",
   "navigation.review.undo":
-    "Jika tersilap, anda boleh mengembalikan navigasi sebelumnya dari skrin ini dan terbitkan semula.",
+    "Jika tersilap, navigasi sebelumnya boleh dikembalikan dari skrin ini dan diterbitkan semula.",
   "navigation.warnings": "Sesetengah pautan belum boleh diterbitkan",
   "navigation.navbar.hint":
     "Menu di bahagian atas setiap halaman: pilihan ringkas pautan dan menu lungsur.",
@@ -1020,7 +1020,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "pages.missingBody":
     "Halaman ini mungkin telah dialihkan atau alamatnya berubah. Cari dalam senarai semua halaman.",
   "pages.back": "Semua halaman",
-  "pages.index.title": "Apa yang sedang anda usahakan?",
+  "pages.index.title": "Cari halaman",
   "pages.index.intro":
     "Cari mana-mana daripada {count} halaman laman ini, atau sambung kerja yang tertangguh.",
   "pages.index.search": "Cari mengikut tajuk atau alamat",
@@ -1297,7 +1297,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "seo.preview.noDescription": "Enjin carian akan memilih sebahagian teks daripada halaman.",
   "seo.preview.hidden": "Disembunyikan: enjin carian diminta tidak menyenaraikan halaman ini.",
 
-  "settings.whenLive": "Ia disiarkan apabila anda menerbitkan halaman.",
+  "settings.whenLive": "Ia disiarkan apabila halaman diterbitkan.",
   "settings.home.redirect": "Halaman utama tidak boleh ubah hala: di situlah laman web bermula.",
   "settings.home.move":
     "Setiap halaman terletak di bawah halaman utama, jadi ia tidak boleh dialihkan.",
@@ -1349,7 +1349,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
 
   "delete.title": "Padam {title}?",
   "delete.body":
-    "Halaman ini akan dikeluarkan daripada senarai Halaman dan laman web sebaik sahaja disahkan. Anda boleh memulihkannya daripada Baru dipadam dalam tempoh 30 hari.",
+    "Halaman ini akan dikeluarkan daripada senarai Halaman dan laman web sebaik sahaja disahkan. Ia boleh dipulihkan daripada Baru dipadam dalam tempoh 30 hari.",
   "delete.checking": "Menyemak apa yang menggunakan halaman ini…",
   "delete.children.legend":
     "Halaman ini ada {count} subhalaman. Apakah yang perlu dilakukan kepadanya?",
@@ -1393,7 +1393,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
     "Senarai entri bertarikh, terbaharu dahulu. Setiap entri ialah halaman tersendiri.",
   "newPage.kind.listing.examples": "Berita, pengumuman, tender, pekeliling, jawatan kosong",
   "newPage.start.page.title": "Pilih templat",
-  "newPage.start.page.intro": "Gantikan teks contoh dengan kandungan anda.",
+  "newPage.start.page.intro": "Gantikan teks contoh dengan kandungan sebenar.",
   "newPage.start.listing.title": "Pilih templat",
   "newPage.start.listing.intro":
     "Mana-mana senarai boleh memuatkan apa-apa entri. Mulakan kosong jika tiada yang sesuai.",
@@ -1403,8 +1403,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "newPage.place.under": "Di bawah {title}",
   "newPage.name.title.page": "Namakan halaman",
   "newPage.name.title.listing": "Namakan senarai",
-  "newPage.name.intro":
-    "Tajuk ialah kepala halaman. Alamat mengikut tajuk melainkan anda mengubahnya.",
+  "newPage.name.intro": "Tajuk ialah kepala halaman. Alamat mengikut tajuk melainkan diubah.",
   "newPage.title.hint": "Ringkas dan mudah, seperti cara orang mencari",
   "newPage.check.title": "Semak dan cipta",
   "newPage.check.change": "Ubah",
@@ -1412,7 +1411,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "newPage.check.draft.page":
     "Ia bermula sebagai draf. Hanya pengguna yang log masuk boleh melihatnya sehingga diterbitkan.",
   "newPage.check.draft.listing":
-    "Ia bermula sebagai draf kosong. Tambah entri selepas ini; tiada apa diterbitkan sehingga anda menerbitkannya.",
+    "Ia bermula sebagai draf kosong. Tambah entri selepas ini; tiada apa disiarkan sehingga ia diterbitkan.",
   "newPage.done.title": "{title} telah dicipta",
   "newPage.done.intro": "Disimpan sebagai draf. Apabila diterbitkan, ia berada di {path}.",
   "newPage.done.page.edit.title": "Tulis kandungan",
@@ -1527,7 +1526,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "save.invalid": "Tidak disimpan: semak medan yang ditandakan",
   "save.conflict": "Tidak disimpan: orang lain telah menyimpan halaman ini",
   "save.signedOut": "Tidak disimpan: log masuk semula untuk meneruskan",
-  "save.forbidden": "Tidak disimpan: anda tidak lagi boleh menyunting halaman ini",
+  "save.forbidden": "Tidak disimpan: halaman ini tidak lagi boleh disunting",
   "save.gone": "Tidak disimpan: halaman ini telah dipadam",
   "conflict.someone": "Orang lain",
   "conflict.thisPage": "halaman ini",
@@ -1724,7 +1723,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "auth.username": "Nama pengguna",
   "auth.username.missing": "Masukkan nama pengguna",
   "auth.username.rules":
-    "3 hingga 32 huruf, nombor, titik, sempang atau garis bawah. Anda log masuk dengannya.",
+    "3 hingga 32 huruf, nombor, titik, sempang atau garis bawah. Digunakan untuk log masuk.",
   "auth.password": "Kata laluan",
   "auth.password.missing": "Masukkan kata laluan",
   "auth.password.current": "Kata laluan semasa",
@@ -1773,13 +1772,13 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "auth.recovery.kept": "Saya telah menyimpan kod pemulihan saya di tempat yang selamat",
   "auth.recovery.continue": "Teruskan",
   "auth.join.title": "Cipta akaun",
-  "auth.join.description": "Anda dijemput sebagai {role}. Pilih cara log masuk.",
+  "auth.join.description": "Dijemput sebagai {role}. Pilih cara log masuk.",
   "auth.join.name": "Nama penuh",
   "auth.join.nameHint": "Ditunjukkan kepada orang lain dalam sejarah dan di Pengguna.",
   "auth.join.name.missing": "Masukkan nama penuh",
   "auth.join.submit": "Cipta akaun",
   "auth.reset.title": "Pilih kata laluan baharu",
-  "auth.reset.description": "Untuk {username}. Anda akan dilog keluar di semua tempat.",
+  "auth.reset.description": "Untuk {username}. Akaun ini akan dilog keluar di semua tempat.",
   "auth.reset.submit": "Simpan kata laluan baharu",
   "auth.reset.done.title": "Kata laluan telah ditukar",
   "auth.reset.done.body": "Log masuk dengan kata laluan baharu.",
@@ -1797,16 +1796,16 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
     "Membatalkan penerbitan, membina semula laman dan mencuba semula kerja",
   "connect.cannot": "Ia tidak boleh mengurus pengguna, akaun, log masuk atau tetapan keselamatan.",
   "connect.lasts":
-    "Sambungan ini kekal selama {days} hari, kemudian perlu disambung semula. Anda atau Pentadbir boleh menamatkannya pada bila-bila masa di Akaun, dan semua yang dilakukannya ada dalam log audit.",
+    "Sambungan ini kekal selama {days} hari, kemudian perlu disambung semula. Akaun ini atau Pentadbir boleh menamatkannya pada bila-bila masa di Akaun, dan semua yang dilakukannya ada dalam log audit.",
   "connect.lasts.superAdmin":
-    "Sambungan ini kekal selama {days} hari, kemudian perlu disambung semula. Anda boleh menamatkannya pada bila-bila masa di Akaun, dan semua yang dilakukannya ada dalam log audit.",
+    "Sambungan ini kekal selama {days} hari, kemudian perlu disambung semula. Ia boleh ditamatkan pada bila-bila masa di Akaun, dan semua yang dilakukannya ada dalam log audit.",
   "connect.onlyYours": "Benarkan hanya ejen yang dimulakan sendiri, sebentar tadi.",
   "connect.unverified.title": "Ejen ini mungkin bukan seperti namanya",
   "connect.unverified":
     'Sesiapa sahaja boleh menamakan ejen "{client}". Ejen ini menghantar jawapan ke {returnsTo}, yang bukan laman web ejen yang dikenali. Jika ia tidak disediakan sendiri di sana, tolak.',
   "connect.unverified.confirm":
     "Saya sendiri menambah pembina ini pada ejen di {returnsTo}, sebentar tadi",
-  "connect.notEnabled.title": "Anda belum boleh menyambungkan {client}",
+  "connect.notEnabled.title": "{client} belum boleh disambungkan",
   "connect.notEnabled":
     "Minta Pentadbir menghidupkan akses ejen untuk akaun ini, kemudian sambung semula dari ejen.",
   "connect.notEnabled.superAdmin":
@@ -1817,7 +1816,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "connect.back": "Kembali ke {client}",
   "connect.leaving.title": "Kembali ke {client}",
   "connect.leaving.body":
-    "Anda boleh menutup tab ini sebaik sahaja ejen menyatakan ia telah bersambung.",
+    "Tab ini boleh ditutup sebaik sahaja ejen menyatakan ia telah bersambung.",
   "connect.broken.title": "Ejen ini tidak dapat bersambung",
   "connect.broken.reason": "Pembina menyatakan: {reason}",
   "connect.toAdmin": "Pergi ke admin",
@@ -1830,10 +1829,10 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
 
   "account.agents": "Ejen",
   "account.agents.description":
-    "Ejen AI, seperti Claude atau Codex, yang mengusahakan laman atas nama anda. Sambungan kekal selama {days} hari.",
+    "Ejen AI, seperti Claude atau Codex, yang mengusahakan laman atas nama akaun ini. Sambungan kekal selama {days} hari.",
   "account.agents.switch": "Benarkan saya menyambungkan ejen",
   "account.agents.switchHint": "Mematikannya menamatkan semua sambungan.",
-  "account.agents.notOn": "Minta Pentadbir menghidupkan akses ejen untuk anda.",
+  "account.agents.notOn": "Minta Pentadbir menghidupkan akses ejen untuk akaun ini.",
   "account.agents.address": "Alamat untuk ejen",
   "account.agents.addressHint": "Tambahkannya dalam ejen sebagai pelayan MCP jauh.",
   "account.agents.none": "Tiada ejen disambungkan.",
@@ -1844,13 +1843,13 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "account.agents.end": "Tamatkan sambungan",
   "account.agents.end.title": "Tamatkan {agent}?",
   "account.agents.end.body":
-    "Ia berhenti berfungsi pada langkah seterusnya. Anda boleh menyambungkannya semula dari ejen.",
+    "Ia berhenti berfungsi pada langkah seterusnya. Ia boleh disambungkan semula dari ejen.",
   "account.agents.ended": "Sambungan {agent} telah ditamatkan",
   "account.agents.off": "Matikan",
   "account.agents.off.title": "Berhenti menyambungkan ejen?",
   "account.agents.off.body":
     "Sambungan ejen yang sedia ada tamat sekarang, dan ejen baharu tidak boleh disambungkan sehingga tetapan ini dihidupkan semula.",
-  "account.agents.off.done": "Anda tidak boleh menyambungkan ejen sekarang",
+  "account.agents.off.done": "Ejen tidak boleh disambungkan sekarang",
   "account.intro": "Log masuk sebagai {username}, {role}.",
   "account.name": "Nama",
   "account.name.description": "Ditunjukkan dalam sejarah, Penerbitan dan Pengguna.",
@@ -1858,7 +1857,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "account.password.submit": "Tukar kata laluan",
   "account.password.done": "Kata laluan telah ditukar",
   "account.twoFactor": "Log masuk dua faktor",
-  "account.twoFactor.on": "Anda memasukkan kod daripada aplikasi pengesah semasa log masuk.",
+  "account.twoFactor.on": "Log masuk memerlukan kod daripada aplikasi pengesah.",
   "account.twoFactor.off":
     "Kod daripada aplikasi pengesah, supaya kata laluan sahaja tidak mencukupi.",
   "account.twoFactor.setUp": "Sediakan dua faktor",
@@ -1883,7 +1882,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "users.column.for": "Untuk",
   "users.column.madeBy": "Dibuat oleh",
   "users.column.expires": "Tamat tempoh",
-  "users.you": "Anda",
+  "users.you": "Akaun ini",
   "users.never": "Belum pernah",
   "users.disabled": "Dinyahdayakan",
   "users.twoFactor.on": "Hidup",

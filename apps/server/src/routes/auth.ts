@@ -271,7 +271,11 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
           .execute();
       if (mcpEnabled !== undefined && mcpEnabled !== Boolean(user.mcp_enabled)) {
         if (!can(user.role, "security.manage"))
-          throw new HttpError(403, "forbidden", "Ask an Admin to change your MCP access.");
+          throw new HttpError(
+            403,
+            "forbidden",
+            "Ask an Admin to change this account's MCP access.",
+          );
         await setMcpAccess(db, user.id, mcpEnabled, user.id);
         audited(request, { action: "userChanged", target: user.id, detail: { mcpEnabled } });
       }
@@ -329,10 +333,10 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       const { current, password } = request.body;
       const forced = authOf(request).session.stage === "password";
       if (!forced && !(current && (await verifyPassword(current, user.password_hash))))
-        throw new HttpError(400, "wrong_password", "Your current password isn't right.");
+        throw new HttpError(400, "wrong_password", "The current password isn't right.");
       // Checked against the hash only when there's no current password to compare.
       if (forced ? await verifyPassword(password, user.password_hash) : password === current)
-        throw new HttpError(400, "same_password", "Choose a password you haven't used here.");
+        throw new HttpError(400, "same_password", "Choose a password not used here before.");
       assertStrongPassword(password, user.username);
       await db
         .updateTable("users")

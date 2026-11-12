@@ -29,6 +29,6 @@ export const conflictError = (conflict: DraftConflict) =>
   new HttpError(
     409,
     "draft_conflict",
-    `${conflict.by ?? "Someone"} saved this since you started editing. Load their version, or save yours again to replace it.`,
+    `${conflict.by ?? "Someone"} saved this after editing started. Load their version, or save this one again to replace it.`,
     conflict,
   );

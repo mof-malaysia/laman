@@ -104,7 +104,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
       throw new HttpError(
         403,
         "forbidden",
-        "Your role can't move or delete pages that are on the site.",
+        "This role can't move or delete pages that are on the site.",
         {
           needs: "content.publish",
         },

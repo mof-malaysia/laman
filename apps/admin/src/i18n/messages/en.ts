@@ -72,7 +72,7 @@ export const en = {
   "checks.altMissing.fix":
     "Describe it in Media, or mark it decorative if it adds nothing a screen reader should read.",
   "checks.altFilename": 'Alt text that doesn\'t describe the image: "{subject}"',
-  "checks.altFilename.fix": "Say what the image shows, as you would to someone on the phone.",
+  "checks.altFilename.fix": "Say what the image shows, as if describing it over the phone.",
   "checks.linkNotLive": "A link to a page that isn't on the site yet: {subject}",
   "checks.linkNotLive.fix":
     "Publish that page too, or the link leads to the Page not found screen.",
@@ -92,9 +92,9 @@ export const en = {
     "Type the date in the block, or, on an entry, tick “This entry is an event” and set its date there.",
   "checks.review.title": "Before this page goes live",
   "checks.review.warnings":
-    "Some things on this page may not work for visitors. You can publish anyway, or fix them first.",
+    "Some things on this page may not work for visitors. Publish anyway, or fix them first.",
   "checks.review.warnings.one":
-    "Something on this page may not work for visitors. You can publish anyway, or fix it first.",
+    "Something on this page may not work for visitors. Publish anyway, or fix it first.",
   "checks.review.stopped": "This page can't go live until the first one below is fixed.",
   "checks.publishAnyway": "Publish anyway",
   "checks.fixInEditor": "Fix in the editor",
@@ -165,7 +165,7 @@ export const en = {
   "home.status.notPublishedBody": "Visitors see nothing until the home page is published.",
   "home.status.fresh": "{count} new pages aren't live yet.",
   "home.status.fresh.one": "1 new page isn't live yet.",
-  "home.status.publishedLive": "Everything you've published is live",
+  "home.status.publishedLive": "Everything published is live",
   "home.status.freshReview": "See them",
   "home.status.freshReview.one": "See it",
   "home.review": "Review and publish",
@@ -259,7 +259,7 @@ export const en = {
   "media.retry": "Try again",
   "media.none.title": "No files yet",
   "media.none.body":
-    "Upload the images and PDFs the pages need, or drop them anywhere on this screen. You'll describe each image as it uploads.",
+    "Upload the images and PDFs the pages need, or drop them anywhere on this screen. Each image gets described as it uploads.",
   "media.none.filtered": "No files match",
   "media.none.filteredBody": "Nothing in the library matches this search or these filters.",
   "media.none.clear": "Clear search and filters",
@@ -277,12 +277,11 @@ export const en = {
     "No page (live, draft or in Recently deleted) and no site setting uses these, so deleting one changes nothing on the site.",
   "media.none.needsAlt": "Every image has alt text",
   "media.none.needsAltBody":
-    "Images you upload show here until they're described or marked as decorative.",
+    "Uploaded images show here until they're described or marked as decorative.",
   "media.none.unused": "Every file is in use",
   "media.none.unusedBody": "Files that no page or setting uses show here.",
   "media.none.deleted": "Nothing in Recently deleted",
-  "media.none.deletedBody":
-    "Files you delete wait here for {days} days, then are removed for good.",
+  "media.none.deletedBody": "Deleted files wait here for {days} days, then are removed for good.",
   "media.deletedIntro":
     "Deleted files wait here for {days} days, then are removed for good. Open one to restore it.",
   "media.range": "Files {from}–{to} of {total}",
@@ -342,13 +341,13 @@ export const en = {
   "media.replace.settings": "It also changes the site settings (logo, favicon or social image).",
   "media.replace.none": "No page uses this file yet, so nothing on the site changes.",
   "media.replace.live":
-    "Drafts and the editor show the new file straight away. Visitors see it after you next publish. You can put the old file back.",
+    "Drafts and the editor show the new file straight away. Visitors see it after the next publish. The old file can be put back.",
   "media.replace.confirm": "Replace file",
   "media.replaced": "File replaced",
-  "media.replacedBody": "Visitors see it after you next publish.",
+  "media.replacedBody": "Visitors see it after the next publish.",
   "media.notLive.title": "Visitors still see the old file",
   "media.notLive.body":
-    "You replaced this file on {time}. Pages here show the new one; the live site changes when you publish.",
+    "Replaced on {time}. Pages here show the new file; the live site changes at the next publish.",
   "media.notLive.link": "Go to Publishing",
   "media.previous": "Replaced on {time}. The file before was {name}.",
   "media.previous.name": "The file before was {name}.",
@@ -362,10 +361,9 @@ export const en = {
   "media.previous.restore": "Put back {name}",
   "media.previous.restored": "{name} is back",
   "media.delete": "Delete file",
-  "media.deleteInUseHint":
-    "You can't delete a file while it's in use. Remove it from the pages above first.",
+  "media.deleteInUseHint": "A file in use can't be deleted. Remove it from the pages above first.",
   "media.deleted": "{name} is in Recently deleted",
-  "media.deletedBody": "You can restore it from there for {days} days.",
+  "media.deletedBody": "It can be restored from there for {days} days.",
   "media.failedNotice": "Copies for phones couldn't be made",
   "media.failedNoticeBody":
     "Pages use the original file instead, which can be slow on phones. Use Replace file with a fresh copy of the image to try again.",
@@ -376,7 +374,7 @@ export const en = {
   "media.restore": "Restore file",
   "media.restored": "{name} is back in the library",
   "media.discard.title": "Discard changes?",
-  "media.discard.body": "You changed the details of {name} but haven't saved them.",
+  "media.discard.body": "The details of {name} were changed but not saved.",
   "media.discard.keep": "Keep editing",
   "media.discard.confirm": "Discard changes",
   "media.upload.title": "Upload files",
@@ -452,7 +450,7 @@ export const en = {
   "settings.review.hiding":
     "Search engines will be asked to leave out every page of the site. Visitors searching for the agency won't find it.",
   "settings.review.undo":
-    "If something is wrong afterwards, you can put back the settings from before.",
+    "If something is wrong afterwards, the settings from before can be put back.",
   "settings.prune.title": "Keep fewer revisions?",
   "settings.prune.body":
     "{drafts} older saved drafts across {pages} pages will be removed, each the next time its page is saved. They can't be brought back. Published revisions are kept.",
@@ -581,8 +579,7 @@ export const en = {
   "nav.target.gone": "The page this linked to has been deleted. Choose another page.",
   "navigation.loadFailed": "The navigation could not be loaded. Refresh the page to try again.",
   "navigation.title": "Navigation",
-  "navigation.everyPage":
-    "The navbar and footer around every page. Edits go live when you publish them.",
+  "navigation.everyPage": "The navbar and footer around every page. Edits go live once published.",
   "navigation.items": "Menu items",
   "navigation.noTarget": "Not linked yet",
   "navigation.pageGone": "Deleted page",
@@ -594,16 +591,16 @@ export const en = {
   "navigation.editor": "Navigation editor",
   "navigation.preview": "Preview of the edits",
   "navigation.preview.caption":
-    "The home page, as visitors will see it once you publish. Links to pages that aren't published are left out.",
+    "The home page, as visitors will see it once published. Links to pages that aren't published are left out.",
   "navigation.save": "Save",
   "navigation.publish": "Publish navigation",
   "navigation.saved": "Navigation saved. Not live yet",
-  "navigation.whenLive": "Visitors see it after you publish the navigation.",
+  "navigation.whenLive": "Visitors see it once the navigation is published.",
   "navigation.notSaved": "The navigation was not saved",
   "navigation.discardEdits": "Discard unsaved edits",
   "navigation.discardEdits.title": "Discard unsaved edits?",
   "navigation.discardEdits.body":
-    "The navbar and footer go back to what you last saved. This can't be undone.",
+    "The navbar and footer go back to the last saved version. This can't be undone.",
   "navigation.leave.title": "Leave without saving?",
   "navigation.leave.body": "Edits to the navigation haven't been saved, and will be lost.",
   "navigation.leave.confirm": "Leave without saving",
@@ -631,7 +628,7 @@ export const en = {
   "navigation.review.leftOut": "{count} links are left out until their pages are published.",
   "navigation.review.leftOut.one": "1 link is left out until its page is published.",
   "navigation.review.undo":
-    "If it's wrong, you can put back the previous navigation from this screen and publish again.",
+    "If it's wrong, the previous navigation can be put back from this screen and published again.",
   "navigation.warnings": "Some links can't go live yet",
   "navigation.navbar.hint":
     "The menu at the top of every page: a short selection of links and dropdown menus.",
@@ -753,7 +750,7 @@ export const en = {
   "announcement.review.undo": "Published by mistake? The previous announcement can be put back.",
   "announcement.previous.load": "Put back the announcement from before the last publish",
   "announcement.discardEdits.body":
-    "The announcement goes back to what you last saved. This can't be undone.",
+    "The announcement goes back to the last saved version. This can't be undone.",
   "announcement.leave.body": "Edits to the announcement haven't been saved, and will be lost.",
   "search.title": "Site search",
   "search.subtitle": "A Cari button in the navbar and a results page at /carian.",
@@ -812,7 +809,8 @@ export const en = {
   "search.review.blocked": "Fix these before publishing:",
   "search.review.undo": "Published by mistake? The previous search settings can be put back.",
   "search.previous.load": "Put back site search from before the last publish",
-  "search.discardEdits.body": "Site search goes back to what you last saved. This can't be undone.",
+  "search.discardEdits.body":
+    "Site search goes back to the last saved version. This can't be undone.",
   "search.leave.body": "Edits to site search haven't been saved, and will be lost.",
   "theme.title": "Site colours",
   "theme.subtitle": "The colour of links, buttons and tags across the site.",
@@ -1020,9 +1018,9 @@ export const en = {
   "pages.missing": "That page isn't here",
   "pages.missingBody": "It may have moved, or its address changed. Find it among all pages.",
   "pages.back": "All pages",
-  "pages.index.title": "What are you working on?",
-  "pages.index.intro": "Find any of the site's {count} pages, or pick up where you left off.",
-  "pages.index.intro.one": "Find the site's one page, or pick up where you left off.",
+  "pages.index.title": "Find a page",
+  "pages.index.intro": "Search the site's {count} pages, or pick up a recent edit.",
+  "pages.index.intro.one": "Open the site's one page, or pick up a recent edit.",
   "pages.index.search": "Search by title or address",
   "pages.index.searchLabel": "Search pages and entries",
   "pages.index.results": "Search results",
@@ -1052,7 +1050,7 @@ export const en = {
   "pages.index.state.scheduled": "Scheduled",
   "pages.deleted": "{title} was deleted",
   "pages.deletedBody":
-    "It was deleted {time} and is in Recently deleted, where you can look at it and bring it back.",
+    "It was deleted {time} and is in Recently deleted, where it can be looked at and brought back.",
   "pages.deletedOpen": "Open in Recently deleted",
 
   "tree.entries": "Entries",
@@ -1085,7 +1083,7 @@ export const en = {
   "history.restore": "Restore as draft",
   "history.restored": "Restored as the draft",
   "history.restoredBody":
-    "The draft before it is in the history, so you can go back. Nothing was published.",
+    "The draft before it is in the history, so this can be undone. Nothing was published.",
   "history.restoreFailed": "The revision was not restored",
   "history.loadFailed": "The history could not be loaded. Try again.",
   "history.compareTitle": "The revision from {time}, beside the current draft",
@@ -1103,10 +1101,10 @@ export const en = {
   "trash.kept": "Kept for 30 days, then removed for good",
   "trash.label": "Deleted pages",
   "trash.empty": "Nothing deleted",
-  "trash.emptyBody": "Deleted pages stay here for 30 days, so you can bring them back.",
+  "trash.emptyBody": "Deleted pages stay here for 30 days and can be brought back.",
   "trash.choose": "Pick a deleted page",
   "trash.chooseBody":
-    "Look at it before you restore it. Restoring puts it back where it was, as a draft.",
+    "Look it over before restoring. Restoring puts it back where it was, as a draft.",
   "trash.missing": "This page isn't in Recently deleted any more",
   "trash.deletedAt": "Deleted {time}",
   "trash.wasAt": "Was at {path}",
@@ -1301,7 +1299,7 @@ export const en = {
   "seo.preview.noDescription": "Search engines will pick some text from the page.",
   "seo.preview.hidden": "Hidden: search engines are asked not to list this page.",
 
-  "settings.whenLive": "It goes live when you publish the page.",
+  "settings.whenLive": "It goes live when the page is published.",
   "settings.home.redirect": "The home page can't redirect: it's where the site starts.",
   "settings.home.move": "Every page sits under the home page, so it can't move.",
   "settings.home.unpublish": "The home page can't be unpublished: the site needs it.",
@@ -1346,12 +1344,12 @@ export const en = {
   "settings.unpublish.failed": "The page was not unpublished",
   "settings.delete.title": "Delete",
   "settings.delete.description":
-    "Remove it from Pages and the site. You can restore it for 30 days.",
+    "Remove it from Pages and the site. It can be restored for 30 days.",
   "settings.delete.action": "Delete page",
 
   "delete.title": "Delete {title}?",
   "delete.body":
-    "It leaves Pages and the site as soon as you confirm. You can restore it from Recently deleted for 30 days.",
+    "It leaves Pages and the site once confirmed. It can be restored from Recently deleted for 30 days.",
   "delete.checking": "Checking what uses this page…",
   "delete.children.legend": "It has {count} child pages. What happens to them?",
   "delete.children.legend.one": "It has a child page. What happens to it?",
@@ -1385,35 +1383,34 @@ export const en = {
   "newPage.changeLater": "A page can become a collection later, but not the other way round.",
   "newPage.preview": "Preview",
   "newPage.previewHint": "How it will start",
-  "newPage.kind.title": "What are you making?",
+  "newPage.kind.title": "Choose what to make",
   "newPage.kind.label": "Type",
   "newPage.kind.page.title": "A page",
   "newPage.kind.page.body":
-    "Information you update when things change. It can have pages under it.",
+    "Information that's updated when things change. It can have pages under it.",
   "newPage.kind.page.examples": "About us, services, contact us, FAQ",
   "newPage.kind.listing.title": "A collection",
   "newPage.kind.listing.body": "A list of dated entries, newest first. Each entry is its own page.",
   "newPage.kind.listing.examples": "News, announcements, tenders, circulars, vacancies",
   "newPage.start.page.title": "Pick a template",
-  "newPage.start.page.intro": "Replace the example text with your own.",
+  "newPage.start.page.intro": "Replace the example text with the real content.",
   "newPage.start.listing.title": "Pick a template",
   "newPage.start.listing.intro": "Any collection can hold any entries. Start blank if none fit.",
   "newPage.place.title": "Where does it go?",
-  "newPage.place.intro": "It sits under the page you pick, in the menus and the address.",
+  "newPage.place.intro": "It sits under the chosen page, in the menus and the address.",
   "newPage.place.top": "Under {title}, at the top level",
   "newPage.place.under": "Under {title}",
   "newPage.name.title.page": "Name the page",
   "newPage.name.title.listing": "Name the collection",
-  "newPage.name.intro":
-    "The title is the page heading. The address follows it unless you change it.",
+  "newPage.name.intro": "The title is the page heading. The address follows it unless changed.",
   "newPage.title.hint": "Short and plain, the way people search",
   "newPage.check.title": "Check and create",
   "newPage.check.change": "Change",
   "newPage.check.title.label": "Title",
   "newPage.check.draft.page":
-    "It starts as a draft. Only signed-in users see it until you publish.",
+    "It starts as a draft. Only signed-in users see it until it's published.",
   "newPage.check.draft.listing":
-    "It starts as an empty draft. Add entries next; nothing goes live until you publish.",
+    "It starts as an empty draft. Add entries next; nothing goes live until it's published.",
   "newPage.done.title": "{title} is created",
   "newPage.done.intro": "Saved as a draft. Once published, it will be at {path}.",
   "newPage.done.page.edit.title": "Write the content",
@@ -1482,13 +1479,13 @@ export const en = {
   "editor.redirect.notice":
     "This page redirects to {target}. Its blocks aren't published while the redirect is on.",
   "editor.redirect.off": "Turn off redirect",
-  "editor.kept": "Changes you hadn't saved, from {when}, were kept in this browser.",
+  "editor.kept": "Unsaved changes from {when} were kept in this browser.",
   "editor.kept.bringBack": "Bring them back",
   "editor.kept.discard": "Discard",
   "editor.forbidden":
     "This account's role can no longer edit this page, so nothing more is saved. Copy anything needed, then leave the editor.",
   "editor.gone":
-    "This page was deleted while you were editing, so nothing more is saved. It can be restored from Recently deleted.",
+    "This page was deleted during editing, so nothing more is saved. It can be restored from Recently deleted.",
   "editor.layers.actions": "Actions for {block}",
   "editor.layers.required": "Required",
   "editor.layers.requiredWhy":
@@ -1510,7 +1507,7 @@ export const en = {
   "editor.block.panel": "Open in the panel",
   "editor.embeds.allowed": "What this site allows",
   "editor.embeds.none": "Nothing yet. An Admin allows embeds in Settings.",
-  "editor.embeds.missing": "Can't find the service you want to embed? Ask an Admin to allow it.",
+  "editor.embeds.missing": "Service not listed? Ask an Admin to allow it.",
   "editor.fields.content": "Content",
   "editor.fields.actions": "Actions",
   "editor.fields.appearance": "Appearance",
@@ -1526,7 +1523,7 @@ export const en = {
   "save.invalid": "Not saved: check the highlighted fields",
   "save.conflict": "Not saved: someone else saved this page",
   "save.signedOut": "Not saved: sign in again to carry on",
-  "save.forbidden": "Not saved: you can no longer edit this page",
+  "save.forbidden": "Not saved: editing this page is no longer allowed",
   "save.gone": "Not saved: this page was deleted",
   "conflict.someone": "Someone else",
   "conflict.thisPage": "this page",
@@ -1535,11 +1532,11 @@ export const en = {
   "conflict.doc.announcement": "the announcement",
   "conflict.doc.search": "the search settings",
   "conflict.doc.theme": "the site colours",
-  "conflict.title": "{name} saved {what} while you were editing",
+  "conflict.title": "{name} saved {what} while this page was open",
   "conflict.when":
     "Their changes were saved at {when}, so these weren't, rather than replace them.",
   "conflict.since":
-    "Their changes were saved since you opened it, so these weren't, rather than replace them.",
+    "Their changes were saved after this page was opened, so these weren't, rather than replace them.",
   "conflict.choiceKept":
     "Load theirs to carry on from them (these are kept in the page's history), or keep these, which replaces theirs.",
   "conflict.choice":
@@ -1591,7 +1588,7 @@ export const en = {
   "editor.richText.ordered": "Numbered list",
 
   "notFound.title": "Page not found",
-  "notFound.body": "If you typed the address, check it is correct.",
+  "notFound.body": "If the address was typed in, check it is correct.",
   "notFound.home": "Go to the dashboard",
   "error.title": "This screen ran into a problem",
   "error.body":
@@ -1712,8 +1709,7 @@ export const en = {
   "auth.signOutInstead": "Sign out instead",
   "auth.username": "Username",
   "auth.username.missing": "Enter the username",
-  "auth.username.rules":
-    "3 to 32 letters, numbers, dots, hyphens or underscores. You sign in with it.",
+  "auth.username.rules": "3 to 32 letters, numbers, dots, hyphens or underscores. Used to sign in.",
   "auth.password": "Password",
   "auth.password.missing": "Enter the password",
   "auth.password.current": "Current password",
@@ -1739,7 +1735,7 @@ export const en = {
   "auth.code.submit": "Continue",
   "auth.newPassword.title": "Choose a new password",
   "auth.newPassword.description":
-    "Before you go on, replace the password you were given with one only you know.",
+    "Before going on, replace the password that was given out with a private one.",
   "auth.newPassword.submit": "Save and continue",
   "auth.enrol.title": "Set up two-factor sign-in",
   "auth.enrol.required":
@@ -1762,19 +1758,19 @@ export const en = {
   "auth.recovery.kept": "I've kept my recovery codes somewhere safe",
   "auth.recovery.continue": "Continue",
   "auth.join.title": "Create an account",
-  "auth.join.description": "You've been invited as {role}. Choose how you'll sign in.",
+  "auth.join.description": "Invited as {role}. Choose how to sign in.",
   "auth.join.name": "Full name",
   "auth.join.nameHint": "Shown to others in history and on Users.",
   "auth.join.name.missing": "Enter the name",
   "auth.join.submit": "Create account",
   "auth.reset.title": "Choose a new password",
-  "auth.reset.description": "For {username}. You'll be signed out everywhere.",
+  "auth.reset.description": "For {username}. This signs the account out everywhere.",
   "auth.reset.submit": "Save new password",
   "auth.reset.done.title": "Password changed",
   "auth.reset.done.body": "Sign in with the new password.",
   "connect.title": "Connect {client}?",
   "connect.description":
-    "An AI agent wants to work on this site for you. The answer goes back to {returnsTo}.",
+    "An AI agent asks to work on this site as this account. The answer goes back to {returnsTo}.",
   "connect.actsAs": "It acts as this account, with the role {role}. It can:",
   "connect.can.read":
     "See everything in the admin: pages, media, site settings, navigation and analytics",
@@ -1783,17 +1779,17 @@ export const en = {
   "connect.can.site.manage": "Undo publishes, rebuild the site and retry jobs",
   "connect.cannot": "It can't manage people, accounts, sign-in or security settings.",
   "connect.lasts":
-    "The connection lasts {days} days, then you connect again. You or an Admin can end it at any time on Account, and everything it does is in the audit log.",
+    "The connection lasts {days} days, then needs connecting again. This account or an Admin can end it at any time on Account, and everything it does is in the audit log.",
   "connect.lasts.superAdmin":
-    "The connection lasts {days} days, then you connect again. You can end it at any time on Account, and everything it does is in the audit log.",
-  "connect.onlyYours": "Only allow an agent you started yourself, just now.",
+    "The connection lasts {days} days, then needs connecting again. It can be ended at any time on Account, and everything it does is in the audit log.",
+  "connect.onlyYours": "Only allow an agent started from this account, just now.",
   "connect.unverified.title": "This may not be the agent it says it is",
   "connect.unverified":
-    "Anyone can call an agent \"{client}\". This one sends the answer to {returnsTo}, which isn't a known agent's website. If you didn't set it up there yourself, deny it.",
+    "Anyone can call an agent \"{client}\". This one sends the answer to {returnsTo}, which isn't a known agent's website. Deny it unless it was set up there on purpose.",
   "connect.unverified.confirm": "I added this builder to an agent at {returnsTo} myself, just now",
-  "connect.notEnabled.title": "You can't connect {client} yet",
+  "connect.notEnabled.title": "{client} can't be connected yet",
   "connect.notEnabled":
-    "Ask an Admin to turn on agent access for you, then connect again from the agent.",
+    "Ask an Admin to turn on agent access for this account, then connect again from the agent.",
   "connect.notEnabled.superAdmin":
     'Turn on "Let me connect agents" on Account, then connect again from the agent.',
   "connect.toAccount": "Go to Account",
@@ -1801,7 +1797,7 @@ export const en = {
   "connect.deny": "Deny",
   "connect.back": "Go back to {client}",
   "connect.leaving.title": "Returning to {client}",
-  "connect.leaving.body": "You can close this tab once the agent says it's connected.",
+  "connect.leaving.body": "This tab can be closed once the agent says it's connected.",
   "connect.broken.title": "This agent can't connect",
   "connect.broken.reason": "The builder said: {reason}",
   "connect.toAdmin": "Go to the admin",
@@ -1814,10 +1810,10 @@ export const en = {
 
   "account.agents": "Agents",
   "account.agents.description":
-    "AI agents, such as Claude or Codex, that work on the site as you. Connections last {days} days.",
+    "AI agents, such as Claude or Codex, that work on the site as this account. Connections last {days} days.",
   "account.agents.switch": "Let me connect agents",
   "account.agents.switchHint": "Turning it off ends every connection.",
-  "account.agents.notOn": "Ask an Admin to turn on agent access for you.",
+  "account.agents.notOn": "Ask an Admin to turn on agent access for this account.",
   "account.agents.address": "Address for the agent",
   "account.agents.addressHint": "Add it in the agent as a remote MCP server.",
   "account.agents.none": "No agents connected.",
@@ -1828,28 +1824,28 @@ export const en = {
   "account.agents.end": "End connection",
   "account.agents.end.title": "End {agent}?",
   "account.agents.end.body":
-    "It stops working at its next step. You can connect it again from the agent.",
+    "It stops working at its next step. It can be connected again from the agent.",
   "account.agents.ended": "{agent}'s connection has ended",
   "account.agents.off": "Turn off",
   "account.agents.off.title": "Stop connecting agents?",
   "account.agents.off.body":
     "Agent connections end now, and new ones can't be connected until this is turned on again.",
-  "account.agents.off.done": "You can't connect agents now",
+  "account.agents.off.done": "Agents can't be connected now",
   "account.intro": "Signed in as {username}, {role}.",
   "account.name": "Name",
   "account.name.description": "Shown in history, Publishing and Users.",
-  "account.password.description": "Changing it signs you out everywhere else.",
+  "account.password.description": "Changing it signs out every other session.",
   "account.password.submit": "Change password",
   "account.password.done": "Password changed",
   "account.twoFactor": "Two-factor sign-in",
-  "account.twoFactor.on": "You enter a code from your authenticator app when you sign in.",
+  "account.twoFactor.on": "Signing in asks for a code from the authenticator app.",
   "account.twoFactor.off": "A code from an authenticator app, so a password alone isn't enough.",
   "account.twoFactor.setUp": "Set up two-factor",
   "account.recovery.code": "Code from the app",
   "account.recovery.hint": "New codes replace the old ones.",
   "account.recovery.submit": "Make new recovery codes",
-  "account.sessions": "Where you're signed in",
-  "account.sessions.description": "Sign out of any browser you don't recognise.",
+  "account.sessions": "Signed-in browsers",
+  "account.sessions.description": "Sign out of any browser that looks unfamiliar.",
   "account.sessions.device": "{browser} on {os}",
   "account.sessions.unknown": "Unknown browser",
   "account.sessions.this": "(this browser)",
@@ -1866,7 +1862,7 @@ export const en = {
   "users.column.for": "For",
   "users.column.madeBy": "Made by",
   "users.column.expires": "Expires",
-  "users.you": "You",
+  "users.you": "This account",
   "users.never": "Never",
   "users.disabled": "Disabled",
   "users.twoFactor.on": "On",
@@ -1931,7 +1927,7 @@ export const en = {
     "Send it to them directly. Using it signs them out everywhere and cancels earlier reset links.",
   "users.link.label": "Link",
   "users.link.expires": "Works once, until {when}.",
-  "users.link.once.title": "This is the only time you'll see it",
+  "users.link.once.title": "This link is shown only once",
   "users.link.once.body": "Copy it now. If it's lost, make a new one.",
   "users.link.copy": "Copy link",
   "users.link.done": "Done",
@@ -2197,7 +2193,7 @@ export const en = {
   "settings.security": "Security",
   "settings.security.require": "Require two-factor sign-in for everyone",
   "settings.security.requireHint": "Anyone without it sets it up before carrying on.",
-  "settings.security.yoursFirst": "Set up two-factor for yourself first",
+  "settings.security.yoursFirst": "Set up two-factor on this account first",
   "settings.security.toAccount": "Go to Account",
   "settings.security.confirm.title": "Require two-factor for everyone?",
   "settings.security.confirm.body":

@@ -83,7 +83,7 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
     if (target.role === "superAdmin")
       throw new HttpError(403, "forbidden", "The super admin can only change their own account.");
     if (target.id === userOf(request).id)
-      throw new HttpError(409, "own_account", "Change your own account from Account.");
+      throw new HttpError(409, "own_account", "Change this account from Account.");
     return target;
   }
 
