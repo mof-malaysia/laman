@@ -5,7 +5,7 @@ import SQLite from "better-sqlite3";
 import { Kysely, SqliteDialect, sql } from "kysely";
 import type { Migration } from "kysely/migration";
 import { checkStoredDocuments, describeProblems } from "./documents.js";
-import { beforeBaseline, migrate, migrations } from "./migrations.js";
+import { baselineMarker, beforeBaseline, migrate, migrations, squashed } from "./migrations.js";
 import type { Database } from "./schema.js";
 
 export type Db = Kysely<Database>;
@@ -33,7 +33,7 @@ export async function openDatabase(
   // Off while migrating, so a table rebuild doesn't cascade; checked before it's back on.
   sqlite.pragma("foreign_keys = OFF");
   await upgrade({ sqlite, db: db as Kysely<unknown>, path }, list, {
-    replaced: beforeBaseline,
+    replaced: { ran: squashed, retired: beforeBaseline, marker: baselineMarker },
     beforeMigrate,
     verify: async () => {
       const broken = sqlite.pragma("foreign_key_check") as unknown[];
@@ -67,7 +67,7 @@ export async function upgrade(
     verify,
   }: {
     /** The development migrations the list's first one (its baseline) replaced. */
-    replaced: string[];
+    replaced: Replaced;
     beforeMigrate?: (snapshot: string) => Promise<unknown>;
     verify?: () => Promise<void>;
   },
@@ -118,23 +118,43 @@ export async function upgrade(
 }
 
 /**
+ * The development migrations a baseline replaced. `ran`, run in full, left
+ * exactly the baseline's schema. `retired` ones are older still and can't be
+ * taken on. When `ran` starts with the baseline's own name (it was squashed
+ * twice), `marker` is a table only the baseline makes, which tells a new
+ * database from one made by the first baseline alone.
+ */
+export type Replaced = { ran: string[]; retired?: string[]; marker?: string };
+
+/**
  * Takes on a database a development build made before 1.0: one that ran
- * every migration the baseline replaced has the baseline's schema, so it's
- * recorded as having run the baseline instead; one stopped partway is
- * refused. Returns the migrations to carry on from. Only pre-1.0 development
- * data folders reach this, so it can go once none are left.
+ * every migration in `ran` has the baseline's schema, so it's recorded as
+ * having run the baseline instead; one stopped partway, or older, is refused.
+ * Returns the migrations to carry on from. Only development data folders
+ * reach this, so it can go once none are left.
  */
 async function adoptBaseline(
   db: Kysely<unknown>,
   path: string,
   executed: string[],
-  replaced: string[],
+  { ran, retired = [], marker }: Replaced,
   baseline: string,
 ) {
-  if (!executed.length || !executed.every((name) => replaced.includes(name))) return executed;
-  if (executed.length !== replaced.length)
+  if (!executed.length || !executed.every((name) => ran.includes(name) || retired.includes(name)))
+    return executed;
+  if (
+    executed.length === 1 &&
+    executed[0] === baseline &&
+    (!marker || (await hasTable(db, marker)))
+  )
+    return executed;
+  if (executed.length !== ran.length || executed.some((name, i) => name !== ran[i]))
     throw new Error(
-      `${path} was made by a development build from before 1.0 (migration ${executed.at(-1)}), which this version can't upgrade. Start again with a new data folder.`,
+      `${path} was made by a development build from before 1.0 (migration ${executed.at(-1)}), which this version can't upgrade.${
+        executed.every((name) => ran.includes(name))
+          ? ` Start it once with a build that has ${ran.at(-1)}, then with this one, or start again with a new data folder.`
+          : " Start again with a new data folder."
+      }`,
     );
   await sql`delete from kysely_migration`.execute(db);
   await sql`insert into kysely_migration (name, timestamp) values (${baseline}, ${now()})`.execute(
@@ -142,6 +162,10 @@ async function adoptBaseline(
   );
   return [baseline];
 }
+
+const hasTable = async (db: Kysely<unknown>, name: string) =>
+  (await sql`select 1 from sqlite_master where type = 'table' and name = ${name}`.execute(db)).rows
+    .length > 0;
 
 /**
  * Where `db` stands against `list`: migrations it ran that this build doesn't

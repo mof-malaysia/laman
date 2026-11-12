@@ -62,7 +62,7 @@ export type AnalyticsDatabase = {
 
 export type AnalyticsDb = Kysely<AnalyticsDatabase>;
 
-/** The development migrations 0001_baseline replaced (docs/upgrades.md § The 1.0 baseline). */
+/** The development migrations 0001_baseline replaced (docs/upgrades.md § The baseline). */
 export const beforeBaseline = ["0001_analytics", "0002_report_indexes"];
 
 /** Never edit one that has shipped: add a new one. */
@@ -134,7 +134,7 @@ const migrations: Record<string, Migration> = {
 export async function openAnalyticsDatabase(path: string): Promise<AnalyticsDb> {
   const { sqlite, db } = openSqlite<AnalyticsDatabase>(path);
   await upgrade({ sqlite, db: db as Kysely<unknown>, path }, migrations, {
-    replaced: beforeBaseline,
+    replaced: { ran: beforeBaseline },
   });
   return db;
 }

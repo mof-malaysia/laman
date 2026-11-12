@@ -1,6 +1,6 @@
 # Users, sign-in and roles
 
-Status: built. The migration baseline (`docs/upgrades.md` § The 1.0 baseline) is the step still to come.
+Status: built.
 
 Until now the builder has assumed one officer working alone, with no session (`docs/admin.md`). This plan adds accounts, sign-in with an optional second step, and roles, without a mail server or any other service: one install is still one process and one database.
 
@@ -157,7 +157,7 @@ For a program that writes with no one at the keyboard, such as a nightly import 
 
 ## Data
 
-Migrations are added after `0011`, and the baseline that squashes them all comes once this has landed (`docs/upgrades.md` § The 1.0 baseline).
+These tables are part of `0001_baseline` (`docs/upgrades.md` § The baseline).
 
 | Table            | Holds                                                                                                                                                                     |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -214,10 +214,6 @@ The existing routes get their permissions from the roles table above. For exampl
 | `apps/admin/src/users/`, `src/account/`      | Users and the audit log; Account                                                                                                                                                 |
 
 The router (`apps/admin/src/router.tsx`) sends anyone without a finished sign-in to Sign in, or the step they're at, and back to where they were going after.
-
-## Still to do
-
-- The migration baseline, now that the last big tables are in (`docs/upgrades.md` § The 1.0 baseline).
 
 ## Not in this plan
 
