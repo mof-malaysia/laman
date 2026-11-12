@@ -217,6 +217,10 @@ export const AuditAction = z.enum([
   "agentRevoked",
   /** One MCP tool call: the tool and its outcome, never its arguments. */
   "agentToolCall",
+  /** An Admin made an API token: its name, role, areas, listings and days are in the detail. */
+  "apiTokenMade",
+  /** An API token was ended early. */
+  "apiTokenRevoked",
 ]);
 export type AuditAction = z.infer<typeof AuditAction>;
 

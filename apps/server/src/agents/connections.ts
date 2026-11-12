@@ -10,7 +10,7 @@ import { type AgentConnection, CONNECTION_DAYS } from "@fiscal-sb/contracts";
 import type { FastifyRequest } from "fastify";
 import { audit } from "../auth/audit.js";
 import { userAgentOf } from "../auth/sessions.js";
-import { hashToken, newToken } from "../auth/tokens.js";
+import { grantStatus, hashToken, newToken } from "../auth/tokens.js";
 import type { User } from "../auth/users.js";
 import { ago, type Db, later, now } from "../db/index.js";
 
@@ -405,7 +405,7 @@ export async function listConnections(db: Db, userId?: string): Promise<AgentCon
     id: row.id,
     person: { id: row.user_id, displayName: row.display_name, role: row.role },
     client: row.client,
-    status: row.revoked_at ? "revoked" : row.expires_at < at ? "expired" : "live",
+    status: grantStatus(row, at),
     createdAt: row.created_at,
     lastUsedAt: row.last_used_at,
     expiresAt: row.expires_at,

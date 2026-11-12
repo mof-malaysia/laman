@@ -4,6 +4,8 @@
  * none that work. They are random enough that a fast hash is the right one.
  */
 import { createHash, randomBytes } from "node:crypto";
+import type { GrantStatus } from "@fiscal-sb/contracts";
+import type { FastifyRequest } from "fastify";
 import { base32 } from "./totp.js";
 
 /** 32 random bytes, URL-safe. */
@@ -19,3 +21,14 @@ export function newRecoveryCode() {
 
 /** Typed recovery codes match however they were spaced or cased. */
 export const normaliseRecoveryCode = (code: string) => code.toUpperCase().replace(/[^A-Z2-7]/g, "");
+
+/** The token in an `Authorization: Bearer …` header, as agents and API tokens send it. */
+export const bearerToken = (request: FastifyRequest) =>
+  /^Bearer (\S+)$/i.exec(request.headers.authorization ?? "")?.[1];
+
+/** Where something that ends stands at `at`: revoked, past its end (if it has one), or live. */
+export const grantStatus = (
+  row: { revoked_at: string | null; expires_at: string | null },
+  at: string,
+): GrantStatus =>
+  row.revoked_at ? "revoked" : row.expires_at !== null && row.expires_at < at ? "expired" : "live";

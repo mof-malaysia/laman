@@ -53,6 +53,7 @@ import { useCan } from "@/lib/auth";
 import useToast from "@/lib/ftds/hooks/use-toast";
 import { clx } from "@/lib/ftds/utils";
 import { formatDateTime, formatDayDate, formatTime, useRefreshPages, usePages } from "@/lib/pages";
+import { toggleIn } from "@/lib/sets";
 
 /** A publish job's payload, as `PublishPayload` in the contract describes it. */
 const payloadOf = (job: Job) => job.payload as PublishPayload;
@@ -319,14 +320,7 @@ function Scheduled() {
                       <FieldItem>
                         <Checkbox
                           checked={chosen.has(page.id)}
-                          onCheckedChange={(on) =>
-                            setChosen((current) => {
-                              const next = new Set(current);
-                              if (on) next.add(page.id);
-                              else next.delete(page.id);
-                              return next;
-                            })
-                          }
+                          onCheckedChange={(on) => toggleIn(setChosen)(page.id, on)}
                         />
                         <FieldLabel>
                           {page.title} <span className="text-txt-black-700">{page.path}</span>

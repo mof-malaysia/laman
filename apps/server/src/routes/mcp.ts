@@ -10,6 +10,7 @@ import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { audit, type AuditEvent } from "../auth/audit.js";
 import { type Connection, connectionOf, openConnection } from "../agents/connections.js";
+import { bearerToken } from "../auth/tokens.js";
 import { CallLimit } from "../agents/limits.js";
 import { issueTicket, TICKET_HEADER } from "../agents/tickets.js";
 import { addMedia, takeUploadLink, type UploadLink } from "../agents/uploads.js";
@@ -192,8 +193,7 @@ export const mcpRoutes: FastifyPluginAsync<{ maxUploadBytes: number }> = async (
 
   /** The agent's connection, or a 401 that tells the client where to sign in. */
   async function authenticate(request: FastifyRequest, reply: FastifyReply) {
-    const header = request.headers.authorization ?? "";
-    const token = /^Bearer (\S+)$/i.exec(header)?.[1];
+    const token = bearerToken(request);
     const found = token ? await connectionOf(db, token) : undefined;
     if (found) return found;
     const metadata = `${originOf(request)}/.well-known/oauth-protected-resource`;

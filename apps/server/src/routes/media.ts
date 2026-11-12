@@ -59,7 +59,7 @@ export const mediaRoutes: FastifyPluginAsync<{ dataDir: string; maxBytes: number
   app.post(
     "/media",
     {
-      config: { access: "content.edit" },
+      config: { access: "content.edit", tokenScope: "media" },
       schema: {
         ...multipart,
         summary: "Upload a file",
@@ -97,7 +97,7 @@ export const mediaRoutes: FastifyPluginAsync<{ dataDir: string; maxBytes: number
   app.patch<{ Params: Params; Body: UpdateMediaBody }>(
     "/media/:id",
     {
-      config: { access: "content.edit" },
+      config: { access: "content.edit", tokenScope: "media" },
       schema: {
         summary: "Change a file's alt text (or mark it decorative), caption or credit",
         tags: ["media"],
@@ -112,7 +112,7 @@ export const mediaRoutes: FastifyPluginAsync<{ dataDir: string; maxBytes: number
   app.put<{ Params: Params }>(
     "/media/:id/file",
     {
-      config: { access: "content.publish" },
+      config: { access: "content.publish", tokenScope: "media" },
       schema: {
         ...multipart,
         summary: "Replace a file",
@@ -159,7 +159,7 @@ export const mediaRoutes: FastifyPluginAsync<{ dataDir: string; maxBytes: number
   app.post<{ Params: Params }>(
     "/media/:id/previous",
     {
-      config: { access: "content.publish" },
+      config: { access: "content.publish", tokenScope: "media" },
       schema: {
         summary: "Put back the file before the last replace",
         description: "Swaps the two, so doing it again undoes it.",
@@ -174,7 +174,7 @@ export const mediaRoutes: FastifyPluginAsync<{ dataDir: string; maxBytes: number
   app.delete<{ Params: Params }>(
     "/media/:id",
     {
-      config: { access: "content.edit" },
+      config: { access: "content.edit", tokenScope: "media" },
       schema: {
         summary: "Move a file to Recently deleted",
         description:
@@ -190,7 +190,7 @@ export const mediaRoutes: FastifyPluginAsync<{ dataDir: string; maxBytes: number
   app.post<{ Params: Params }>(
     "/media/:id/restore",
     {
-      config: { access: "content.edit" },
+      config: { access: "content.edit", tokenScope: "media" },
       schema: {
         summary: "Bring a file back from Recently deleted",
         tags: ["media"],

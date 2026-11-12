@@ -118,10 +118,42 @@ Invites and password resets are the same kind of link: 32 random bytes, stored h
   - role changes, disabling and enabling;
   - the two-factor requirement turned on or off;
   - publish, unpublish, undo, delete and restore.
+  - API tokens made and revoked.
 
   Admins read it on the Users screen, filtered by person and action. It's kept for a year and pruned by the existing job queue.
 
 - **Admin preferences** (the admin's language) become each person's own, a column on `users`. The current global `preferences` row becomes the super admin's when it's seeded.
+
+### API tokens
+
+For a program that writes with no one at the keyboard, such as a nightly import from another system. An agent over MCP (docs/mcp.md) needs an officer to allow it in a browser and lasts 7 days, so it can't run a sync.
+
+- **Made by an Admin** under Users, API tokens: a name ("People sync"), a role (Editor or Content Manager, never more), the areas it may change (below), and how long it lasts (at most a year, or until it's revoked: `days: null`, `expires_at` null). The secret starts `laman_`, is shown once, and only its SHA-256 is stored.
+- **Its own account.** Each token has a row in `users` with `kind` "token", its name as the display name and its role. It can't sign in (its username, `token:<id>`, isn't a valid one, and sign-in only looks up people), isn't on Users and can't be changed there. Because it's an ordinary account to the rest of the code, revisions, jobs, Publishing and the audit log credit the token by name with no changes of their own.
+- **Sent as** `Authorization: Bearer laman_…` to `/api`. The guard runs the request as the token's account, through the same permission checks, validation and draft conflicts as the admin. A wrong, expired or revoked token gets `401 token_invalid`. No cookie rides along with a token, so the same-origin check for cookie sessions is skipped. Tokens can't use `/api/auth/`.
+- **Reads follow the role,** as for people: a token can read anything its role can, which is most of the API.
+- **Changes follow its areas.** An Admin ticks what it may change, stored in `api_token_areas`; its role still decides whether it may publish (an Editor's token only drafts):
+
+  | Area      | What it may change                                                                                                                          |
+  | --------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+  | `entries` | Entries under the listings in `api_token_listings` (at least one), and new ones there. Dropped when `pages` is given too, which covers them |
+  | `pages`   | Any page or entry, and the page tree (new pages, moves, deletes, listing settings)                                                          |
+  | `media`   | The media library                                                                                                                           |
+  | `site`    | Navigation, settings, the announcement, search and colours                                                                                  |
+
+- **Closed by default.** A route that changes something says which area it belongs to with `config.tokenScope`; any other is `403 token_not_allowed` (bulk publishing, undo, rebuilds, calendar sources, jobs, backups, people). The scopes:
+
+  | `tokenScope` | Routes                                                                                   | Allowed with                                                    |
+  | ------------ | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+  | `page`       | One page's draft, publish, unpublish, delete, restore, discard, and restoring a revision | `pages`, or `entries` when `:id` is an entry under its listings |
+  | `entries`    | `POST /pages/:id/entries`                                                                | `pages`, or `entries` when `:id` is one of its listings         |
+  | `pages`      | New pages, moves, duplicates, listing settings, making a listing                         | `pages`                                                         |
+  | `media`      | Every change to the media library                                                        | `media`                                                         |
+  | `site`       | Saving, discarding and publishing the site documents                                     | `site`                                                          |
+
+  A change outside its areas is `403 outside_token_scope`.
+
+- **Revoking** stops it at once and takes it off the API tokens screen. The account stays, so history and the audit log keep its name. `GET /api/tokens` still returns revoked tokens, so the audit log can filter by them. `last_used_at` is written at most once a minute.
 
 ## Data
 
@@ -153,6 +185,7 @@ Plus `created_by` and `updated_by` columns on the tables above, and a `security`
 | `POST /api/users/:id/reset-link`, `/clear-2fa`, `/sign-out`                                | `users.manage`                         |
 | `GET /api/audit`                                                                           | `users.manage`                         |
 | `GET /api/security`, `PUT /api/security`                                                   | signed in; `security.manage`           |
+| `GET /api/tokens`, `POST /api/tokens`, `DELETE /api/tokens/:id`: API tokens                | `users.manage`                         |
 
 The existing routes get their permissions from the roles table above. For example, `PUT /pages/:id/draft` needs `content.edit`, `POST /pages/:id/publish` needs `content.publish`, and `POST /publish/:id/undo` needs `site.manage`.
 
@@ -161,7 +194,7 @@ The existing routes get their permissions from the roles table above. For exampl
 - **Signed-out screens,** outside the shell: Sign in, the two-factor code, Set up two-factor (the QR code, the secret, the recovery codes), Choose a new password, Join (invite), and Reset. Any route sends someone who isn't signed in to Sign in, and back to the page they wanted afterwards.
 - **The user menu** in the shell shows the name and role, and links to Account and Sign out.
 - **Account:** your display name, password, two-factor (recovery codes), sessions and language.
-- **Users** (Admins): people with their role, status (active, inactive after 90 days without signing in, disabled), two-factor and last sign-in; Invite (choose the role, then copy the link); pending invites; and per person, change role (a dialog that shows what the role can do), reset link, clear two-factor, sign out everywhere, view their activity, disable. The Audit log sits beside it: it names the person or page each entry was about and what changed, filters by person, action and day, and downloads as CSV.
+- **Users** (Admins): people with their role, status (active, inactive after 90 days without signing in, disabled), two-factor and last sign-in; Invite (choose the role, then copy the link); pending invites; and per person, change role (a dialog that shows what the role can do), reset link, clear two-factor, sign out everywhere, view their activity, disable. API tokens sit beside it (make one, copy its secret once, revoke). A revoked token leaves the list; the audit log keeps it, and an expired one stays until it's revoked. The Audit log sits beside it: it names the person or page each entry was about and what changed, filters by person, action and day, and downloads as CSV.
 - **Settings:** a Security section for the super admin, with the "Require two-factor" switch.
 - **Publishing and history** show who: "last edited by" on waiting items, and the person on each revision and publish.
 - All text through `t()`. The QR code comes from a small pure-JS library added to the catalog.

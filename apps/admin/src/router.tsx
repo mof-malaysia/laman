@@ -43,6 +43,7 @@ import { CodeScreen, EnrolScreen, PasswordScreen, SignInScreen } from "./auth/si
 import { meQuery, stagePaths } from "./lib/auth";
 import { queryClient } from "./lib/query";
 import { type AgentsSearch, AgentsScreen, agentsSearch } from "./users/agents-screen";
+import { TokensScreen } from "./users/tokens-screen";
 import { type AuditSearch, AuditScreen, auditSearch } from "./users/audit-screen";
 import { UsersScreen } from "./users/users-screen";
 
@@ -238,6 +239,11 @@ const agentsRoute = createRoute({
   validateSearch: (search): AgentsSearch => agentsSearch(search),
   component: AgentsScreen,
 });
+const tokensRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/users/tokens",
+  component: TokensScreen,
+});
 const accountRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/account",
@@ -269,6 +275,7 @@ const routeTree = rootRoute.addChildren([
       usersRoute,
       auditRoute,
       agentsRoute,
+      tokensRoute,
       accountRoute,
       editorRoute,
     ]),

@@ -16,7 +16,7 @@ import { PageCheckList, checksLabel, stops, useChecksOf } from "@/components/pag
 import { Details, DetailsContent, DetailsTrigger } from "@/components/ui/details";
 import { Button } from "@/components/ui/button";
 import { Panel, PanelBody, PanelTitle } from "@/components/ui/panel";
-import { locale, type MessageKey, t } from "@/i18n";
+import { listOf, type MessageKey, t } from "@/i18n";
 import { historyApi, siteApi } from "@/lib/api";
 import { useCan } from "@/lib/auth";
 import { useRun } from "@/lib/use-run";
@@ -361,10 +361,6 @@ function ConfirmGroup({ title, items }: { title: MessageKey; items: WaitingItem[
     </section>
   );
 }
-
-/** "A", "A and B", "A, B and C". */
-const listOf = (names: string[]) =>
-  new Intl.ListFormat(locale(), { style: "long", type: "conjunction" }).format(names);
 
 /** How a publish ended, as an FTDS Panel. Its title is an h2: the screen already has its h1. */
 function Outcome({

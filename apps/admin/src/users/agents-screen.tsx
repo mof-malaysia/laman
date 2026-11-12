@@ -28,10 +28,10 @@ import {
 import { t } from "@/i18n";
 import { agentsApi, useMe, usersApi, usersQuery } from "@/lib/auth";
 import { clx } from "@/lib/ftds/utils";
-import { formatAgo, formatDateTime } from "@/lib/pages";
+import { formatDateTime } from "@/lib/pages";
 import { useRun } from "@/lib/use-run";
 import { AgentTag, agentOf, describe, failed, lookedOnly, nextBefore } from "./audit-entry";
-import { ANY, PersonAvatar, PersonCell, PersonFilter } from "./person";
+import { ago, ANY, PersonAvatar, PersonCell, PersonFilter, sub } from "./person";
 import { UsersHeader } from "./users-tabs";
 import { Screen } from "@/components/screen";
 
@@ -42,13 +42,6 @@ const DAY_MS = 86_400_000;
 export type AgentsSearch = { userId?: string };
 export const agentsSearch = (search: Record<string, unknown>): AgentsSearch =>
   typeof search.userId === "string" && search.userId !== ANY ? { userId: search.userId } : {};
-
-/** "6m ago", with the full date on hover. */
-const ago = (iso: string) => (
-  <time dateTime={iso} title={formatDateTime(iso)}>
-    {formatAgo(iso, { inline: true })}
-  </time>
-);
 
 /** "Ends today", "Ends in 1 day", "Ends in 7 days". */
 function endsIn(iso: string) {
@@ -225,9 +218,6 @@ function Who({ name, agent }: { name: string; agent: string }) {
     </span>
   );
 }
-
-/** A muted second line under a table cell's main value. */
-const sub = "text-label-compact text-txt-black-500 block";
 
 /**
  * One live connection, one row: who and their role, the agent, what it last

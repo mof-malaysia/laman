@@ -38,6 +38,7 @@ import { purgeSessions } from "./auth/sessions.js";
 import { seedSuperAdmin } from "./auth/users.js";
 import { purgeConnections } from "./agents/connections.js";
 import { agentRoutes } from "./routes/agents.js";
+import { apiTokenRoutes } from "./routes/api-tokens.js";
 import { analyticsRoutes, collectRoutes } from "./routes/analytics.js";
 import { authRoutes } from "./routes/auth.js";
 import { backupRoutes } from "./routes/backups.js";
@@ -314,6 +315,7 @@ export async function buildApp(options: AppOptions) {
     await builder.register(compress);
     await builder.register(authRoutes, { prefix: "/api" });
     await builder.register(userRoutes, { prefix: "/api" });
+    await builder.register(apiTokenRoutes, { prefix: "/api" });
     await builder.register(pageRoutes, { prefix: "/api" });
     await builder.register(jobRoutes, { prefix: "/api" });
     await builder.register(calendarRoutes, { prefix: "/api" });

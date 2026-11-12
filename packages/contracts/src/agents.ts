@@ -44,6 +44,10 @@ export const ConsentInfo = z.object({
 });
 export type ConsentInfo = z.infer<typeof ConsentInfo>;
 
+/** Where a grant with an end date stands: an agent connection or an API token. */
+export const GrantStatus = z.enum(["live", "expired", "revoked"]);
+export type GrantStatus = z.infer<typeof GrantStatus>;
+
 /** An agent connection, for the Agents screen and Account (docs/mcp.md § Admin). */
 export const AgentConnection = z.object({
   id: z.uuid(),
@@ -51,7 +55,7 @@ export const AgentConnection = z.object({
   /** As the agent named itself when it registered: "Claude", "Codex". */
   client: z.string(),
   /** live: its tokens work. expired: a week after consent. revoked: ended early. */
-  status: z.enum(["live", "expired", "revoked"]),
+  status: GrantStatus,
   createdAt: z.string(),
   lastUsedAt: z.string(),
   expiresAt: z.string(),

@@ -102,7 +102,7 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
   app.put<{ Body: z.infer<typeof SaveSettingsBody> }>(
     "/settings",
     {
-      config: { access: "content.edit" },
+      config: { access: "content.edit", tokenScope: "site" },
       schema: {
         summary: "Save the site settings draft",
         tags: ["site"],
@@ -145,7 +145,7 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
   app.post(
     "/settings/discard",
     {
-      config: { access: "content.edit" },
+      config: { access: "content.edit", tokenScope: "site" },
       schema: {
         summary: "Discard settings changes",
         description: "The draft goes back to the live copy.",
@@ -177,7 +177,7 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
   app.put<{ Body: z.infer<typeof SaveNavigationBody> }>(
     "/navigation",
     {
-      config: { access: "content.edit" },
+      config: { access: "content.edit", tokenScope: "site" },
       schema: {
         summary: "Save the navigation draft",
         tags: ["site"],
@@ -209,7 +209,7 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
   app.post(
     "/navigation/discard",
     {
-      config: { access: "content.edit" },
+      config: { access: "content.edit", tokenScope: "site" },
       schema: {
         summary: "Discard navigation changes",
         tags: ["site"],
@@ -240,7 +240,7 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
   app.put<{ Body: z.infer<typeof SaveAnnouncementBody> }>(
     "/announcement",
     {
-      config: { access: "content.edit" },
+      config: { access: "content.edit", tokenScope: "site" },
       schema: {
         summary: "Save the announcement draft",
         tags: ["site"],
@@ -256,7 +256,7 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
   app.post(
     "/announcement/discard",
     {
-      config: { access: "content.edit" },
+      config: { access: "content.edit", tokenScope: "site" },
       schema: {
         summary: "Discard announcement changes",
         tags: ["site"],
@@ -287,7 +287,7 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
   app.put<{ Body: z.infer<typeof SaveSearchBody> }>(
     "/search",
     {
-      config: { access: "content.edit" },
+      config: { access: "content.edit", tokenScope: "site" },
       schema: {
         summary: "Save the site search draft",
         description: "A word pinned to more than one page stays with the first.",
@@ -302,7 +302,7 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
   app.post(
     "/search/discard",
     {
-      config: { access: "content.edit" },
+      config: { access: "content.edit", tokenScope: "site" },
       schema: {
         summary: "Discard site search changes",
         tags: ["site"],
@@ -372,7 +372,7 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
   app.put<{ Body: z.infer<typeof SaveThemeBody> }>(
     "/theme",
     {
-      config: { access: "content.edit" },
+      config: { access: "content.edit", tokenScope: "site" },
       schema: {
         summary: "Save the theme draft",
         description:
@@ -388,7 +388,7 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
   app.post(
     "/theme/discard",
     {
-      config: { access: "content.edit" },
+      config: { access: "content.edit", tokenScope: "site" },
       schema: {
         summary: "Discard theme changes",
         tags: ["site"],
@@ -413,7 +413,7 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
     app.post(
       `/${name}/publish`,
       {
-        config: { access: "content.publish" },
+        config: { access: "content.publish", tokenScope: "site" },
         schema: {
           summary: `Publish the ${name}`,
           description: `Makes the ${name} draft live and queues a rebuild. Pages and the other site documents stay as they are.${

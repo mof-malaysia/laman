@@ -36,8 +36,14 @@ export const managesAccount = (
 export const getUser = (db: Db, id: string) =>
   db.selectFrom("users").selectAll().where("id", "=", id).executeTakeFirst();
 
+/** People's accounts: not API tokens', which never sign in and aren't on Users. */
+export const people = (db: Db) => db.selectFrom("users").selectAll().where("kind", "=", "person");
+
+export const personById = (db: Db, id: string) =>
+  people(db).where("id", "=", id).executeTakeFirst();
+
 export const userByUsername = (db: Db, username: string) =>
-  db.selectFrom("users").selectAll().where("username", "=", username).executeTakeFirst();
+  people(db).where("username", "=", username).executeTakeFirst();
 
 export const toMe = (user: User, stage: SessionStage): Me => ({
   id: user.id,

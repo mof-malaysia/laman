@@ -25,7 +25,7 @@ import { existsSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { seedIfEmpty } from "./content/seed.js";
 import { audit } from "./auth/audit.js";
-import { userByUsername } from "./auth/users.js";
+import { people, userByUsername } from "./auth/users.js";
 import {
   backupDirOf,
   listBackups,
@@ -80,7 +80,7 @@ try {
       break;
     }
     case "users":
-      for (const user of await db.selectFrom("users").selectAll().orderBy("username").execute())
+      for (const user of await people(db).orderBy("username").execute())
         console.warn(
           `${user.username.padEnd(32)} ${user.role.padEnd(15)} ${user.totp_enrolled_at ? "2FA" : "   "} ${user.disabled_at ? "disabled" : ""}`,
         );
