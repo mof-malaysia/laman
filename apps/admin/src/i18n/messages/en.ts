@@ -935,16 +935,32 @@ export const en = {
   "listing.rss": "Publish an RSS feed",
   "settings.collection.title": "Collection",
   "settings.calendars.title": "Calendar sources",
-  "settings.calendars.description":
-    "Calendars whose events appear here, read every half hour from their ICS address. Synced events change in their calendar, not here.",
-  "calendars.none": "No calendars yet. Events are only those written here.",
+  "settings.calendars.description": "Events from published calendars, synced every half hour.",
+  "calendars.none": "No calendars yet",
+  "calendars.none.body": "Add a published calendar and its events appear here on their own.",
+  "calendars.none.ask": "An admin can add one. Until then, events are only those written here.",
+  "calendars.help": "How to add an Outlook calendar",
+  "calendars.help.step1":
+    "In Outlook on the web, open Settings, then Calendar, then Shared calendars.",
+  "calendars.help.step2":
+    'Under Publish a calendar, choose the calendar and "Can view titles and locations", then Publish.',
+  "calendars.help.step3": "Copy the ICS link and add it here.",
+  "calendars.help.notes": "Good to know",
+  "calendars.help.edit":
+    "Change an event's title, time or place in its calendar. Text you add to its page here stays.",
+  "calendars.help.shared":
+    "A meeting on several calendars appears once, under the first of them in this list.",
+  "calendars.help.held":
+    "If a calendar suddenly has far fewer events, they're kept until you accept the change.",
+  "calendars.help.private": "Private and cancelled events are never shown.",
+  "calendars.held": "Found {found} events, down from {had}. Kept until you accept.",
+  "calendars.address.hint": "An https or webcal link. Kept private.",
+  "calendars.location.hint": "For events whose place doesn't name one of the listing's locations.",
   "calendars.add": "Add a calendar",
   "calendars.edit": "Change calendar",
   "calendars.change": "Edit",
   "calendars.remove": "Remove",
   "calendars.off": "Off",
-  "calendars.hint":
-    'In Outlook: Settings, Calendar, Shared calendars, Publish a calendar. Choose "Can view titles and locations" and copy the ICS link. A meeting on several calendars appears once, under the first of them in this list.',
   "calendars.syncNow": "Sync now",
   "calendars.syncQueued": "Syncing the calendars",
   "calendars.syncFailed": "Couldn't sync",
@@ -954,21 +970,15 @@ export const en = {
   "calendars.failing": "Couldn't read it: {error}. Failed {count} times in a row.",
   "calendars.failing.one": "Couldn't read it: {error}.",
   "calendars.lastGood": "Its events from {at} stay on the site.",
-  "calendars.held":
-    "The last read found {found} events where there were {had}, so they were kept. If they were really removed, accept it.",
   "calendars.accept": "Accept and sync",
   "calendars.accepted": "Accepted: the next sync takes them off",
   "calendars.name": "Name",
   "calendars.name.required": "Give the calendar a name",
   "calendars.address": "ICS address",
   "calendars.address.required": "Paste the calendar's ICS address",
-  "calendars.address.hint":
-    "An https or webcal address. Anyone with it can read the calendar, so it's kept secret here.",
   "calendars.address.keep": "Leave empty to keep the current address.",
   "calendars.category": "Category for its events",
   "calendars.location": "Location when unclear",
-  "calendars.location.hint":
-    "Events whose place names one of the listing's locations, or is an online meeting, take that one.",
   "calendars.none.choice": "None",
   "calendars.enabled": "Read this calendar",
   "calendars.saved": "Calendar saved: syncing it now",

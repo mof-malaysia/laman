@@ -25,7 +25,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Details, DetailsContent, DetailsTrigger } from "@/components/ui/details";
+import {
+  EmptyState,
+  EmptyStateActions,
+  EmptyStateDescription,
+  EmptyStateIcon,
+  EmptyStateTitle,
+} from "@/components/ui/empty-state";
 import { Field, FieldError, FieldItem, FieldLabel } from "@/components/ui/field";
+import { CalendarIcon } from "@/components/ui/icons/calendar";
 import { PlusIcon } from "@/components/ui/icons/plus";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -40,6 +49,9 @@ import { formatDateTime } from "@/lib/pages";
 import { useListing } from "./listing";
 
 const sourcesKey = (listingId: string) => ["calendar-sources", listingId];
+
+const useSources = (listingId: string) =>
+  useQuery({ queryKey: sourcesKey(listingId), queryFn: () => calendarApi.list(listingId) });
 
 /**
  * Runs something that queues a sync, then refreshes the list once that sync
@@ -66,9 +78,10 @@ function useSync(listingId: string) {
   return { busy, run };
 }
 
-/** "Sync now": reads every calendar. */
+/** "Sync now": reads every calendar. Not offered until the listing has one. */
 export function SyncNowButton({ listing }: { listing: Page }) {
   const { busy, run } = useSync(listing.id);
+  if (!useSources(listing.id).data?.length) return null;
   return (
     <Button
       variant="default-outline"
@@ -82,10 +95,7 @@ export function SyncNowButton({ listing }: { listing: Page }) {
 
 export function CalendarSources({ listing }: { listing: Page }) {
   const manage = useCan("site.manage");
-  const sources = useQuery({
-    queryKey: sourcesKey(listing.id),
-    queryFn: () => calendarApi.list(listing.id),
-  });
+  const sources = useSources(listing.id);
   const settings = useListing(listing.id).data?.settings;
   const [editing, setEditing] = useState<CalendarSource | "new">();
   const [removing, setRemoving] = useState<CalendarSource>();
@@ -100,7 +110,22 @@ export function CalendarSources({ listing }: { listing: Page }) {
   return (
     <div className="flex flex-col gap-3">
       {sources.data.length === 0 ? (
-        <p className="text-content text-txt-black-700">{t("calendars.none")}</p>
+        <EmptyState className="border-otl-gray-200 rounded-lg border border-dashed py-8">
+          <EmptyStateIcon>
+            <CalendarIcon />
+          </EmptyStateIcon>
+          <EmptyStateTitle as="p">{t("calendars.none")}</EmptyStateTitle>
+          <EmptyStateDescription>
+            {manage ? t("calendars.none.body") : t("calendars.none.ask")}
+          </EmptyStateDescription>
+          {manage && (
+            <EmptyStateActions>
+              <Button variant="default-outline" onClick={() => setEditing("new")}>
+                <PlusIcon /> {t("calendars.add")}
+              </Button>
+            </EmptyStateActions>
+          )}
+        </EmptyState>
       ) : (
         <ul className="divide-otl-gray-200 border-otl-gray-200 flex flex-col divide-y rounded-lg border">
           {sources.data.map((source) => {
@@ -144,14 +169,14 @@ export function CalendarSources({ listing }: { listing: Page }) {
           })}
         </ul>
       )}
-      {manage && (
+      {manage && sources.data.length > 0 && (
         <div>
           <Button variant="default-outline" onClick={() => setEditing("new")}>
             <PlusIcon /> {t("calendars.add")}
           </Button>
         </div>
       )}
-      <p className="text-body-sm text-txt-black-500">{t("calendars.hint")}</p>
+      <HowItWorks />
       <Dialog open={editing !== undefined} onOpenChange={(open) => !open && setEditing(undefined)}>
         {editing !== undefined && (
           <SourceForm
@@ -169,6 +194,29 @@ export function CalendarSources({ listing }: { listing: Page }) {
         {removing && <RemoveDialog source={removing} onDone={() => setRemoving(undefined)} />}
       </AlertDialog>
     </div>
+  );
+}
+
+/** The Outlook steps and the sync's rules, for whoever needs them. */
+function HowItWorks() {
+  return (
+    <Details>
+      <DetailsTrigger>{t("calendars.help")}</DetailsTrigger>
+      <DetailsContent className="flex flex-col gap-3">
+        <ol className="flex list-decimal flex-col gap-1 pl-5">
+          <li>{t("calendars.help.step1")}</li>
+          <li>{t("calendars.help.step2")}</li>
+          <li>{t("calendars.help.step3")}</li>
+        </ol>
+        <p className="text-txt-black-900 font-medium">{t("calendars.help.notes")}</p>
+        <ul className="flex list-disc flex-col gap-1 pl-5">
+          <li>{t("calendars.help.edit")}</li>
+          <li>{t("calendars.help.shared")}</li>
+          <li>{t("calendars.help.held")}</li>
+          <li>{t("calendars.help.private")}</li>
+        </ul>
+      </DetailsContent>
+    </Details>
   );
 }
 

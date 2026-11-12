@@ -938,15 +938,34 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "settings.collection.title": "Senarai",
   "settings.calendars.title": "Sumber kalendar",
   "settings.calendars.description":
-    "Kalendar yang acaranya dipaparkan di sini, dibaca setiap setengah jam daripada alamat ICS. Acara yang disegerakkan diubah dalam kalendarnya, bukan di sini.",
-  "calendars.none": "Belum ada kalendar. Acara hanya yang ditulis di sini.",
+    "Acara daripada kalendar yang diterbitkan, disegerakkan setiap setengah jam.",
+  "calendars.none": "Belum ada kalendar",
+  "calendars.none.body":
+    "Tambah kalendar yang diterbitkan dan acaranya akan dipaparkan di sini dengan sendirinya.",
+  "calendars.none.ask":
+    "Pentadbir boleh menambahnya. Sebelum itu, acara hanyalah yang ditulis di sini.",
+  "calendars.help": "Cara menambah kalendar Outlook",
+  "calendars.help.step1":
+    "Dalam Outlook di web, buka Tetapan, kemudian Kalendar, kemudian Kalendar dikongsi.",
+  "calendars.help.step2":
+    'Di bawah Terbitkan kalendar, pilih kalendar dan "Boleh melihat tajuk dan lokasi", kemudian Terbitkan.',
+  "calendars.help.step3": "Salin pautan ICS dan tambahkannya di sini.",
+  "calendars.help.notes": "Perlu tahu",
+  "calendars.help.edit":
+    "Ubah tajuk, masa atau tempat acara dalam kalendarnya. Teks yang anda tambah pada halamannya di sini kekal.",
+  "calendars.help.shared":
+    "Mesyuarat dalam beberapa kalendar dipaparkan sekali, di bawah kalendar pertama dalam senarai ini.",
+  "calendars.help.held":
+    "Jika kalendar tiba-tiba mempunyai jauh lebih sedikit acara, acara itu dikekalkan sehingga anda menerima perubahan itu.",
+  "calendars.help.private": "Acara peribadi dan yang dibatalkan tidak pernah dipaparkan.",
+  "calendars.held": "Ditemui {found} acara, turun daripada {had}. Dikekalkan sehingga anda terima.",
+  "calendars.address.hint": "Pautan https atau webcal. Dirahsiakan.",
+  "calendars.location.hint": "Untuk acara yang tempatnya tidak menyebut lokasi senarai ini.",
   "calendars.add": "Tambah kalendar",
   "calendars.edit": "Ubah kalendar",
   "calendars.change": "Ubah",
   "calendars.remove": "Buang",
   "calendars.off": "Dimatikan",
-  "calendars.hint":
-    'Dalam Outlook: Tetapan, Kalendar, Kalendar dikongsi, Terbitkan kalendar. Pilih "Boleh melihat tajuk dan lokasi" dan salin pautan ICS. Mesyuarat dalam beberapa kalendar dipaparkan sekali, di bawah kalendar pertama dalam senarai ini.',
   "calendars.syncNow": "Segerakkan sekarang",
   "calendars.syncQueued": "Menyegerakkan kalendar",
   "calendars.syncFailed": "Tidak dapat menyegerakkan",
@@ -954,21 +973,15 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "calendars.synced": "Disegerakkan {at}: {count} acara",
   "calendars.failing": "Tidak dapat dibaca: {error}. Gagal {count} kali berturut-turut.",
   "calendars.lastGood": "Acaranya dari {at} kekal di laman.",
-  "calendars.held":
-    "Bacaan terakhir menemui {found} acara sedangkan sebelum ini ada {had}, jadi acara itu dikekalkan. Jika benar-benar dibuang, terima.",
   "calendars.accept": "Terima dan segerakkan",
   "calendars.accepted": "Diterima: penyegerakan seterusnya akan menurunkannya",
   "calendars.name": "Nama",
   "calendars.name.required": "Beri nama kalendar",
   "calendars.address": "Alamat ICS",
   "calendars.address.required": "Tampal alamat ICS kalendar",
-  "calendars.address.hint":
-    "Alamat https atau webcal. Sesiapa yang memilikinya boleh membaca kalendar, jadi ia dirahsiakan di sini.",
   "calendars.address.keep": "Biarkan kosong untuk mengekalkan alamat semasa.",
   "calendars.category": "Kategori acaranya",
   "calendars.location": "Lokasi jika tidak jelas",
-  "calendars.location.hint":
-    "Acara yang tempatnya menyebut salah satu lokasi senarai, atau mesyuarat dalam talian, mengambil lokasi itu.",
   "calendars.none.choice": "Tiada",
   "calendars.enabled": "Baca kalendar ini",
   "calendars.saved": "Kalendar disimpan: menyegerakkannya sekarang",
