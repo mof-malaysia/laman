@@ -50,8 +50,16 @@ import { useListing } from "./listing";
 
 const sourcesKey = (listingId: string) => ["calendar-sources", listingId];
 
+/** Cached for a while: the editor's card and Settings read the same list one after the other. */
 const useSources = (listingId: string) =>
-  useQuery({ queryKey: sourcesKey(listingId), queryFn: () => calendarApi.list(listingId) });
+  useQuery({
+    queryKey: sourcesKey(listingId),
+    queryFn: () => calendarApi.list(listingId),
+    staleTime: 30_000,
+  });
+
+/** Failing to read, or held back: what SourceStatus shows as a problem. */
+const needsAttention = (source: CalendarSource) => source.held !== null || Boolean(source.error);
 
 /**
  * Runs something that queues a sync, then refreshes the list once that sync
@@ -90,7 +98,7 @@ export function CalendarSourcesCta({
   onOpen: () => void;
 }) {
   const sources = useSources(listingId).data;
-  const attention = sources?.filter((s) => s.error || s.held !== null).length ?? 0;
+  const attention = sources?.filter(needsAttention).length ?? 0;
   return (
     <div className="bg-bg-washed m-4 flex flex-col items-start gap-2 rounded-lg p-3">
       <div className="flex items-center gap-2">
@@ -140,6 +148,11 @@ export function CalendarSources({ listing }: { listing: Page }) {
   const settings = useListing(listing.id).data?.settings;
   const [editing, setEditing] = useState<CalendarSource | "new">();
   const [removing, setRemoving] = useState<CalendarSource>();
+  const addButton = manage && (
+    <Button variant="default-outline" onClick={() => setEditing("new")}>
+      <PlusIcon /> {t("calendars.add")}
+    </Button>
+  );
 
   if (!sources.data)
     return (
@@ -159,13 +172,7 @@ export function CalendarSources({ listing }: { listing: Page }) {
           <EmptyStateDescription>
             {manage ? t("calendars.none.body") : t("calendars.none.ask")}
           </EmptyStateDescription>
-          {manage && (
-            <EmptyStateActions>
-              <Button variant="default-outline" onClick={() => setEditing("new")}>
-                <PlusIcon /> {t("calendars.add")}
-              </Button>
-            </EmptyStateActions>
-          )}
+          {addButton && <EmptyStateActions>{addButton}</EmptyStateActions>}
         </EmptyState>
       ) : (
         <ul className="divide-otl-gray-200 border-otl-gray-200 flex flex-col divide-y rounded-lg border">
@@ -210,13 +217,7 @@ export function CalendarSources({ listing }: { listing: Page }) {
           })}
         </ul>
       )}
-      {manage && sources.data.length > 0 && (
-        <div>
-          <Button variant="default-outline" onClick={() => setEditing("new")}>
-            <PlusIcon /> {t("calendars.add")}
-          </Button>
-        </div>
-      )}
+      {addButton && sources.data.length > 0 && <div>{addButton}</div>}
       <HowItWorks />
       <Dialog open={editing !== undefined} onOpenChange={(open) => !open && setEditing(undefined)}>
         {editing !== undefined && (

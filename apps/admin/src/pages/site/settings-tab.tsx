@@ -57,14 +57,8 @@ function Section({
 }) {
   const ref = useRef<HTMLElement>(null);
   useEffect(() => {
-    if (!focus) return;
     // Rows above may still be loading: stay on this one while they grow.
-    let stop = () => {};
-    const frame = requestAnimationFrame(() => (stop = keepAtTop(ref.current)));
-    return () => {
-      cancelAnimationFrame(frame);
-      stop();
-    };
+    if (focus) return keepAtTop(ref.current);
   }, [focus]);
   return (
     <section
