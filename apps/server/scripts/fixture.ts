@@ -202,6 +202,21 @@ try {
     await call("POST", "/api/publish", { runAt: myt(24) });
     await call("POST", "/api/backups");
 
+    // An agent that registered itself, and an API token for the listing's entries and media.
+    const agent = await app.inject({
+      method: "POST",
+      url: "/oauth/register",
+      payload: { client_name: "Fixture agent", redirect_uris: ["http://127.0.0.1:33418/callback"] },
+    });
+    if (agent.statusCode >= 400) throw new Error(`Registering an agent failed: ${agent.body}`);
+    await call("POST", "/api/tokens", {
+      name: "Fixture sync",
+      role: "contentManager",
+      areas: ["entries", "media"],
+      listingIds: [news],
+      days: 365,
+    });
+
     // Visits, so the analytics database has some to carry across upgrades.
     for (const [n, path] of ["/", "/semua-blok", "/semua-blok"].entries())
       await app.inject({

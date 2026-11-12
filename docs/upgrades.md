@@ -1,6 +1,6 @@
 # Upgrades: keeping stored content readable
 
-Status: built. The 1.0 baseline (section 6) is in, and its saved database is the first in `apps/server/test/fixtures/`.
+Status: built. The baseline (section 6) is in, and its saved database is `apps/server/test/fixtures/0001_baseline.sql`.
 
 An agency upgrades by running a newer build against the same `DATA_DIR`. The SQL schema is handled by the migrations in `apps/server/src/db/migrations.ts`. The harder part is the JSON inside it: every draft, revision and site document was written by the block and contract schemas of the build that saved it, and history keeps old shapes around for years. This plan makes sure an upgrade never leaves content the new build can't read, and never quietly replaces it.
 
@@ -11,7 +11,7 @@ An agency upgrades by running a newer build against the same `DATA_DIR`. The SQL
 | How is stored content versioned? | By the migration number. There is no `schemaVersion` on each document. Content only moves between installs as a whole backup, which carries its migration number |
 | How does content change shape?   | A numbered migration rewrites the JSON in place at boot, with `rewriteDocuments` (section 4)                                                                     |
 | What if content still fails?     | The server refuses to start: it puts back the database it had before migrating and names the rows that failed. It never falls back to defaults                   |
-| Older data to support            | From 1.0 (`0001_baseline`) on. Development databases made before it are taken on only if they ran every development migration (section 6)                        |
+| Older data to support            | From 1.0 (`0001_baseline`) on. Older development databases are taken on as section 6 says                                                                        |
 
 ## The rule
 
@@ -92,15 +92,27 @@ It takes the names of the lists in `documents.ts` and a pure function from old J
 - **A test that flags every schema change.** `test/upgrade.test.ts` writes `z.toJSONSchema` of each schema in `documents.ts` to a committed snapshot (`test/__snapshots__/upgrade.test.ts.snap`); `pnpm --filter @fiscal-sb/server test -u` updates it. When a schema changes, the test fails with "A stored document's schema changed: if stored content might not pass, add a content migration; then update the snapshot." It can't tell additive changes from breaking ones, and isn't meant to. It makes the author decide, and puts that decision in the diff for review.
 - **A failing upgrade must refuse to start.** A test plants a document that fails the check after migrating, and asserts that boot exits and leaves the original `site.db` byte-identical.
 
-### 6. The 1.0 baseline
+### 6. The baseline
 
-Development databases were disposable, so the development migrations (`0001_pages` to `0013_utc_times` for `site.db`, `0001_analytics` and `0002_report_indexes` for `analytics.db`) were squashed into one `0001_baseline` each, written to give exactly the schema they left (checked table by table and index by index when it was made). That also removed `splitLinkLists` and its test. After 1.0, migrations are never squashed again.
+`0001_baseline` is the schema 1.0 ships with. It was squashed twice, both times before any release:
 
-A database a development build made is taken on by `adoptBaseline` (`apps/server/src/db/index.ts`) if it ran every development migration: it has the baseline's schema, so its migration record is replaced by `0001_baseline` and it upgrades like any 1.0 database. One that stopped partway is refused with a message saying so.
+1. **The development migrations** (`0001_pages` to `0013_utc_times` for `site.db`, `0001_analytics` and `0002_report_indexes` for `analytics.db`) into one `0001_baseline` each. That also removed `splitLinkLists` and its test.
+2. **`site.db`'s first baseline and the four migrations after it** (`0002_agents`, `0003_content_changes`, `0004_calendar_sources`, `0005_api_tokens`) into one `0001_baseline` again: the same Kysely calls, with the columns those migrations added by `alterTable` written into their tables, in the same order. Both times the new baseline was checked to give exactly the schema the old migrations left: every table's columns, keys and indexes, every trigger, and the rows it seeds.
+
+After 1.0, migrations are never squashed again.
+
+`adoptBaseline` (`apps/server/src/db/index.ts`) takes on a database a development build made, going by the names `squashed` and `beforeBaseline` list (`apps/server/src/db/migrations.ts`):
+
+- **One that ran all of `squashed`, in order** has the baseline's schema, so its record becomes `0001_baseline`.
+- **One that stopped partway through them** is refused, with a message to start it once with a build that has `0005_api_tokens`, then with this one.
+- **One made by the first baseline alone** is also refused. Its record is just `0001_baseline`, the same as a new database's, so the table only the squashed baseline makes (`baselineMarker`, `api_token_areas`) tells them apart.
+- **One from before the first baseline** is refused: start again with a new data folder.
+
+`test/upgrade.test.ts` covers each case.
 
 ## Build order
 
-All built: the list and `site-builder check`, strict reads, the boot path for both databases, `rewriteDocuments`, the schema-change test and the failing-upgrade test, the rule in AGENTS.md, the 1.0 baseline, and `scripts/fixture.ts` with the first saved database.
+All built: the list and `site-builder check`, strict reads, the boot path for both databases, `rewriteDocuments`, the schema-change test and the failing-upgrade test, the rule in AGENTS.md, the baseline (squashed twice before 1.0), and `scripts/fixture.ts` with its saved databases.
 
 ## Not in this plan
 

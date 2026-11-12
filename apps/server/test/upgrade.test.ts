@@ -13,7 +13,13 @@ import {
   storedDocuments,
 } from "../src/db/documents.js";
 import { executedMigrations, openDatabase, openSqlite } from "../src/db/index.js";
-import { beforeBaseline, migrate, migrations } from "../src/db/migrations.js";
+import {
+  baselineMarker,
+  beforeBaseline,
+  migrate,
+  migrations,
+  squashed,
+} from "../src/db/migrations.js";
 import { publishSite } from "../src/publisher.js";
 import { openAnalyticsDatabase } from "../src/analytics/db.js";
 import { since, summary } from "../src/analytics/reports.js";
@@ -70,20 +76,44 @@ describe("upgrading site.db", () => {
     expect(readdirSync(join(dir, "upgrade"))).toEqual([]);
   });
 
-  it("takes on a database a development build made before the baseline", async () => {
-    // Made to the baseline's schema, as the squashed development migrations left it.
+  /** A database with the baseline's schema and one page, recorded as having run `names`. */
+  async function recordedAs(names: string[], dropMarker = false) {
     const { db } = openSqlite<unknown>(path);
-    await migrate(db, { "0001_baseline": migrations["0001_baseline"]! });
+    await migrate(db, migrations);
     await addPage(db, valid);
+    if (dropMarker) await sql`drop table ${sql.table(baselineMarker)}`.execute(db);
     await sql`delete from kysely_migration`.execute(db);
-    for (const name of beforeBaseline)
+    for (const name of names)
       await sql`insert into kysely_migration (name, timestamp) values (${name}, '')`.execute(db);
     await db.destroy();
+  }
+
+  it("takes on a database that ran every migration the baseline was squashed from", async () => {
+    // Running them all left exactly the baseline's schema, so only its record changes.
+    await recordedAs(squashed);
     const adopted = (await openDatabase(path)) as Kysely<unknown>;
     expect(await executedMigrations(adopted)).toEqual(Object.keys(migrations));
     const { rows } = await sql<{ n: number }>`select count(*) as n from pages`.execute(adopted);
     expect(rows[0]?.n).toBe(1);
     await adopted.destroy();
+  });
+
+  it("refuses one that stopped partway through them, and says how to bring it up to date", async () => {
+    await recordedAs(squashed.slice(0, -1));
+    await expect(openDatabase(path)).rejects.toThrow(
+      new RegExp(`Start it once with a build that has ${squashed.at(-1)}`),
+    );
+  });
+
+  it("refuses one only the first baseline made", async () => {
+    // Its record is the baseline's name alone, but it lacks the tables added since.
+    await recordedAs(["0001_baseline"], true);
+    await expect(openDatabase(path)).rejects.toThrow(/development build from before 1\.0/);
+  });
+
+  it("refuses one a development build made before the first baseline", async () => {
+    await recordedAs(beforeBaseline);
+    await expect(openDatabase(path)).rejects.toThrow(/Start again with a new data folder/);
   });
 
   it("refuses one a development build stopped partway before the baseline", async () => {
