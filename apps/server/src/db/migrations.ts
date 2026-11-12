@@ -293,6 +293,51 @@ export const migrations: Record<string, Migration> = {
             .execute(db);
     },
   },
+  /**
+   * Calendar sources (ICS feeds a listing reads) and what each synced
+   * occurrence became: the entry it was written to, the sources it was found
+   * in, and a hash of what was last written, so an unchanged event isn't
+   * saved again.
+   */
+  "0004_calendar_sources": {
+    async up(db) {
+      await db.schema
+        .createTable("calendar_sources")
+        .addColumn("id", "text", (c) => c.primaryKey())
+        .addColumn("listing_id", "text", (c) => c.notNull().references("pages.id"))
+        .addColumn("name", "text", (c) => c.notNull())
+        .addColumn("address", "text", (c) => c.notNull())
+        .addColumn("category", "text")
+        .addColumn("location", "text")
+        .addColumn("enabled", "integer", (c) => c.notNull().defaultTo(1))
+        .addColumn("position", "integer", (c) => c.notNull())
+        .addColumn("created_at", "text", (c) => c.notNull())
+        .addColumn("checked_at", "text")
+        .addColumn("synced_at", "text")
+        .addColumn("error", "text")
+        .addColumn("failures", "integer", (c) => c.notNull().defaultTo(0))
+        .addColumn("events", "integer", (c) => c.notNull().defaultTo(0))
+        .addColumn("held_found", "integer")
+        .addColumn("accept_drop", "integer", (c) => c.notNull().defaultTo(0))
+        .execute();
+      await db.schema
+        .createIndex("calendar_sources_listing")
+        .on("calendar_sources")
+        .columns(["listing_id", "position"])
+        .execute();
+      await db.schema
+        .createTable("calendar_events")
+        .addColumn("listing_id", "text", (c) => c.notNull().references("pages.id"))
+        .addColumn("key", "text", (c) => c.notNull())
+        .addColumn("page_id", "text", (c) => c.notNull().references("pages.id"))
+        .addColumn("sources", "text", (c) => c.notNull())
+        .addColumn("hash", "text", (c) => c.notNull())
+        .addColumn("starts_at", "text", (c) => c.notNull())
+        .addColumn("live", "integer", (c) => c.notNull())
+        .addPrimaryKeyConstraint("calendar_events_pk", ["listing_id", "key"])
+        .execute();
+    },
+  },
 };
 
 /** Runs `list` (site.db's by default) up to the latest. */

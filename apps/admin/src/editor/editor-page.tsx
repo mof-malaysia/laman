@@ -71,6 +71,7 @@ import { type BlockAction, Canvas, type CanvasWidth, type CanvasZoom } from "./c
 import { LeftColumn } from "./layers";
 import { EmptyPanel } from "./empty-panel";
 import { PagePanel } from "./page-panel";
+import { CalendarSourcesCta } from "@/pages/site/calendar-sources";
 import { PropertyPanel } from "./property-panel";
 import { type SaveState, PublishControl } from "@/components/publish-control";
 import type { LiveState } from "@/lib/publish";
@@ -615,6 +616,15 @@ function Editor({ page, onReload }: { page: Page; onReload: () => Promise<void> 
         dispatch({ type: "setProps", id: selected.id, props, source: "panel", key })
       }
       onRemove={() => remove(selected.id)}
+      intro={
+        // An Event calendar's events can come from calendars, set up in the listing's Settings.
+        selected.type === "eventCalendar" && canPublish ? (
+          <CalendarSourcesCta
+            listingId={page.id}
+            onOpen={() => setPanel("settings", "calendars")}
+          />
+        ) : undefined
+      }
     />
   );
   const pagePanel = (
@@ -742,6 +752,7 @@ function Editor({ page, onReload }: { page: Page; onReload: () => Promise<void> 
         onPanel={setPanel}
         fields={pagePanel}
         draft={{
+          blocks,
           redirect: state.doc.redirect ?? null,
           setRedirect: (next) =>
             dispatch({

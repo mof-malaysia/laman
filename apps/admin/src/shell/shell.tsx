@@ -79,7 +79,7 @@ import { OpenPageDialog } from "./open-page-dialog";
 import { PageBreadcrumb } from "./page-breadcrumb";
 import { PersonAvatar } from "@/users/person";
 import { usersPages } from "@/users/users-tabs";
-import { PublishState, SiteInfo, ViewSite, WaitingDrawer } from "./site-status";
+import { PublishState, SiteInfo, ViewSite } from "./site-status";
 
 type Section = { to: string; label: MessageKey; combo: string; icon: ReactNode };
 
@@ -433,6 +433,7 @@ function TopBarBreadcrumb({ section }: { section: Section }) {
 /** Commands every screen offers: new page, open page, what isn't live yet. */
 function GlobalCommands({ actions }: { actions: ShellActions }) {
   const group = t("commands.group");
+  const navigate = useNavigate();
   useCommands([
     {
       id: "page.new",
@@ -462,7 +463,7 @@ function GlobalCommands({ actions }: { actions: ShellActions }) {
       group,
       combo: "shift+p",
       keywords: ["publish", "live"],
-      run: actions.openWaiting,
+      run: () => void navigate({ to: "/publishing" }),
     },
   ]);
   return null;
@@ -480,7 +481,6 @@ export function AdminShell() {
     open: false,
     files: [],
   });
-  const [waiting, setWaiting] = useState(false);
   useSiteTab();
 
   const actions = useMemo<ShellActions>(
@@ -488,7 +488,6 @@ export function AdminShell() {
       newPage: (parentId) =>
         void navigate({ to: "/pages/new", search: parentId ? { parent: parentId } : {} }),
       openPage: () => setOpenPage(true),
-      openWaiting: () => setWaiting(true),
       uploadMedia: (files = []) => setUpload({ open: true, files }),
     }),
     [navigate],
@@ -505,7 +504,7 @@ export function AdminShell() {
             <SidebarTrigger label={t("shell.toggleSidebar")} />
             <TopBarBreadcrumb section={active} />
             <span className="flex-1" />
-            <PublishState onOpenWaiting={actions.openWaiting} />
+            <PublishState />
             <ViewSite />
             <SearchTrigger />
           </AppShellHeader>
@@ -514,7 +513,6 @@ export function AdminShell() {
           </AppShellMain>
         </AppShell>
         <OpenPageDialog open={openPage} onOpenChange={setOpenPage} />
-        <WaitingDrawer open={waiting} onOpenChange={setWaiting} />
         <UploadDialog
           open={upload.open}
           dropped={upload.files}

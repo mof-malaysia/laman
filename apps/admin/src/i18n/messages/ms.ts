@@ -97,7 +97,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
     "Taip tarikh dalam blok, atau pada entri, tandakan “Entri ini ialah acara” dan tetapkan tarikhnya di situ.",
   "checks.review.title": "Sebelum halaman ini diterbitkan",
   "checks.review.warnings":
-    "Beberapa perkara pada halaman ini mungkin tidak berfungsi untuk pelawat. Anda boleh terbitkan juga, atau betulkan dahulu.",
+    "Beberapa perkara pada halaman ini mungkin tidak berfungsi untuk pelawat. Terbitkan juga, atau betulkan dahulu.",
   "checks.review.stopped":
     "Halaman ini tidak boleh diterbitkan sehingga perkara pertama di bawah dibetulkan.",
   "checks.publishAnyway": "Terbitkan juga",
@@ -125,10 +125,6 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "outcome.failed.body": "Laman web tidak berubah, dan perubahan masih disimpan.",
   "outcome.failed.reason": "Punca masalah: {reason}",
   "outcome.failed.log": "Lihat log penerbitan",
-  "waiting.title": "Belum diterbitkan",
-  "waiting.intro":
-    "Perubahan yang disimpan tetapi belum dapat dilihat oleh pelawat. Terbitkan di sini, atau dari setiap skrin.",
-  "waiting.none": "Semuanya telah diterbitkan.",
   "waiting.discard": "Buang",
   "waiting.discard.title": "Buang perubahan pada {name}?",
   "waiting.discard.page":
@@ -139,7 +135,6 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "waiting.changes": "Diubah sejak penerbitan terakhir",
   "waiting.new": "Halaman baharu, belum pernah diterbitkan",
   "waiting.review": "Semak",
-  "waiting.saved": "Disimpan {date}",
   "waiting.doc": "Pada setiap halaman",
   "waiting.settings": "Tetapan laman web",
   "waiting.navigation": "Navigasi",
@@ -150,10 +145,6 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "waiting.mediaHint": "Diterbitkan bersama penerbitan yang seterusnya",
   "waiting.publish": "Terbitkan {count} perubahan",
   "waiting.publishPages": "Terbitkan {count} halaman",
-  "waiting.pickSome": "Tandakan perkara yang hendak diterbitkan.",
-  "waiting.tickAll": "Tandakan semua",
-  "waiting.untickAll": "Nyahtanda semua",
-  "waiting.loading": "Menyemak perkara yang belum disiarkan…",
   "waiting.confirm.title": "Terbitkan ke laman web?",
   "waiting.confirm.description":
     "Pelawat melihatnya sebaik sahaja ia diterbitkan. Buat asal bila-bila masa melalui Sejarah.",
@@ -267,7 +258,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "media.retry": "Cuba lagi",
   "media.none.title": "Belum ada fail",
   "media.none.body":
-    "Muat naik imej dan PDF yang diperlukan oleh halaman, atau lepaskan fail di mana-mana pada skrin ini. Anda akan menerangkan setiap imej semasa ia dimuat naik.",
+    "Muat naik imej dan PDF yang diperlukan oleh halaman, atau lepaskan fail di mana-mana pada skrin ini. Setiap imej diterangkan semasa ia dimuat naik.",
   "media.none.filtered": "Tiada fail yang sepadan",
   "media.none.filteredBody":
     "Tiada apa-apa dalam pustaka yang sepadan dengan carian atau penapis ini.",
@@ -351,13 +342,13 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "media.replace.none":
     "Belum ada halaman yang menggunakan fail ini, jadi tiada apa-apa di laman web yang berubah.",
   "media.replace.live":
-    "Draf dan editor menunjukkan fail baharu serta-merta. Pelawat melihatnya selepas penerbitan yang seterusnya. Anda boleh mengembalikan fail lama.",
+    "Draf dan editor menunjukkan fail baharu serta-merta. Pelawat melihatnya selepas penerbitan yang seterusnya. Fail lama boleh dikembalikan.",
   "media.replace.confirm": "Ganti fail",
   "media.replaced": "Fail telah diganti",
   "media.replacedBody": "Pelawat melihatnya selepas penerbitan yang seterusnya.",
   "media.notLive.title": "Pelawat masih melihat fail lama",
   "media.notLive.body":
-    "Anda menggantikan fail ini pada {time}. Halaman di sini menunjukkan fail baharu; laman web yang diterbitkan berubah selepas penerbitan.",
+    "Diganti pada {time}. Halaman di sini menunjukkan fail baharu; laman web yang diterbitkan berubah selepas penerbitan.",
   "media.notLive.link": "Pergi ke Penerbitan",
   "media.previous": "Diganti pada {time}. Fail sebelumnya ialah {name}.",
   "media.previous.name": "Fail sebelumnya ialah {name}.",
@@ -372,9 +363,9 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "media.previous.restored": "{name} telah dikembalikan",
   "media.delete": "Padam fail",
   "media.deleteInUseHint":
-    "Anda tidak boleh memadam fail yang sedang digunakan. Alih keluar fail daripada halaman di atas dahulu.",
+    "Fail yang sedang digunakan tidak boleh dipadam. Alih keluar fail daripada halaman di atas dahulu.",
   "media.deleted": "{name} kini dalam Baru dipadam",
-  "media.deletedBody": "Anda boleh memulihkannya dari sana dalam tempoh {days} hari.",
+  "media.deletedBody": "Ia boleh dipulihkan dari sana dalam tempoh {days} hari.",
   "media.failedNotice": "Salinan untuk telefon tidak dapat dibuat",
   "media.failedNoticeBody":
     "Halaman menggunakan fail asal, yang mungkin lambat dimuatkan pada telefon. Gunakan Ganti fail dengan salinan baharu imej untuk mencuba lagi.",
@@ -385,7 +376,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "media.restore": "Pulihkan fail",
   "media.restored": "{name} kembali dalam pustaka",
   "media.discard.title": "Buang perubahan?",
-  "media.discard.body": "Anda telah mengubah butiran {name} tetapi belum menyimpannya.",
+  "media.discard.body": "Butiran {name} telah diubah tetapi belum disimpan.",
   "media.discard.keep": "Teruskan menyunting",
   "media.discard.confirm": "Buang perubahan",
   "media.upload.title": "Muat naik fail",
@@ -461,7 +452,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "settings.review.hiding":
     "Enjin carian akan diminta mengecualikan setiap halaman laman web. Pelawat yang mencari agensi tidak akan menemuinya.",
   "settings.review.undo":
-    "Jika ada yang tidak kena selepas itu, anda boleh mengembalikan tetapan sebelumnya.",
+    "Jika ada yang tidak kena selepas itu, tetapan sebelumnya boleh dikembalikan.",
   "settings.prune.title": "Simpan lebih sedikit versi?",
   "settings.prune.body":
     "{drafts} draf lama yang disimpan merentas {pages} halaman akan dibuang, setiap satu apabila halamannya disimpan kali seterusnya. Draf ini tidak boleh dikembalikan. Versi yang diterbitkan dikekalkan.",
@@ -636,7 +627,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "navigation.review.none": "Tiada perubahan pada bar navigasi atau kaki laman",
   "navigation.review.leftOut": "{count} pautan tidak dimasukkan sehingga halamannya diterbitkan.",
   "navigation.review.undo":
-    "Jika tersilap, anda boleh mengembalikan navigasi sebelumnya dari skrin ini dan terbitkan semula.",
+    "Jika tersilap, navigasi sebelumnya boleh dikembalikan dari skrin ini dan diterbitkan semula.",
   "navigation.warnings": "Sesetengah pautan belum boleh diterbitkan",
   "navigation.navbar.hint":
     "Menu di bahagian atas setiap halaman: pilihan ringkas pautan dan menu lungsur.",
@@ -838,31 +829,34 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "theme.custom.named": "warna tersuai, {hex}",
   "theme.choose": "Warna",
   "theme.hex": "Kod warna",
-  "theme.hexHint": "Contohnya #0b6b3a.",
   "theme.hexInvalid": "Masukkan kod warna seperti #0b6b3a.",
   "theme.picker": "Pilih warna",
   "theme.shades.title": "Rona",
-  "theme.shades.hint": "Dihasilkan daripada warna anda dan disemak supaya mudah dibaca.",
   "theme.use.wash": "Latar cerah",
   "theme.use.focus": "Garis fokus",
   "theme.use.text": "Pautan dan butang",
   "theme.use.hover": "Butang dan pautan apabila dihalakan",
   "theme.yours": "Warna pilihan",
+  "theme.shades.hint": "Dihasilkan daripada warna pilihan, setiap satu dengan tugasnya di laman.",
   "theme.note.focus":
-    "Warna pilihan agak cerah untuk teks di atas putih, jadi ia digunakan untuk garis fokus, dan pautan serta butang menggunakan rona yang sedikit lebih gelap.",
+    "Warna pilihan agak cerah untuk teks, jadi ia menjadi garis fokus dan pautan menggunakan rona lebih gelap.",
   "theme.note.light":
-    "Warna pilihan terlalu cerah untuk teks di atas putih, jadi ia digunakan untuk latar cerah, dan pautan serta butang menggunakan rona yang lebih gelap.",
-  "theme.note.darkened":
-    "Warna pilihan digelapkan sedikit supaya pautan dan butang boleh dibaca di atas putih.",
-  "theme.contrast":
-    "Kontras di atas putih: {ratio} berbanding 1. Sekurang-kurangnya 4.5 diperlukan.",
+    "Warna pilihan terlalu cerah untuk teks, jadi pautan dan butang menggunakan rona yang lebih gelap.",
+  "theme.note.darkened": "Warna pilihan digelapkan sedikit supaya lulus.",
+  "theme.check.title": "Kebolehbacaan",
+  "theme.check.standard": "WCAG 2.2 AA",
+  "theme.check.ratio": "Kontras {ratio} : 1",
+  "theme.check.pass": "Lulus",
+  "theme.check.fail": "Terlalu rendah",
+  "theme.check.explain":
+    "Pautan dan butang di atas putih. AA memerlukan {min} : 1 atau lebih, supaya teks mudah dibaca oleh mereka yang kurang penglihatan.",
   "theme.editor": "Warna",
   "theme.preview.caption": "Halaman utama dengan warna ini.",
   "theme.review.title": "Terbitkan warna laman?",
   "theme.review.description": "Setiap halaman di laman bertukar warna serentak.",
   "theme.review.body":
     "Pautan, butang, tag dan garis fokus di setiap halaman bertukar kepada {name}.",
-  "theme.review.undo": "Tersilap terbit? Anda boleh mengembalikan warna sebelumnya selepas itu.",
+  "theme.review.undo": "Tersilap terbit? Warna sebelumnya boleh dikembalikan selepas itu.",
   "theme.previous.load": "Kembalikan warna sebelum penerbitan terakhir",
   "theme.discardEdits.body": "Warna kembali kepada simpanan terakhir. Ini tidak boleh dibuat asal.",
   "theme.leave.body": "Perubahan pada warna laman belum disimpan, dan akan hilang.",
@@ -936,6 +930,64 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "listing.feed": "Suapan",
   "listing.rss": "Terbitkan suapan RSS",
   "settings.collection.title": "Senarai",
+  "settings.calendars.title": "Sumber kalendar",
+  "settings.calendars.description":
+    "Acara daripada kalendar yang diterbitkan, disegerakkan setiap setengah jam.",
+  "calendars.none": "Belum ada kalendar",
+  "calendars.none.body":
+    "Tambah kalendar yang diterbitkan dan acaranya akan dipaparkan di sini dengan sendirinya.",
+  "calendars.none.ask":
+    "Pentadbir boleh menambahnya. Sebelum itu, acara hanyalah yang ditulis di sini.",
+  "calendars.help": "Cara menambah kalendar Outlook",
+  "calendars.help.step1":
+    "Dalam Outlook di web, buka Tetapan, kemudian Kalendar, kemudian Kalendar dikongsi.",
+  "calendars.help.step2":
+    'Di bawah Terbitkan kalendar, pilih kalendar dan "Boleh melihat tajuk dan lokasi", kemudian Terbitkan.',
+  "calendars.help.step3": "Salin pautan ICS dan tambahkannya di sini.",
+  "calendars.help.notes": "Perlu tahu",
+  "calendars.help.edit":
+    "Ubah tajuk, masa atau tempat acara dalam kalendarnya. Teks yang ditambah pada halamannya di sini kekal.",
+  "calendars.help.shared":
+    "Mesyuarat dalam beberapa kalendar dipaparkan sekali, di bawah kalendar pertama dalam senarai ini.",
+  "calendars.help.held":
+    "Jika kalendar tiba-tiba mempunyai jauh lebih sedikit acara, acara itu dikekalkan sehingga perubahan itu diterima.",
+  "calendars.help.private": "Acara peribadi dan yang dibatalkan tidak pernah dipaparkan.",
+  "calendars.held": "Ditemui {found} acara, turun daripada {had}. Dikekalkan sehingga diterima.",
+  "calendars.address.hint": "Pautan https atau webcal. Dirahsiakan.",
+  "calendars.location.hint": "Untuk acara yang tempatnya tidak menyebut lokasi senarai ini.",
+  "calendars.cta.none": "Bawa masuk acara daripada Outlook atau kalendar lain yang diterbitkan.",
+  "calendars.cta.count": "Disegerakkan daripada {count} kalendar.",
+  "calendars.cta.attention": "{count} perlu perhatian.",
+  "calendars.cta.open": "Buka sumber kalendar",
+  "calendars.add": "Tambah kalendar",
+  "calendars.edit": "Ubah kalendar",
+  "calendars.change": "Ubah",
+  "calendars.remove": "Buang",
+  "calendars.off": "Dimatikan",
+  "calendars.syncNow": "Segerakkan sekarang",
+  "calendars.syncQueued": "Menyegerakkan kalendar",
+  "calendars.syncFailed": "Tidak dapat menyegerakkan",
+  "calendars.waiting": "Menunggu penyegerakan pertama",
+  "calendars.synced": "Disegerakkan {at}: {count} acara",
+  "calendars.failing": "Tidak dapat dibaca: {error}. Gagal {count} kali berturut-turut.",
+  "calendars.lastGood": "Acaranya dari {at} kekal di laman.",
+  "calendars.accept": "Terima dan segerakkan",
+  "calendars.accepted": "Diterima: penyegerakan seterusnya akan menurunkannya",
+  "calendars.name": "Nama",
+  "calendars.name.required": "Beri nama kalendar",
+  "calendars.address": "Alamat ICS",
+  "calendars.address.required": "Tampal alamat ICS kalendar",
+  "calendars.address.keep": "Biarkan kosong untuk mengekalkan alamat semasa.",
+  "calendars.category": "Kategori acaranya",
+  "calendars.location": "Lokasi jika tidak jelas",
+  "calendars.none.choice": "Tiada",
+  "calendars.enabled": "Baca kalendar ini",
+  "calendars.saved": "Kalendar disimpan: menyegerakkannya sekarang",
+  "calendars.remove.title": "Buang {name}?",
+  "calendars.remove.body":
+    "Acaranya diturunkan dari laman pada penyegerakan seterusnya, kecuali jika kalendar lain turut memilikinya.",
+  "calendars.removed": "Kalendar dibuang",
+  "calendars.removeFailed": "Tidak dapat membuang kalendar",
   "settings.listing.title": "Senarai",
   "settings.listing.description": "Kumpulkan entri bertarikh di sini, seperti berita atau notis.",
   "settings.listing.action": "Jadikan senarai",
@@ -968,7 +1020,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "pages.missingBody":
     "Halaman ini mungkin telah dialihkan atau alamatnya berubah. Cari dalam senarai semua halaman.",
   "pages.back": "Semua halaman",
-  "pages.index.title": "Apa yang sedang anda usahakan?",
+  "pages.index.title": "Cari halaman",
   "pages.index.intro":
     "Cari mana-mana daripada {count} halaman laman ini, atau sambung kerja yang tertangguh.",
   "pages.index.search": "Cari mengikut tajuk atau alamat",
@@ -1127,6 +1179,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "publishing.trigger.rebuild": "Bina semula",
   "publishing.trigger.restore": "Selepas pemulihan",
   "publishing.trigger.daily": "Kemas kini harian tarikh acara",
+  "publishing.trigger.calendar": "Penyegerakan kalendar",
   "publishing.schedule.date": "Tarikh",
   "publishing.schedule.time": "Masa (Malaysia)",
   "publishing.schedule.what": "Apa yang hendak diterbitkan",
@@ -1164,6 +1217,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "publishing.line.rebuild": "Seluruh laman web dibina semula",
   "publishing.line.restore": "Seluruh laman web dibina semula selepas pemulihan",
   "publishing.line.daily": "Tarikh acara dikemas kini untuk hari ini",
+  "publishing.line.calendar": "Acara disegerakkan daripada kalendarnya",
   "publishing.line.pages": "{title} dan {count} lagi diterbitkan",
   "publishing.schedule.later": "Jadualkan penerbitan untuk kemudian",
   "publishing.schedule.another": "Jadualkan penerbitan lain",
@@ -1243,7 +1297,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "seo.preview.noDescription": "Enjin carian akan memilih sebahagian teks daripada halaman.",
   "seo.preview.hidden": "Disembunyikan: enjin carian diminta tidak menyenaraikan halaman ini.",
 
-  "settings.whenLive": "Ia disiarkan apabila anda menerbitkan halaman.",
+  "settings.whenLive": "Ia disiarkan apabila halaman diterbitkan.",
   "settings.home.redirect": "Halaman utama tidak boleh ubah hala: di situlah laman web bermula.",
   "settings.home.move":
     "Setiap halaman terletak di bawah halaman utama, jadi ia tidak boleh dialihkan.",
@@ -1295,7 +1349,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
 
   "delete.title": "Padam {title}?",
   "delete.body":
-    "Halaman ini akan dikeluarkan daripada senarai Halaman dan laman web sebaik sahaja disahkan. Anda boleh memulihkannya daripada Baru dipadam dalam tempoh 30 hari.",
+    "Halaman ini akan dikeluarkan daripada senarai Halaman dan laman web sebaik sahaja disahkan. Ia boleh dipulihkan daripada Baru dipadam dalam tempoh 30 hari.",
   "delete.checking": "Menyemak apa yang menggunakan halaman ini…",
   "delete.children.legend":
     "Halaman ini ada {count} subhalaman. Apakah yang perlu dilakukan kepadanya?",
@@ -1339,7 +1393,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
     "Senarai entri bertarikh, terbaharu dahulu. Setiap entri ialah halaman tersendiri.",
   "newPage.kind.listing.examples": "Berita, pengumuman, tender, pekeliling, jawatan kosong",
   "newPage.start.page.title": "Pilih templat",
-  "newPage.start.page.intro": "Gantikan teks contoh dengan kandungan anda.",
+  "newPage.start.page.intro": "Gantikan teks contoh dengan kandungan sebenar.",
   "newPage.start.listing.title": "Pilih templat",
   "newPage.start.listing.intro":
     "Mana-mana senarai boleh memuatkan apa-apa entri. Mulakan kosong jika tiada yang sesuai.",
@@ -1349,8 +1403,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "newPage.place.under": "Di bawah {title}",
   "newPage.name.title.page": "Namakan halaman",
   "newPage.name.title.listing": "Namakan senarai",
-  "newPage.name.intro":
-    "Tajuk ialah kepala halaman. Alamat mengikut tajuk melainkan anda mengubahnya.",
+  "newPage.name.intro": "Tajuk ialah kepala halaman. Alamat mengikut tajuk melainkan diubah.",
   "newPage.title.hint": "Ringkas dan mudah, seperti cara orang mencari",
   "newPage.check.title": "Semak dan cipta",
   "newPage.check.change": "Ubah",
@@ -1358,7 +1411,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "newPage.check.draft.page":
     "Ia bermula sebagai draf. Hanya pengguna yang log masuk boleh melihatnya sehingga diterbitkan.",
   "newPage.check.draft.listing":
-    "Ia bermula sebagai draf kosong. Tambah entri selepas ini; tiada apa diterbitkan sehingga anda menerbitkannya.",
+    "Ia bermula sebagai draf kosong. Tambah entri selepas ini; tiada apa disiarkan sehingga ia diterbitkan.",
   "newPage.done.title": "{title} telah dicipta",
   "newPage.done.intro": "Disimpan sebagai draf. Apabila diterbitkan, ia berada di {path}.",
   "newPage.done.page.edit.title": "Tulis kandungan",
@@ -1473,7 +1526,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "save.invalid": "Tidak disimpan: semak medan yang ditandakan",
   "save.conflict": "Tidak disimpan: orang lain telah menyimpan halaman ini",
   "save.signedOut": "Tidak disimpan: log masuk semula untuk meneruskan",
-  "save.forbidden": "Tidak disimpan: anda tidak lagi boleh menyunting halaman ini",
+  "save.forbidden": "Tidak disimpan: halaman ini tidak lagi boleh disunting",
   "save.gone": "Tidak disimpan: halaman ini telah dipadam",
   "conflict.someone": "Orang lain",
   "conflict.thisPage": "halaman ini",
@@ -1670,7 +1723,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "auth.username": "Nama pengguna",
   "auth.username.missing": "Masukkan nama pengguna",
   "auth.username.rules":
-    "3 hingga 32 huruf, nombor, titik, sempang atau garis bawah. Anda log masuk dengannya.",
+    "3 hingga 32 huruf, nombor, titik, sempang atau garis bawah. Digunakan untuk log masuk.",
   "auth.password": "Kata laluan",
   "auth.password.missing": "Masukkan kata laluan",
   "auth.password.current": "Kata laluan semasa",
@@ -1719,13 +1772,13 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "auth.recovery.kept": "Saya telah menyimpan kod pemulihan saya di tempat yang selamat",
   "auth.recovery.continue": "Teruskan",
   "auth.join.title": "Cipta akaun",
-  "auth.join.description": "Anda dijemput sebagai {role}. Pilih cara log masuk.",
+  "auth.join.description": "Dijemput sebagai {role}. Pilih cara log masuk.",
   "auth.join.name": "Nama penuh",
   "auth.join.nameHint": "Ditunjukkan kepada orang lain dalam sejarah dan di Pengguna.",
   "auth.join.name.missing": "Masukkan nama penuh",
   "auth.join.submit": "Cipta akaun",
   "auth.reset.title": "Pilih kata laluan baharu",
-  "auth.reset.description": "Untuk {username}. Anda akan dilog keluar di semua tempat.",
+  "auth.reset.description": "Untuk {username}. Akaun ini akan dilog keluar di semua tempat.",
   "auth.reset.submit": "Simpan kata laluan baharu",
   "auth.reset.done.title": "Kata laluan telah ditukar",
   "auth.reset.done.body": "Log masuk dengan kata laluan baharu.",
@@ -1743,16 +1796,16 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
     "Membatalkan penerbitan, membina semula laman dan mencuba semula kerja",
   "connect.cannot": "Ia tidak boleh mengurus pengguna, akaun, log masuk atau tetapan keselamatan.",
   "connect.lasts":
-    "Sambungan ini kekal selama {days} hari, kemudian perlu disambung semula. Anda atau Pentadbir boleh menamatkannya pada bila-bila masa di Akaun, dan semua yang dilakukannya ada dalam log audit.",
+    "Sambungan ini kekal selama {days} hari, kemudian perlu disambung semula. Akaun ini atau Pentadbir boleh menamatkannya pada bila-bila masa di Akaun, dan semua yang dilakukannya ada dalam log audit.",
   "connect.lasts.superAdmin":
-    "Sambungan ini kekal selama {days} hari, kemudian perlu disambung semula. Anda boleh menamatkannya pada bila-bila masa di Akaun, dan semua yang dilakukannya ada dalam log audit.",
+    "Sambungan ini kekal selama {days} hari, kemudian perlu disambung semula. Ia boleh ditamatkan pada bila-bila masa di Akaun, dan semua yang dilakukannya ada dalam log audit.",
   "connect.onlyYours": "Benarkan hanya ejen yang dimulakan sendiri, sebentar tadi.",
   "connect.unverified.title": "Ejen ini mungkin bukan seperti namanya",
   "connect.unverified":
     'Sesiapa sahaja boleh menamakan ejen "{client}". Ejen ini menghantar jawapan ke {returnsTo}, yang bukan laman web ejen yang dikenali. Jika ia tidak disediakan sendiri di sana, tolak.',
   "connect.unverified.confirm":
     "Saya sendiri menambah pembina ini pada ejen di {returnsTo}, sebentar tadi",
-  "connect.notEnabled.title": "Anda belum boleh menyambungkan {client}",
+  "connect.notEnabled.title": "{client} belum boleh disambungkan",
   "connect.notEnabled":
     "Minta Pentadbir menghidupkan akses ejen untuk akaun ini, kemudian sambung semula dari ejen.",
   "connect.notEnabled.superAdmin":
@@ -1763,7 +1816,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "connect.back": "Kembali ke {client}",
   "connect.leaving.title": "Kembali ke {client}",
   "connect.leaving.body":
-    "Anda boleh menutup tab ini sebaik sahaja ejen menyatakan ia telah bersambung.",
+    "Tab ini boleh ditutup sebaik sahaja ejen menyatakan ia telah bersambung.",
   "connect.broken.title": "Ejen ini tidak dapat bersambung",
   "connect.broken.reason": "Pembina menyatakan: {reason}",
   "connect.toAdmin": "Pergi ke admin",
@@ -1776,10 +1829,10 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
 
   "account.agents": "Ejen",
   "account.agents.description":
-    "Ejen AI, seperti Claude atau Codex, yang mengusahakan laman atas nama anda. Sambungan kekal selama {days} hari.",
+    "Ejen AI, seperti Claude atau Codex, yang mengusahakan laman atas nama akaun ini. Sambungan kekal selama {days} hari.",
   "account.agents.switch": "Benarkan saya menyambungkan ejen",
   "account.agents.switchHint": "Mematikannya menamatkan semua sambungan.",
-  "account.agents.notOn": "Minta Pentadbir menghidupkan akses ejen untuk anda.",
+  "account.agents.notOn": "Minta Pentadbir menghidupkan akses ejen untuk akaun ini.",
   "account.agents.address": "Alamat untuk ejen",
   "account.agents.addressHint": "Tambahkannya dalam ejen sebagai pelayan MCP jauh.",
   "account.agents.none": "Tiada ejen disambungkan.",
@@ -1790,13 +1843,13 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "account.agents.end": "Tamatkan sambungan",
   "account.agents.end.title": "Tamatkan {agent}?",
   "account.agents.end.body":
-    "Ia berhenti berfungsi pada langkah seterusnya. Anda boleh menyambungkannya semula dari ejen.",
+    "Ia berhenti berfungsi pada langkah seterusnya. Ia boleh disambungkan semula dari ejen.",
   "account.agents.ended": "Sambungan {agent} telah ditamatkan",
   "account.agents.off": "Matikan",
   "account.agents.off.title": "Berhenti menyambungkan ejen?",
   "account.agents.off.body":
     "Sambungan ejen yang sedia ada tamat sekarang, dan ejen baharu tidak boleh disambungkan sehingga tetapan ini dihidupkan semula.",
-  "account.agents.off.done": "Anda tidak boleh menyambungkan ejen sekarang",
+  "account.agents.off.done": "Ejen tidak boleh disambungkan sekarang",
   "account.intro": "Log masuk sebagai {username}, {role}.",
   "account.name": "Nama",
   "account.name.description": "Ditunjukkan dalam sejarah, Penerbitan dan Pengguna.",
@@ -1804,7 +1857,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "account.password.submit": "Tukar kata laluan",
   "account.password.done": "Kata laluan telah ditukar",
   "account.twoFactor": "Log masuk dua faktor",
-  "account.twoFactor.on": "Anda memasukkan kod daripada aplikasi pengesah semasa log masuk.",
+  "account.twoFactor.on": "Log masuk memerlukan kod daripada aplikasi pengesah.",
   "account.twoFactor.off":
     "Kod daripada aplikasi pengesah, supaya kata laluan sahaja tidak mencukupi.",
   "account.twoFactor.setUp": "Sediakan dua faktor",
@@ -1829,7 +1882,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "users.column.for": "Untuk",
   "users.column.madeBy": "Dibuat oleh",
   "users.column.expires": "Tamat tempoh",
-  "users.you": "Anda",
+  "users.you": "Akaun ini",
   "users.never": "Belum pernah",
   "users.disabled": "Dinyahdayakan",
   "users.twoFactor.on": "Hidup",
@@ -2150,6 +2203,8 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "audit.action.pageRestored": "Memulihkan halaman yang dipadam",
   "audit.action.backupStarted": "Memulakan sandaran",
   "audit.action.backupRestored": "Memulihkan sandaran",
+  "audit.action.calendarSourceChanged": "Mengubah sumber kalendar",
+  "audit.action.calendarSynced": "Penyegerakan kalendar mengubah acara",
   "audit.action.agentConnected": "Menyambungkan ejen",
   "audit.action.agentRevoked": "Menamatkan sambungan ejen",
   "audit.action.agentToolCall": "Ejen menggunakan alat",

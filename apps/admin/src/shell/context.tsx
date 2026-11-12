@@ -5,8 +5,6 @@ export type ShellActions = {
   newPage: (parentId?: string) => void;
   /** Opens the "Open page" palette. */
   openPage: () => void;
-  /** Opens the list of what isn't live yet, where it can be published. */
-  openWaiting: () => void;
   /** Opens the upload dialog, uploading `files` straight away when given. */
   uploadMedia: (files?: File[]) => void;
 };

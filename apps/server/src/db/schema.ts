@@ -1,6 +1,6 @@
 /** Table types for Kysely. JSON columns hold text; see the repositories for shapes. */
 import type { AuditAction, Role, SessionStage } from "@fiscal-sb/contracts";
-import type { Generated } from "kysely";
+import type { Generated, Selectable } from "kysely";
 
 export type PagesTable = {
   id: string;
@@ -67,6 +67,46 @@ export type JobsTable = {
   finished_at: string | null;
   /** Who queued it; null for the system's own jobs. */
   created_by: Generated<string | null>;
+};
+
+/** An ICS feed a listing reads (contracts' CalendarSource). */
+export type CalendarSourcesTable = {
+  id: string;
+  listing_id: string;
+  name: string;
+  /** The full feed address: a secret, never sent to the admin or written to the site. */
+  address: string;
+  category: string | null;
+  location: string | null;
+  enabled: number;
+  position: number;
+  created_at: string;
+  checked_at: string | null;
+  synced_at: string | null;
+  error: string | null;
+  failures: Generated<number>;
+  events: Generated<number>;
+  /** Set when the last read found far fewer events than before: what it found. */
+  held_found: number | null;
+  /** 1 once an admin accepts a held drop, until the next sync applies it. */
+  accept_drop: Generated<number>;
+};
+
+export type CalendarSourceRow = Selectable<CalendarSourcesTable>;
+
+/** One synced occurrence and the entry it became. */
+export type CalendarEventsTable = {
+  listing_id: string;
+  /** The event's UID, and which occurrence for a repeating one. */
+  key: string;
+  page_id: string;
+  /** JSON: ids of the sources it was last found in. */
+  sources: string;
+  /** Of what was last written to the entry. */
+  hash: string;
+  starts_at: string;
+  /** 0 once no source has it and its entry was taken off the site. */
+  live: number;
 };
 
 export type RedirectsTable = {
@@ -247,4 +287,6 @@ export type Database = {
   settings: SettingsTable;
   content_changes: ContentChangesTable;
   jobs: JobsTable;
+  calendar_sources: CalendarSourcesTable;
+  calendar_events: CalendarEventsTable;
 };

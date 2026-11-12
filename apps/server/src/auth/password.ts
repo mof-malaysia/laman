@@ -92,7 +92,7 @@ const COMMON = new Set([
 export function weakPassword(password: string, username: string): string | undefined {
   const lower = password.toLowerCase();
   if (COMMON.has(lower)) return "That password is one of the first ones guessed. Choose another.";
-  if (lower.includes(username.toLowerCase())) return "Don't use your username in your password.";
+  if (lower.includes(username.toLowerCase())) return "The password can't contain the username.";
   if (/^(.)\1+$/.test(password)) return "Don't use one character over and over.";
   return undefined;
 }

@@ -61,9 +61,11 @@ type PropertyPanelProps = {
   block: Block;
   onChange: (props: Block["props"], key: string) => void;
   onRemove: () => void;
+  /** Shown above the fields: a way to what the block uses that's set up elsewhere. */
+  intro?: ReactNode;
 };
 
-export function PropertyPanel({ block, onChange, onRemove }: PropertyPanelProps) {
+export function PropertyPanel({ block, onChange, onRemove, intro }: PropertyPanelProps) {
   const definition = blockDefinition(block.type);
   const issues = issuesOf(block);
   const set = (path: string[], value: unknown) =>
@@ -73,6 +75,7 @@ export function PropertyPanel({ block, onChange, onRemove }: PropertyPanelProps)
 
   return (
     <div className="flex flex-col">
+      {intro}
       {fieldGroups(fields.filter((f) => fieldShown(f, block.props, fields))).map(
         ([group, list]) => (
           <details

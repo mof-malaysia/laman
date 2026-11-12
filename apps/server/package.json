@@ -32,6 +32,7 @@
     "@scalar/fastify-api-reference": "catalog:",
     "better-sqlite3": "catalog:",
     "fastify": "catalog:",
+    "ical.js": "catalog:",
     "isbot": "catalog:",
     "kysely": "catalog:",
     "light-my-request": "catalog:",

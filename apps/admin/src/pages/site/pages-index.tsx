@@ -216,7 +216,7 @@ export function PagesIndex({ pages }: { pages: PageSummary[] }) {
                   variant="default-outline"
                   // Sheet on the tray's Well, so it still reads as a button.
                   className="bg-bg-white hover:bg-bg-gray-50"
-                  onClick={() => shell.openWaiting()}
+                  render={<Link to="/publishing" />}
                 >
                   <UploadGlyph className="size-[18px]" /> {t("pages.index.publish")}
                 </Button>

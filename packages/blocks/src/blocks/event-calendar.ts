@@ -3,7 +3,7 @@ import { field, panel } from "../fields.js";
 import { defineBlock } from "../define.js";
 
 /**
- * A listing's events by month, in one of two layouts. Wall planner: the
+ * A listing's events by month, in one of two layouts. Calendar: the
  * month as a large grid, events in their days, multi-day events as bars,
  * colour by location. Planner: a small calendar and the filters beside the
  * month's events, listed day by day. Every month and filter is its own
@@ -14,15 +14,15 @@ export const eventCalendar = defineBlock({
   type: "eventCalendar",
   label: "Event calendar",
   description:
-    "This listing's events by month, as a wall planner or a planner, filtered by category and location.",
+    "This listing's events by month, as a calendar or a planner, filtered by category and location.",
   group: "listing",
   icon: "calendar",
   kinds: ["listing"],
   props: z.object({
     layout: field
       .select("Layout", ["wall", "planner"], {
-        wall: "Wall planner: the month as a large grid",
-        planner: "Planner: a small calendar beside the month's events",
+        wall: "Calendar",
+        planner: "Planner",
       })
       .default("wall"),
     categoryFilter: field.toggle("Show the category filter").default(true),

@@ -112,6 +112,22 @@ export class Jobs {
     return this.get(id);
   }
 
+  /**
+   * Queues a job unless one of its kind is already waiting to start, and
+   * returns that one instead. A running one doesn't count: it may have read
+   * what it works on before the change that asks for another run.
+   */
+  async enqueueOnce(kind: string, payload: unknown = {}): Promise<Job> {
+    const waiting = await this.#db
+      .selectFrom("jobs")
+      .select("id")
+      .where("kind", "=", kind)
+      .where("status", "=", "queued")
+      .where("run_at", "is", null)
+      .executeTakeFirst();
+    return waiting ? this.get(waiting.id) : this.enqueue(kind, payload);
+  }
+
   async get(id: string): Promise<Job> {
     const row = await withCreator(this.#db).where("jobs.id", "=", id).executeTakeFirst();
     if (!row) throw new HttpError(404, "job_not_found", "No job with that id");

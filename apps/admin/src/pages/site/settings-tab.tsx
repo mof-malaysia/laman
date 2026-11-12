@@ -29,15 +29,17 @@ import { ToggleGroup } from "@/components/ui/toggle-group";
 import { type MessageKey, t } from "@/i18n";
 import { apiError, listingApi, pagesApi } from "@/lib/api";
 import { useCan } from "@/lib/auth";
+import { useFailure } from "@/lib/use-failure";
 import useToast from "@/lib/ftds/hooks/use-toast";
 import { isHome, subtreeIds, useRefreshPages } from "@/lib/pages";
+import { CalendarSources, SyncNowButton } from "./calendar-sources";
 import { CollectionSettings } from "./listing";
 import { PathChanges } from "./move";
 import type { SettingsSection } from "./search";
 import { tabCard } from "./tab-layout";
 import { UndoDelete } from "./trash-screen";
 import { useSaveDraft } from "./use-save-draft";
-import { scrollToTop } from "@/lib/scroll";
+import { keepAtTop } from "@/lib/scroll";
 
 /** One row of the Settings list: what it does on the left, its action on the right, any options under both. */
 function Section({
@@ -55,9 +57,8 @@ function Section({
 }) {
   const ref = useRef<HTMLElement>(null);
   useEffect(() => {
-    if (!focus) return;
-    const frame = requestAnimationFrame(() => scrollToTop(ref.current));
-    return () => cancelAnimationFrame(frame);
+    // Rows above may still be loading: stay on this one while they grow.
+    if (focus) return keepAtTop(ref.current);
   }, [focus]);
   return (
     <section
@@ -100,15 +101,6 @@ const Note = ({ message }: { message: MessageKey }) => (
   <p className="text-content text-txt-black-700">{t(message)}</p>
 );
 
-/** Toasts the server's message, or a generic one. */
-function useFailure() {
-  const { toast } = useToast();
-  return async (title: string, error: unknown) => {
-    const body = await apiError(error);
-    toast({ variant: "error", title, description: body?.message ?? t("common.tryAgain") });
-  };
-}
-
 /**
  * Settings open inside the editor share the draft the editor is saving: the redirect is
  * part of it, and making a listing or unpublishing changes it on the server. So there
@@ -116,6 +108,8 @@ function useFailure() {
  * editor's edits first and reload its page after, instead of racing its autosave.
  */
 export type DraftLink = {
+  /** The editor's blocks, which may be ahead of the saved draft. */
+  blocks: { type: string }[];
   redirect: PageRedirect | null;
   setRedirect: (redirect: PageRedirect | null) => void;
   beforeChange: () => Promise<unknown>;
@@ -136,6 +130,10 @@ export function SettingsTab({
 }) {
   const home = isHome(page);
   const row = (id: SettingsSection) => ({ id, focus: section === id });
+  // Calendar sources feed an Event calendar: a listing with an Entry list doesn't offer them.
+  const hasEventCalendar = (draft?.blocks ?? page.draft.ms.blocks).some(
+    (b) => b.type === "eventCalendar",
+  );
   // The home page can't do these: its row says why in place of the form.
   const homeOr = (id: "redirect" | "move" | "unpublish" | "delete", form: ReactNode) =>
     home ? (
@@ -164,6 +162,11 @@ export function SettingsTab({
         {page.kind === "listing" && (
           <Section {...row("collection")}>
             <CollectionSettings listing={page} />
+          </Section>
+        )}
+        {page.kind === "listing" && canPublish && hasEventCalendar && (
+          <Section {...row("calendars")} action={<SyncNowButton listing={page} />}>
+            <CalendarSources listing={page} />
           </Section>
         )}
         {homeOr(

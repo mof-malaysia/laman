@@ -6,18 +6,9 @@
 import { announcementShowing } from "@fiscal-sb/contracts";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import {
-  Drawer,
-  DrawerBody,
-  DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
 import { StatusDot, type Tone } from "@/components/page-status";
 import { LinkDiagonalIcon } from "@/components/ui/icons/link-diagonal";
 import { SidebarMenuItem } from "@/components/ui/app-shell";
-import { WaitingList } from "@/components/waiting-list";
 import { t } from "@/i18n";
 import { clx } from "@/lib/ftds/utils";
 import { isActive } from "@/lib/api";
@@ -43,31 +34,8 @@ function Status({ tone, children }: { tone: Tone; children: ReactNode }) {
   );
 }
 
-/** What isn't live yet, in a drawer from the header: the same list as the dashboard's. */
-export function WaitingDrawer({
-  open,
-  onOpenChange,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
-  return (
-    <Drawer side="right" open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="w-full sm:max-w-md">
-        <DrawerHeader>
-          <DrawerTitle>{t("waiting.title")}</DrawerTitle>
-          <DrawerDescription>{t("waiting.intro")}</DrawerDescription>
-        </DrawerHeader>
-        <DrawerBody>
-          <WaitingList onNavigate={() => onOpenChange(false)} />
-        </DrawerBody>
-      </DrawerContent>
-    </Drawer>
-  );
-}
-
 /** What isn't live yet, a running or failed publish, media still processing, the announcement. */
-export function PublishState({ onOpenWaiting }: { onOpenWaiting: () => void }) {
+export function PublishState() {
   const summary = useSummary();
   const data = summary.data;
   const announcement = useAnnouncementDoc().data?.published;
@@ -125,14 +93,9 @@ export function PublishState({ onOpenWaiting }: { onOpenWaiting: () => void }) {
         </Link>
       )}
       {data && !running && (
-        <button
-          type="button"
-          onClick={onOpenWaiting}
-          aria-haspopup="dialog"
-          className="focus-ring hover:bg-bg-washed cursor-pointer rounded-md"
-        >
+        <Link to="/publishing" className="focus-ring hover:bg-bg-washed rounded-md no-underline">
           <Status tone={tone}>{label}</Status>
-        </button>
+        </Link>
       )}
     </div>
   );
