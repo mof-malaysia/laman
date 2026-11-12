@@ -30,6 +30,8 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { SplitPane } from "@/components/ui/split-pane";
+import { CheckCircleIcon } from "@/components/ui/icons/check-circle";
+import { WarningCircleIcon } from "@/components/ui/icons/warning-circle";
 import { Tag } from "@/components/ui/tag";
 import { type MessageKey, t } from "@/i18n";
 import { siteApi } from "@/lib/api";
@@ -340,7 +342,6 @@ function seedNote(seedStep: Exclude<RampStep, "600"> | null): MessageKey {
 
 function Shades({ ramp, seedStep }: { ramp: Ramp; seedStep: RampStep | null | undefined }) {
   const id = useId();
-  const ratio = contrast(ramp["600"], [255, 255, 255]);
   return (
     <section
       aria-labelledby={id}
@@ -388,14 +389,65 @@ function Shades({ ramp, seedStep }: { ramp: Ramp; seedStep: RampStep | null | un
           </li>
         ))}
       </ul>
-      <div className="border-otl-gray-200 flex flex-col gap-1 border-t pt-3">
-        {seedStep !== undefined && seedStep !== "600" && (
-          <p className="text-body-sm text-txt-black-900">{t(seedNote(seedStep))}</p>
-        )}
-        <p className="text-body-sm text-txt-black-700">
-          {t("theme.contrast", { ratio: ratio.toFixed(1) })}
-        </p>
+      <ContrastCheck ramp={ramp} seedStep={seedStep} />
+    </section>
+  );
+}
+
+/** WCAG AA's least contrast for body text against its background. */
+const AA_TEXT = 4.5;
+
+/**
+ * The WCAG check on the link and button colour: a sample of it on white, its
+ * contrast against AA's minimum, and where the officer's colour went if it
+ * couldn't be used for text as it was.
+ */
+function ContrastCheck({ ramp, seedStep }: { ramp: Ramp; seedStep: RampStep | null | undefined }) {
+  const id = useId();
+  const ratio = contrast(ramp["600"], [255, 255, 255]);
+  const passes = ratio >= AA_TEXT;
+  return (
+    <section
+      aria-labelledby={id}
+      className="border-otl-gray-200 flex flex-col gap-3 rounded-lg border p-3"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <h3 id={id} className="text-label-md text-txt-black-900 font-semibold">
+          {t("theme.check.title")}
+        </h3>
+        <Tag size="small">{t("theme.check.standard")}</Tag>
       </div>
+      <div className="flex items-center gap-3">
+        {/* What a visitor reads: link-coloured text on the page's white. */}
+        <span
+          aria-hidden
+          className="border-otl-gray-200 bg-bg-white text-title flex size-12 shrink-0 items-center justify-center rounded-md border font-semibold"
+          style={{ color: rgb(ramp, "600") }}
+        >
+          Aa
+        </span>
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <p className="text-body-md text-txt-black-900 flex flex-wrap items-center gap-2 font-semibold tabular-nums">
+            {t("theme.check.ratio", { ratio: ratio.toFixed(1) })}
+            <Tag size="small" variant={passes ? "success" : "danger"}>
+              {passes ? (
+                <CheckCircleIcon aria-hidden className="size-3.5" />
+              ) : (
+                <WarningCircleIcon aria-hidden className="size-3.5" />
+              )}
+              {passes ? t("theme.check.pass") : t("theme.check.fail")}
+            </Tag>
+          </p>
+          <p className="text-body-sm text-txt-black-700">
+            {t("theme.check.explain", { min: AA_TEXT })}
+          </p>
+        </div>
+      </div>
+      {seedStep !== undefined && seedStep !== "600" && (
+        <p className="text-body-sm text-txt-black-700 border-otl-gray-200 border-t pt-3">
+          {t(seedNote(seedStep))}
+        </p>
+      )}
     </section>
   );
 }

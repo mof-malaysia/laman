@@ -833,20 +833,24 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "theme.hexInvalid": "Masukkan kod warna seperti #0b6b3a.",
   "theme.picker": "Pilih warna",
   "theme.shades.title": "Rona",
-  "theme.shades.hint": "Dihasilkan daripada warna anda dan disemak supaya mudah dibaca.",
   "theme.use.wash": "Latar cerah",
   "theme.use.focus": "Garis fokus",
   "theme.use.text": "Pautan dan butang",
   "theme.use.hover": "Butang dan pautan apabila dihalakan",
   "theme.yours": "Warna pilihan",
+  "theme.shades.hint": "Dihasilkan daripada warna anda, setiap satu dengan tugasnya di laman.",
   "theme.note.focus":
-    "Warna pilihan agak cerah untuk teks di atas putih, jadi ia digunakan untuk garis fokus, dan pautan serta butang menggunakan rona yang sedikit lebih gelap.",
+    "Warna anda agak cerah untuk teks, jadi ia menjadi garis fokus dan pautan menggunakan rona lebih gelap.",
   "theme.note.light":
-    "Warna pilihan terlalu cerah untuk teks di atas putih, jadi ia digunakan untuk latar cerah, dan pautan serta butang menggunakan rona yang lebih gelap.",
-  "theme.note.darkened":
-    "Warna pilihan digelapkan sedikit supaya pautan dan butang boleh dibaca di atas putih.",
-  "theme.contrast":
-    "Kontras di atas putih: {ratio} berbanding 1. Sekurang-kurangnya 4.5 diperlukan.",
+    "Warna anda terlalu cerah untuk teks, jadi pautan dan butang menggunakan rona yang lebih gelap.",
+  "theme.note.darkened": "Warna anda digelapkan sedikit supaya lulus.",
+  "theme.check.title": "Kebolehbacaan",
+  "theme.check.standard": "WCAG 2.2 AA",
+  "theme.check.ratio": "Kontras {ratio} : 1",
+  "theme.check.pass": "Lulus",
+  "theme.check.fail": "Terlalu rendah",
+  "theme.check.explain":
+    "Pautan dan butang di atas putih. AA memerlukan {min} : 1 atau lebih, supaya teks mudah dibaca oleh mereka yang kurang penglihatan.",
   "theme.editor": "Warna",
   "theme.preview.caption": "Halaman utama dengan warna ini.",
   "theme.review.title": "Terbitkan warna laman?",
