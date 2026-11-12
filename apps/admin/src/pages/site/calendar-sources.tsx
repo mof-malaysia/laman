@@ -78,6 +78,47 @@ function useSync(listingId: string) {
   return { busy, run };
 }
 
+/**
+ * In the editor, beside a selected Event calendar: where its events come from,
+ * and the way to its calendar sources in the listing's Settings.
+ */
+export function CalendarSourcesCta({
+  listingId,
+  onOpen,
+}: {
+  listingId: string;
+  onOpen: () => void;
+}) {
+  const sources = useSources(listingId).data;
+  const attention = sources?.filter((s) => s.error || s.held !== null).length ?? 0;
+  return (
+    <div className="bg-bg-washed m-4 flex flex-col items-start gap-2 rounded-lg p-3">
+      <div className="flex items-center gap-2">
+        <CalendarIcon aria-hidden className="text-txt-black-700 size-4 shrink-0" />
+        <h3 className="text-label-md text-txt-black-900 font-semibold">
+          {t("settings.calendars.title")}
+        </h3>
+      </div>
+      {sources && (
+        <p className="text-body-sm text-txt-black-700">
+          {sources.length === 0
+            ? t("calendars.cta.none")
+            : t("calendars.cta.count", { count: sources.length })}
+          {attention > 0 && (
+            <span className="text-txt-danger">
+              {" "}
+              {t("calendars.cta.attention", { count: attention })}
+            </span>
+          )}
+        </p>
+      )}
+      <Button variant="default-outline" size="small" onClick={onOpen}>
+        {t("calendars.cta.open")}
+      </Button>
+    </div>
+  );
+}
+
 /** "Sync now": reads every calendar. Not offered until the listing has one. */
 export function SyncNowButton({ listing }: { listing: Page }) {
   const { busy, run } = useSync(listing.id);

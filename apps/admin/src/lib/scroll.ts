@@ -17,3 +17,26 @@ export function scrollToTop(element: HTMLElement | null, { smooth = false } = {}
     }
   }
 }
+
+/**
+ * Scrolls `element` to the top, then keeps it there for `ms` while what's
+ * around it finishes loading and changes height, until the person scrolls
+ * themselves. Returns a cleanup.
+ */
+export function keepAtTop(element: HTMLElement | null, ms = 1500) {
+  if (!element) return () => {};
+  const area = element.parentElement?.parentElement ?? element.parentElement;
+  const observer = new ResizeObserver(() => scrollToTop(element));
+  if (area) observer.observe(area);
+  scrollToTop(element);
+  const stop = () => {
+    observer.disconnect();
+    clearTimeout(timer);
+    for (const event of ["wheel", "touchstart", "keydown", "pointerdown"])
+      window.removeEventListener(event, stop, true);
+  };
+  const timer = setTimeout(stop, ms);
+  for (const event of ["wheel", "touchstart", "keydown", "pointerdown"])
+    window.addEventListener(event, stop, { capture: true, passive: true });
+  return stop;
+}

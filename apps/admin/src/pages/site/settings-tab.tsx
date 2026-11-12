@@ -39,7 +39,7 @@ import type { SettingsSection } from "./search";
 import { tabCard } from "./tab-layout";
 import { UndoDelete } from "./trash-screen";
 import { useSaveDraft } from "./use-save-draft";
-import { scrollToTop } from "@/lib/scroll";
+import { keepAtTop } from "@/lib/scroll";
 
 /** One row of the Settings list: what it does on the left, its action on the right, any options under both. */
 function Section({
@@ -58,8 +58,13 @@ function Section({
   const ref = useRef<HTMLElement>(null);
   useEffect(() => {
     if (!focus) return;
-    const frame = requestAnimationFrame(() => scrollToTop(ref.current));
-    return () => cancelAnimationFrame(frame);
+    // Rows above may still be loading: stay on this one while they grow.
+    let stop = () => {};
+    const frame = requestAnimationFrame(() => (stop = keepAtTop(ref.current)));
+    return () => {
+      cancelAnimationFrame(frame);
+      stop();
+    };
   }, [focus]);
   return (
     <section
