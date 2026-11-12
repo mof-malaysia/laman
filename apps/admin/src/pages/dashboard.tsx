@@ -221,7 +221,6 @@ const bannerTones: Record<SiteState, string> = {
 
 /** Whether the site is up to date, as one line the width of the page, and the way forward. */
 function Banner({ live }: { live: boolean | undefined }) {
-  const shell = useShell();
   const { state, waiting, lastAt } = useSiteState(live);
   return (
     <section
@@ -240,7 +239,7 @@ function Banner({ live }: { live: boolean | undefined }) {
         <span className="text-txt-black-700 ml-2">{bannerLine(state, waiting.fresh, lastAt)}</span>
       </p>
       {(state === "notPublished" || state === "waiting") && (
-        <Button variant="primary-fill" size="small" onClick={() => shell.openWaiting()}>
+        <Button variant="primary-fill" size="small" render={<Link to="/publishing" />}>
           {t("home.review")}
         </Button>
       )}

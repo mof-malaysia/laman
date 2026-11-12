@@ -125,10 +125,6 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "outcome.failed.body": "Laman web tidak berubah, dan perubahan masih disimpan.",
   "outcome.failed.reason": "Punca masalah: {reason}",
   "outcome.failed.log": "Lihat log penerbitan",
-  "waiting.title": "Belum diterbitkan",
-  "waiting.intro":
-    "Perubahan yang disimpan tetapi belum dapat dilihat oleh pelawat. Terbitkan di sini, atau dari setiap skrin.",
-  "waiting.none": "Semuanya telah diterbitkan.",
   "waiting.discard": "Buang",
   "waiting.discard.title": "Buang perubahan pada {name}?",
   "waiting.discard.page":
@@ -139,7 +135,6 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "waiting.changes": "Diubah sejak penerbitan terakhir",
   "waiting.new": "Halaman baharu, belum pernah diterbitkan",
   "waiting.review": "Semak",
-  "waiting.saved": "Disimpan {date}",
   "waiting.doc": "Pada setiap halaman",
   "waiting.settings": "Tetapan laman web",
   "waiting.navigation": "Navigasi",
@@ -150,10 +145,6 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "waiting.mediaHint": "Diterbitkan bersama penerbitan yang seterusnya",
   "waiting.publish": "Terbitkan {count} perubahan",
   "waiting.publishPages": "Terbitkan {count} halaman",
-  "waiting.pickSome": "Tandakan perkara yang hendak diterbitkan.",
-  "waiting.tickAll": "Tandakan semua",
-  "waiting.untickAll": "Nyahtanda semua",
-  "waiting.loading": "Menyemak perkara yang belum disiarkan…",
   "waiting.confirm.title": "Terbitkan ke laman web?",
   "waiting.confirm.description":
     "Pelawat melihatnya sebaik sahaja ia diterbitkan. Buat asal bila-bila masa melalui Sejarah.",

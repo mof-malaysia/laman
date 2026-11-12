@@ -1,29 +1,26 @@
 /**
- * The one answer to "what isn't live yet", the same in the header, on the
- * dashboard and on the Publishing screen. Changes to live things are ticked;
- * pages that have never been published are listed but left for the officer
- * to choose, since publishing a page by accident is a visible mistake.
+ * The one answer to "what isn't live yet", for the Publishing screen.
+ * Changes to live things are ticked; pages that have never been published
+ * are listed but left for the officer to choose, since publishing a page by
+ * accident is a visible mistake.
  * Replaced files have no tick: every publish copies the files as they are,
  * so they go with whatever is published.
  */
 import type { PageCheck, WaitingItem } from "@fiscal-sb/contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { type ReactNode, useId, useState } from "react";
+import { type ReactNode, useState } from "react";
 import { linkClass } from "@/components/text-link";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { PageCheckList, checksLabel, stops, useChecksOf } from "@/components/page-checks";
 import { Details, DetailsContent, DetailsTrigger } from "@/components/ui/details";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Panel, PanelBody, PanelTitle } from "@/components/ui/panel";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Field, FieldItem, FieldLabel } from "@/components/ui/field";
 import { locale, type MessageKey, t } from "@/i18n";
 import { historyApi, siteApi } from "@/lib/api";
 import { useCan } from "@/lib/auth";
 import { useRun } from "@/lib/use-run";
-import { formatDateTime, useRefreshPages } from "@/lib/pages";
+import { useRefreshPages } from "@/lib/pages";
 import { clx } from "@/lib/ftds/utils";
 import { docName, isNewPage, usePublish, useSiteHref, useWaiting } from "@/lib/publish";
 
@@ -174,101 +171,6 @@ export function ChecksNote({
         </Link>
       </DetailsContent>
     </Details>
-  );
-}
-
-function Row({
-  item,
-  checked,
-  onChecked,
-  onNavigate,
-  readOnly,
-  checks,
-}: {
-  item: WaitingItem;
-  checked: boolean;
-  onChecked: (checked: boolean) => void;
-  onNavigate?: (() => void) | undefined;
-  /** For someone who can't publish: what's waiting, without ticks. */
-  readOnly?: boolean;
-  /** A page's checks before it goes live; one a check stops (`checked` is then false) can't be ticked. */
-  checks?: PageCheck[] | undefined;
-}) {
-  const meta = useId();
-  const description = [
-    item.kind === "page"
-      ? t("waiting.saved", { date: formatDateTime(item.updatedAt) })
-      : t("waiting.doc"),
-    "editedBy" in item && item.editedBy && t("waiting.by", { name: item.editedBy }),
-  ]
-    .filter(Boolean)
-    .join(" · ");
-  // The save time and who saved it: under the name, and the checkbox's description.
-  const details = (
-    <span id={meta} className="text-label-compact text-txt-black-500 max-w-full truncate">
-      {description}
-      {checks?.length ? <span className="sr-only">. {checksLabel(checks)}</span> : null}
-    </span>
-  );
-  const name = readOnly ? (
-    <span className="flex min-w-0 flex-1 flex-col items-start">
-      <span className="max-w-full truncate font-medium">{itemName(item)}</span>
-      {details}
-    </span>
-  ) : (
-    <Field name={`waiting-${key(item)}`} className="min-w-0 flex-1">
-      <FieldItem>
-        {/* The name is the title; the save time is its description. */}
-        <Checkbox
-          checked={checked}
-          disabled={stops(checks)}
-          onCheckedChange={onChecked}
-          aria-describedby={meta}
-        />
-        <span className="flex min-w-0 flex-col items-start">
-          <FieldLabel className="truncate text-left font-medium">{itemName(item)}</FieldLabel>
-          {details}
-        </span>
-      </FieldItem>
-    </Field>
-  );
-  return (
-    <li className="flex flex-col gap-1 px-3 py-2.5">
-      <div className="flex items-start gap-3">
-        {name}
-        <Actions item={item} onNavigate={onNavigate} />
-      </div>
-      {/* Under the row, not in the checkbox's label, so opening them never ticks it;
-          lined up with the name, past the checkbox. */}
-      {item.kind === "page" && checks?.length ? (
-        <div className={readOnly ? undefined : "pl-7"}>
-          <ChecksNote pageId={item.id} checks={checks} onNavigate={onNavigate} />
-        </div>
-      ) : null}
-    </li>
-  );
-}
-
-/** A replaced file: no tick, since any publish takes it live. */
-function MediaRow({
-  item,
-  onNavigate,
-}: {
-  item: WaitingItem;
-  onNavigate?: (() => void) | undefined;
-}) {
-  return (
-    <li className="flex items-start gap-3 px-3 py-2.5">
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate font-medium">{itemName(item)}</span>
-        <span className="text-label-compact text-txt-black-500 truncate">
-          {t("waiting.mediaHint")}
-        </span>
-      </span>
-      <span className="shrink-0">
-        <Review item={item} {...(onNavigate && { onNavigate })} />
-      </span>
-    </li>
   );
 }
 
@@ -438,98 +340,6 @@ export function PublishConfirm({
         <ConfirmGroup title="waiting.confirm.files" items={files} />
       </div>
     </ConfirmDialog>
-  );
-}
-
-export function WaitingList({ onNavigate }: { onNavigate?: () => void }) {
-  const state = useWaitingPublish();
-  const { waiting, checksOf, goes, isChecked, toggle, setAll, changes, files, fresh } = state;
-  const { count, label, outcome, busy } = state;
-  const [confirming, setConfirming] = useState(false);
-  const canPublish = useCan("content.publish");
-
-  const group = (id: string, title: MessageKey, items: WaitingItem[]) => {
-    if (items.length === 0) return null;
-    const all = items.every(isChecked);
-    return (
-      <section aria-labelledby={id}>
-        <div className="flex items-baseline justify-between gap-3">
-          <h3 id={id} className="text-txt-black-700 font-medium">
-            {t(title)}
-          </h3>
-          {canPublish && items.length > 1 && (
-            <button type="button" className={linkClass} onClick={() => setAll(items, !all)}>
-              {t(all ? "waiting.untickAll" : "waiting.tickAll")}
-              <span className="sr-only"> {t(title)}</span>
-            </button>
-          )}
-        </div>
-        <ul className="divide-otl-gray-200 border-otl-gray-200 bg-bg-white m-0 mt-2 list-none divide-y rounded-lg border p-0">
-          {items.map((item) => (
-            <Row
-              key={key(item)}
-              item={item}
-              checked={goes(item)}
-              onChecked={() => toggle(item)}
-              onNavigate={onNavigate}
-              readOnly={!canPublish}
-              checks={checksOf(item)}
-            />
-          ))}
-        </ul>
-      </section>
-    );
-  };
-
-  return (
-    <div className="gap-stack-md text-body-sm flex flex-col">
-      <PublishOutcome state={state} onNavigate={onNavigate} />
-      {waiting.isPending ? (
-        <output className="flex flex-col gap-2">
-          <span className="sr-only">{t("waiting.loading")}</span>
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-        </output>
-      ) : waiting.items.length === 0 ? (
-        outcome.status !== "live" && <p className="text-txt-black-700 m-0">{t("waiting.none")}</p>
-      ) : (
-        <>
-          {group("waiting-changes", "waiting.changes", changes)}
-          {files.length > 0 && (
-            <section aria-labelledby="waiting-media">
-              <h3 id="waiting-media" className="text-txt-black-700 font-medium">
-                {t("waiting.media")}
-              </h3>
-              <ul className="divide-otl-gray-200 border-otl-gray-200 bg-bg-white m-0 mt-2 list-none divide-y rounded-lg border p-0">
-                {files.map((item) => (
-                  <MediaRow key={key(item)} item={item} onNavigate={onNavigate} />
-                ))}
-              </ul>
-            </section>
-          )}
-          {group("waiting-new", "waiting.new", fresh)}
-        </>
-      )}
-      {waiting.items.length > 0 && !canPublish && (
-        <p className="text-txt-black-700 m-0">{t("waiting.byManager")}</p>
-      )}
-      {waiting.items.length > 0 && canPublish && outcome.status !== "failed" && (
-        // Stays in reach while a long list scrolls under it.
-        <div className="bg-bg-white sticky bottom-0 flex flex-wrap items-center gap-3 py-2">
-          <Button
-            variant="primary-fill"
-            disabled={busy || count === 0}
-            onClick={() => setConfirming(true)}
-          >
-            {busy ? t("publish.busy") : label}
-          </Button>
-          {count === 0 && !busy && (
-            <span className="text-txt-black-700">{t("waiting.pickSome")}</span>
-          )}
-        </div>
-      )}
-      <PublishConfirm state={state} open={confirming} onOpenChange={setConfirming} />
-    </div>
   );
 }
 

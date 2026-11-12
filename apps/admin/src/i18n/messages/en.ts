@@ -120,10 +120,6 @@ export const en = {
   "outcome.failed.body": "The site is unchanged, and the changes are still saved.",
   "outcome.failed.reason": "What went wrong: {reason}",
   "outcome.failed.log": "See the publish log",
-  "waiting.title": "Not live yet",
-  "waiting.intro":
-    "Saved changes that visitors can't see yet. Publish them here, or from each screen.",
-  "waiting.none": "Everything is live.",
   "waiting.discard": "Discard",
   "waiting.discard.title": "Discard changes to {name}?",
   "waiting.discard.page":
@@ -134,7 +130,6 @@ export const en = {
   "waiting.changes": "Changed since last published",
   "waiting.new": "New pages, never published",
   "waiting.review": "Review",
-  "waiting.saved": "Saved {date}",
   "waiting.doc": "On every page",
   "waiting.settings": "Site settings",
   "waiting.navigation": "Navigation",
@@ -147,10 +142,6 @@ export const en = {
   "waiting.publish.one": "Publish 1 change",
   "waiting.publishPages": "Publish {count} pages",
   "waiting.publishPages.one": "Publish 1 page",
-  "waiting.pickSome": "Tick what you want to publish.",
-  "waiting.tickAll": "Tick all",
-  "waiting.untickAll": "Untick all",
-  "waiting.loading": "Checking what isn't live…",
   "waiting.confirm.title": "Publish to the site?",
   "waiting.confirm.description":
     "Visitors see these as soon as they're published. Undo it any time from History.",

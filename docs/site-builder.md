@@ -198,7 +198,7 @@ What this costs: a new FTDS block reaches the builder only when someone adds it 
 | Link text such as "klik sini", "di sini", "read more"                                 | Warning          |
 | An Embed whose address the site doesn't allow (Settings, Embeds)                      | Warning          |
 
-The editor's Publish shows them first, each with what to do and **Show**, which selects the block; with only warnings it reads **Publish anyway**. On Publishing and in the waiting drawer each page says how many there are, and one that a check stops can't be ticked. The server refuses to publish such a page (409 `page_not_ready`) whichever way it's asked. Drafts can always be saved: the check is about going live, not about work in progress.
+The editor's Publish shows them first, each with what to do and **Show**, which selects the block; with only warnings it reads **Publish anyway**. On Publishing each page says how many there are, and one that a check stops can't be ticked. The server refuses to publish such a page (409 `page_not_ready`) whichever way it's asked. Drafts can always be saved: the check is about going live, not about work in progress.
 
 It can't judge everything: whether alt text is good, whether text is plain, or what a PDF contains. Those stay with the officer.
 
