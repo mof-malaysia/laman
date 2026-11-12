@@ -338,6 +338,52 @@ export const migrations: Record<string, Migration> = {
         .execute();
     },
   },
+  /**
+   * API tokens (docs/auth.md § API tokens). Each has an account of its own,
+   * `kind` "token", which can't sign in and isn't on Users: it carries the
+   * token's role and name, so history, Publishing and the audit log say who
+   * made a change the way they do for people. A token changes only the areas
+   * in `api_token_areas`, and entries only under the listings in
+   * `api_token_listings`.
+   */
+  "0005_api_tokens": {
+    async up(db) {
+      await db.schema
+        .alterTable("users")
+        .addColumn("kind", "text", (c) => c.notNull().defaultTo("person"))
+        .execute();
+      await db.schema
+        .createTable("api_tokens")
+        .addColumn("id", "text", (c) => c.primaryKey())
+        .addColumn("user_id", "text", (c) => c.notNull().references("users.id"))
+        .addColumn("token_hash", "text", (c) => c.notNull().unique())
+        .addColumn("hint", "text", (c) => c.notNull())
+        .addColumn("created_at", "text", (c) => c.notNull())
+        .addColumn("created_by", "text", (c) => c.references("users.id"))
+        // Null: it never expires.
+        .addColumn("expires_at", "text")
+        .addColumn("last_used_at", "text")
+        .addColumn("revoked_at", "text")
+        .addColumn("revoked_by", "text", (c) => c.references("users.id"))
+        .execute();
+      await db.schema
+        .createTable("api_token_listings")
+        .addColumn("token_id", "text", (c) =>
+          c.notNull().references("api_tokens.id").onDelete("cascade"),
+        )
+        .addColumn("listing_id", "text", (c) => c.notNull().references("pages.id"))
+        .addPrimaryKeyConstraint("api_token_listings_pk", ["token_id", "listing_id"])
+        .execute();
+      await db.schema
+        .createTable("api_token_areas")
+        .addColumn("token_id", "text", (c) =>
+          c.notNull().references("api_tokens.id").onDelete("cascade"),
+        )
+        .addColumn("area", "text", (c) => c.notNull())
+        .addPrimaryKeyConstraint("api_token_areas_pk", ["token_id", "area"])
+        .execute();
+    },
+  },
 };
 
 /** Runs `list` (site.db's by default) up to the latest. */

@@ -1,6 +1,6 @@
 /**
- * The Users area's header: its title, its pages (Accounts, Agents and the
- * Audit log) and Help for Admins. The pages are routes, not panels, so the
+ * The Users area's header: its title, its pages (Accounts, Agents, API
+ * tokens and the Audit log) and Help for Admins. The pages are routes, not panels, so the
  * tabs are links drawn as FTDS tabs: the router marks the current one
  * (aria-current), and the browser's back button works.
  */
@@ -31,6 +31,7 @@ import { clx } from "@/lib/ftds/utils";
 export const usersPages = [
   { to: "/users", label: "users.tab.accounts" },
   { to: "/users/agents", label: "users.agents" },
+  { to: "/users/tokens", label: "users.tokens" },
   { to: "/users/audit", label: "users.audit" },
 ] as const satisfies readonly { to: string; label: MessageKey }[];
 
@@ -46,6 +47,7 @@ const questions = [
   ["users.help.inactive.q", "users.help.inactive.a"],
   ["users.help.suspicious.q", "users.help.suspicious.a"],
   ["users.help.agents.q", "users.help.agents.a"],
+  ["users.help.tokens.q", "users.help.tokens.a"],
   ["users.superAdmin.question", "users.superAdmin.note"],
 ] as const satisfies readonly [MessageKey, MessageKey][];
 

@@ -21,7 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { t } from "@/i18n";
-import { usersApi, usersQuery } from "@/lib/auth";
+import { tokensQuery, usersApi, usersQuery } from "@/lib/auth";
 import useToast from "@/lib/ftds/hooks/use-toast";
 import { formatDateTime } from "@/lib/pages";
 import { AgentTag, agentOf, describe, lookedOnly, nextBefore } from "./audit-entry";
@@ -78,6 +78,8 @@ const actionGroups = {
   agentConnected: "agents",
   agentRevoked: "agents",
   agentToolCall: "agents",
+  apiTokenMade: "people",
+  apiTokenRevoked: "people",
 } as const satisfies Record<AuditAction, "access" | "people" | "site" | "agents">;
 
 const actionOptions = () =>
@@ -102,6 +104,12 @@ export function AuditScreen() {
       replace: true,
     });
   const people = useQuery(usersQuery);
+  // API tokens act under accounts of their own, so they can be picked too.
+  const tokens = useQuery(tokensQuery);
+  const actors = [
+    ...(people.data ?? []),
+    ...(tokens.data ?? []).map((token) => ({ id: token.userId, displayName: token.name })),
+  ];
   const { toast } = useToast();
   const [downloading, setDownloading] = useState(false);
   const filtered = Object.keys(filter).length > 0;
@@ -150,7 +158,7 @@ export function AuditScreen() {
       <div className="flex flex-wrap items-end gap-3">
         <PersonFilter
           name="audit-person"
-          people={people.data ?? []}
+          people={actors}
           value={filter.userId}
           onChange={(userId) => setFilter({ userId })}
         />

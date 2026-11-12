@@ -140,7 +140,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Body: CreateBody }>(
     "/pages",
     {
-      config: { access: "content.edit" },
+      config: { access: "content.edit", tokenScope: "pages" },
       schema: {
         summary: "Create a page",
         description:
@@ -175,7 +175,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.put<{ Params: PageParams; Body: SaveDraftBody }>(
     "/pages/:id/draft",
     {
-      config: { access: "content.edit" },
+      config: { access: "content.edit", tokenScope: "page" },
       schema: {
         summary: "Save a page's draft",
         description:
@@ -210,7 +210,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: PageParams }>(
     "/pages/:id/publish",
     {
-      config: { access: "content.publish" },
+      config: { access: "content.publish", tokenScope: "page" },
       schema: {
         summary: "Publish a page",
         description:
@@ -247,7 +247,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: PageParams; Body: MoveBody }>(
     "/pages/:id/move",
     {
-      config: { access: "content.edit" },
+      config: { access: "content.edit", tokenScope: "pages" },
       preHandler: onlyUnpublished,
       schema: {
         summary: "Move or rename a page",
@@ -269,7 +269,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: PageParams; Body: DuplicateBody }>(
     "/pages/:id/duplicate",
     {
-      config: { access: "content.edit" },
+      config: { access: "content.edit", tokenScope: "pages" },
       schema: {
         summary: "Duplicate a page",
         description:
@@ -287,7 +287,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: PageParams; Body: UnpublishPageBody }>(
     "/pages/:id/unpublish",
     {
-      config: { access: "content.publish" },
+      config: { access: "content.publish", tokenScope: "page" },
       schema: {
         summary: "Unpublish a page",
         description:
@@ -325,7 +325,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.delete<{ Params: PageParams; Querystring: DeletePageQuery }>(
     "/pages/:id",
     {
-      config: { access: "content.edit" },
+      config: { access: "content.edit", tokenScope: "page" },
       schema: {
         summary: "Delete a page",
         description:
@@ -473,7 +473,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: z.infer<typeof RevisionParams> }>(
     "/pages/:id/revisions/:revisionId/restore",
     {
-      config: { access: "content.edit" },
+      config: { access: "content.edit", tokenScope: "page" },
       schema: {
         summary: "Restore a revision as the draft",
         description:
@@ -492,7 +492,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: PageParams }>(
     "/pages/:id/discard",
     {
-      config: { access: "content.edit" },
+      config: { access: "content.edit", tokenScope: "page" },
       schema: {
         summary: "Discard a page's changes",
         description:
@@ -525,7 +525,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: PageParams }>(
     "/trash/:id/restore",
     {
-      config: { access: "content.edit" },
+      config: { access: "content.edit", tokenScope: "page" },
       schema: {
         summary: "Restore a deleted page",
         description:
@@ -563,7 +563,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.put<{ Params: PageParams; Body: z.infer<typeof SaveListingBody> }>(
     "/pages/:id/listing",
     {
-      config: { access: "content.edit" },
+      config: { access: "content.edit", tokenScope: "pages" },
       schema: {
         summary: "Save a listing page's settings",
         description:
@@ -580,7 +580,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: PageParams }>(
     "/pages/:id/make-listing",
     {
-      config: { access: "content.edit" },
+      config: { access: "content.edit", tokenScope: "pages" },
       schema: {
         summary: "Make a page a listing page",
         description: "It keeps its blocks and gains an entry list. It can't have child pages.",
@@ -630,7 +630,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: PageParams; Body: z.infer<typeof CreateEntryBody> }>(
     "/pages/:id/entries",
     {
-      config: { access: "content.edit" },
+      config: { access: "content.edit", tokenScope: "entries" },
       schema: {
         summary: "Write an entry",
         description:

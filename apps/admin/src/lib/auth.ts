@@ -6,6 +6,9 @@
  */
 import type {
   AgentConnection,
+  ApiToken,
+  ApiTokenCreated,
+  CreateApiTokenBody,
   AssignableRole,
   ConsentBody,
   ConsentInfo,
@@ -100,6 +103,13 @@ export const agentsApi = {
   },
 };
 
+/** API tokens for programs (docs/auth.md § API tokens). */
+export const tokensApi = {
+  list: () => data<ApiToken[]>(api.get("api/tokens")),
+  make: (body: CreateApiTokenBody) => data<ApiTokenCreated>(api.post("api/tokens", { json: body })),
+  revoke: (id: string) => data<ApiToken>(api.delete(`api/tokens/${id}`)),
+};
+
 /** Builder security: whether everyone must use two-factor. */
 export const securityApi = {
   get: () => data<SecuritySettings>(api.get("api/security")),
@@ -110,6 +120,8 @@ export const securityApi = {
 export const meQuery = { queryKey: ["me"], queryFn: authApi.me, staleTime: 60_000, retry: false };
 
 export const usersQuery = { queryKey: ["users"], queryFn: usersApi.list };
+
+export const tokensQuery = { queryKey: ["tokens"], queryFn: tokensApi.list } as const;
 
 /** Signs out and leaves for Sign in. */
 export const signOut = () => {

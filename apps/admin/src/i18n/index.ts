@@ -41,6 +41,10 @@ export const currentLanguage = () => language;
 /** The Intl locale for dates and numbers: "en-MY" or "ms-MY". */
 export const locale = () => locales[language];
 
+/** "A", "A and B", "A, B and C", in the admin's language. */
+export const listOf = (names: string[]) =>
+  new Intl.ListFormat(locale(), { style: "long", type: "conjunction" }).format(names);
+
 /** With `count: 1`, uses the "<key>.one" message when there is one: "1 page", not "1 pages". */
 export function t(key: MessageKey, params?: Record<string, string | number>): string {
   const message =

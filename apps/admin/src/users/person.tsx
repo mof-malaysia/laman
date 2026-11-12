@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
+import { formatAgo, formatDateTime } from "@/lib/pages";
 import { t } from "@/i18n";
 import { clx } from "@/lib/ftds/utils";
 
@@ -76,3 +77,13 @@ export function PersonFilter({
     </Field>
   );
 }
+
+/** A muted second line under a table cell's main value. */
+export const sub = "text-label-compact text-txt-black-500 block";
+
+/** "6m ago", with the full date on hover. */
+export const ago = (iso: string) => (
+  <time dateTime={iso} title={formatDateTime(iso)}>
+    {formatAgo(iso, { inline: true })}
+  </time>
+);

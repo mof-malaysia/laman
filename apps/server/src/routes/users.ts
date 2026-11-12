@@ -13,6 +13,8 @@ import { endSessions } from "../auth/sessions.js";
 import { hashToken, newToken } from "../auth/tokens.js";
 import {
   getUser,
+  people,
+  personById,
   saveSecuritySettings,
   securitySettings,
   toSummary,
@@ -78,7 +80,8 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
 
   /** Someone the asker may change: anyone but the super admin, and not themselves. */
   async function other(request: FastifyRequest, id: string) {
-    const target = await getUser(db, id);
+    // An API token's account is changed from API tokens, never here.
+    const target = await personById(db, id);
     if (!target) throw new HttpError(404, "user_not_found", "No one with that id.");
     if (target.role === "superAdmin")
       throw new HttpError(403, "forbidden", "The super admin can only change their own account.");
@@ -93,13 +96,14 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
       config: { access: "users.manage" },
       schema: {
         summary: "List people",
-        description: "Everyone with an account, the super admin first, then by name.",
+        description:
+          "Everyone with an account, the super admin first, then by name. API tokens' accounts are on GET /api/tokens.",
         tags,
         response: { 200: envelope(z.array(UserSummary)) },
       },
     },
     async () => {
-      const rows = await db.selectFrom("users").selectAll().orderBy("display_name").execute();
+      const rows = await people(db).orderBy("display_name").execute();
       return {
         data: rows
           .toSorted((a, b) => Number(b.role === "superAdmin") - Number(a.role === "superAdmin"))

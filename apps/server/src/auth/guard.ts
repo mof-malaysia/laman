@@ -17,6 +17,13 @@ import type { User } from "./users.js";
 import { decodedPath, guardedPath } from "../paths.js";
 import type { Connection } from "../agents/connections.js";
 import { redeemTicket } from "../agents/tickets.js";
+import {
+  bearerOf,
+  checkTokenScope,
+  type TokenAuth,
+  type TokenScope,
+  tokenAuth,
+} from "./api-tokens.js";
 
 export type Access = "public" | "signedIn" | Permission;
 
@@ -25,11 +32,15 @@ declare module "fastify" {
     access?: Access;
     /** The sign-in stages this route takes; only "full" when left out. */
     stages?: SessionStage[];
+    /** Where an API token may use this route to change something; closed to tokens when left out. */
+    tokenScope?: TokenScope;
   }
   interface FastifyRequest {
     auth?: { user: User; session: Session };
     /** The agent connection a tool call came through (docs/mcp.md); unset for the admin. */
     agent?: Connection;
+    /** The API token a program sent (docs/auth.md § API tokens); unset otherwise. */
+    apiToken?: TokenAuth;
     /** What `audited` recorded: written to the audit log if the request succeeds. */
     auditEvent?: Omit<AuditEvent, "userId" | "ip">;
   }
@@ -90,24 +101,25 @@ export function audited(request: FastifyRequest, event: Omit<AuditEvent, "userId
   request.auditEvent = event;
 }
 
-/** Routes that act on the browser session itself, which an agent's stand-in session isn't. */
+/** Routes that act on the browser session itself, which an agent's or a token's stand-in session isn't. */
 const guardedSessionPath = /^\/api\/auth\//;
 
 /**
- * A tool call's stand-in for a session: a finished sign-in, named for its
- * connection. It never reaches the routes that act on sessions (/api/auth/).
+ * A stand-in for a session, for a tool call (named for its agent connection)
+ * or an API token: a finished sign-in. It never reaches the routes that act
+ * on sessions (/api/auth/).
  */
-const agentSession = (user: User, connection: Connection) => ({
+const standIn = (user: User, id: string, createdAt: string, userAgent = "") => ({
   user,
   session: {
-    id: `agent:${connection.id}`,
+    id,
     token_hash: "",
     user_id: user.id,
     stage: "full",
-    created_at: connection.createdAt,
+    created_at: createdAt,
     last_seen_at: new Date().toISOString(),
     ip: "",
-    user_agent: connection.clientName,
+    user_agent: userAgent,
   } satisfies Session,
 });
 
@@ -116,22 +128,38 @@ export function useGuard(app: FastifyInstance, db: Db) {
   app.addHook("onRoute", (route) => {
     if (route.url.startsWith("/api/") && !route.config?.access)
       throw new Error(`${route.method} ${route.url} doesn't declare config.access`);
+    // checkTokenScope reads the page from `:id`.
+    const scope = route.config?.tokenScope;
+    if ((scope === "page" || scope === "entries") && !route.url.includes("/:id"))
+      throw new Error(`${route.method} ${route.url} has tokenScope "${scope}" but no :id`);
   });
 
   app.addHook("onRequest", (_request, _reply, done) => actingScope(done));
 
   app.addHook("onRequest", async (request) => {
     if (!isGuarded(request)) return;
-    if (unsafe.has(request.method)) checkSameOrigin(request);
 
-    const ticket = redeemTicket(request);
+    // A program's API token carries no cookie, so another site can't borrow it.
+    const bearer = bearerOf(request);
+    if (!bearer && unsafe.has(request.method)) checkSameOrigin(request);
+    const ticket = bearer ? undefined : redeemTicket(request);
     // Signing in, passwords, two-factor and sessions belong to a browser's own session.
-    if (ticket && guardedSessionPath.test(request.routeOptions.url ?? ""))
-      throw new HttpError(403, "forbidden", "Agents can't use sign-in and account routes.");
-    if (ticket) request.agent = ticket.connection;
-    const auth = ticket
-      ? agentSession(ticket.user, ticket.connection)
-      : await sessionOf(db, request);
+    if ((bearer || ticket) && guardedSessionPath.test(request.routeOptions.url ?? ""))
+      throw new HttpError(
+        403,
+        "forbidden",
+        "Agents and API tokens can't use sign-in and account routes.",
+      );
+
+    let auth;
+    if (bearer) {
+      const token = (request.apiToken = await tokenAuth(db, bearer));
+      auth = standIn(token.user, `token:${token.id}`, token.createdAt);
+    } else if (ticket) {
+      const { user, connection } = ticket;
+      request.agent = connection;
+      auth = standIn(user, `agent:${connection.id}`, connection.createdAt, connection.clientName);
+    } else auth = await sessionOf(db, request);
     if (auth) {
       request.auth = auth;
       actAs(
@@ -156,6 +184,22 @@ export function useGuard(app: FastifyInstance, db: Db) {
       });
     if (!allows(request.auth.user.role, access))
       throw new HttpError(403, "forbidden", "This role can't do this.", { needs: access });
+    // Before the body is read: a route closed to tokens says so, whatever was sent.
+    if (request.apiToken && unsafe.has(request.method) && !config.tokenScope)
+      throw new HttpError(403, "token_not_allowed", "API tokens can't make this change.");
+  });
+
+  // After validation, so the page id is the route's own; a route's preHandlers run after this.
+  app.addHook("preHandler", async (request) => {
+    if (!request.apiToken || !unsafe.has(request.method)) return;
+    const params = request.params as { id?: unknown } | undefined;
+    // Routes without a scope were refused in onRequest.
+    await checkTokenScope(
+      db,
+      request.apiToken,
+      request.routeOptions.config.tokenScope!,
+      typeof params?.id === "string" ? params.id : undefined,
+    );
   });
 
   app.addHook("onResponse", async (request, reply) => {

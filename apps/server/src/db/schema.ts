@@ -187,6 +187,37 @@ export type UsersTable = {
   created_by: string | null;
   /** 1: may connect agents over MCP. */
   mcp_enabled: Generated<number>;
+  /** person: someone who signs in. token: an API token's account, which never does. */
+  kind: Generated<"person" | "token">;
+};
+
+/** An API token: only its SHA-256 is stored. Its name and role are its account's. */
+export type ApiTokensTable = {
+  id: string;
+  /** Its own account, `kind` "token". */
+  user_id: string;
+  token_hash: string;
+  /** The token's opening characters, to tell tokens apart. */
+  hint: string;
+  created_at: string;
+  created_by: string | null;
+  /** Null: it never expires. */
+  expires_at: string | null;
+  last_used_at: string | null;
+  revoked_at: string | null;
+  revoked_by: string | null;
+};
+
+/** What a token may change: ApiTokenArea. */
+export type ApiTokenAreasTable = {
+  token_id: string;
+  area: "entries" | "pages" | "media" | "site";
+};
+
+/** The listings a token may write under. */
+export type ApiTokenListingsTable = {
+  token_id: string;
+  listing_id: string;
 };
 
 /** A client that registered itself for OAuth (RFC 7591): Claude Desktop, Codex. */
@@ -279,6 +310,9 @@ export type Database = {
   audit_log: AuditLogTable;
   oauth_clients: OauthClientsTable;
   agent_connections: AgentConnectionsTable;
+  api_tokens: ApiTokensTable;
+  api_token_listings: ApiTokenListingsTable;
+  api_token_areas: ApiTokenAreasTable;
   media: MediaTable;
   media_usage: MediaUsageTable;
   pages: PagesTable;

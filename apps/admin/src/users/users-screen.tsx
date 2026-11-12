@@ -6,13 +6,15 @@
 import {
   AssignableRole,
   type Invite,
+  type Role,
   type OneTimeLink,
   type UserSummary,
 } from "@fiscal-sb/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { OnceDialog, type OnceWords } from "@/components/once-dialog";
 import { StatusDot, type Tone } from "@/components/page-status";
 import { TwoFactorTag } from "@/components/two-factor-tag";
 import { Button } from "@/components/ui/button";
@@ -201,10 +203,31 @@ export function UsersScreen() {
           }
         />
       )}
-      {shown && <LinkDialog {...shown} onClose={() => setShown(undefined)} />}
+      {shown && (
+        <OnceDialog
+          title={shown.title}
+          description={shown.description}
+          value={`${window.location.origin}${shown.link.path}`}
+          expires={t("users.link.expires", { when: formatDateTime(shown.link.expiresAt) })}
+          words={linkWords()}
+          onClose={() => setShown(undefined)}
+        />
+      )}
     </Screen>
   );
 }
+
+/** What the dialog for a one-time link says. */
+const linkWords = (): OnceWords => ({
+  label: t("users.link.label"),
+  copy: t("users.link.copy"),
+  copied: t("users.link.copiedStatus"),
+  copyFailed: t("users.link.copyFailed"),
+  onceTitle: t("users.link.once.title"),
+  onceBody: t("users.link.once.body"),
+  leaveTitle: t("users.link.leave.title"),
+  leaveBody: t("users.link.leave.body"),
+});
 
 /** The actions behind a confirm: their messages are `users.<action>`, `.title`, `.body` and `.done`. */
 type Confirm = "disable" | "clear2fa" | "signOut" | "mcpOff" | "endAgents";
@@ -382,27 +405,35 @@ function PersonRow({
   );
 }
 
-/** The assignable roles as a choice, each with what it can do. */
-function RolePicker({
+/** The roles people can be given, each with what it can do. */
+const peopleRoles = {
+  roles: AssignableRole.options,
+  hint: (role: AssignableRole) => t(`users.invite.roleHint.${role}`),
+};
+
+/** Roles as a choice, each with what it can do: people's, or an API token's. */
+export function RolePicker<R extends Role>({
   value,
   onChange,
   current,
+  roles,
+  hint,
 }: {
-  value: AssignableRole;
-  onChange: (role: AssignableRole) => void;
+  value: R;
+  onChange: (role: R) => void;
   /** Their role now, marked as such. */
-  current?: AssignableRole;
+  current?: R;
+  roles: readonly R[];
+  hint: (role: R) => string;
 }) {
   const id = useId();
   return (
     <Field name="role">
-      <Fieldset
-        render={<Radio value={value} onValueChange={(role) => onChange(role as AssignableRole)} />}
-      >
+      <Fieldset render={<Radio value={value} onValueChange={(role) => onChange(role as R)} />}>
         <FieldsetLegend className="text-label-md font-medium">
           {t("users.column.role")}
         </FieldsetLegend>
-        {AssignableRole.options.map((role) => (
+        {roles.map((role) => (
           // Each radio in its own FieldItem, or the Field gives them all one id.
           <FieldItem key={role} className="items-start">
             <RadioItem className="items-start">
@@ -419,9 +450,7 @@ function RolePicker({
                     <span className="text-txt-black-500 font-normal"> {t("users.role.now")}</span>
                   )}
                 </RadioLabel>
-                <RadioHintText id={`${id}-${role}-hint`}>
-                  {t(`users.invite.roleHint.${role}`)}
-                </RadioHintText>
+                <RadioHintText id={`${id}-${role}-hint`}>{hint(role)}</RadioHintText>
               </div>
             </RadioItem>
           </FieldItem>
@@ -454,7 +483,7 @@ function RoleDialog({
           <DialogDescription>{t("users.role.description")}</DialogDescription>
         </DialogHeader>
         <DialogContent className="gap-stack-md flex flex-col">
-          <RolePicker value={role} onChange={setRole} current={current} />
+          <RolePicker value={role} onChange={setRole} current={current} {...peopleRoles} />
           {role === "admin" && role !== current && (
             <Callout variant="warning">
               <CalloutTitle>{t("users.role.admin.title")}</CalloutTitle>
@@ -605,7 +634,7 @@ function InviteDialog({
             <FieldDescription>{t("users.invite.noteHint")}</FieldDescription>
             <Input value={note} maxLength={80} onChange={(event) => setNote(event.target.value)} />
           </Field>
-          <RolePicker value={role} onChange={setRole} />
+          <RolePicker value={role} onChange={setRole} {...peopleRoles} />
           {make.error && (
             <Callout variant="danger">
               <CalloutTitle>{make.error}</CalloutTitle>
@@ -634,106 +663,6 @@ function InviteDialog({
           </Button>
         </DialogFooter>
       </DialogBody>
-    </Dialog>
-  );
-}
-
-/**
- * A one-time link, once: the whole address to copy, and when it stops working.
- * Copying is the main action; closing before copying asks first, since the
- * link can't be shown again.
- */
-function LinkDialog({
-  title,
-  description,
-  link,
-  onClose,
-}: {
-  title: string;
-  description: string;
-  link: OneTimeLink;
-  onClose: () => void;
-}) {
-  const [status, setStatus] = useState<"copied" | "failed">();
-  const [leaving, setLeaving] = useState(false);
-  const input = useRef<HTMLInputElement>(null);
-  const inputId = useId();
-  const address = `${window.location.origin}${link.path}`;
-  const close = () => (status === "copied" ? onClose() : setLeaving(true));
-  const copy = () =>
-    navigator.clipboard.writeText(address).then(
-      () => setStatus("copied"),
-      () => {
-        // No clipboard (an older browser, or permission refused): select it to copy by hand.
-        setStatus("failed");
-        input.current?.focus();
-        input.current?.select();
-      },
-    );
-
-  return (
-    <Dialog open onOpenChange={(open) => !open && close()}>
-      <DialogBody className="sm:w-xl">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
-        <DialogContent className="gap-stack-md flex flex-col">
-          <Field name="link">
-            <FieldLabel htmlFor={inputId}>{t("users.link.label")}</FieldLabel>
-            <FieldDescription>
-              {t("users.link.expires", { when: formatDateTime(link.expiresAt) })}
-            </FieldDescription>
-            <Input
-              ref={input}
-              id={inputId}
-              readOnly
-              value={address}
-              onFocus={(event) => event.target.select()}
-              onCopy={() => setStatus("copied")}
-            />
-          </Field>
-          <output className="text-body-sm text-txt-black-700 empty:hidden">
-            {status === "copied" && t("users.link.copiedStatus")}
-            {status === "failed" && t("users.link.copyFailed")}
-          </output>
-          <Callout variant="warning">
-            <CalloutTitle>{t("users.link.once.title")}</CalloutTitle>
-            <CalloutContent>{t("users.link.once.body")}</CalloutContent>
-          </Callout>
-        </DialogContent>
-        <DialogFooter>
-          {status === "copied" ? (
-            <>
-              <Button variant="default-outline" onClick={() => void copy()}>
-                {t("users.link.copyAgain")}
-              </Button>
-              <Button variant="primary-fill" onClick={onClose}>
-                {t("users.link.done")}
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button variant="default-outline" onClick={close}>
-                {t("users.link.close")}
-              </Button>
-              <Button variant="primary-fill" onClick={() => void copy()}>
-                {t("users.link.copy")}
-              </Button>
-            </>
-          )}
-        </DialogFooter>
-      </DialogBody>
-      <ConfirmDialog
-        open={leaving}
-        onOpenChange={setLeaving}
-        title={t("users.link.leave.title")}
-        description={t("users.link.leave.body")}
-        confirm={t("users.link.leave.confirm")}
-        cancel={t("users.link.leave.cancel")}
-        destructive
-        onConfirm={onClose}
-      />
     </Dialog>
   );
 }
