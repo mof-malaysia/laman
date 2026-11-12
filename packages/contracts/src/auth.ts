@@ -23,7 +23,7 @@ export const Permission = z.enum([
   "site.manage",
   /** People: invites, roles, reset links, two-factor, the audit log. */
   "users.manage",
-  /** Requiring two-factor. */
+  /** Requiring two-factor, and where backups are copied off-site. */
   "security.manage",
 ]);
 export type Permission = z.infer<typeof Permission>;
@@ -207,6 +207,10 @@ export const AuditAction = z.enum([
   "pageRestored",
   "backupStarted",
   "backupRestored",
+  /** The super admin changed the off-site copy settings: what changed is in the detail, never a secret. */
+  "offsiteChanged",
+  /** Test connection was run against the off-site storage. */
+  "offsiteTested",
   /** An admin added, changed or removed a listing's calendar source. */
   "calendarSourceChanged",
   /** A calendar sync changed what's live: who is null, the counts are in the detail. */

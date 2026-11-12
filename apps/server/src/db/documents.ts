@@ -9,8 +9,11 @@ import {
   AdminPreferences,
   Announcement,
   BackupPayload,
+  BackupUploadPayload,
+  BackupVerifyPayload,
   Id,
   Navigation,
+  OffsiteStored,
   PublishPayload,
   SecuritySettings,
   SiteDocName,
@@ -78,6 +81,15 @@ export const storedDocuments: StoredDocument[] = [
     where: settingsRows(["security"]),
     schema: SecuritySettings,
   },
+  // Off-site copies: where they go, with the secrets sealed (offsite/crypt.ts).
+  {
+    name: "off-site settings",
+    table: "settings",
+    key: "key",
+    column: "value",
+    where: settingsRows(["offsite"]),
+    schema: OffsiteStored,
+  },
   // Finished publishes keep their payload too: undo reads its swaps.
   {
     name: "publish jobs",
@@ -102,6 +114,22 @@ export const storedDocuments: StoredDocument[] = [
     column: "payload",
     where: sql`kind = 'backup'`,
     schema: BackupPayload,
+  },
+  {
+    name: "off-site upload jobs",
+    table: "jobs",
+    key: "id",
+    column: "payload",
+    where: sql`kind = 'backup.upload'`,
+    schema: BackupUploadPayload,
+  },
+  {
+    name: "off-site check jobs",
+    table: "jobs",
+    key: "id",
+    column: "payload",
+    where: sql`kind = 'backup.verify'`,
+    schema: BackupVerifyPayload,
   },
   // Where an agent's sign-in may return to (docs/mcp.md).
   {

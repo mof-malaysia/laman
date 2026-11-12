@@ -54,6 +54,9 @@ import type {
   Summary,
   UnpublishPageBody,
   UpdateMediaBody,
+  OffsiteSettings,
+  OffsiteSettingsSave,
+  OffsiteTestResult,
 } from "@fiscal-sb/contracts";
 import { DraftConflict } from "@fiscal-sb/contracts";
 import ky, { HTTPError } from "ky";
@@ -173,6 +176,14 @@ export const siteApi = {
   summary: () => data<Summary>(api.get("api/summary")),
   /** Queues a backup; the summary's `backup` says when it's done. */
   backUp: () => data<Job>(api.post("api/backups")),
+  /** Where backups are copied off-site: the super admin's. Secrets only ever come back as "saved". */
+  offsite: () => data<OffsiteSettings>(api.get("api/backups/offsite")),
+  saveOffsite: (body: OffsiteSettingsSave) =>
+    data<OffsiteSettings>(api.put("api/backups/offsite", { json: body })),
+  testOffsite: (body: OffsiteSettingsSave) =>
+    data<OffsiteTestResult>(api.post("api/backups/offsite/test", { json: body })),
+  /** Queues a check of the newest off-site copy. */
+  verifyOffsite: () => data<Job>(api.post("api/backups/offsite/verify")),
   publish: (body: PublishSiteBody = {}) =>
     data<PublishSiteResult>(api.post("api/publish", { json: body })),
   /** Puts back what was live before a finished publish. */

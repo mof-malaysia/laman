@@ -25,6 +25,15 @@ const EnvSchema = z.object({
   /** Archives kept: the newest of each of this many days, and of this many weeks. */
   BACKUP_KEEP_DAILY: z.coerce.number().int().min(1).max(366).default(7),
   BACKUP_KEEP_WEEKLY: z.coerce.number().int().min(0).max(520).default(4),
+  /**
+   * Seals the off-site storage's secret key and the encryption passphrase in
+   * site.db (Settings → Backups). Without it, off-site copies can't be set
+   * up. Keep it outside the server's backups: a restored site needs the same
+   * one, or the secrets are entered again.
+   */
+  BACKUP_SECRET_KEY: z.string().min(32, "Use at least 32 characters").optional(),
+  /** For the CLI: the passphrase that opens encrypted off-site copies, when site.db doesn't have it. */
+  BACKUP_PASSPHRASE: z.string().optional(),
   /** Folder with the built admin app, served at /admin. */
   ADMIN_DIST: z.string().default("../admin/dist"),
   /**

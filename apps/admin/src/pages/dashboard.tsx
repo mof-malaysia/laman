@@ -668,7 +668,10 @@ function Health({
             </span>
           ) : (
             <Link to="/settings" search={{ section: "backups" }} className="no-underline">
-              <Tag size="small" variant={backup === "failed" ? "danger" : "warning"}>
+              <Tag
+                size="small"
+                variant={backup === "failed" || backup === "offsiteFailed" ? "danger" : "warning"}
+              >
                 {t(`home.backup.${backup}`)}
               </Tag>
             </Link>

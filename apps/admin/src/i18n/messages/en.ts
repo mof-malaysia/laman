@@ -51,6 +51,7 @@ export const en = {
   "status.publishFailed": "Last publish failed",
   "status.backupFailed": "Backup failed",
   "status.backupMissing": "No recent backup",
+  "status.offsiteFailed": "Off-site copy failed",
   "status.renderer.ok": "Running normally",
   "status.renderer.down": "Renderer not working",
   "status.serverDown": "Can't reach the server",
@@ -173,6 +174,7 @@ export const en = {
   "home.backup.failed": "The last backup failed",
   "home.backup.never": "Not backed up yet",
   "home.backup.stale": "No backup in the last 2 days",
+  "home.backup.offsiteFailed": "The last off-site copy failed",
   "home.neverPublished": "Not published yet",
   "home.status.failed": "The last publish failed",
   "home.status.failedBody": "The site is unchanged.",
@@ -571,6 +573,100 @@ export const en = {
   "settings.backups.details.dbOnly": "Database only",
   "settings.backups.details.restore":
     "To restore, stop the server and run this (steps in docs/install-docker.md):",
+  "settings.backups.offsiteFailed": "Off-site copy failed",
+  "settings.backups.offsiteFailedHint":
+    "Backed up {ago} on the server, but not off it. Contact the ICT administrator.",
+  "settings.backups.offsite.ok": "Copied off-site {ago} to {where}",
+  "settings.backups.offsite.never": "Not copied to {where} yet",
+  "settings.backups.offsite.running": "Copying off-site…",
+  "settings.backups.offsite.failed": "Off-site copy failed {ago}",
+  "settings.backups.offsite.checked": "Newest copy checked {ago}",
+  "settings.backups.offsite.checkFailed": "Check of the newest copy failed {ago}",
+  "settings.backups.offsite.notChecked": "Not checked yet: the newest copy is checked weekly",
+  "settings.backups.offsite.encrypted": "Encrypted",
+  "settings.backups.offsite.checkNow": "Check newest copy now",
+  "settings.backups.offsite.checking": "Downloading and checking…",
+  "settings.backups.offsite.checkedNow": "The newest off-site copy can be restored",
+  "settings.backups.offsite.checkFailedNow": "The newest off-site copy failed its check",
+  "settings.backups.details.offsiteError": "Last off-site error",
+  "settings.backups.details.checkError": "Last check error",
+  "settings.backups.details.offsite": "Off-site",
+  "settings.backups.details.copied": "Copied",
+  "settings.backups.details.notCopied": "Not copied",
+  "settings.backups.details.fetch":
+    "To restore an off-site copy, list the copies, then fetch one into the backup folder:",
+  "settings.offsite": "Off-site copies",
+  "settings.offsite.description":
+    "Each backup is also copied to cloud storage, so losing this server doesn't lose the backups.",
+  "settings.offsite.loadFailed":
+    "The off-site settings couldn't be loaded. Refresh the page to try again.",
+  "settings.offsite.noKey": "BACKUP_SECRET_KEY isn't set on the server",
+  "settings.offsite.noKeyHint":
+    "It seals the storage keys saved here. The ICT administrator sets it and restarts the builder; until then, nothing here can be saved.",
+  "settings.offsite.enabled": "Copy backups off-site",
+  "settings.offsite.enabledHint":
+    "After every backup, including the daily one and the one made before an upgrade.",
+  "settings.offsite.provider": "Storage service",
+  "settings.offsite.provider.aws": "Amazon S3",
+  "settings.offsite.provider.r2": "Cloudflare R2",
+  "settings.offsite.provider.wasabi": "Wasabi",
+  "settings.offsite.provider.minio": "MinIO",
+  "settings.offsite.provider.s3": "Other S3-compatible storage",
+  "settings.offsite.provider.azure": "Azure Blob Storage",
+  "settings.offsite.endpoint": "Endpoint",
+  "settings.offsite.endpoint.r2": "The account's S3 address, from the R2 dashboard.",
+  "settings.offsite.endpoint.minio": "The MinIO server's address.",
+  "settings.offsite.endpoint.s3": "The service's S3 address.",
+  "settings.offsite.endpoint.azure":
+    "Only for a sovereign cloud or a private endpoint. Left empty, the account's usual address is used.",
+  "settings.offsite.optional": "(optional)",
+  "settings.offsite.region": "Region",
+  "settings.offsite.regionHint":
+    "For example ap-southeast-5 (Malaysia) or ap-southeast-1 (Singapore).",
+  "settings.offsite.bucket": "Bucket",
+  "settings.offsite.keyId": "Access key ID",
+  "settings.offsite.account": "Storage account name",
+  "settings.offsite.container": "Container",
+  "settings.offsite.secret": "Secret access key",
+  "settings.offsite.secretHint":
+    "Safest: keys that can upload, read and list, but not delete. The bucket's lifecycle rules then remove old copies, and nobody on this server can wipe them.",
+  "settings.offsite.sas": "SAS token or account key",
+  "settings.offsite.sasHint":
+    "Safest: a SAS token that can create, write, read and list, but not delete. The container's lifecycle rules then remove old copies.",
+  "settings.offsite.secretSaved": "Saved. Leave empty to keep it; it's never shown again.",
+  "settings.offsite.prefix": "Folder",
+  "settings.offsite.prefixHint":
+    "Copies go in daily/, monthly/, manual/ and upgrade/ inside it, so lifecycle rules can expire each separately.",
+  "settings.offsite.pathStyle": "Use path-style addresses",
+  "settings.offsite.pathStyleHint":
+    "For self-hosted services that don't support bucket subdomains.",
+  "settings.offsite.test": "Test connection",
+  "settings.offsite.testing": "Testing…",
+  "settings.offsite.testOk": "Connected. These keys can't delete copies: the safer kind.",
+  "settings.offsite.testOkCanDelete":
+    "Connected. These keys can also delete copies; keys without delete are safer.",
+  "settings.offsite.testFailed": "Couldn't connect. {error}",
+  "settings.offsite.encrypt": "Encrypt before uploading",
+  "settings.offsite.encryptHint":
+    "Archives are encrypted on this server with a passphrase, so the storage service holds only unreadable data. Restoring needs the passphrase.",
+  "settings.offsite.fingerprint": "Passphrase fingerprint",
+  "settings.offsite.changePassphrase": "Change passphrase",
+  "settings.offsite.passphrase.warning":
+    "Without the passphrase, the off-site copies can't be opened",
+  "settings.offsite.passphrase.warningHint":
+    "Nobody can recover a lost passphrase, the ICT administrator included. Store it somewhere other than this server, such as the agency's password manager.",
+  "settings.offsite.passphrase.changeHint":
+    "New copies use the new passphrase. Copies already made still need the old one, so keep both.",
+  "settings.offsite.passphrase": "Passphrase",
+  "settings.offsite.passphrase.confirm": "Passphrase again",
+  "settings.offsite.passphrase.keptElsewhere":
+    "The passphrase is stored somewhere other than this server",
+  "settings.offsite.passphrase.short": "Use at least 12 characters",
+  "settings.offsite.passphrase.mismatch": "The passphrases don't match",
+  "settings.offsite.passphrase.keepFirst": "Store the passphrase somewhere else first",
+  "settings.offsite.prune": "Delete old copies from the storage",
+  "settings.offsite.pruneHint":
+    "Daily and manual copies after 30 days, monthly after a year, upgrade copies after 90 days. Needs keys that can delete, which is less safe: the storage's lifecycle rules can do this instead.",
 
   "nav.target": "Goes to",
   "nav.target.url": "Another website",
@@ -2235,6 +2331,8 @@ export const en = {
   "audit.action.pageRestored": "Restored a deleted page",
   "audit.action.backupStarted": "Started a backup",
   "audit.action.backupRestored": "Restored a backup",
+  "audit.action.offsiteChanged": "Changed the off-site copy settings",
+  "audit.action.offsiteTested": "Tested the off-site connection",
   "audit.action.calendarSourceChanged": "Changed a calendar source",
   "audit.action.calendarSynced": "Calendar sync changed events",
   "audit.action.agentConnected": "Connected an agent",

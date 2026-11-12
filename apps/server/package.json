@@ -21,6 +21,9 @@
     "fixture": "tsx scripts/fixture.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "catalog:",
+    "@aws-sdk/lib-storage": "catalog:",
+    "@azure/storage-blob": "catalog:",
     "@fastify/compress": "catalog:",
     "@fastify/cors": "catalog:",
     "@fastify/multipart": "catalog:",

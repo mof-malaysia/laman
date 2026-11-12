@@ -79,7 +79,7 @@ const archiveName = (at: string, dbOnly: boolean) =>
   `site-builder-${fileTime(at)}${dbOnly ? "-db" : ""}.tar.gz`;
 
 /** An archive's time and kind from its name; undefined for any other file. */
-function parseName(file: string) {
+export function parseName(file: string) {
   const m = ARCHIVE.exec(file);
   return m && { at: isoTime(m[1]!), dbOnly: Boolean(m[2]) };
 }
@@ -141,7 +141,7 @@ export async function pruneBackups(backupDir: string, keep: Retention) {
   return deleted;
 }
 
-async function sha256(file: string) {
+export async function sha256(file: string) {
   const hash = createHash("sha256");
   for await (const chunk of createReadStream(file)) hash.update(chunk as Buffer);
   return hash.digest("hex");

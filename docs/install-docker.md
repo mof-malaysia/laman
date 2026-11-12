@@ -58,7 +58,17 @@ docker compose exec site-builder site-builder backups         # list them
 docker compose exec site-builder site-builder backup --verify <archive>
 ```
 
-A backup on the same disk doesn't survive losing the disk: copy `BACKUP_PATH` off the machine with the tool your infrastructure already uses. restic, to S3-compatible storage or another server, encrypts on the way. Archives hold password hashes and two-factor secrets, so keep them as private as the server.
+A backup on the same disk doesn't survive losing the disk. The builder can copy every archive to S3-compatible storage (AWS S3, Cloudflare R2, Wasabi, MinIO) or Azure Blob Storage, encrypted first if asked:
+
+1. Add `BACKUP_SECRET_KEY` to `.env` (`openssl rand -base64 48`), keep a copy somewhere other than this server, and `docker compose up -d`.
+2. As the super admin, fill in **Settings → Backups → Off-site copies**, press **Test connection**, and save.
+3. In the storage, add lifecycle rules for `daily/`, `monthly/`, `manual/` and `upgrade/`: [site-builder.md](site-builder.md) § Off-site copies has the ages and least-privilege keys for each provider.
+
+```sh
+docker compose exec site-builder site-builder backups --remote    # the copies off-site
+```
+
+Or copy `BACKUP_PATH` off the machine with the tool your infrastructure already uses (restic encrypts on the way). Archives hold password hashes and two-factor secrets, so keep them as private as the server.
 
 Never copy the data volume while the container runs (`docker cp`, a `tar` of `/var/lib/docker/volumes`): the database may be caught mid-write. Use the archives, or an atomic snapshot of the whole disk. Details: [site-builder.md](site-builder.md) § Backup and restore.
 
@@ -72,7 +82,15 @@ docker compose run --rm --no-deps site-builder site-builder restore <archive>
 docker compose start site-builder
 ```
 
-`<archive>` is a file name from `site-builder backups`. Accounts and passwords go back to how they were in the backup, everyone is signed out, and the site is published again when the builder starts. What the restore replaced is kept in the volume under `before-restore-<time>/`; remove it once you're happy:
+`<archive>` is a file name from `site-builder backups`. For an off-site copy, fetch it into `/backups` first (it's decrypted and checked on the way), then restore it as above:
+
+```sh
+docker compose exec site-builder site-builder fetch <archive>
+```
+
+On a new server with nothing restored yet, download the copy with the provider's tools into `BACKUP_PATH`, and if it ends in `.enc`, decrypt it: `docker compose run --rm --no-deps -e BACKUP_PASSPHRASE site-builder site-builder decrypt /backups/<archive>.enc`.
+
+Accounts and passwords go back to how they were in the backup, everyone is signed out, and the site is published again when the builder starts. What the restore replaced is kept in the volume under `before-restore-<time>/`; remove it once you're happy:
 
 ```sh
 docker compose exec site-builder sh -c 'rm -r /data/before-restore-*'

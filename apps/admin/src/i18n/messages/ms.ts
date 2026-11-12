@@ -56,6 +56,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "status.publishFailed": "Penerbitan terakhir gagal",
   "status.backupFailed": "Sandaran gagal",
   "status.backupMissing": "Tiada sandaran terkini",
+  "status.offsiteFailed": "Salinan luar tapak gagal",
   "status.renderer.ok": "Berjalan seperti biasa",
   "status.renderer.down": "Pemapar tidak berfungsi",
   "status.serverDown": "Pelayan tidak dapat dihubungi",
@@ -173,6 +174,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "home.backup.failed": "Sandaran terakhir gagal",
   "home.backup.never": "Belum disandarkan",
   "home.backup.stale": "Tiada sandaran dalam 2 hari lepas",
+  "home.backup.offsiteFailed": "Salinan luar tapak terakhir gagal",
   "home.neverPublished": "Belum diterbitkan",
   "home.status.failed": "Penerbitan terakhir gagal",
   "home.status.failedBody": "Laman web tidak berubah.",
@@ -570,6 +572,102 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "settings.backups.details.dbOnly": "Pangkalan data sahaja",
   "settings.backups.details.restore":
     "Untuk memulihkan, hentikan pelayan dan jalankan ini (langkah dalam docs/install-docker.md):",
+  "settings.backups.offsiteFailed": "Salinan luar tapak gagal",
+  "settings.backups.offsiteFailedHint":
+    "Disandarkan {ago} di pelayan, tetapi tidak di luarnya. Hubungi pentadbir ICT.",
+  "settings.backups.offsite.ok": "Disalin ke luar tapak {ago} ke {where}",
+  "settings.backups.offsite.never": "Belum disalin ke {where}",
+  "settings.backups.offsite.running": "Menyalin ke luar tapak…",
+  "settings.backups.offsite.failed": "Salinan luar tapak gagal {ago}",
+  "settings.backups.offsite.checked": "Salinan terbaharu disemak {ago}",
+  "settings.backups.offsite.checkFailed": "Semakan salinan terbaharu gagal {ago}",
+  "settings.backups.offsite.notChecked": "Belum disemak: salinan terbaharu disemak setiap minggu",
+  "settings.backups.offsite.encrypted": "Disulitkan",
+  "settings.backups.offsite.checkNow": "Semak salinan terbaharu sekarang",
+  "settings.backups.offsite.checking": "Memuat turun dan menyemak…",
+  "settings.backups.offsite.checkedNow": "Salinan luar tapak terbaharu boleh dipulihkan",
+  "settings.backups.offsite.checkFailedNow": "Salinan luar tapak terbaharu gagal semakan",
+  "settings.backups.details.offsiteError": "Ralat luar tapak terakhir",
+  "settings.backups.details.checkError": "Ralat semakan terakhir",
+  "settings.backups.details.offsite": "Luar tapak",
+  "settings.backups.details.copied": "Disalin",
+  "settings.backups.details.notCopied": "Belum disalin",
+  "settings.backups.details.fetch":
+    "Untuk memulihkan salinan luar tapak, senaraikan salinan, kemudian ambil satu ke folder sandaran:",
+  "settings.offsite": "Salinan luar tapak",
+  "settings.offsite.description":
+    "Setiap sandaran turut disalin ke storan awan, supaya sandaran tidak hilang bersama pelayan ini.",
+  "settings.offsite.loadFailed":
+    "Tetapan luar tapak tidak dapat dimuatkan. Muat semula halaman untuk mencuba lagi.",
+  "settings.offsite.noKey": "BACKUP_SECRET_KEY belum ditetapkan pada pelayan",
+  "settings.offsite.noKeyHint":
+    "Kunci ini melindungi kunci storan yang disimpan di sini. Pentadbir ICT perlu menetapkannya dan memulakan semula pembina; sehingga itu, tiada apa-apa di sini boleh disimpan.",
+  "settings.offsite.enabled": "Salin sandaran ke luar tapak",
+  "settings.offsite.enabledHint":
+    "Selepas setiap sandaran, termasuk sandaran harian dan sandaran sebelum naik taraf.",
+  "settings.offsite.provider": "Perkhidmatan storan",
+  "settings.offsite.provider.aws": "Amazon S3",
+  "settings.offsite.provider.r2": "Cloudflare R2",
+  "settings.offsite.provider.wasabi": "Wasabi",
+  "settings.offsite.provider.minio": "MinIO",
+  "settings.offsite.provider.s3": "Storan lain yang serasi S3",
+  "settings.offsite.provider.azure": "Azure Blob Storage",
+  "settings.offsite.endpoint": "Titik akhir",
+  "settings.offsite.endpoint.r2": "Alamat S3 akaun, daripada papan pemuka R2.",
+  "settings.offsite.endpoint.minio": "Alamat pelayan MinIO.",
+  "settings.offsite.endpoint.s3": "Alamat S3 perkhidmatan.",
+  "settings.offsite.endpoint.azure":
+    "Hanya untuk awan berdaulat atau titik akhir persendirian. Jika dibiarkan kosong, alamat biasa akaun digunakan.",
+  "settings.offsite.optional": "(pilihan)",
+  "settings.offsite.region": "Rantau",
+  "settings.offsite.regionHint":
+    "Contohnya ap-southeast-5 (Malaysia) atau ap-southeast-1 (Singapura).",
+  "settings.offsite.bucket": "Baldi",
+  "settings.offsite.keyId": "ID kunci akses",
+  "settings.offsite.account": "Nama akaun storan",
+  "settings.offsite.container": "Bekas",
+  "settings.offsite.secret": "Kunci akses rahsia",
+  "settings.offsite.secretHint":
+    "Paling selamat: kunci yang boleh memuat naik, membaca dan menyenaraikan, tetapi tidak boleh memadam. Peraturan kitar hayat baldi kemudian membuang salinan lama, dan tiada sesiapa di pelayan ini boleh menghapuskannya.",
+  "settings.offsite.sas": "Token SAS atau kunci akaun",
+  "settings.offsite.sasHint":
+    "Paling selamat: token SAS yang boleh mencipta, menulis, membaca dan menyenaraikan, tetapi tidak boleh memadam. Peraturan kitar hayat bekas kemudian membuang salinan lama.",
+  "settings.offsite.secretSaved":
+    "Telah disimpan. Biarkan kosong untuk mengekalkannya; ia tidak akan dipaparkan lagi.",
+  "settings.offsite.prefix": "Folder",
+  "settings.offsite.prefixHint":
+    "Salinan disimpan dalam daily/, monthly/, manual/ dan upgrade/ di dalamnya, supaya peraturan kitar hayat boleh menamatkan setiap satu secara berasingan.",
+  "settings.offsite.pathStyle": "Guna alamat gaya laluan",
+  "settings.offsite.pathStyleHint":
+    "Untuk perkhidmatan hos sendiri yang tidak menyokong subdomain baldi.",
+  "settings.offsite.test": "Uji sambungan",
+  "settings.offsite.testing": "Menguji…",
+  "settings.offsite.testOk":
+    "Bersambung. Kunci ini tidak boleh memadam salinan: jenis yang lebih selamat.",
+  "settings.offsite.testOkCanDelete":
+    "Bersambung. Kunci ini juga boleh memadam salinan; kunci tanpa kebenaran memadam lebih selamat.",
+  "settings.offsite.testFailed": "Tidak dapat bersambung. {error}",
+  "settings.offsite.encrypt": "Sulitkan sebelum dimuat naik",
+  "settings.offsite.encryptHint":
+    "Arkib disulitkan di pelayan ini dengan frasa laluan, jadi perkhidmatan storan hanya menyimpan data yang tidak boleh dibaca. Pemulihan memerlukan frasa laluan.",
+  "settings.offsite.fingerprint": "Cap jari frasa laluan",
+  "settings.offsite.changePassphrase": "Tukar frasa laluan",
+  "settings.offsite.passphrase.warning":
+    "Tanpa frasa laluan, salinan luar tapak tidak boleh dibuka",
+  "settings.offsite.passphrase.warningHint":
+    "Frasa laluan yang hilang tidak boleh dipulihkan oleh sesiapa, termasuk pentadbir ICT. Simpan di tempat selain pelayan ini, seperti pengurus kata laluan agensi.",
+  "settings.offsite.passphrase.changeHint":
+    "Salinan baharu menggunakan frasa laluan baharu. Salinan sedia ada masih memerlukan frasa laluan lama, jadi simpan kedua-duanya.",
+  "settings.offsite.passphrase": "Frasa laluan",
+  "settings.offsite.passphrase.confirm": "Frasa laluan sekali lagi",
+  "settings.offsite.passphrase.keptElsewhere":
+    "Frasa laluan telah disimpan di tempat selain pelayan ini",
+  "settings.offsite.passphrase.short": "Gunakan sekurang-kurangnya 12 aksara",
+  "settings.offsite.passphrase.mismatch": "Frasa laluan tidak sepadan",
+  "settings.offsite.passphrase.keepFirst": "Simpan frasa laluan di tempat lain dahulu",
+  "settings.offsite.prune": "Padam salinan lama daripada storan",
+  "settings.offsite.pruneHint":
+    "Salinan harian dan manual selepas 30 hari, bulanan selepas setahun, salinan naik taraf selepas 90 hari. Memerlukan kunci yang boleh memadam, yang kurang selamat: peraturan kitar hayat storan boleh melakukannya.",
 
   "nav.target": "Menuju ke",
   "nav.target.url": "Laman web lain",
@@ -2255,6 +2353,8 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "audit.action.pageRestored": "Memulihkan halaman yang dipadam",
   "audit.action.backupStarted": "Memulakan sandaran",
   "audit.action.backupRestored": "Memulihkan sandaran",
+  "audit.action.offsiteChanged": "Menukar tetapan salinan luar tapak",
+  "audit.action.offsiteTested": "Menguji sambungan luar tapak",
   "audit.action.calendarSourceChanged": "Mengubah sumber kalendar",
   "audit.action.calendarSynced": "Penyegerakan kalendar mengubah acara",
   "audit.action.agentConnected": "Menyambungkan ejen",

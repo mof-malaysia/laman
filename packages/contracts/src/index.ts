@@ -12,6 +12,7 @@ import {
   templateIds,
 } from "@fiscal-sb/blocks";
 import { z } from "zod";
+import { OffsiteStatus } from "./offsite.js";
 import { SiteDocName, savable } from "./site.js";
 
 export * from "./agents.js";
@@ -19,6 +20,7 @@ export * from "./api-tokens.js";
 export * from "./analytics.js";
 export * from "./auth.js";
 export * from "./calendar.js";
+export * from "./offsite.js";
 export * from "./preferences.js";
 export * from "./site.js";
 
@@ -402,6 +404,8 @@ export const Summary = z.object({
     failed: z.object({ at: z.string(), error: z.string() }).nullable(),
     /** A backup is queued or running now. */
     running: z.boolean(),
+    /** The off-site copies, or null when they're off. */
+    offsite: OffsiteStatus.nullable(),
   }),
 });
 export type Summary = z.infer<typeof Summary>;
