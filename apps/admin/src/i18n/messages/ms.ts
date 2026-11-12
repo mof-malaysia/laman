@@ -829,7 +829,6 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "theme.custom.named": "warna tersuai, {hex}",
   "theme.choose": "Warna",
   "theme.hex": "Kod warna",
-  "theme.hexHint": "Contohnya #0b6b3a.",
   "theme.hexInvalid": "Masukkan kod warna seperti #0b6b3a.",
   "theme.picker": "Pilih warna",
   "theme.shades.title": "Rona",
@@ -838,12 +837,12 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "theme.use.text": "Pautan dan butang",
   "theme.use.hover": "Butang dan pautan apabila dihalakan",
   "theme.yours": "Warna pilihan",
-  "theme.shades.hint": "Dihasilkan daripada warna anda, setiap satu dengan tugasnya di laman.",
+  "theme.shades.hint": "Dihasilkan daripada warna pilihan, setiap satu dengan tugasnya di laman.",
   "theme.note.focus":
-    "Warna anda agak cerah untuk teks, jadi ia menjadi garis fokus dan pautan menggunakan rona lebih gelap.",
+    "Warna pilihan agak cerah untuk teks, jadi ia menjadi garis fokus dan pautan menggunakan rona lebih gelap.",
   "theme.note.light":
-    "Warna anda terlalu cerah untuk teks, jadi pautan dan butang menggunakan rona yang lebih gelap.",
-  "theme.note.darkened": "Warna anda digelapkan sedikit supaya lulus.",
+    "Warna pilihan terlalu cerah untuk teks, jadi pautan dan butang menggunakan rona yang lebih gelap.",
+  "theme.note.darkened": "Warna pilihan digelapkan sedikit supaya lulus.",
   "theme.check.title": "Kebolehbacaan",
   "theme.check.standard": "WCAG 2.2 AA",
   "theme.check.ratio": "Kontras {ratio} : 1",
@@ -857,7 +856,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "theme.review.description": "Setiap halaman di laman bertukar warna serentak.",
   "theme.review.body":
     "Pautan, butang, tag dan garis fokus di setiap halaman bertukar kepada {name}.",
-  "theme.review.undo": "Tersilap terbit? Anda boleh mengembalikan warna sebelumnya selepas itu.",
+  "theme.review.undo": "Tersilap terbit? Warna sebelumnya boleh dikembalikan selepas itu.",
   "theme.previous.load": "Kembalikan warna sebelum penerbitan terakhir",
   "theme.discardEdits.body": "Warna kembali kepada simpanan terakhir. Ini tidak boleh dibuat asal.",
   "theme.leave.body": "Perubahan pada warna laman belum disimpan, dan akan hilang.",
@@ -947,13 +946,13 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "calendars.help.step3": "Salin pautan ICS dan tambahkannya di sini.",
   "calendars.help.notes": "Perlu tahu",
   "calendars.help.edit":
-    "Ubah tajuk, masa atau tempat acara dalam kalendarnya. Teks yang anda tambah pada halamannya di sini kekal.",
+    "Ubah tajuk, masa atau tempat acara dalam kalendarnya. Teks yang ditambah pada halamannya di sini kekal.",
   "calendars.help.shared":
     "Mesyuarat dalam beberapa kalendar dipaparkan sekali, di bawah kalendar pertama dalam senarai ini.",
   "calendars.help.held":
-    "Jika kalendar tiba-tiba mempunyai jauh lebih sedikit acara, acara itu dikekalkan sehingga anda menerima perubahan itu.",
+    "Jika kalendar tiba-tiba mempunyai jauh lebih sedikit acara, acara itu dikekalkan sehingga perubahan itu diterima.",
   "calendars.help.private": "Acara peribadi dan yang dibatalkan tidak pernah dipaparkan.",
-  "calendars.held": "Ditemui {found} acara, turun daripada {had}. Dikekalkan sehingga anda terima.",
+  "calendars.held": "Ditemui {found} acara, turun daripada {had}. Dikekalkan sehingga diterima.",
   "calendars.address.hint": "Pautan https atau webcal. Dirahsiakan.",
   "calendars.location.hint": "Untuk acara yang tempatnya tidak menyebut lokasi senarai ini.",
   "calendars.cta.none": "Bawa masuk acara daripada Outlook atau kalendar lain yang diterbitkan.",

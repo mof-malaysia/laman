@@ -27,7 +27,7 @@ import { PublishControl } from "@/components/publish-control";
 import { useDocConflict } from "@/components/conflict-dialog";
 import { DiscardEditsDialog, PutBackPrevious, useLeaveGuard } from "@/components/unsaved-edits";
 import { Button } from "@/components/ui/button";
-import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { SplitPane } from "@/components/ui/split-pane";
 import { CheckCircleIcon } from "@/components/ui/icons/check-circle";
@@ -305,7 +305,6 @@ function Choose({
       {preset === "custom" && (
         <Field name="seed" invalid={Boolean(error)} className="border-otl-gray-200 border-t pt-4">
           <FieldLabel>{t("theme.hex")}</FieldLabel>
-          <FieldDescription>{t("theme.hexHint")}</FieldDescription>
           <div className="flex items-center gap-2">
             <Input
               value={hex}
