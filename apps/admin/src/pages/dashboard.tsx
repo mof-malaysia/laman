@@ -568,12 +568,11 @@ function SiteThumbnail({
 }) {
   // A new publish gives it a new address, which redraws it.
   const src = live ? `/render/live?v=${lastDone?.id ?? ""}` : previewHref(home.id);
-  const url = summary.site.url;
   return (
     <figure className={clx(tile, "m-0 flex flex-col gap-3 p-3")}>
       <PageFrame
+        bare
         src={src}
-        path={url ? hostOf(url) : "/"}
         title={t("home.thumbnail.title")}
         className="aspect-[16/10]"
         overlay={
@@ -581,7 +580,7 @@ function SiteThumbnail({
             href={live ? siteHref(summary, "/") : previewHref(home.id)}
             target="_blank"
             rel="noopener"
-            className="focus-ring absolute inset-0 rounded-b-lg"
+            className="focus-ring absolute inset-0 rounded-lg"
           >
             <span className="sr-only">
               {live ? t("home.thumbnail.open") : t("home.thumbnail.openPreview")}
