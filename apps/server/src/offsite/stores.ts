@@ -1,7 +1,12 @@
 /**
  * Where off-site copies go: one small interface, and an implementation for
- * S3-compatible services (AWS S3, Cloudflare R2, Wasabi, MinIO, others) and
- * one for Azure Blob Storage, which doesn't speak S3.
+ * S3-compatible services (AWS S3, Cloudflare R2, Wasabi, MinIO, others).
+ *
+ * Azure (parked): see docs/site-builder.md § Off-site copies, Azure Blob Storage (parked).
+ * Azure doesn't speak S3, so it has a store of its own below, commented out
+ * with its import. To bring it back: uncomment both, put "azure" back in
+ * OffsiteProvider, and re-add @azure/storage-blob to the catalog and this
+ * package.
  */
 import { createReadStream, createWriteStream } from "node:fs";
 import type { Readable } from "node:stream";
@@ -15,7 +20,7 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
-import { BlobServiceClient, StorageSharedKeyCredential } from "@azure/storage-blob";
+// Azure (parked): import { BlobServiceClient, StorageSharedKeyCredential } from "@azure/storage-blob";
 import type { OffsiteProvider } from "@fiscal-sb/contracts";
 
 export type RemoteObject = { key: string; bytes: number; at: string };
@@ -52,7 +57,8 @@ const PARALLEL = 4;
 const TIMEOUT_MS = 120_000;
 
 export function storeFor(config: StoreConfig): RemoteStore {
-  return config.provider === "azure" ? azureStore(config) : s3Store(config);
+  // Azure (parked): config.provider === "azure" ? azureStore(config) : s3Store(config)
+  return s3Store(config);
 }
 
 /** The S3 address each provider uses, and whether it wants path-style requests. */
@@ -156,65 +162,66 @@ function s3Store(config: StoreConfig): RemoteStore {
   };
 }
 
-/**
- * Azure: the account name and either an account key or a SAS token (one that
- * can create, write and list, and not delete, is the safer choice). A SAS is
- * told apart by its `sig=`.
- */
-function azureStore(config: StoreConfig): RemoteStore {
-  const base = (config.endpoint || `https://${config.accessKeyId}.blob.core.windows.net`).replace(
-    /\/+$/,
-    "",
-  );
-  const sas = /(^|[?&])sig=/.test(config.secret);
-  const service = sas
-    ? new BlobServiceClient(`${base}?${config.secret.replace(/^\?/, "")}`)
-    : new BlobServiceClient(
-        base,
-        new StorageSharedKeyCredential(config.accessKeyId, config.secret),
-      );
-  const container = service.getContainerClient(config.bucket);
-  return {
-    async put(key, file, sha256) {
-      await container.getBlockBlobClient(key).uploadFile(file, {
-        blockSize: PART_BYTES,
-        concurrency: PARALLEL,
-        metadata: { sha256 },
-        blobHTTPHeaders: { blobContentType: "application/octet-stream" },
-      });
-    },
-    async putText(key, text) {
-      await container.getBlockBlobClient(key).upload(text, Buffer.byteLength(text), {
-        blobHTTPHeaders: { blobContentType: "text/plain; charset=utf-8" },
-      });
-    },
-    async head(key) {
-      try {
-        const props = await container.getBlobClient(key).getProperties();
-        return { bytes: props.contentLength ?? 0, sha256: props.metadata?.sha256 ?? null };
-      } catch (error) {
-        if (statusOf(error) === 404) return null;
-        throw error;
-      }
-    },
-    async list(prefix) {
-      const out: RemoteObject[] = [];
-      for await (const blob of container.listBlobsFlat({ prefix }))
-        out.push({
-          key: blob.name,
-          bytes: blob.properties.contentLength ?? 0,
-          at: (blob.properties.lastModified ?? new Date(0)).toISOString(),
-        });
-      return out;
-    },
-    async get(key, file) {
-      await container.getBlobClient(key).downloadToFile(file);
-    },
-    async delete(key) {
-      await container.getBlobClient(key).delete();
-    },
-  };
-}
+// Azure (parked): the store, as it was tested against Azurite.
+// /**
+//  * Azure: the account name and either an account key or a SAS token (one that
+//  * can create, write and list, and not delete, is the safer choice). A SAS is
+//  * told apart by its `sig=`.
+//  */
+// function azureStore(config: StoreConfig): RemoteStore {
+//   const base = (config.endpoint || `https://${config.accessKeyId}.blob.core.windows.net`).replace(
+//     /\/+$/,
+//     "",
+//   );
+//   const sas = /(^|[?&])sig=/.test(config.secret);
+//   const service = sas
+//     ? new BlobServiceClient(`${base}?${config.secret.replace(/^\?/, "")}`)
+//     : new BlobServiceClient(
+//         base,
+//         new StorageSharedKeyCredential(config.accessKeyId, config.secret),
+//       );
+//   const container = service.getContainerClient(config.bucket);
+//   return {
+//     async put(key, file, sha256) {
+//       await container.getBlockBlobClient(key).uploadFile(file, {
+//         blockSize: PART_BYTES,
+//         concurrency: PARALLEL,
+//         metadata: { sha256 },
+//         blobHTTPHeaders: { blobContentType: "application/octet-stream" },
+//       });
+//     },
+//     async putText(key, text) {
+//       await container.getBlockBlobClient(key).upload(text, Buffer.byteLength(text), {
+//         blobHTTPHeaders: { blobContentType: "text/plain; charset=utf-8" },
+//       });
+//     },
+//     async head(key) {
+//       try {
+//         const props = await container.getBlobClient(key).getProperties();
+//         return { bytes: props.contentLength ?? 0, sha256: props.metadata?.sha256 ?? null };
+//       } catch (error) {
+//         if (statusOf(error) === 404) return null;
+//         throw error;
+//       }
+//     },
+//     async list(prefix) {
+//       const out: RemoteObject[] = [];
+//       for await (const blob of container.listBlobsFlat({ prefix }))
+//         out.push({
+//           key: blob.name,
+//           bytes: blob.properties.contentLength ?? 0,
+//           at: (blob.properties.lastModified ?? new Date(0)).toISOString(),
+//         });
+//       return out;
+//     },
+//     async get(key, file) {
+//       await container.getBlobClient(key).downloadToFile(file);
+//     },
+//     async delete(key) {
+//       await container.getBlobClient(key).delete();
+//     },
+//   };
+// }
 
 /** The HTTP status an SDK error carries, when it has one. */
 export function statusOf(error: unknown): number | undefined {

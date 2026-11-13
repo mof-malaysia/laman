@@ -1,6 +1,6 @@
 /**
  * Off-site copies, for the super admin: where each backup is copied off the
- * server (an S3-compatible bucket or an Azure container), whether copies are
+ * server (an S3-compatible bucket), whether copies are
  * encrypted first, and whether the builder deletes old ones itself. Secrets
  * are write-only: the server says only whether one is saved. Applies on save.
  */
@@ -30,7 +30,8 @@ import { Tag } from "@/components/ui/tag";
 import { type MessageKey, t } from "@/i18n";
 import { apiError, siteApi } from "@/lib/api";
 
-const providers: OffsiteProvider[] = ["aws", "r2", "wasabi", "minio", "s3", "azure"];
+// Azure (parked): "azure" after "s3". See docs/site-builder.md § Off-site copies.
+const providers: OffsiteProvider[] = ["aws", "r2", "wasabi", "minio", "s3"];
 
 type Fields = Omit<OffsiteSettingsSave, "secret" | "passphrase">;
 
@@ -113,7 +114,9 @@ function OffsiteForm({
     onSaved(false);
     setTested(undefined);
   };
-  const azure = value.provider === "azure";
+  // Azure (parked): `value.provider === "azure"`. Its fields below stay, switched off, for when
+  // it comes back; so do its settings.offsite.* messages.
+  const azure = false as boolean;
   const disabled = !settings.canSave;
 
   const body = (): OffsiteSettingsSave => ({
@@ -441,7 +444,7 @@ const endpointExample: Partial<Record<OffsiteProvider, string>> = {
   r2: "https://<account-id>.r2.cloudflarestorage.com",
   minio: "https://minio.agensi.gov.my",
   s3: "https://s3.example.com",
-  azure: "https://<account>.blob.core.windows.net",
+  // Azure (parked): azure: "https://<account>.blob.core.windows.net",
 };
 
 /** Test connection's answer, announced as it arrives. */

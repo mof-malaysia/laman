@@ -329,31 +329,41 @@ The server runs the same code as a `backup` job every day at `BACKUP_SCHEDULE` (
 
 ### Off-site copies
 
-A backup on the same disk as the site doesn't survive losing that disk. Built in `apps/server/src/offsite/`: the builder also copies every archive it makes to S3-compatible storage (AWS S3, Cloudflare R2, Wasabi, MinIO or any other) or to Azure Blob Storage, which doesn't speak S3 and has its own client. The super admin sets it up in **Settings → Backups → Off-site copies**; it applies to the next backup.
+A backup on the same disk as the site doesn't survive losing that disk. Built in `apps/server/src/offsite/`: the builder also copies every archive it makes to S3-compatible storage (AWS S3, Cloudflare R2, Wasabi, MinIO or any other). Azure Blob Storage is parked for a later release (below). The super admin sets it up in **Settings → Backups → Off-site copies**; it applies to the next backup.
 
 - **A job of its own.** After each archive (daily, Back up now, and the database copy before an upgrade, once the server is up) a `backup.upload` job copies it. The local archive is never held up or failed by the storage; an upload is tried three times (5 s and 30 s apart), and a failed one shows in Settings, the dashboard and the header, and can be retried from Publishing. The copy is checked in the bucket by size and by the SHA-256 stored beside it.
 - **Folders for lifecycle rules.** Copies go to `<folder>/daily/`, `monthly/` (the first scheduled backup of each Malaysian month), `manual/` (Back up now) and `upgrade/`, so the storage can expire each at its own age.
-- **The builder doesn't delete off-site copies** unless **Delete old copies from the storage** is on (daily and manual after 30 days, monthly after 365, upgrade after 90, always keeping each folder's newest). The safer setup is keys that can upload, read and list but not delete, with the storage's own lifecycle rules doing the expiry: then someone who takes over the server can't wipe the copies too. **Test connection** says which kind of keys it was given. Object lock (S3 Object Lock, R2 bucket locks, Azure immutability policies) goes further and is worth turning on where it's offered.
+- **The builder doesn't delete off-site copies** unless **Delete old copies from the storage** is on (daily and manual after 30 days, monthly after 365, upgrade after 90, always keeping each folder's newest). The safer setup is keys that can upload, read and list but not delete, with the storage's own lifecycle rules doing the expiry: then someone who takes over the server can't wipe the copies too. **Test connection** says which kind of keys it was given. Object lock (S3 Object Lock, R2 bucket locks) goes further and is worth turning on where it's offered.
 - **Optional encryption.** With **Encrypt before uploading**, archives are encrypted on the server (AES-256-GCM, key from the passphrase by scrypt) and uploaded as `….tar.gz.enc`, so the provider holds only ciphertext. Without the passphrase they can't be opened, by anyone: Settings asks for it twice, and for confirmation that it's kept somewhere other than the server, and shows a short fingerprint to tell passphrases apart. Changing it affects new copies only.
 - **Weekly check.** At 04:30, if the last check was a week ago, a `backup.verify` job downloads the newest full copy, decrypts it, and opens it as a restore would (`backup --verify`). **Check newest copy now** under Technical details runs it at once.
-- **Secrets.** The secret key (or Azure account key or SAS token) and the passphrase are stored in `site.db` sealed with `BACKUP_SECRET_KEY` (AES-256-GCM), which the server needs before anything can be saved and which isn't in the database or the archives. They're never sent back to the browser, and the audit log records which fields changed, never their values. A restored site needs the same `BACKUP_SECRET_KEY`, or the secrets are entered again.
+- **Secrets.** The secret key and the passphrase are stored in `site.db` sealed with `BACKUP_SECRET_KEY` (AES-256-GCM), which the server needs before anything can be saved and which isn't in the database or the archives. They're never sent back to the browser, and the audit log records which fields changed, never their values. A restored site needs the same `BACKUP_SECRET_KEY`, or the secrets are entered again.
 
-| Provider            | Settings                                                                                                                       |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Amazon S3           | Region (`ap-southeast-5` is Malaysia), bucket, access key ID and secret                                                        |
-| Cloudflare R2       | Endpoint `https://<account-id>.r2.cloudflarestorage.com`, bucket, R2 API token's key ID and secret                             |
-| Wasabi              | Region, bucket, keys                                                                                                           |
-| MinIO               | Endpoint, bucket, keys (path-style addresses)                                                                                  |
-| Other S3-compatible | Endpoint, region if it needs one, bucket, keys, and path-style addresses if it has no bucket subdomains                        |
-| Azure Blob Storage  | Storage account name, container, and a SAS token (or the account key); endpoint only for a sovereign cloud or private endpoint |
+| Provider            | Settings                                                                                                |
+| ------------------- | ------------------------------------------------------------------------------------------------------- |
+| Amazon S3           | Region (`ap-southeast-5` is Malaysia), bucket, access key ID and secret                                 |
+| Cloudflare R2       | Endpoint `https://<account-id>.r2.cloudflarestorage.com`, bucket, R2 API token's key ID and secret      |
+| Wasabi              | Region, bucket, keys                                                                                    |
+| MinIO               | Endpoint, bucket, keys (path-style addresses)                                                           |
+| Other S3-compatible | Endpoint, region if it needs one, bucket, keys, and path-style addresses if it has no bucket subdomains |
 
-**Keys that can't delete.** On AWS, an IAM policy allowing `s3:PutObject`, `s3:GetObject`, `s3:AbortMultipartUpload` and `s3:ListBucket` on the bucket, and nothing else (multipart uploads are part of `PutObject`; aborting one only removes its unfinished parts). On R2, an API token with Object Read & Write cannot be limited further, so pair it with a bucket lock rule. On Azure, a container or account SAS with Read, Write, Create and List (`rwcl`), not Delete.
+**Keys that can't delete.** On AWS, an IAM policy allowing `s3:PutObject`, `s3:GetObject`, `s3:AbortMultipartUpload` and `s3:ListBucket` on the bucket, and nothing else (multipart uploads are part of `PutObject`; aborting one only removes its unfinished parts). On R2, an API token with Object Read & Write cannot be limited further, so pair it with a bucket lock rule.
 
-**Lifecycle rules to set.** One rule per folder, expiring objects after 30 days in `daily/` and `manual/`, 365 in `monthly/` and 90 in `upgrade/` (with the folder prefix in front, e.g. `laman/daily/`). AWS and Wasabi: Management → Lifecycle rules. R2: the bucket's Settings → Object lifecycle rules. Azure: the storage account's Lifecycle management, with a `prefixMatch` per folder. MinIO: `mc ilm rule add --prefix daily/ --expire-days 30`.
+**Lifecycle rules to set.** One rule per folder, expiring objects after 30 days in `daily/` and `manual/`, 365 in `monthly/` and 90 in `upgrade/` (with the folder prefix in front, e.g. `laman/daily/`). AWS and Wasabi: Management → Lifecycle rules. R2: the bucket's Settings → Object lifecycle rules. MinIO: `mc ilm rule add --prefix daily/ --expire-days 30`.
 
-**Restoring from off-site.** On a server that still has its `site.db` and `BACKUP_SECRET_KEY`, `site-builder backups --remote` lists the copies and `site-builder fetch <file>` downloads one into `BACKUP_DIR`, decrypts it and checks it, ready for `site-builder restore <file>`. On a new server, download the copy with the provider's own tools (AWS CLI, `rclone`, `azcopy`, the console), then `BACKUP_PASSPHRASE=… site-builder decrypt <file>.enc` if it's encrypted. `restore` refuses an encrypted file and says to decrypt it first.
+**Restoring from off-site.** On a server that still has its `site.db` and `BACKUP_SECRET_KEY`, `site-builder backups --remote` lists the copies and `site-builder fetch <file>` downloads one into `BACKUP_DIR`, decrypts it and checks it, ready for `site-builder restore <file>`. On a new server, download the copy with the provider's own tools (AWS CLI, `rclone`, the console), then `BACKUP_PASSPHRASE=… site-builder decrypt <file>.enc` if it's encrypted. `restore` refuses an encrypted file and says to decrypt it first.
 
-Other tools (restic pointed at `BACKUP_DIR`, the host's backup agent) still work alongside, or instead.
+Other tools (restic pointed at `BACKUP_DIR`, the host's backup agent) still work alongside, or instead. They're also the way to Azure Blob Storage for now: restic and rclone both write to it.
+
+#### Azure Blob Storage (parked)
+
+Written and tested against Azurite (Microsoft's emulator), but not against a real storage account, so it's switched off until a release can be. Azure doesn't speak S3, so it has its own client (`@azure/storage-blob`). Everything is still in the code, commented out and marked `Azure (parked)`. To bring it back:
+
+1. Put `"azure"` back in `OffsiteProvider` (`packages/contracts/src/offsite.ts`) with the container and storage-account messages beside it, and update the schema snapshot (`test/upgrade.test.ts -u`).
+2. Uncomment `azureStore` and its import in `apps/server/src/offsite/stores.ts`, and the Azure messages in `offsite/index.ts`.
+3. Re-add `@azure/storage-blob` to the catalog (`pnpm-workspace.yaml`, commented out there) and to `apps/server/package.json`.
+4. In the admin's `offsite-card.tsx`, add `"azure"` to `providers`, its endpoint example, and set `azure` from `value.provider` again. Its fields and BM/English messages are still there.
+5. Uncomment the Azurite tests in `test/offsite-stores.test.ts`, run them, then test against a real account: an account key, a SAS without delete (`rwcl`), and a lifecycle rule.
+6. Put Azure back in these docs: settings are the storage account name, container, and a SAS token (or the account key), with an endpoint only for a sovereign cloud or private endpoint; keys that can't delete are a container or account SAS with Read, Write, Create and List (`rwcl`); lifecycle rules are the storage account's Lifecycle management, with a `prefixMatch` per folder; immutability policies are its object lock; `azcopy` downloads a copy on a new server.
 
 ### Docker
 

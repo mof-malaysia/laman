@@ -58,7 +58,7 @@ docker compose exec site-builder site-builder backups         # list them
 docker compose exec site-builder site-builder backup --verify <archive>
 ```
 
-A backup on the same disk doesn't survive losing the disk. The builder can copy every archive to S3-compatible storage (AWS S3, Cloudflare R2, Wasabi, MinIO) or Azure Blob Storage, encrypted first if asked:
+A backup on the same disk doesn't survive losing the disk. The builder can copy every archive to S3-compatible storage (AWS S3, Cloudflare R2, Wasabi, MinIO, or any other), encrypted first if asked:
 
 1. Add `BACKUP_SECRET_KEY` to `.env` (`openssl rand -base64 48`), keep a copy somewhere other than this server, and `docker compose up -d`.
 2. As the super admin, fill in **Settings → Backups → Off-site copies**, press **Test connection**, and save.

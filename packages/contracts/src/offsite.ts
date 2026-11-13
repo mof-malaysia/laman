@@ -1,13 +1,24 @@
 /**
  * Off-site copies of backups (docs/site-builder.md § Off-site copies): each
- * archive the builder makes is also uploaded to an S3-compatible bucket or an
- * Azure Blob Storage container. Settings → Backups edits them; the secret key
- * and the encryption passphrase are stored sealed and never sent back.
+ * archive the builder makes is also uploaded to an S3-compatible bucket.
+ * Settings → Backups edits them; the secret key and the encryption passphrase
+ * are stored sealed and never sent back.
+ *
+ * Azure (parked): see docs/site-builder.md § Off-site copies, Azure Blob Storage (parked).
+ * Its code is kept, commented out, until a release can test it against a real
+ * storage account; search for "Azure (parked)".
  */
 import { z } from "zod";
 
 /** Where the copies go. `s3` is any other S3-compatible service. */
-export const OffsiteProvider = z.enum(["aws", "r2", "wasabi", "minio", "s3", "azure"]);
+export const OffsiteProvider = z.enum([
+  "aws",
+  "r2",
+  "wasabi",
+  "minio",
+  "s3",
+  // Azure (parked): "azure",
+]);
 export type OffsiteProvider = z.infer<typeof OffsiteProvider>;
 
 /**
@@ -108,13 +119,9 @@ export const OffsiteSettingsSave = z
     if (!value.enabled) return;
     const missing = (path: string, message: string) =>
       ctx.addIssue({ code: "custom", path: [path], message });
-    if (!value.bucket)
-      missing("bucket", value.provider === "azure" ? "Enter the container" : "Enter the bucket");
-    if (!value.accessKeyId)
-      missing(
-        "accessKeyId",
-        value.provider === "azure" ? "Enter the storage account name" : "Enter the access key ID",
-      );
+    // Azure (parked): "Enter the container" and "Enter the storage account name" for "azure".
+    if (!value.bucket) missing("bucket", "Enter the bucket");
+    if (!value.accessKeyId) missing("accessKeyId", "Enter the access key ID");
     if (needsEndpoint(value.provider) && !value.endpoint)
       missing("endpoint", "Enter the endpoint address");
     if (needsRegion(value.provider) && !value.region) missing("region", "Enter the region");

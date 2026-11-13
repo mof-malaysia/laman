@@ -89,9 +89,8 @@ export function mergeSave(
     throw new HttpError(
       422,
       "offsite_secret_missing",
-      fields.provider === "azure"
-        ? "Enter the account key or SAS token for Azure."
-        : "Enter the secret access key for the new storage service.",
+      // Azure (parked): "Enter the account key or SAS token for Azure." for "azure".
+      "Enter the secret access key for the new storage service.",
     );
   const next: OffsiteStored = {
     ...fields,
@@ -103,9 +102,8 @@ export function mergeSave(
     throw new HttpError(
       422,
       "offsite_secret_missing",
-      next.provider === "azure"
-        ? "Enter the account key or SAS token."
-        : "Enter the secret access key.",
+      // Azure (parked): "Enter the account key or SAS token." for "azure".
+      "Enter the secret access key.",
     );
   if (next.encrypt && !next.passphrase)
     throw new HttpError(422, "offsite_passphrase_missing", "Enter a passphrase to encrypt copies.");
