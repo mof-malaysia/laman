@@ -1,0 +1,20 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "PORT=3010 ADMIN_PORT=3011 SERVER_URL=http://127.0.0.1:3010 pnpm dev --filter=!@laman/www"
+      ],
+      "port": 3011
+    },
+    {
+      "name": "www",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@laman/www", "dev"],
+      "port": 4321
+    }
+  ]
+}

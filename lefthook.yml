@@ -12,3 +12,10 @@ pre-commit:
       # unchanged packages (it hashes the working tree, not just what's staged).
       glob: "*.{ts,tsx,js,mjs,cjs,json,jsonc,yaml}"
       run: pnpm run check --output-logs=errors-only
+
+pre-push:
+  jobs:
+    - name: verify
+      # The full gate before anything leaves the machine: lint, type checks,
+      # tests and build. Turbo's cache skips packages unchanged since the last run.
+      run: pnpm run verify --output-logs=errors-only

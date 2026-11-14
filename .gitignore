@@ -14,8 +14,15 @@ coverage
 .env.*
 !.env.example
 
-# Agents and editors
-.claude
+# Claude Code: share team config, keep personal files local
+.claude/*
+!.claude/settings.json
+!.claude/launch.json
+!.claude/skills/
+!.claude/agents/
+!.claude/commands/
+
+# Editors
 .DS_Store
 *.log
 

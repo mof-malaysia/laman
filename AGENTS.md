@@ -19,7 +19,7 @@ pnpm build                       # every package, into git-ignored dist/ folders
 - **Docker**: `Dockerfile` and `compose.yaml` at the root build and run the whole thing (guide: `docs/install-docker.md`). The image is `pnpm deploy` of the server, so a workspace package the server needs at run time must list everything it loads in its `files` (gitignored `dist/` is left out otherwise).
 - **Backups** go to `BACKUP_DIR` (default `DATA_DIR/backups`): daily from the server, before every upgrade, and with `pnpm --filter @laman/server cli backup`. Each is also copied off-site (S3-compatible storage, `src/offsite/`) when the super admin sets that up in Settings, which needs `BACKUP_SECRET_KEY`; `test/offsite-stores.test.ts` runs the real client against MinIO when `OFFSITE_TEST_S3` is set. Azure Blob Storage is written but parked, commented out, until a release can test it against real Azure (search for `Azure (parked)`). Restore is CLI-only (`cli restore <archive>`, server stopped). Never copy `site.db` while the server runs: see `docs/laman.md` § Backup and restore.
 - **Ready check:** `GET /healthz` returns `{"ok":true}`. API docs (Scalar) are at `/docs`, the OpenAPI document at `/openapi.json`.
-- Run one package with a filter, e.g. `pnpm --filter @laman/server dev`.
+- Run one package with a filter, e.g. `pnpm --filter @laman/server dev`; one test file by passing a name filter to rstest, e.g. `pnpm --filter @laman/blocks test registry` (the admin, server and blocks have tests; `apps/www`'s `test` checks its links).
 
 ## Where things live
 
@@ -58,7 +58,7 @@ pnpm build                       # every package, into git-ignored dist/ folders
 - **Stored content must pass the current schemas after migrating**, or the server refuses to start. A schema change that saved content might not pass (a renamed or removed field, block or option, a tighter limit) ships with a migration that rewrites it with `rewriteDocuments`. A new kind of stored JSON goes in `storedDocuments` (`apps/server/src/db/documents.ts`). The schema snapshot in `test/upgrade.test.ts` fails on every schema change: decide whether a migration is needed, then update it with `-u`. See `docs/upgrades.md`.
 - **The UI is built on [FTDS](https://mof-malaysia.github.io/ftds/llms.txt)** v0.2.6 (Base UI, Tailwind v4), the same in the admin, the renderer and the marketing site. In the admin, add a component with `pnpm dlx shadcn@latest add @ftds/<name>` from `apps/admin`. In the renderer, the shadcn CLI can't install `.astro` files yet: use `pnpm ftds:add astro-<name>` from `apps/renderer` (or `apps/www`). Use FTDS before writing your own; build anything missing from FTDS tokens (`bg-bg-*`, `text-txt-*`, `border-otl-*`), never raw Tailwind colours or `dark:` overrides. Files under `src/components/ui`, `src/components/blocks`, `src/lib/ftds` and `styles/ftds.css` stay as the registry ships them (oxfmt and Oxlint skip them) so upgrades diff cleanly.
 - **UI text goes through `t()`** with a key in `src/i18n/messages/en.ts`; the type checker rejects missing keys. Site content and the FTDS Astro labels are BM by default.
-- **Never commit** `.env` files (only `.env.example`), `data/` or `.claude/`. Stage paths explicitly rather than `git add -A`.
+- **Never commit** `.env` files (only `.env.example`), `data/` or personal `.claude/` files (only `settings.json`, `launch.json`, `skills/`, `agents/` and `commands/` are shared). Stage paths explicitly rather than `git add -A`.
 
 ## Before calling a change done
 
@@ -69,4 +69,20 @@ pnpm format
 pnpm verify                      # lint, check-types, test, build
 ```
 
-For UI changes, also look at the result in a browser (`pnpm dev`).
+A pre-push hook runs `pnpm verify`. Nothing in CI runs these checks (`.github/workflows/www.yml` only builds and deploys the marketing site from `main`, and GitHub Actions minutes are kept for that), so the hooks are the whole gate.
+
+For UI changes, also look at the result in a browser. `.claude/launch.json` has `dev` (server on :3010, admin on :3011/admin, so it doesn't clash with your own `pnpm dev`) and `www` (:4321). Check light and dark mode, phone width, and the keyboard; admin text in both English and BM.
+
+## Git
+
+Branches are `feat/<topic>` or `chore/<topic>`, merged to `main` by squashed PR. Commit subjects are Conventional Commits with a scope where it helps (`feat(backups): cloud backup, …`), written as a plain sentence after the colon.
+
+## Ask before changing
+
+On top of the general rules in `~/.claude/CLAUDE.md`, ask first before:
+
+- a new migration, or editing one that has shipped (`apps/server/src/db/migrations.ts`), and any schema change in `packages/blocks` or `packages/contracts` that needs one;
+- a change to the `/api` contract, the MCP tools, the CLI, environment variables or the `/_v` analytics payload: installs and agents depend on them;
+- what analytics collect (`docs/analytics.md`), permissions and roles (`packages/contracts/src/auth.ts`);
+- the design docs (`docs/laman.md`, `DESIGN.md`, `PRODUCT.md`, `docs/briefs/`) and FTDS version upgrades;
+- hand-editing the FTDS registry files listed above.
