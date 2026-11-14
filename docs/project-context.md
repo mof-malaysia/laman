@@ -62,7 +62,7 @@ Not built yet: BM/EN side by side. Built since: sign-in, users and roles and an 
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Hosting        | Single tenant, self-hosted by each agency. No cloud we operate. The builder should sit on an internal network or behind a VPN.                                                  |
 | Design freedom | Officers arrange approved FTDS blocks and choose preset variants. No free styling, no custom HTML, no new blocks or kinds from the admin.                                       |
-| Design system  | FTDS v0.2.2 via the shadcn registry (the renderer's at v0.2.6). Gaps are built from FTDS tokens, never raw colours.                                                             |
+| Design system  | FTDS v0.2.6 via the shadcn registry. Gaps are built from FTDS tokens, never raw colours.                                                                                        |
 | Output         | Static HTML that keeps working when the builder is off.                                                                                                                         |
 | Languages      | Site content BM by default, EN as a second slot. Admin UI in English today.                                                                                                     |
 | Workflow       | No approval layer in the first version, to keep it simple. Not a permanent decision. Draft, published, history.                                                                 |

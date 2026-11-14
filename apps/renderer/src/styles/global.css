@@ -47,7 +47,7 @@
  * FTDS's icon badges, in the blocks whose wrappers opt in with
  * `accent-icons` (feature grid, service highlights, CTA cards, contact, step
  * numbers): a primary-wash circle, told from a primary Tag by `flex` where a
- * Tag is `inline-flex`. Matches FTDS 0.2.2's classes; check on an upgrade.
+ * Tag is `inline-flex`. Matches FTDS 0.2.6's classes; check on an upgrade.
  */
 .accent-icons .flex.rounded-full.bg-bg-primary-50.text-txt-primary {
   --bg-primary-50: var(--bg-accent-50);
@@ -59,7 +59,7 @@
   --bg-primary-50: var(--bg-accent-50);
 }
 
-/* A short accent rule over each figure in Impact stats and Stats band (FTDS 0.2.2's markup). */
+/* A short accent rule over each figure in Impact stats and Stats band (FTDS 0.2.6's markup). */
 .accent-figures dd.order-1::before {
   content: "";
   display: block;

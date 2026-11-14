@@ -31,7 +31,7 @@
     "@fontsource-variable/inter": "catalog:",
     "@oddbird/popover-polyfill": "catalog:",
     "astro": "catalog:",
-    "class-variance-authority": "^0.7.1",
+    "class-variance-authority": "catalog:",
     "tailwind-merge": "^3.7.0",
     "tw-animate-css": "catalog:"
   },
