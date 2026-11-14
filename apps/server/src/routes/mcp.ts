@@ -27,7 +27,7 @@ const { version } = createRequire(import.meta.url)("../../package.json") as { ve
 /** Newest first; a client asking for another gets the newest. */
 const protocolVersions = ["2025-11-25", "2025-06-18", "2025-03-26"];
 
-const instructions = `Tools for building and maintaining this agency's website in Laman, the FTDS site builder, acting as the officer who connected you, with exactly their permissions.
+const instructions = `Tools for building and maintaining this agency's website in Laman, the FTDS website builder, acting as the officer who connected you, with exactly their permissions.
 - Site content is in Bahasa Melayu unless the officer asks otherwise.
 - Read list_block_types and get_block_schema before writing blocks; content is data, never HTML.
 - Saves send back the version they started from; when one is refused as draft_conflict, read the page again and redo the change.

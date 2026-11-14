@@ -7,6 +7,7 @@
  * announcement has a screen of its own.
  */
 import { IconPicker } from "@/components/icon-picker";
+import { RadioCards } from "@/components/radio-cards";
 import { featureIconSections } from "@/lib/feature-icons";
 import {
   type NavDropdown,
@@ -43,9 +44,7 @@ import { LinkIcon } from "@/components/ui/icons/link";
 import { PlusIcon } from "@/components/ui/icons/plus";
 import { TrashIcon } from "@/components/ui/icons/trash";
 import { WarningCircleIcon } from "@/components/ui/icons/warning-circle";
-import { Fieldset, FieldsetLegend } from "@/components/ui/fieldset";
 import { Input } from "@/components/ui/input";
-import { Radio, RadioButton } from "@/components/ui/radio";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TextArea } from "@/components/ui/textarea";
 import { Menu, MenuContent, MenuItem, MenuTrigger } from "@/components/ui/menu";
@@ -984,81 +983,6 @@ function LayoutSilhouette({ layout }: { layout: Layout }) {
           </g>
         ))}
     </svg>
-  );
-}
-
-/**
- * Choices as cards, on the FTDS radio group, so the arrow keys move between them. Each
- * card is its radio's label; `content` draws it, told whether it's the one picked.
- */
-function RadioCards<T extends string>({
-  legend,
-  value,
-  options,
-  onChange,
-  className,
-  cardClassName,
-  idleClassName,
-  checkedMark,
-  describedBy,
-}: {
-  legend: string;
-  value: T;
-  options: { value: T; label: string; content: ReactNode }[];
-  onChange: (value: T) => void;
-  /** The cards' grid. */
-  className: string;
-  /** Each card's shape. */
-  cardClassName: string;
-  /** A card that isn't picked. */
-  idleClassName: string;
-  /** Drawn on the picked card too, such as a tick. */
-  checkedMark?: ReactNode;
-  describedBy?: string;
-}) {
-  const id = useId();
-  return (
-    <Fieldset
-      render={
-        <Radio
-          value={value}
-          onValueChange={(next) => onChange(next as T)}
-          aria-describedby={describedBy}
-          className="flex flex-col gap-2"
-        />
-      }
-    >
-      <FieldsetLegend className="font-body text-label-sm mb-2 font-medium">{legend}</FieldsetLegend>
-      <div className={className}>
-        {options.map((option) => {
-          const checked = option.value === value;
-          return (
-            <label
-              key={option.value}
-              htmlFor={`${id}-${option.value}`}
-              title={option.label}
-              className={clx(
-                "relative flex cursor-pointer border transition-[color,background-color,border-color,box-shadow] duration-150 motion-reduce:transition-none",
-                "has-[:focus-visible]:ring-fr-primary has-[:focus-visible]:ring",
-                cardClassName,
-                checked
-                  ? "border-otl-primary-300 bg-bg-primary-50 text-txt-primary"
-                  : idleClassName,
-              )}
-            >
-              <RadioButton
-                id={`${id}-${option.value}`}
-                value={option.value}
-                aria-label={option.label}
-                className="sr-only"
-              />
-              {option.content}
-              {checked && checkedMark}
-            </label>
-          );
-        })}
-      </div>
-    </Fieldset>
   );
 }
 

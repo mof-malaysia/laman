@@ -1,6 +1,6 @@
-# Project context: FTDS Site Builder
+# Project context: Laman
 
-Status: draft, written 1 Nov 2026 from the brief, `docs/site-builder.md`, `docs/admin.md` and the code as of `c6fc1fa`. Nothing here comes from user research yet. Lines marked **Assumption** need checking with real officers before they shape a decision.
+Status: draft, written 1 Nov 2026 from the brief, `docs/laman.md`, `docs/admin.md` and the code as of `c6fc1fa`. Nothing here comes from user research yet. Lines marked **Assumption** need checking with real officers before they shape a decision.
 
 ## The one-sentence intent
 
@@ -44,7 +44,7 @@ Installs and upgrades the Docker image or the systemd service, manages backups, 
 
 **Assumption, based on how agency sites usually look:** a WordPress or Joomla site with a bought theme and plugins, or a site built by a vendor who also takes content changes as tickets. Common results: image carousels, text in images, PDFs instead of pages, "klik sini" links, low-contrast colours, deep menus that mirror the org chart rather than what people come for, and pages nobody has updated since the person who made them was transferred.
 
-The site builder replaces the theme and plugins (FTDS blocks, fixed layouts) and the vendor ticket (officers edit and publish themselves).
+Laman replaces the theme and plugins (FTDS blocks, fixed layouts) and the vendor ticket (officers edit and publish themselves).
 
 ## The product today
 
@@ -54,7 +54,7 @@ Built (on `feat/site-builder-slice`):
 - An admin on FTDS `AppShell`: dashboard, page tree with Recently deleted, a full-screen new page flow (page or collection, then a template), page detail with live preview, the block editor (canvas, layers, property panel generated from block schemas, inline text), media library with required alt text, navigation (navbar, announcement, footer), site settings, publishing with schedules and history with restore.
 - Eleven blocks: hero, prose, feature grid, image, callout, CTA band, link list, FAQ, contact, entry list, latest entries. Pages have kinds (page, listing, entry) that limit which blocks fit.
 
-Not built yet: BM/EN side by side. Built since: sign-in, users and roles and an audit log (`docs/auth.md`), site search (Pagefind), and backups (`docs/site-builder.md` § Backup and restore).
+Not built yet: BM/EN side by side. Built since: sign-in, users and roles and an audit log (`docs/auth.md`), site search (Pagefind), and backups (`docs/laman.md` § Backup and restore).
 
 ## Hard constraints
 

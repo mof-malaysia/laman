@@ -6,16 +6,7 @@
  */
 import { Link } from "@tanstack/react-router";
 import { type ReactNode, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Details, DetailsContent, DetailsTrigger } from "@/components/ui/details";
-import {
-  Drawer,
-  DrawerBody,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
-import { QuestionCircleIcon } from "@/components/ui/icons/question-circle";
+import { HelpButton, HelpDrawer, type HelpQuestions } from "@/components/help-drawer";
 import {
   PageHeader,
   PageHeaderActions,
@@ -49,7 +40,7 @@ const questions = [
   ["users.help.agents.q", "users.help.agents.a"],
   ["users.help.tokens.q", "users.help.tokens.a"],
   ["users.superAdmin.question", "users.superAdmin.note"],
-] as const satisfies readonly [MessageKey, MessageKey][];
+] as const satisfies HelpQuestions;
 
 /** The same title and tabs on every Users page; each page brings its own description and actions. */
 export function UsersHeader({
@@ -98,50 +89,14 @@ export function UsersHeader({
             </Link>
           ))}
         </nav>
-        <Button
-          variant="default-ghost"
-          size="small"
-          className="mb-1 ml-auto shrink-0"
-          aria-haspopup="dialog"
-          onClick={() => setHelping(true)}
-        >
-          <QuestionCircleIcon aria-hidden className="size-4" />
-          {t("users.help")}
-        </Button>
+        <HelpButton className="mb-1 ml-auto shrink-0" onClick={() => setHelping(true)} />
       </div>
-      <UsersHelp open={helping} onOpenChange={setHelping} />
+      <HelpDrawer
+        open={helping}
+        onOpenChange={setHelping}
+        title={t("users.help.title")}
+        questions={questions}
+      />
     </div>
-  );
-}
-
-function UsersHelp({
-  open,
-  onOpenChange,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
-  return (
-    <Drawer side="right" open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="w-full sm:max-w-md">
-        <DrawerHeader>
-          <DrawerTitle>{t("users.help.title")}</DrawerTitle>
-        </DrawerHeader>
-        <DrawerBody>
-          <ul className="divide-otl-gray-200 m-0 flex list-none flex-col divide-y p-0">
-            {questions.map(([question, answer]) => (
-              <li key={question} className="py-3 first:pt-0">
-                <Details>
-                  <DetailsTrigger>{t(question)}</DetailsTrigger>
-                  <DetailsContent>
-                    <p className="text-body-sm text-txt-black-700 m-0">{t(answer)}</p>
-                  </DetailsContent>
-                </Details>
-              </li>
-            ))}
-          </ul>
-        </DrawerBody>
-      </DrawerContent>
-    </Drawer>
   );
 }

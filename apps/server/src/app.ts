@@ -497,7 +497,7 @@ export async function buildApp(options: AppOptions) {
   // A real 301 or 302 before a redirect's HTML page, and one form of each
   // page's address: links, the sitemap and canonical links write "/berita", so
   // "/berita/" is sent there (the static plugin below serves "/berita" from
-  // berita/index.html). docs/site-builder.md § Serving the site from a reverse proxy.
+  // berita/index.html). docs/laman.md § Serving the site from a reverse proxy.
   const redirects = redirectMap(publicDir);
   app.addHook("onRequest", async (request, reply) => {
     if (request.method !== "GET" && request.method !== "HEAD") return;

@@ -64,7 +64,7 @@ The site itself must live by all seven. A marketing site for an accessibility-fi
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
 | **Data**               | Content, accounts, history and visitor figures stay in your data centre. Nothing calls out: no CDN, no outside lookups, works without internet access                                                        | Single tenant, self-hosted; analytics in `analytics.db`; "Nothing calls out" in `docs/analytics.md` |
 | **Code**               | Open source. Read it, audit it, run it, change it, keep running it if the original team disappears                                                                                                           | MIT licence (to add); public repo                                                                   |
-| **Operations**         | One process, one SQLite file, one Docker image. Your ICT team can run it without a vendor. Your published site is plain HTML that any web server can serve, and keeps working if the builder is switched off | `docs/site-builder.md` § Shape, Deployment; `docs/install-docker.md`                                |
+| **Operations**         | One process, one SQLite file, one Docker image. Your ICT team can run it without a vendor. Your published site is plain HTML that any web server can serve, and keeps working if the builder is switched off | `docs/laman.md` § Shape, Deployment; `docs/install-docker.md`                                       |
 | **Design**             | Built on FTDS, a Malaysian design system, BM by default                                                                                                                                                      | FTDS v0.2.2; site content BM by default                                                             |
 | **Skills and control** | Officers publish themselves instead of raising vendor tickets. AI agents can help, but only as the officer, with the officer's permissions, logged, and with any MCP client rather than one vendor's         | `docs/mcp.md`                                                                                       |
 
@@ -216,7 +216,7 @@ For the ICT team, in their language.
 - Requirements: a Linux server with Docker and Docker Compose; disk for the site and backups. Recommend an internal network or VPN for the builder.
 - The Compose steps from `docs/install-docker.md`, abridged, with a link to the full guide on GitHub.
 - First sign-in: the super admin from the environment, change the password, require two-factor.
-- Serving the public site: from the builder, or from your own nginx or Caddy (the snippet from `docs/site-builder.md`).
+- Serving the public site: from the builder, or from your own nginx or Caddy (the snippet from `docs/laman.md`).
 - Backups, upgrades, restore: one paragraph each and the commands.
 - Primary CTA: **Buka di GitHub**. Secondary: **Perlukan bantuan? Hubungi pasukan.**
 

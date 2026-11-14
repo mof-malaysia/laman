@@ -63,7 +63,7 @@ let app: App;
 let listing: { id: string; path: string };
 
 beforeAll(async () => {
-  dataDir = await mkdtemp(join(tmpdir(), "site-builder-calendar-"));
+  dataDir = await mkdtemp(join(tmpdir(), "laman-calendar-"));
   const env = loadEnv({
     NODE_ENV: "test",
     LOG_LEVEL: "silent",

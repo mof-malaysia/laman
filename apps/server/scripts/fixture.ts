@@ -54,7 +54,7 @@ const everyBlock = (kind: PageKind) =>
     .filter((type, i, list) => !isOpening(type) || list.findIndex(isOpening) === i)
     .map((type) => newBlock(type));
 
-const dataDir = await mkdtemp(join(tmpdir(), "site-builder-fixture-"));
+const dataDir = await mkdtemp(join(tmpdir(), "laman-fixture-"));
 const databasePath = join(dataDir, "site.db");
 try {
   const app = await signedInApp({

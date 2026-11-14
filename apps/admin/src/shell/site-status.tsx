@@ -13,7 +13,7 @@ import { t } from "@/i18n";
 import { clx } from "@/lib/ftds/utils";
 import { isActive } from "@/lib/api";
 import { useCan } from "@/lib/auth";
-import { backupHealth } from "@/lib/backups";
+import { backupHealth, backupTone } from "@/lib/backups";
 import { formatShortDate, useSummary } from "@/lib/pages";
 import { siteHref, useAnnouncementDoc, useWaiting } from "@/lib/publish";
 import { sessionLost } from "@/lib/session";
@@ -155,7 +155,13 @@ export function SiteInfo() {
 /** The backup problem worth the header's room: a failure first, then a missing one. */
 function BackupStatus({ backup }: { backup: Summary["backup"] }) {
   const health = backupHealth(backup);
-  if (health === "failed") return <Status tone="danger">{t("status.backupFailed")}</Status>;
-  if (health === "offsiteFailed") return <Status tone="danger">{t("status.offsiteFailed")}</Status>;
-  return <Status tone="warning">{t("status.backupMissing")}</Status>;
+  const label =
+    health === "failed"
+      ? "status.backupFailed"
+      : health === "offsiteFailed"
+        ? "status.offsiteFailed"
+        : health === "diskLow"
+          ? "status.diskLow"
+          : "status.backupMissing";
+  return <Status tone={backupTone(health)}>{t(label)}</Status>;
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * site-builder <command>. The same code the server runs.
+ * laman <command>. The same code the server runs.
  *
  *   migrate   create or upgrade data/site.db (and add the starter home page)
  *   publish   rebuild data/public from the published revisions: only what
@@ -110,9 +110,7 @@ try {
     case "clear-2fa": {
       const user = flags[0] ? await userByUsername(db, flags[0].toLowerCase()) : undefined;
       if (!user) {
-        console.error(
-          `No account named ${flags[0] ?? "(none given)"}. "site-builder users" lists them.`,
-        );
+        console.error(`No account named ${flags[0] ?? "(none given)"}. "laman users" lists them.`);
         process.exitCode = 1;
         break;
       }
@@ -141,7 +139,7 @@ try {
     }
     default:
       console.error(
-        "Usage: site-builder <migrate|publish [--full]|check|users|reset-password <username>|clear-2fa <username>|backup [--db-only] [--with-analytics]|backup --verify <archive>|backups [--remote]|fetch <archive>|decrypt <file>|restore <archive>>",
+        "Usage: laman <migrate|publish [--full]|check|users|reset-password <username>|clear-2fa <username>|backup [--db-only] [--with-analytics]|backup --verify <archive>|backups [--remote]|fetch <archive>|decrypt <file>|restore <archive>>",
       );
       process.exitCode = 2;
   }
@@ -160,7 +158,7 @@ async function check(path: string) {
     const { pending } = await migrationState(site);
     if (pending.length) {
       console.error(
-        `${path} has ${pending.length} migrations to run: start the server or run "site-builder migrate"`,
+        `${path} has ${pending.length} migrations to run: start the server or run "laman migrate"`,
       );
       return 1;
     }
@@ -209,7 +207,7 @@ async function listArchives() {
 /** The archive named on the command line: a path, or the name of one in BACKUP_DIR. */
 function archiveArg() {
   const archive = flags.find((flag) => !flag.startsWith("--"));
-  if (!archive) throw new Error(`Name the archive: "site-builder backups" lists them.`);
+  if (!archive) throw new Error(`Name the archive: "laman backups" lists them.`);
   return existsSync(archive) ? archive : join(backupDir, basename(archive));
 }
 
@@ -225,7 +223,7 @@ async function restore() {
   const archive = archiveArg();
   if (existsSync(archive) && (await isEncrypted(archive)))
     throw new Error(
-      `${archive} is encrypted. Decrypt it first: BACKUP_PASSPHRASE=… site-builder decrypt ${basename(archive)}`,
+      `${archive} is encrypted. Decrypt it first: BACKUP_PASSPHRASE=… laman decrypt ${basename(archive)}`,
     );
   const { manifest, aside } = await restoreBackup(archive, dataDir);
   console.warn(
@@ -238,7 +236,7 @@ async function offsite() {
   const path = join(dataDir, "site.db");
   if (!existsSync(path))
     throw new Error(
-      `No database at ${path}, so no off-site settings to read. Download the copy with the provider's own tools, then "site-builder decrypt" it if it ends in ${ENCRYPTED}.`,
+      `No database at ${path}, so no off-site settings to read. Download the copy with the provider's own tools, then "laman decrypt" it if it ends in ${ENCRYPTED}.`,
     );
   const { db: site } = openSqlite<Database>(path);
   try {
@@ -262,14 +260,12 @@ async function listRemoteArchives() {
 
 async function fetch() {
   const name = flags.find((flag) => !flag.startsWith("--"));
-  if (!name) throw new Error(`Name the copy: "site-builder backups --remote" lists them.`);
+  if (!name) throw new Error(`Name the copy: "laman backups --remote" lists them.`);
   const { stored, store } = await offsite();
   const wanted = basename(name).replace(/\.enc$/, "");
   const copy = (await listRemote(store, stored.prefix)).find((c) => c.file === wanted);
   if (!copy)
-    throw new Error(
-      `No copy named ${wanted} off-site: "site-builder backups --remote" lists them.`,
-    );
+    throw new Error(`No copy named ${wanted} off-site: "laman backups --remote" lists them.`);
   await mkdir(backupDir, { recursive: true, mode: 0o700 });
   // The archive is checked in a scratch folder there: on a new server it may not exist yet.
   await mkdir(dataDir, { recursive: true });
@@ -278,7 +274,7 @@ async function fetch() {
   );
   const manifest = await verifyBackup(file, dataDir);
   console.warn(
-    `Fetched ${file}, made ${manifest.createdAt}, and checked it. Restore it with the server stopped:\n\n  site-builder restore ${basename(file)}\n`,
+    `Fetched ${file}, made ${manifest.createdAt}, and checked it. Restore it with the server stopped:\n\n  laman restore ${basename(file)}\n`,
   );
 }
 

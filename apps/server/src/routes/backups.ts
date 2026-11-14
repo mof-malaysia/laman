@@ -4,7 +4,7 @@
  */
 import type { FastifyPluginAsync } from "fastify";
 import { audited } from "../auth/guard.js";
-import { listBackups, nextRun } from "../backup.js";
+import { diskOf, listBackups, nextRun } from "../backup.js";
 import {
   Job,
   OffsiteSettings,
@@ -40,7 +40,7 @@ const STALE_MS = 2 * 24 * 3600_000;
 export async function backupStatus(db: Db, options: BackupOptions): Promise<Summary["backup"]> {
   const archives = await listBackups(options.dir);
   const newest = archives.find((archive) => !archive.dbOnly);
-  const [failed, running, offsite] = await Promise.all([
+  const [failed, running, offsite, disk] = await Promise.all([
     db
       .selectFrom("jobs")
       .select(["finished_at", "error"])
@@ -56,9 +56,11 @@ export async function backupStatus(db: Db, options: BackupOptions): Promise<Summ
       .where("status", "in", ["queued", "running"])
       .executeTakeFirst(),
     readOffsite(db).then((stored) => offsiteStatus(db, stored)),
+    diskOf(options.dir, newest?.bytes ?? 0),
   ]);
   return {
     ...options,
+    disk,
     next: options.schedule ? nextRun(options.schedule) : null,
     last: newest ?? null,
     archives,

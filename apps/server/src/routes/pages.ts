@@ -198,7 +198,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
       schema: {
         summary: "Check pages before they go live",
         description:
-          "What in each page's draft would fail visitors (docs/site-builder.md § Checks before publishing). A `block` check stops the page being published; `warn` ones can be published past.",
+          "What in each page's draft would fail visitors (docs/laman.md § Checks before publishing). A `block` check stops the page being published; `warn` ones can be published past.",
         tags: ["pages"],
         querystring: PageChecksQuery,
         response: { 200: envelope(PageChecks) },

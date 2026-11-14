@@ -10,7 +10,7 @@ let dataDir: string;
 let app: App;
 
 beforeAll(async () => {
-  dataDir = await mkdtemp(join(tmpdir(), "site-builder-"));
+  dataDir = await mkdtemp(join(tmpdir(), "laman-"));
   const env = loadEnv({
     NODE_ENV: "test",
     LOG_LEVEL: "silent",

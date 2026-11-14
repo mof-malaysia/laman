@@ -1,14 +1,14 @@
-# The site builder with Docker Compose. Settings go in .env beside this file
+# Laman with Docker Compose. Settings go in .env beside this file
 # (copy .env.example). See docs/install-docker.md.
 #
 #   docker compose up -d --build                  # behind your own HTTPS proxy
 #   docker compose --profile https up -d --build  # with Caddy, which gets the certificate itself
-name: site-builder
+name: laman
 
 services:
-  site-builder:
+  laman:
     build: .
-    image: site-builder
+    image: laman
     restart: unless-stopped
     # Signals reach the server, so a stop finishes the running job and the backup lock is cleared.
     init: true
@@ -37,9 +37,9 @@ services:
     profiles: [https]
     restart: unless-stopped
     depends_on:
-      site-builder:
+      laman:
         condition: service_healthy
-    command: caddy reverse-proxy --from ${SITE_URL:-} --to site-builder:8080
+    command: caddy reverse-proxy --from ${SITE_URL:-} --to laman:8080
     ports:
       - "80:80"
       - "443:443"

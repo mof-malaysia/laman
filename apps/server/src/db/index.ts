@@ -77,7 +77,7 @@ export async function upgrade(
   const unknown = executed.filter((name) => !(name in list));
   if (unknown.length)
     throw new Error(
-      `${path} was upgraded by a newer version of the site builder (migration ${unknown.at(-1)}). Run that version, or restore a backup made before it.`,
+      `${path} was upgraded by a newer version of Laman (migration ${unknown.at(-1)}). Run that version, or restore a backup made before it.`,
     );
   if (executed.length === names.length) return;
 

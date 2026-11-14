@@ -2,7 +2,7 @@
 
 > **Status, 3 Nov 2026:** FTDS v0.2.2 shipped the hero's layouts as `stacked`/`split`/`image` with `align` and `mediaPosition` (not `centred` and `mediaSide`), and the builder now offers them with conditional fields (`panel` in `fields.ts`). No `focus` (shipped without), and the search, tasks and figures add-ons wait for a later FTDS release. Part B is untouched.
 
-2 Nov 2026. Plan only, no code yet. Two parts: (A) enough hero variants that "can you customise our hero" stops being a custom job, and (B) whether and how HTML-in-Canvas becomes a block. Follows `docs/site-builder.md`, `PRODUCT.md` (no free styling, no custom HTML, WCAG 2.2 AA, static output, old Android phones) and `docs/briefs/theming.md`.
+2 Nov 2026. Plan only, no code yet. Two parts: (A) enough hero variants that "can you customise our hero" stops being a custom job, and (B) whether and how HTML-in-Canvas becomes a block. Follows `docs/laman.md`, `PRODUCT.md` (no free styling, no custom HTML, WCAG 2.2 AA, static output, old Android phones) and `docs/briefs/theming.md`.
 
 ## Where things stand
 
@@ -70,7 +70,7 @@ Add `when` to the field meta in `fields.ts`, e.g. `field.media("Picture", { when
 4. **Schema and wrapper**: the fields above in `hero.ts`; `Hero.astro` maps them, with `Field` for inline text and the media lookup from `Image.astro`. `ftds-add.mjs astro-hero` to take the new component.
 5. **Templates**: Utama uses `split`; add a "Portal" template with `search` + `tasks`. The registry test already renders every template and block default; extend it to render every layout × tone × extra.
 6. **Editor polish**: the palette shows one Hero; the layout select gets small thumbnails (`optionLabels` today are words only).
-7. **Docs**: § Hero in `docs/site-builder.md`.
+7. **Docs**: § Hero in `docs/laman.md`.
 
 Later, as their own blocks: **Message** (leader portrait, name, post, short message, link to the full text) and **Video** (poster, play link, transcript link).
 

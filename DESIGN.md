@@ -1,5 +1,5 @@
 ---
-name: FTDS Site Builder
+name: Laman
 description: FTDS, as an agency's website and the admin that runs it; and, with its own expression, Laman's marketing site.
 colors:
   ftds-blue: "#2563EB"
@@ -230,7 +230,7 @@ components:
     padding: "24px"
 ---
 
-# Design System: FTDS Site Builder
+# Design System: Laman
 
 ## Overview
 

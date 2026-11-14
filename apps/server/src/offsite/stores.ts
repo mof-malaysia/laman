@@ -1,8 +1,9 @@
 /**
  * Where off-site copies go: one small interface, and an implementation for
- * S3-compatible services (AWS S3, Cloudflare R2, Wasabi, MinIO, others).
+ * S3-compatible services (AWS S3, Google Cloud Storage, Cloudflare R2, Wasabi,
+ * DigitalOcean Spaces, MinIO, others).
  *
- * Azure (parked): see docs/site-builder.md § Off-site copies, Azure Blob Storage (parked).
+ * Azure (parked): see docs/laman.md § Off-site copies, Azure Blob Storage (parked).
  * Azure doesn't speak S3, so it has a store of its own below, commented out
  * with its import. To bring it back: uncomment both, put "azure" back in
  * OffsiteProvider, and re-add @azure/storage-blob to the catalog and this
@@ -66,10 +67,21 @@ function s3Address(config: StoreConfig) {
   switch (config.provider) {
     case "aws":
       return { endpoint: undefined, region: config.region, pathStyle: false };
+    // Google Cloud Storage's XML API speaks S3, with HMAC keys. Path-style, so
+    // bucket names with dots keep a valid certificate.
+    case "gcs":
+      return { endpoint: "https://storage.googleapis.com", region: "auto", pathStyle: true };
     case "wasabi":
       return {
         endpoint: `https://s3.${config.region}.wasabisys.com`,
         region: config.region,
+        pathStyle: false,
+      };
+    // DigitalOcean Spaces: the region is the datacentre, such as sgp1.
+    case "spaces":
+      return {
+        endpoint: `https://${config.region}.digitaloceanspaces.com`,
+        region: "us-east-1",
         pathStyle: false,
       };
     case "r2":

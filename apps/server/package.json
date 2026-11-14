@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "bin": {
-    "site-builder": "./dist/cli.js"
+    "laman": "./dist/cli.js"
   },
   "files": [
     "dist"

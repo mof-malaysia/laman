@@ -90,7 +90,7 @@ A new database starts with `{ preset: "ftds" }` and FTDS's own ramp, so a site t
    - A preview of the home page from the real renderer with the unsaved choice (`POST /render/pages/:id/site` takes a `theme`), swapping in only its `#site-theme`.
    - Save, review and publish, with the same unsaved-changes guard and "put back previous" as Settings.
 6. **Canvas**: the editor's `/render` uses the draft theme, so editing a page shows the colours it will publish with.
-7. **Docs**: a § Theming in `docs/site-builder.md` and a line in `AGENTS.md` (the `--_primary-*` override is the one place site colours change; components keep using semantic tokens).
+7. **Docs**: a § Theming in `docs/laman.md` and a line in `AGENTS.md` (the `--_primary-*` override is the one place site colours change; components keep using semantic tokens).
 
 ## Not in this step
 

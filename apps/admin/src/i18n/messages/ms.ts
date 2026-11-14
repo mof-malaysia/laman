@@ -57,6 +57,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "status.backupFailed": "Sandaran gagal",
   "status.backupMissing": "Tiada sandaran terkini",
   "status.offsiteFailed": "Salinan luar tapak gagal",
+  "status.diskLow": "Cakera sandaran hampir penuh",
   "status.renderer.ok": "Berjalan seperti biasa",
   "status.renderer.down": "Pemapar tidak berfungsi",
   "status.serverDown": "Pelayan tidak dapat dihubungi",
@@ -175,6 +176,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "home.backup.never": "Belum disandarkan",
   "home.backup.stale": "Tiada sandaran dalam 2 hari lepas",
   "home.backup.offsiteFailed": "Salinan luar tapak terakhir gagal",
+  "home.backup.diskLow": "Cakera sandaran hampir penuh",
   "home.neverPublished": "Belum diterbitkan",
   "home.status.failed": "Penerbitan terakhir gagal",
   "home.status.failedBody": "Laman web tidak berubah.",
@@ -540,6 +542,35 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "settings.about.dataDir": "Folder data",
   "settings.about.database": "Saiz pangkalan data",
   "settings.backups": "Sandaran",
+  "settings.backups.status": "Status sandaran",
+  "settings.backups.local": "Sandaran tempatan",
+  "settings.backups.help.title": "Perihal sandaran",
+  "settings.backups.help.faq": "Soalan",
+  "settings.backups.help.restore": "Memulihkan",
+  "settings.backups.help.sameDisk.q": "Kenapa ada amaran cakera yang sama?",
+  "settings.backups.help.sameDisk.a":
+    "Jika cakera itu rosak, laman dan sandarannya hilang bersama. Tetapkan BACKUP_DIR ke cakera lain, atau hidupkan Sandaran awan.",
+  "settings.backups.help.failed.q": "Sandaran gagal.",
+  "settings.backups.help.failed.a":
+    "Sandaran tempatan menunjukkan ralat terakhir. Biasanya cakera penuh atau folder tidak boleh ditulis oleh pelayan. Betulkan, kemudian pilih Sandarkan sekarang.",
+  "settings.backups.help.types.q": "Pangkalan data & media, atau pangkalan data?",
+  "settings.backups.help.types.a":
+    "Pangkalan data & media memulihkan kedua-duanya. Pangkalan data jauh lebih kecil, dan memulihkannya tidak mengubah media.",
+  "settings.backups.help.space.q": "Berapa banyak ruang cakera diperlukan?",
+  "settings.backups.help.space.a":
+    "Kira-kira sepuluh sandaran pangkalan data & media, setiap satu lebih kurang saiz pustaka media. Tiada had, jadi pantau ruang kosong.",
+  "settings.backups.help.schedule.q": "Bagaimana menukar masa atau bilangan yang disimpan?",
+  "settings.backups.help.schedule.a":
+    "Tetapkan BACKUP_SCHEDULE (HH:MM waktu Malaysia, atau off), BACKUP_KEEP_DAILY dan BACKUP_KEEP_WEEKLY pada pelayan, kemudian mulakan semula.",
+  "settings.backups.help.excluded.q": "Apa yang tidak disandarkan?",
+  "settings.backups.help.excluded.a":
+    "Laman yang diterbitkan, yang dibina semula daripada pangkalan data, dan analitik, kecuali disandarkan dengan --with-analytics.",
+  "settings.backups.help.passphrase.q": "Bagaimana jika frasa laluan awan hilang?",
+  "settings.backups.help.passphrase.a":
+    "Salinan yang disulitkan tidak boleh dibuka tanpanya, oleh sesiapa pun. Tetapkan yang baharu; hanya salinan baharu menggunakannya.",
+  "settings.backups.help.private.q": "Bolehkah sandaran dikongsi?",
+  "settings.backups.help.private.a":
+    "Tidak. Ia mengandungi cincangan kata laluan dan rahsia pengesahan dua faktor, jadi simpan serahsia pelayan.",
   "settings.backups.ok": "Disandarkan {ago}",
   "settings.backups.never": "Belum disandarkan",
   "settings.backups.stale": "Sandaran terakhir {ago}",
@@ -551,6 +582,13 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "settings.backups.daily": "Sandaran seterusnya {next}",
   "settings.backups.dailyOff": "Sandaran harian dimatikan",
   "settings.backups.backUp": "Sandarkan sekarang",
+  "settings.backups.diskLow": "Cakera sandaran hampir penuh",
+  "settings.backups.diskLowHint":
+    "{free} kosong. Kosongkan ruang atau pindahkan BACKUP_DIR ke cakera yang lebih besar.",
+  "settings.backups.confirm.title": "Sandarkan sekarang?",
+  "settings.backups.confirm.description":
+    "Ini menyimpan pangkalan data dan media ke folder sandaran. Laman kekal dalam talian.",
+  "settings.backups.confirm.cloud": "Ia juga dimuat naik ke storan awan.",
   "settings.backups.backedUp": "Sandaran dibuat",
   "settings.backups.couldntStart": "Sandaran tidak dapat dimulakan",
   "settings.backups.noReason": "Tiada sebab diberi. Semak log pelayan.",
@@ -558,18 +596,22 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
     "Sandaran disimpan pada cakera yang sama dengan laman. Hubungi pentadbir ICT untuk memindahkannya.",
   "settings.backups.restore":
     "Hanya pentadbir ICT boleh memulihkan sandaran. Semua pengguna akan dilog keluar.",
-  "settings.backups.details": "Butiran teknikal",
   "settings.backups.details.folder": "Folder",
-  "settings.backups.details.sameDisk": "Tetapkan BACKUP_DIR kepada cakera lain.",
   "settings.backups.details.schedule": "Jadual",
+  "settings.backups.details.disk": "Ruang cakera",
+  "settings.backups.details.diskFree": "{free} kosong daripada {total}",
+  "settings.backups.details.diskLow": "Hampir penuh",
+  "settings.backups.details.diskLowHint":
+    "Hampir penuh. Kosongkan ruang atau pindahkan BACKUP_DIR ke cakera yang lebih besar.",
+  "settings.backups.details.diskUnknown": "Tidak dapat dibaca",
   "settings.backups.details.error": "Ralat terakhir",
   "settings.backups.details.kept": "Sandaran yang disimpan",
   "settings.backups.details.date": "Tarikh",
   "settings.backups.details.type": "Jenis",
   "settings.backups.details.size": "Saiz",
   "settings.backups.details.file": "Fail",
-  "settings.backups.details.full": "Penuh",
-  "settings.backups.details.dbOnly": "Pangkalan data sahaja",
+  "settings.backups.details.full": "Pangkalan data & media",
+  "settings.backups.details.dbOnly": "Pangkalan data",
   "settings.backups.details.restore":
     "Untuk memulihkan, hentikan pelayan dan jalankan ini (langkah dalam docs/install-docker.md):",
   "settings.backups.offsiteFailed": "Salinan luar tapak gagal",
@@ -593,81 +635,75 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "settings.backups.details.copied": "Disalin",
   "settings.backups.details.notCopied": "Belum disalin",
   "settings.backups.details.fetch":
-    "Untuk memulihkan salinan luar tapak, senaraikan salinan, kemudian ambil satu ke folder sandaran:",
-  "settings.offsite": "Salinan luar tapak",
-  "settings.offsite.description":
-    "Setiap sandaran turut disalin ke storan awan, supaya sandaran tidak hilang bersama pelayan ini.",
+    "Untuk memulihkan daripada storan awan, senaraikan salinan, kemudian ambil satu ke folder sandaran:",
+  "settings.offsite": "Sandaran awan",
+  "settings.offsite.description": "Memuat naik setiap sandaran tempatan ke storan awan.",
   "settings.offsite.loadFailed":
     "Tetapan luar tapak tidak dapat dimuatkan. Muat semula halaman untuk mencuba lagi.",
   "settings.offsite.noKey": "BACKUP_SECRET_KEY belum ditetapkan pada pelayan",
   "settings.offsite.noKeyHint":
-    "Kunci ini melindungi kunci storan yang disimpan di sini. Pentadbir ICT perlu menetapkannya dan memulakan semula pembina; sehingga itu, tiada apa-apa di sini boleh disimpan.",
+    "Tetapkannya pada pelayan dan mulakan semula pembina untuk menyimpan tetapan ini.",
   "settings.offsite.enabled": "Salin sandaran ke luar tapak",
-  "settings.offsite.enabledHint":
-    "Selepas setiap sandaran, termasuk sandaran harian dan sandaran sebelum naik taraf.",
   "settings.offsite.provider": "Perkhidmatan storan",
   "settings.offsite.provider.aws": "Amazon S3",
+  "settings.offsite.provider.gcs": "Google Cloud Storage",
   "settings.offsite.provider.r2": "Cloudflare R2",
   "settings.offsite.provider.wasabi": "Wasabi",
+  "settings.offsite.provider.spaces": "DigitalOcean Spaces",
   "settings.offsite.provider.minio": "MinIO",
-  "settings.offsite.provider.s3": "Storan lain yang serasi S3",
+  "settings.offsite.provider.s3": "Lain-lain yang serasi S3",
   "settings.offsite.provider.azure": "Azure Blob Storage",
   "settings.offsite.endpoint": "Titik akhir",
-  "settings.offsite.endpoint.r2": "Alamat S3 akaun, daripada papan pemuka R2.",
-  "settings.offsite.endpoint.minio": "Alamat pelayan MinIO.",
-  "settings.offsite.endpoint.s3": "Alamat S3 perkhidmatan.",
+  "settings.offsite.endpoint.r2": "Daripada papan pemuka R2.",
   "settings.offsite.endpoint.azure":
     "Hanya untuk awan berdaulat atau titik akhir persendirian. Jika dibiarkan kosong, alamat biasa akaun digunakan.",
   "settings.offsite.optional": "(pilihan)",
   "settings.offsite.region": "Rantau",
-  "settings.offsite.regionHint":
-    "Contohnya ap-southeast-5 (Malaysia) atau ap-southeast-1 (Singapura).",
+  "settings.offsite.regionHint": "ap-southeast-5 ialah Malaysia.",
+  "settings.offsite.regionHint.spaces": "sgp1 ialah Singapura, yang terdekat dengan Malaysia.",
   "settings.offsite.bucket": "Baldi",
   "settings.offsite.keyId": "ID kunci akses",
+  "settings.offsite.gcsKeys":
+    "Gunakan kunci HMAC daripada Cloud Storage → Settings → Interoperability.",
   "settings.offsite.account": "Nama akaun storan",
   "settings.offsite.container": "Bekas",
   "settings.offsite.secret": "Kunci akses rahsia",
   "settings.offsite.secretHint":
-    "Paling selamat: kunci yang boleh memuat naik, membaca dan menyenaraikan, tetapi tidak boleh memadam. Peraturan kitar hayat baldi kemudian membuang salinan lama, dan tiada sesiapa di pelayan ini boleh menghapuskannya.",
+    "Paling selamat: kunci yang tidak boleh memadam, dengan peraturan kitar hayat membuang salinan lama.",
   "settings.offsite.sas": "Token SAS atau kunci akaun",
   "settings.offsite.sasHint":
     "Paling selamat: token SAS yang boleh mencipta, menulis, membaca dan menyenaraikan, tetapi tidak boleh memadam. Peraturan kitar hayat bekas kemudian membuang salinan lama.",
-  "settings.offsite.secretSaved":
-    "Telah disimpan. Biarkan kosong untuk mengekalkannya; ia tidak akan dipaparkan lagi.",
+  "settings.offsite.secretSaved": "Telah disimpan. Biarkan kosong untuk mengekalkannya.",
   "settings.offsite.prefix": "Folder",
   "settings.offsite.prefixHint":
-    "Salinan disimpan dalam daily/, monthly/, manual/ dan upgrade/ di dalamnya, supaya peraturan kitar hayat boleh menamatkan setiap satu secara berasingan.",
+    "Salinan disimpan dalam daily/, monthly/, manual/ dan upgrade/ di dalamnya.",
   "settings.offsite.pathStyle": "Guna alamat gaya laluan",
-  "settings.offsite.pathStyleHint":
-    "Untuk perkhidmatan hos sendiri yang tidak menyokong subdomain baldi.",
+  "settings.offsite.pathStyleHint": "Untuk perkhidmatan tanpa subdomain baldi.",
   "settings.offsite.test": "Uji sambungan",
   "settings.offsite.testing": "Menguji…",
   "settings.offsite.testOk":
-    "Bersambung. Kunci ini tidak boleh memadam salinan: jenis yang lebih selamat.",
-  "settings.offsite.testOkCanDelete":
-    "Bersambung. Kunci ini juga boleh memadam salinan; kunci tanpa kebenaran memadam lebih selamat.",
+    "Bersambung. Kunci ini tidak boleh memadam salinan, jenis paling selamat.",
+  "settings.offsite.testOkCanDelete": "Bersambung. Kunci ini juga boleh memadam salinan.",
   "settings.offsite.testFailed": "Tidak dapat bersambung. {error}",
   "settings.offsite.encrypt": "Sulitkan sebelum dimuat naik",
   "settings.offsite.encryptHint":
-    "Arkib disulitkan di pelayan ini dengan frasa laluan, jadi perkhidmatan storan hanya menyimpan data yang tidak boleh dibaca. Pemulihan memerlukan frasa laluan.",
+    "Perkhidmatan storan hanya menyimpan salinan yang tidak boleh dibaca. Pemulihan memerlukan frasa laluan.",
   "settings.offsite.fingerprint": "Cap jari frasa laluan",
   "settings.offsite.changePassphrase": "Tukar frasa laluan",
-  "settings.offsite.passphrase.warning":
-    "Tanpa frasa laluan, salinan luar tapak tidak boleh dibuka",
+  "settings.offsite.passphrase.warning": "Frasa laluan yang hilang tidak boleh dipulihkan",
   "settings.offsite.passphrase.warningHint":
-    "Frasa laluan yang hilang tidak boleh dipulihkan oleh sesiapa, termasuk pentadbir ICT. Simpan di tempat selain pelayan ini, seperti pengurus kata laluan agensi.",
+    "Tanpanya, salinan tidak boleh dibuka. Simpan di luar pelayan ini, seperti dalam pengurus kata laluan.",
   "settings.offsite.passphrase.changeHint":
-    "Salinan baharu menggunakan frasa laluan baharu. Salinan sedia ada masih memerlukan frasa laluan lama, jadi simpan kedua-duanya.",
+    "Salinan lama masih memerlukan frasa laluan lama. Simpan kedua-duanya.",
   "settings.offsite.passphrase": "Frasa laluan",
   "settings.offsite.passphrase.confirm": "Frasa laluan sekali lagi",
-  "settings.offsite.passphrase.keptElsewhere":
-    "Frasa laluan telah disimpan di tempat selain pelayan ini",
+  "settings.offsite.passphrase.keptElsewhere": "Disimpan di luar pelayan ini",
   "settings.offsite.passphrase.short": "Gunakan sekurang-kurangnya 12 aksara",
   "settings.offsite.passphrase.mismatch": "Frasa laluan tidak sepadan",
   "settings.offsite.passphrase.keepFirst": "Simpan frasa laluan di tempat lain dahulu",
   "settings.offsite.prune": "Padam salinan lama daripada storan",
   "settings.offsite.pruneHint":
-    "Salinan harian dan manual selepas 30 hari, bulanan selepas setahun, salinan naik taraf selepas 90 hari. Memerlukan kunci yang boleh memadam, yang kurang selamat: peraturan kitar hayat storan boleh melakukannya.",
+    "Harian dan manual selepas 30 hari, bulanan selepas setahun, naik taraf selepas 90 hari. Memerlukan kunci yang boleh memadam; peraturan kitar hayat lebih selamat.",
 
   "nav.target": "Menuju ke",
   "nav.target.url": "Laman web lain",
@@ -1699,7 +1735,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "error.toDashboard": "Pergi ke papan pemuka",
   "error.report.title": "Jika masalah berterusan",
   "error.report.body":
-    "Beritahu pengendali pembina laman agensi tindakan yang sedang dilakukan, dan hantarkan butiran ini:",
+    "Beritahu pengendali Laman agensi tindakan yang sedang dilakukan, dan hantarkan butiran ini:",
   "error.report.copy": "Salin butiran",
   "error.report.copied": "Disalin",
   "error.details.where": "Skrin",
@@ -2112,7 +2148,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "users.since.years": "{count} tahun lalu",
   "users.twoFactor.setUp": "Sediakan",
   "users.yourAccount": "Akaun",
-  "users.help": "Bantuan",
+  "help.button": "Bantuan",
   "users.help.title": "Mengurus pengguna",
   "users.help.add.q": "Bagaimana untuk menambah seseorang?",
   "users.help.add.a":

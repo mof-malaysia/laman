@@ -10,7 +10,7 @@ import { type App, sessionCookie, testApp } from "./helpers.js";
 
 /** A test app in a data folder of its own; `close` removes both. */
 export async function agentApp(name: string, env: Record<string, string> = {}) {
-  const dataDir = await mkdtemp(join(tmpdir(), `site-builder-${name}-`));
+  const dataDir = await mkdtemp(join(tmpdir(), `laman-${name}-`));
   const app = await testApp({
     env: loadEnv({
       NODE_ENV: "test",

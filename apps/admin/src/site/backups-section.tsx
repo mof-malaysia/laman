@@ -1,21 +1,24 @@
 /**
- * Backups in Settings: one line on whether the site is safe, with a backup
- * now beside it, a second on the off-site copies when they're on, and what
- * the ICT administrator needs to restore one behind Technical details.
- * Restore itself is the CLI's: it replaces every account and needs the
- * server stopped. Below it, for the super admin, where copies go off-site.
+ * Backups in Settings: first a card on whether the site is safe, with Back
+ * up now beside it and a line on the cloud copies when they're on; then the
+ * local backups, with the folder, the archives and what the ICT administrator
+ * needs to restore one. Restore itself is the CLI's: it replaces every account
+ * and needs the server stopped. Last, for the super admin, the cloud backup.
  */
 import type { Summary } from "@fiscal-sb/contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { HelpButton } from "@/components/help-drawer";
 import { SettingsCard } from "@/components/settings-card";
 import { Button } from "@/components/ui/button";
 import { Callout, CalloutTitle } from "@/components/ui/callout";
-import { Details, DetailsContent, DetailsTrigger } from "@/components/ui/details";
 import { CheckCircleIcon } from "@/components/ui/icons/check-circle";
 import { CrossCircleIcon } from "@/components/ui/icons/cross-circle";
 import { WarningCircleIcon } from "@/components/ui/icons/warning-circle";
+import { Meter, MeterTrack, MeterValue } from "@/components/ui/meter";
 import { Spinner } from "@/components/ui/spinner";
+import { Tag } from "@/components/ui/tag";
 import {
   SummaryList,
   SummaryListBody,
@@ -36,10 +39,11 @@ import { StatusDot, type Tone } from "@/components/page-status";
 import { type MessageKey, t } from "@/i18n";
 import { apiError, siteApi, waitForJob } from "@/lib/api";
 import { useCan } from "@/lib/auth";
-import { backupHealth } from "@/lib/backups";
+import { type BackupHealth, backupHealth, backupTone } from "@/lib/backups";
 import useToast from "@/lib/ftds/hooks/use-toast";
 import { formatAgo, formatDateTime, useSummary } from "@/lib/pages";
 import { formatBytes } from "@/media/format";
+import { BackupsHelp } from "./backups-help";
 import { OffsiteCard } from "./offsite-card";
 
 /** Server paths and file names run long: let them break anywhere rather than push the panel wide. */
@@ -49,20 +53,23 @@ const ago = (iso: string) => formatAgo(iso, { inline: true });
 
 export function BackupsSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }) {
   const canSecure = useCan("security.manage");
+  // Read once for both cards; undefined while it loads.
+  const backup = useSummary().data?.backup;
   return (
     <>
-      <BackupStatusCard />
+      <BackupStatusCard backup={backup} />
+      <LocalBackupCard backup={backup} />
       {canSecure && <OffsiteCard onDirtyChange={onDirtyChange} />}
     </>
   );
 }
 
-function BackupStatusCard() {
-  const summary = useSummary();
+function BackupStatusCard({ backup }: { backup: Summary["backup"] | undefined }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const canBackUp = useCan("site.manage");
-  const backup = summary.data?.backup;
+  const [helping, setHelping] = useState(false);
+  const [confirming, setConfirming] = useState(false);
 
   const backUp = async () => {
     if (!backup || backup.running) return;
@@ -96,10 +103,14 @@ function BackupStatusCard() {
   };
 
   return (
-    <SettingsCard title={t("settings.backups")}>
+    <SettingsCard
+      title={t("settings.backups.status")}
+      aside={<HelpButton onClick={() => setHelping(true)} />}
+    >
+      <BackupsHelp open={helping} onOpenChange={setHelping} />
       {backup ? (
         <>
-          <div className="border-otl-gray-200 flex flex-wrap items-center gap-x-4 gap-y-3 border-b pb-5">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
             <Status backup={backup} />
             {canBackUp && (
               <Button
@@ -108,20 +119,46 @@ function BackupStatusCard() {
                 className="shrink-0 aria-disabled:cursor-not-allowed aria-disabled:opacity-60"
                 // Stays focusable while it runs, so focus isn't dropped mid-backup.
                 aria-disabled={backup.running}
-                onClick={() => void backUp()}
+                onClick={() => !backup.running && setConfirming(true)}
               >
                 {t("settings.backups.backUp")}
               </Button>
             )}
           </div>
           {backup.offsite && <OffsiteLine offsite={backup.offsite} />}
+          <ConfirmDialog
+            open={confirming}
+            onOpenChange={setConfirming}
+            title={t("settings.backups.confirm.title")}
+            description={
+              backup.offsite
+                ? `${t("settings.backups.confirm.description")} ${t("settings.backups.confirm.cloud")}`
+                : t("settings.backups.confirm.description")
+            }
+            confirm={t("settings.backups.backUp")}
+            onConfirm={() => void backUp()}
+          />
+        </>
+      ) : (
+        <Skeleton className="h-16 w-full rounded-lg" />
+      )}
+    </SettingsCard>
+  );
+}
+
+/** Where the archives are, the disk they're on, and the list of them. */
+function LocalBackupCard({ backup }: { backup: Summary["backup"] | undefined }) {
+  const canBackUp = useCan("site.manage");
+  return (
+    <SettingsCard title={t("settings.backups.local")}>
+      {backup ? (
+        <>
           {backup.sameDisk && !backup.offsite?.last && (
             <Callout variant="warning">
               <CalloutTitle>{t("settings.backups.sameDisk")}</CalloutTitle>
             </Callout>
           )}
-          <p className="text-body-sm text-txt-black-700 m-0">{t("settings.backups.restore")}</p>
-          {canBackUp && <TechnicalDetails backup={backup} />}
+          {canBackUp && <BackupDetails backup={backup} />}
         </>
       ) : (
         <Skeleton className="h-16 w-full rounded-lg" />
@@ -138,41 +175,19 @@ function Status({ backup }: { backup: Summary["backup"] }) {
       ? t("settings.backups.daily", { next: formatDateTime(backup.next) })
       : t("settings.backups.dailyOff");
 
-  const [icon, title, hint]: [ReactNode, string, string] = backup.running
-    ? [
-        <Spinner key="icon" size="medium" label={null} />,
-        t("settings.backups.running"),
-        t("settings.backups.runningHint"),
-      ]
-    : health === "failed"
-      ? [
-          <CrossCircleIcon key="icon" className="text-txt-danger size-6" />,
-          t("settings.backups.failed"),
-          t("settings.backups.failedHint", { ago: ago(backup.failed!.at) }),
-        ]
-      : health === "offsiteFailed"
-        ? [
-            <CrossCircleIcon key="icon" className="text-txt-danger size-6" />,
-            t("settings.backups.offsiteFailed"),
-            t("settings.backups.offsiteFailedHint", { ago: ago(backup.last!.at) }),
-          ]
-        : health === "never"
-          ? [
-              <WarningCircleIcon key="icon" className="text-txt-warning size-6" />,
-              t("settings.backups.never"),
-              daily,
-            ]
-          : health === "stale"
-            ? [
-                <WarningCircleIcon key="icon" className="text-txt-warning size-6" />,
-                t("settings.backups.stale", { ago: ago(backup.last!.at) }),
-                backup.schedule ? t("settings.backups.staleHint") : daily,
-              ]
-            : [
-                <CheckCircleIcon key="icon" className="text-txt-success size-6" />,
-                t("settings.backups.ok", { ago: ago(backup.last!.at) }),
-                daily,
-              ];
+  const [title, hint] = backup.running
+    ? [t("settings.backups.running"), t("settings.backups.runningHint")]
+    : statusText(backup, health, daily);
+  const tone = backupTone(health);
+  const icon = backup.running ? (
+    <Spinner size="medium" label={null} />
+  ) : tone === "danger" ? (
+    <CrossCircleIcon className="text-txt-danger size-6" />
+  ) : tone === "warning" ? (
+    <WarningCircleIcon className="text-txt-warning size-6" />
+  ) : (
+    <CheckCircleIcon className="text-txt-success size-6" />
+  );
   return (
     <div className="flex min-w-0 grow items-start gap-3">
       <span aria-hidden className="mt-0.5 flex size-6 shrink-0 items-center justify-center">
@@ -185,6 +200,36 @@ function Status({ backup }: { backup: Summary["backup"] }) {
       </output>
     </div>
   );
+}
+
+/** The status card's title and hint for each state. */
+function statusText(backup: Summary["backup"], health: BackupHealth, daily: string) {
+  switch (health) {
+    case "failed":
+      return [
+        t("settings.backups.failed"),
+        t("settings.backups.failedHint", { ago: ago(backup.failed!.at) }),
+      ];
+    case "never":
+      return [t("settings.backups.never"), daily];
+    case "stale":
+      return [
+        t("settings.backups.stale", { ago: ago(backup.last!.at) }),
+        backup.schedule ? t("settings.backups.staleHint") : daily,
+      ];
+    case "offsiteFailed":
+      return [
+        t("settings.backups.offsiteFailed"),
+        t("settings.backups.offsiteFailedHint", { ago: ago(backup.last!.at) }),
+      ];
+    case "diskLow":
+      return [
+        t("settings.backups.diskLow"),
+        t("settings.backups.diskLowHint", { free: formatBytes(backup.disk!.free) }),
+      ];
+    case "ok":
+      return [t("settings.backups.ok", { ago: ago(backup.last!.at) }), daily];
+  }
 }
 
 /** The second line: where the copies off the server stand, and the last check of one. */
@@ -221,23 +266,19 @@ function OffsiteLine({ offsite }: { offsite: NonNullable<Summary["backup"]["offs
 }
 
 /** Paths, the schedule setting, the raw error and the archive names: what restoring takes. */
-function TechnicalDetails({ backup }: { backup: Summary["backup"] }) {
+function BackupDetails({ backup }: { backup: Summary["backup"] }) {
   const rows: [MessageKey, ReactNode][] = [
     [
       "settings.backups.details.folder",
-      <span key="folder" className="flex flex-col gap-1">
-        <code className={pathClass}>{backup.dir}</code>
-        {backup.sameDisk && (
-          <span className="text-body-sm text-txt-black-700">
-            {t("settings.backups.details.sameDisk")}
-          </span>
-        )}
-      </span>,
+      <code key="folder" className={pathClass}>
+        {backup.dir}
+      </code>,
     ],
     [
       "settings.backups.details.schedule",
       <code key="schedule">BACKUP_SCHEDULE={backup.schedule ?? "off"}</code>,
     ],
+    ["settings.backups.details.disk", <DiskSpace key="disk" disk={backup.disk} />],
   ];
   if (backup.failed)
     rows.push([
@@ -262,80 +303,65 @@ function TechnicalDetails({ backup }: { backup: Summary["backup"] }) {
       </span>,
     ]);
   return (
-    <Details>
-      <DetailsTrigger>{t("settings.backups.details")}</DetailsTrigger>
-      <DetailsContent className="gap-stack-md flex flex-col">
-        <SummaryList>
-          <SummaryListBody>
-            {rows.map(([label, value]) => (
-              <SummaryListRow key={label}>
-                <SummaryListTerm>{t(label)}</SummaryListTerm>
-                <SummaryListDetail>{value}</SummaryListDetail>
-              </SummaryListRow>
-            ))}
-          </SummaryListBody>
-        </SummaryList>
-        {backup.archives.length > 0 && (
-          <Table>
-            <caption className="text-body-md text-txt-black-900 caption-top pb-2 text-left font-semibold">
-              {t("settings.backups.details.kept")}
-            </caption>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("settings.backups.details.date")}</TableHead>
-                <TableHead>{t("settings.backups.details.type")}</TableHead>
-                <TableHead>{t("settings.backups.details.size")}</TableHead>
-                <TableHead>{t("settings.backups.details.file")}</TableHead>
-                {offsite && <TableHead>{t("settings.backups.details.offsite")}</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {backup.archives.map((archive) => (
-                <TableRow key={archive.file}>
-                  <TableCell>{formatDateTime(archive.at)}</TableCell>
-                  <TableCell>
-                    {t(
-                      archive.dbOnly
-                        ? "settings.backups.details.dbOnly"
-                        : "settings.backups.details.full",
-                    )}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap tabular-nums">
-                    {formatBytes(archive.bytes)}
-                  </TableCell>
-                  <TableCell>
-                    <code className={pathClass}>{archive.file}</code>
-                  </TableCell>
-                  {offsite && (
-                    <TableCell className="whitespace-nowrap">
-                      {offsite.copied.includes(archive.file)
-                        ? t("settings.backups.details.copied")
-                        : t("settings.backups.details.notCopied")}
-                    </TableCell>
+    <div className="gap-stack-md flex flex-col">
+      <SummaryList>
+        <SummaryListBody>
+          {rows.map(([label, value]) => (
+            <SummaryListRow key={label}>
+              <SummaryListTerm>{t(label)}</SummaryListTerm>
+              <SummaryListDetail>{value}</SummaryListDetail>
+            </SummaryListRow>
+          ))}
+        </SummaryListBody>
+      </SummaryList>
+      {backup.archives.length > 0 && (
+        <Table>
+          <caption className="text-body-md text-txt-black-900 caption-top pb-2 text-left font-semibold">
+            {t("settings.backups.details.kept")}{" "}
+            <Tag size="small" className="ml-1 align-middle">
+              {backup.archives.length}
+            </Tag>
+          </caption>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("settings.backups.details.date")}</TableHead>
+              <TableHead>{t("settings.backups.details.type")}</TableHead>
+              <TableHead>{t("settings.backups.details.size")}</TableHead>
+              <TableHead>{t("settings.backups.details.file")}</TableHead>
+              {offsite && <TableHead>{t("settings.backups.details.offsite")}</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {backup.archives.map((archive) => (
+              <TableRow key={archive.file}>
+                <TableCell>{formatDateTime(archive.at)}</TableCell>
+                <TableCell>
+                  {t(
+                    archive.dbOnly
+                      ? "settings.backups.details.dbOnly"
+                      : "settings.backups.details.full",
                   )}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-        <div className="flex flex-col gap-1">
-          <p className="text-body-sm text-txt-black-700 m-0">
-            {t("settings.backups.details.restore")}
-          </p>
-          <code className={pathClass}>site-builder restore &lt;file&gt;</code>
-        </div>
-        {offsite && (
-          <div className="flex flex-col gap-1">
-            <p className="text-body-sm text-txt-black-700 m-0">
-              {t("settings.backups.details.fetch")}
-            </p>
-            <code className={pathClass}>site-builder backups --remote</code>
-            <code className={pathClass}>site-builder fetch &lt;file&gt;</code>
-          </div>
-        )}
-        {offsite && <CheckNow />}
-      </DetailsContent>
-    </Details>
+                </TableCell>
+                <TableCell className="whitespace-nowrap tabular-nums">
+                  {formatBytes(archive.bytes)}
+                </TableCell>
+                <TableCell>
+                  <code className={pathClass}>{archive.file}</code>
+                </TableCell>
+                {offsite && (
+                  <TableCell className="whitespace-nowrap">
+                    {offsite.copied.includes(archive.file)
+                      ? t("settings.backups.details.copied")
+                      : t("settings.backups.details.notCopied")}
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+      {offsite && <CheckNow />}
+    </div>
   );
 }
 
@@ -385,6 +411,38 @@ function CheckNow() {
           <Spinner size="small" label={null} />
           {t("settings.backups.offsite.checking")}
         </output>
+      )}
+    </div>
+  );
+}
+
+/** How full the backup disk is, red when it's running low. */
+function DiskSpace({ disk }: { disk: Summary["backup"]["disk"] }) {
+  if (!disk)
+    return <span className="text-txt-black-700">{t("settings.backups.details.diskUnknown")}</span>;
+  const text = t("settings.backups.details.diskFree", {
+    free: formatBytes(disk.free),
+    total: formatBytes(disk.total),
+  });
+  return (
+    <div className="flex max-w-sm flex-col gap-1.5">
+      <Meter
+        aria-label={t("settings.backups.details.disk")}
+        value={disk.total - disk.free}
+        max={disk.total}
+        tone={disk.low ? "danger" : "default"}
+        toneLabels={{ danger: t("settings.backups.details.diskLow") }}
+        getAriaValueText={() =>
+          disk.low ? `${text}, ${t("settings.backups.details.diskLow")}` : text
+        }
+      >
+        <MeterValue className="col-start-1 justify-self-start">{() => text}</MeterValue>
+        <MeterTrack size="small" />
+      </Meter>
+      {disk.low && (
+        <span className="text-body-sm text-txt-danger">
+          {t("settings.backups.details.diskLowHint")}
+        </span>
       )}
     </div>
   );

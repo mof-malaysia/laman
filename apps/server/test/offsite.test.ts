@@ -57,7 +57,7 @@ let root: string;
 let store: MemoryStore;
 
 beforeEach(async () => {
-  root = await mkdtemp(join(tmpdir(), "site-builder-offsite-"));
+  root = await mkdtemp(join(tmpdir(), "laman-offsite-"));
   store = new MemoryStore();
 });
 afterEach(async () => {
@@ -287,7 +287,7 @@ describe("off-site copies", () => {
     const day = 86_400_000;
     const at = Date.now();
     const name = (daysAgo: number) =>
-      `site-builder-${new Date(at - daysAgo * day).toISOString().replaceAll(/[:.]/g, "-")}.tar.gz`;
+      `laman-${new Date(at - daysAgo * day).toISOString().replaceAll(/[:.]/g, "-")}.tar.gz`;
     const put = (key: string) =>
       store.objects.set(key, {
         data: Buffer.from("x"),

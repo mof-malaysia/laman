@@ -239,7 +239,7 @@ erDiagram
 
 ## site.db: Takwim
 
-A listing reads ICS calendars. Each occurrence a sync finds is written to an entry under the listing; `calendar_events` remembers which entry, and a hash of what it last wrote (docs/site-builder.md).
+A listing reads ICS calendars. Each occurrence a sync finds is written to an entry under the listing; `calendar_events` remembers which entry, and a hash of what it last wrote (docs/laman.md).
 
 ```mermaid
 erDiagram

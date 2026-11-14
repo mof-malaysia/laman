@@ -1,5 +1,5 @@
 /**
- * Off-site copies (docs/site-builder.md § Off-site copies). Every archive
+ * Off-site copies (docs/laman.md § Off-site copies). Every archive
  * the builder makes in BACKUP_DIR is also uploaded, by a `backup.upload` job
  * of its own, so a storage outage never stops the local backup and a failed
  * upload is retried without making another archive. Copies go in a folder
@@ -177,7 +177,7 @@ export const remoteKey = (
 
 export type RemoteArchive = {
   key: string;
-  /** The archive's own name, without `.enc`: what `site-builder restore` takes once fetched. */
+  /** The archive's own name, without `.enc`: what `laman restore` takes once fetched. */
   file: string;
   folder: OffsiteFolder;
   at: string;
@@ -302,7 +302,7 @@ export async function fetchRemote(
 
 /**
  * Downloads the newest full copy into a scratch folder and checks it end to
- * end, as `site-builder backup --verify` does a local one.
+ * end, as `laman backup --verify` does a local one.
  */
 export async function verifyRemote(options: {
   store: RemoteStore;

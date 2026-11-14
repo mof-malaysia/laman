@@ -23,7 +23,7 @@ const env = (extra: Record<string, string> = {}) =>
   });
 
 beforeEach(async () => {
-  dataDir = await mkdtemp(join(tmpdir(), "site-builder-auth-"));
+  dataDir = await mkdtemp(join(tmpdir(), "laman-auth-"));
   app = await testApp({ env: env(), databasePath: ":memory:", runJobs: false });
 });
 afterEach(async () => {

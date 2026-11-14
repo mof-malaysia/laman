@@ -1023,8 +1023,10 @@ exports[`stored document schemas > off-site settings 1`] = `
     "provider": {
       "enum": [
         "aws",
+        "gcs",
         "r2",
         "wasabi",
+        "spaces",
         "minio",
         "s3",
       ],

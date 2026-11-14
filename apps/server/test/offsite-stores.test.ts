@@ -44,7 +44,7 @@ const s3Endpoint = process.env.OFFSITE_TEST_S3;
 
 let root: string;
 beforeAll(async () => {
-  root = await mkdtemp(join(tmpdir(), "site-builder-stores-"));
+  root = await mkdtemp(join(tmpdir(), "laman-stores-"));
 });
 afterAll(async () => {
   await rm(root, { recursive: true, force: true });
@@ -56,7 +56,7 @@ async function roundTrip(config: StoreConfig) {
   expect(await testConnection(store, "laman")).toEqual({ ok: true, canDelete: true, error: null });
 
   const backupDir = await mkdtemp(join(root, "backups-"));
-  const file = `site-builder-${new Date().toISOString().replaceAll(/[:.]/g, "-")}.tar.gz`;
+  const file = `laman-${new Date().toISOString().replaceAll(/[:.]/g, "-")}.tar.gz`;
   const data = randomBytes(20 * 1024 * 1024 + 123);
   await writeFile(join(backupDir, file), data);
   const stored = { ...offsiteDefaults, enabled: true, prefix: "laman", encrypt: true };

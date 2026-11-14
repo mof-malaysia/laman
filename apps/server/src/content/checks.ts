@@ -1,5 +1,5 @@
 /**
- * The check before a page goes live (docs/site-builder.md § Checks before
+ * The check before a page goes live (docs/laman.md § Checks before
  * publishing): what in its draft would fail visitors, found by walking the
  * blocks' JSON rather than by a rule per block (Embed's address is the one
  * exception: whether the site allows it). Only a missing main heading

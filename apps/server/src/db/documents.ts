@@ -252,6 +252,6 @@ export function parseStored<T>(schema: z.ZodType<T>, value: unknown, what: strin
   throw new HttpError(
     500,
     "stored_document_invalid",
-    `The stored ${what} doesn't match this version's schema. Run "site-builder check" for details.`,
+    `The stored ${what} doesn't match this version's schema. Run "laman check" for details.`,
   );
 }

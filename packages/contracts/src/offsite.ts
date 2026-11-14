@@ -1,20 +1,22 @@
 /**
- * Off-site copies of backups (docs/site-builder.md § Off-site copies): each
+ * Off-site copies of backups (docs/laman.md § Off-site copies): each
  * archive the builder makes is also uploaded to an S3-compatible bucket.
  * Settings → Backups edits them; the secret key and the encryption passphrase
  * are stored sealed and never sent back.
  *
- * Azure (parked): see docs/site-builder.md § Off-site copies, Azure Blob Storage (parked).
+ * Azure (parked): see docs/laman.md § Off-site copies, Azure Blob Storage (parked).
  * Its code is kept, commented out, until a release can test it against a real
  * storage account; search for "Azure (parked)".
  */
 import { z } from "zod";
 
-/** Where the copies go. `s3` is any other S3-compatible service. */
+/** Where the copies go. `gcs` is Google Cloud Storage through its S3-compatible API; `s3` is any other S3-compatible service. */
 export const OffsiteProvider = z.enum([
   "aws",
+  "gcs",
   "r2",
   "wasabi",
+  "spaces",
   "minio",
   "s3",
   // Azure (parked): "azure",
@@ -44,7 +46,7 @@ export const needsEndpoint = (provider: OffsiteProvider) =>
 
 /** Providers whose region the builder needs to be told. */
 export const needsRegion = (provider: OffsiteProvider) =>
-  provider === "aws" || provider === "wasabi" || provider === "s3";
+  provider === "aws" || provider === "wasabi" || provider === "spaces" || provider === "s3";
 
 /** S3 bucket and Azure container names: lowercase letters, numbers, dots and hyphens. */
 const BucketName = z

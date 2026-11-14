@@ -42,7 +42,7 @@ import { Tag } from "@/components/ui/tag";
 import { type MessageKey, t } from "@/i18n";
 import { mediaQuery } from "@/lib/api";
 import { useCan } from "@/lib/auth";
-import { backupHealth } from "@/lib/backups";
+import { backupHealth, backupTone } from "@/lib/backups";
 import { clx } from "@/lib/ftds/utils";
 import { formatAgo, formatDateTime, previewHref, usePages, useSummary } from "@/lib/pages";
 import { hostOf, siteDocQuery, siteHref, useAnnouncementDoc } from "@/lib/publish";
@@ -667,10 +667,7 @@ function Health({
             </span>
           ) : (
             <Link to="/settings" search={{ section: "backups" }} className="no-underline">
-              <Tag
-                size="small"
-                variant={backup === "failed" || backup === "offsiteFailed" ? "danger" : "warning"}
-              >
+              <Tag size="small" variant={backupTone(backup)}>
                 {t(`home.backup.${backup}`)}
               </Tag>
             </Link>

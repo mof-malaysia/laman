@@ -14,6 +14,7 @@ import {
 } from "@fiscal-sb/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useState } from "react";
+import { RadioCards } from "@/components/radio-cards";
 import { SavedNote, SettingsCard, SettingsForm } from "@/components/settings-card";
 import { SwitchSetting } from "@/components/switch-setting";
 import { Button } from "@/components/ui/button";
@@ -23,15 +24,15 @@ import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui
 import { CheckCircleIcon } from "@/components/ui/icons/check-circle";
 import { CrossCircleIcon } from "@/components/ui/icons/cross-circle";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { Tag } from "@/components/ui/tag";
 import { type MessageKey, t } from "@/i18n";
 import { apiError, siteApi } from "@/lib/api";
+import { ProviderLogo } from "./provider-logos";
 
-// Azure (parked): "azure" after "s3". See docs/site-builder.md § Off-site copies.
-const providers: OffsiteProvider[] = ["aws", "r2", "wasabi", "minio", "s3"];
+// Azure (parked): "azure" after "s3". See docs/laman.md § Off-site copies.
+const providers: OffsiteProvider[] = ["aws", "gcs", "r2", "wasabi", "spaces", "minio", "s3"];
 
 type Fields = Omit<OffsiteSettingsSave, "secret" | "passphrase">;
 
@@ -118,6 +119,8 @@ function OffsiteForm({
   // it comes back; so do its settings.offsite.* messages.
   const azure = false as boolean;
   const disabled = !settings.canSave;
+  const endpointHintKey = endpointHint[value.provider];
+  const region = regionExample[value.provider] ?? defaultRegion;
 
   const body = (): OffsiteSettingsSave => ({
     ...value,
@@ -248,34 +251,44 @@ function OffsiteForm({
       >
         <SwitchSetting
           title={t("settings.offsite.enabled")}
-          description={t("settings.offsite.enabledHint")}
           checked={value.enabled}
           disabled={disabled}
           onCheckedChange={(enabled) => set({ enabled })}
         />
         {value.enabled && (
           <>
-            <Field name="provider" disabled={disabled}>
-              <FieldLabel>{t("settings.offsite.provider")}</FieldLabel>
-              <Select
-                items={providers.map((p) => ({
-                  value: p,
-                  label: t(`settings.offsite.provider.${p}`),
-                }))}
-                value={value.provider}
-                onValueChange={(provider: string) => set({ provider: provider as OffsiteProvider })}
-              />
-            </Field>
+            <RadioCards
+              legend={t("settings.offsite.provider")}
+              value={value.provider}
+              onChange={(provider) => set({ provider })}
+              disabled={disabled}
+              className="grid grid-cols-2 gap-2 sm:grid-cols-3"
+              cardClassName="text-body-sm items-center gap-2.5 rounded-lg px-3 py-2.5 font-medium"
+              idleClassName="border-otl-gray-200 bg-bg-white text-txt-black-900 hover:border-otl-gray-300"
+              options={providers.map((provider) => {
+                const label = t(`settings.offsite.provider.${provider}`);
+                return {
+                  value: provider,
+                  label,
+                  content: (
+                    <>
+                      <span className="grid size-6 shrink-0 place-items-center">
+                        <ProviderLogo provider={provider} className="max-h-6 max-w-6" />
+                      </span>
+                      {label}
+                    </>
+                  ),
+                };
+              })}
+            />
             {(needsEndpoint(value.provider) || azure) &&
-              text(
-                "endpoint",
-                "settings.offsite.endpoint",
-                t(`settings.offsite.endpoint.${value.provider}` as MessageKey),
-                { optional: azure, placeholder: endpointExample[value.provider] },
-              )}
+              text("endpoint", "settings.offsite.endpoint", endpointHintKey && t(endpointHintKey), {
+                optional: azure,
+                placeholder: endpointExample[value.provider],
+              })}
             {needsRegion(value.provider) &&
-              text("region", "settings.offsite.region", t("settings.offsite.regionHint"), {
-                placeholder: "ap-southeast-5",
+              text("region", "settings.offsite.region", t(region.hint), {
+                placeholder: region.example,
                 narrow: true,
               })}
             {/* Two short fields with no hints: side by side, so their boxes line up. */}
@@ -290,6 +303,11 @@ function OffsiteForm({
                     text("accessKeyId", "settings.offsite.keyId"),
                   ]}
             </div>
+            {value.provider === "gcs" && (
+              <p className="text-body-sm text-txt-black-700 -mt-2">
+                {t("settings.offsite.gcsKeys")}
+              </p>
+            )}
             <Field name="secret" invalid={Boolean(issues.get("secret"))} disabled={disabled}>
               <FieldLabel>
                 {t(azure ? "settings.offsite.sas" : "settings.offsite.secret")}
@@ -445,6 +463,18 @@ const endpointExample: Partial<Record<OffsiteProvider, string>> = {
   minio: "https://minio.agensi.gov.my",
   s3: "https://s3.example.com",
   // Azure (parked): azure: "https://<account>.blob.core.windows.net",
+};
+
+/** The region example and its hint, for providers whose regions aren't AWS-style names. */
+const defaultRegion = { example: "ap-southeast-5", hint: "settings.offsite.regionHint" } as const;
+const regionExample: Partial<Record<OffsiteProvider, { example: string; hint: MessageKey }>> = {
+  spaces: { example: "sgp1", hint: "settings.offsite.regionHint.spaces" },
+};
+
+/** Where to find the endpoint, for the providers where the example isn't enough. */
+const endpointHint: Partial<Record<OffsiteProvider, MessageKey>> = {
+  r2: "settings.offsite.endpoint.r2",
+  // Azure (parked): azure: "settings.offsite.endpoint.azure",
 };
 
 /** Test connection's answer, announced as it arrives. */

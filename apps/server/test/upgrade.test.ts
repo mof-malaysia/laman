@@ -27,7 +27,7 @@ import { since, summary } from "../src/analytics/reports.js";
 let dir: string;
 let path: string;
 beforeEach(async () => {
-  dir = await mkdtemp(join(tmpdir(), "site-builder-upgrade-"));
+  dir = await mkdtemp(join(tmpdir(), "laman-upgrade-"));
   path = join(dir, "site.db");
 });
 afterEach(() => rm(dir, { recursive: true, force: true }));
@@ -130,7 +130,7 @@ describe("upgrading site.db", () => {
     await migrate(db, { ...migrations, "9999_future": { up: async () => {} } });
     await db.destroy();
     await expect(openDatabase(path)).rejects.toThrow(
-      /upgraded by a newer version of the site builder \(migration 9999_future\)/,
+      /upgraded by a newer version of Laman \(migration 9999_future\)/,
     );
   });
 });

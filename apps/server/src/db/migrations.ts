@@ -304,7 +304,7 @@ export const migrations: Record<string, Migration> = {
             .execute(db);
 
       // Takwim: the ICS calendars a listing reads, and the entry each
-      // occurrence became (docs/site-builder.md).
+      // occurrence became (docs/laman.md).
       await db.schema
         .createTable("calendar_sources")
         .addColumn("id", "text", (c) => c.primaryKey())
