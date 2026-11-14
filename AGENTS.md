@@ -69,7 +69,7 @@ pnpm format
 pnpm verify                      # lint, check-types, test, build
 ```
 
-Nothing else runs these checks: CI (`.github/workflows/www.yml`) only builds and deploys the marketing site from `main`, so the hook and `pnpm verify` are the whole gate.
+A pre-push hook runs `pnpm verify`. Nothing in CI runs these checks (`.github/workflows/www.yml` only builds and deploys the marketing site from `main`, and GitHub Actions minutes are kept for that), so the hooks are the whole gate.
 
 For UI changes, also look at the result in a browser. `.claude/launch.json` has `dev` (server on :3010, admin on :3011/admin, so it doesn't clash with your own `pnpm dev`) and `www` (:4321). Check light and dark mode, phone width, and the keyboard; admin text in both English and BM.
 
