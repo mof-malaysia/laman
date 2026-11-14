@@ -1,6 +1,6 @@
 // The pure functions content migrations run (docs/upgrades.md § 4).
 import { describe, expect, it } from "@rstest/core";
-import { keepPageIntroTone } from "../src/db/migrations.js";
+import { keepPageIntroTone, moveToAppearance } from "../src/db/migrations.js";
 
 describe("0002_page_intro_tone", () => {
   const intro = (props: Record<string, unknown>) => ({ id: "a", type: "pageIntro", props });
@@ -29,5 +29,34 @@ describe("0002_page_intro_tone", () => {
       ms: { blocks: [intro({ tone: "well" })] },
       en: { blocks: [intro({ tone: "well" })] },
     });
+  });
+});
+
+describe("0003_settings_appearance", () => {
+  it("moves Identity's switches into Appearance, keeping what was off", () => {
+    const doc = {
+      identity: { siteName: "Laman", agencyName: "", navbarName: false, footerLogo: true },
+      phase: { phase: "beta", feedbackUrl: "/maklum-balas" },
+    };
+    expect(moveToAppearance(doc)).toEqual({
+      identity: { siteName: "Laman", agencyName: "" },
+      phase: { phase: "beta", feedbackUrl: "/maklum-balas" },
+      appearance: { masthead: true, navbarName: false, footerLogo: true },
+    });
+  });
+
+  it("turns on switches settings saved before them never had", () => {
+    expect(moveToAppearance({ identity: { siteName: "Laman" } })).toEqual({
+      identity: { siteName: "Laman" },
+      appearance: { masthead: true, navbarName: true, footerLogo: true },
+    });
+  });
+
+  it("leaves settings that already have Appearance alone", () => {
+    const doc = {
+      identity: { siteName: "Laman" },
+      appearance: { masthead: false, navbarName: true, footerLogo: true },
+    };
+    expect(moveToAppearance(doc)).toEqual(doc);
   });
 });

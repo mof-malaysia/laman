@@ -56,9 +56,8 @@ async function defaultSettings(db: Db): Promise<SiteSettings> {
     identity: {
       siteName: old?.name ?? "Laman Web Agensi",
       agencyName: "",
-      navbarName: true,
-      footerLogo: true,
     },
+    appearance: { masthead: true, navbarName: true, footerLogo: true },
     contact: { address: "", phone: "", email: "", hours: "" },
     social: [],
     phase: { phase: "off" },
@@ -428,7 +427,7 @@ export async function siteContext(
   // An unsaved document's links resolve as the live site will show them.
   const linksOf = (unsavedDoc: unknown): Scope => (unsavedDoc ? "published" : scope);
   const linkScope = linksOf(navigation);
-  const { identity } = settings;
+  const { identity, appearance } = settings;
   const media = await once(loads, `identity:${scope}`, () => mediaInfo(db, [identity]));
   const file = (ref: { mediaId: string } | undefined) => (ref ? media[ref.mediaId] : undefined);
   const links = (list: NavLink[]): SiteLink[] =>
@@ -490,8 +489,9 @@ export async function siteContext(
       logo: { src: logo.url, alt: logo.alt || identity.agencyName || identity.siteName },
     }),
     // Without a logo the name is all the navbar has, so it stays.
-    ...(logo && !identity.navbarName && { hideNavbarName: true }),
-    ...(!identity.footerLogo && { hideFooterLogo: true }),
+    ...(logo && !appearance.navbarName && { hideNavbarName: true }),
+    ...(!appearance.footerLogo && { hideFooterLogo: true }),
+    ...(!appearance.masthead && { hideMasthead: true }),
     ...(file(identity.favicon) && { favicon: file(identity.favicon)?.url }),
     ...(file(identity.socialImage) && { socialImage: file(identity.socialImage)?.url }),
     nav: navItems,

@@ -1,7 +1,7 @@
 ---
 /**
  * The site around every page, from the site settings and navigation:
- * masthead, phase banner, navbar (links and the three dropdown styles),
+ * masthead (unless the agency turned it off), phase banner, navbar (links and the three dropdown styles),
  * the announcement bar under it, the page, and the footer with the
  * agency's contact details and social links.
  */
@@ -116,7 +116,7 @@ const searchFilters = [
   <body class="bg-bg-white text-txt-black-900 font-body">
     <Skiplink href="#main" lang={lang} />
     <div class="site-accent-bar" aria-hidden="true"></div>
-    <Masthead lang={lang} />
+    {!site.hideMasthead && <Masthead lang={lang} />}
     {
       site.phase && (
         <PhaseBanner phase={site.phase.phase === "alpha" ? "Alfa" : "Beta"} lang={lang}>

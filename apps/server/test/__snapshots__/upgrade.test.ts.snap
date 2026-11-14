@@ -9444,6 +9444,26 @@ exports[`stored document schemas > settings 1`] = `
       ],
       "type": "object",
     },
+    "appearance": {
+      "additionalProperties": false,
+      "properties": {
+        "footerLogo": {
+          "type": "boolean",
+        },
+        "masthead": {
+          "type": "boolean",
+        },
+        "navbarName": {
+          "type": "boolean",
+        },
+      },
+      "required": [
+        "masthead",
+        "navbarName",
+        "footerLogo",
+      ],
+      "type": "object",
+    },
     "contact": {
       "additionalProperties": false,
       "properties": {
@@ -9543,10 +9563,6 @@ exports[`stored document schemas > settings 1`] = `
           ],
           "type": "object",
         },
-        "footerLogo": {
-          "default": true,
-          "type": "boolean",
-        },
         "logo": {
           "additionalProperties": false,
           "properties": {
@@ -9560,10 +9576,6 @@ exports[`stored document schemas > settings 1`] = `
             "mediaId",
           ],
           "type": "object",
-        },
-        "navbarName": {
-          "default": true,
-          "type": "boolean",
         },
         "siteName": {
           "maxLength": 80,
@@ -9588,8 +9600,6 @@ exports[`stored document schemas > settings 1`] = `
       "required": [
         "siteName",
         "agencyName",
-        "navbarName",
-        "footerLogo",
       ],
       "type": "object",
     },
@@ -9689,6 +9699,7 @@ exports[`stored document schemas > settings 1`] = `
   },
   "required": [
     "identity",
+    "appearance",
     "contact",
     "social",
     "phase",

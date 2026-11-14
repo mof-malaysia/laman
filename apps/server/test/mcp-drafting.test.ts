@@ -323,11 +323,11 @@ describe("on a connection of its own", () => {
   });
 
   it("keeps the navbar-name switch when another identity field changes", async () => {
-    const hidden = await useOwn("update_settings", { identity: { navbarName: false } });
-    expect(hidden.draft.identity.navbarName).toBe(false);
+    const hidden = await useOwn("update_settings", { appearance: { navbarName: false } });
+    expect(hidden.draft.appearance.navbarName).toBe(false);
     const renamed = await useOwn("update_settings", { identity: { agencyName: "Lembaga Zakat" } });
-    expect(renamed.draft.identity.navbarName).toBe(false);
-    expect(renamed.draft.identity.footerLogo).toBe(true);
+    expect(renamed.draft.appearance.navbarName).toBe(false);
+    expect(renamed.draft.appearance.footerLogo).toBe(true);
   });
 
   it("takes the original file once, as the officer, with the details given up front", async () => {

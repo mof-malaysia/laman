@@ -22,7 +22,12 @@ import { AnnouncementScreen } from "./site/announcement-screen";
 import { SearchScreen } from "./site/search-screen";
 import { ThemeScreen } from "./site/theme-screen";
 import { type NavPart, NavigationScreen, navParts } from "./site/navigation-screen";
-import { type SettingsSectionId, SettingsScreen, settingsSections } from "./site/settings-screen";
+import {
+  pageOf,
+  type SettingsSectionId,
+  SettingsScreen,
+  settingsSections,
+} from "./site/settings-screen";
 import { PublishingScreen } from "./publishing/publishing-screen";
 import { type PublishingSearch, publishingSearch } from "./publishing/search";
 import { AnalyticsScreen } from "./analytics/analytics-screen";
@@ -215,9 +220,10 @@ const analyticsRoute = createRoute({
 const settingsRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/settings",
+  // A section shown as a further card on another's page (Phase banner) links to that page.
   validateSearch: (search): { section?: SettingsSectionId } =>
     settingsSections.includes(search.section as SettingsSectionId)
-      ? { section: search.section as SettingsSectionId }
+      ? { section: pageOf(search.section as SettingsSectionId) }
       : {},
   component: SettingsScreen,
 });
