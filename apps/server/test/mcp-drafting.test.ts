@@ -292,6 +292,36 @@ describe("on a connection of its own", () => {
   });
   const useOwn = (name: string, args?: object) => helpers.use(own, name, args);
 
+  it("adds, keeps and takes away an accent", async () => {
+    const preview = await useOwn("preview_theme", { preset: "teal", accent: "#CB2043" });
+    expect(preview.accent).toMatchObject({
+      colour: "#cb2043",
+      passes: true,
+      tooCloseToMain: false,
+    });
+    expect((await useOwn("preview_theme", { accent: "#3b82f6" })).accent.tooCloseToMain).toBe(true);
+
+    const added = await useOwn("set_theme", { preset: "teal", accent: "#CB2043" });
+    expect(added.draft).toMatchObject({ preset: "teal", accent: "#cb2043" });
+    // A stored accent is a ramp; changing only the main colour keeps it.
+    const kept = await useOwn("set_theme", { colour: "#044D79" });
+    expect(kept.draft).toMatchObject({
+      preset: "custom",
+      seed: "#044d79",
+      accent: "#cb2043",
+    });
+    // And the accent alone keeps the main colour.
+    const accentOnly = await useOwn("set_theme", { accent: "#0B6B3A" });
+    expect(accentOnly.draft).toMatchObject({ seed: "#044d79", accent: "#0b6b3a" });
+    const removed = await useOwn("set_theme", { accent: null });
+    expect(removed.draft.seed).toBe("#044d79");
+    expect(removed.draft).not.toHaveProperty("accent");
+    expect(await helpers.refusal(own, "set_theme", { preset: "teal", colour: "#044d79" })).toBe(
+      "invalid_input",
+    );
+    await useOwn("discard_draft", { document: "theme" });
+  });
+
   it("keeps the navbar-name switch when another identity field changes", async () => {
     const hidden = await useOwn("update_settings", { identity: { navbarName: false } });
     expect(hidden.draft.identity.navbarName).toBe(false);

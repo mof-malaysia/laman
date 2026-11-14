@@ -298,6 +298,29 @@ describe("theme", () => {
     expect(after).toMatchObject({ changed: false, previous: { preset: "ftds" } });
   });
 
+  it("adds an accent for decoration, and takes it away again", async () => {
+    const saved = await call("PUT", "/api/theme", {
+      draft: { preset: "teal", accent: "#CB2043" },
+    });
+    expect(saved.statusCode).toBe(200);
+    const doc = saved.json().data;
+    expect(doc.draft.accent).toBe("#cb2043");
+    expect(doc.draft.accentRamp["50"]).toHaveLength(3);
+    await publishDoc("theme");
+    const html = await live();
+    expect(html).toContain("--_accent-brand:203 32 67;--_accent-bar:4px;");
+    expect(html).toContain('class="site-accent-bar"');
+
+    await call("PUT", "/api/theme", { draft: { preset: "teal" } });
+    await publishDoc("theme");
+    expect(await live()).not.toContain("--_accent-");
+  });
+
+  it("refuses an accent that isn't a colour", async () => {
+    const res = await call("PUT", "/api/theme", { draft: { preset: "ftds", accent: "red" } });
+    expect(res.statusCode).toBe(400);
+  });
+
   it("needs a colour for a custom theme", async () => {
     const res = await call("PUT", "/api/theme", { draft: { preset: "custom" } });
     expect(res.statusCode).toBe(400);

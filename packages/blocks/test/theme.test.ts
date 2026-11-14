@@ -1,5 +1,8 @@
 import { describe, expect, it } from "@rstest/core";
 import {
+  accentFrom,
+  accentPasses,
+  accentTooClose,
   contrast,
   ftdsPrimary,
   hexToRgb,
@@ -9,6 +12,8 @@ import {
   rampFrom,
   rampSteps,
   rgbToHex,
+  themeCss,
+  themeOf,
   themePresets,
 } from "../src/index.js";
 
@@ -63,5 +68,34 @@ describe("site colours", () => {
 
   it("writes the primitives FTDS reads", () => {
     expect(rampCss(ftdsPrimary)).toMatch(/^--_primary-50:239 246 255;.*--_primary-950:23 37 84;$/);
+  });
+
+  it("writes nothing for the accent when there isn't one", () => {
+    expect(themeCss({ primary: ftdsPrimary })).toBe(rampCss(ftdsPrimary));
+    expect(themeOf({ preset: "ftds" })).not.toHaveProperty("accent");
+  });
+
+  it("writes the accent's ramp, its colour as given and the bars", () => {
+    const accent = accentFrom("#CB2043");
+    expect(accent.seed).toEqual([203, 32, 67]);
+    const css = themeCss({ primary: ftdsPrimary, accent });
+    expect(css).toContain("--_accent-50:");
+    expect(css).toContain("--_accent-brand:203 32 67;--_accent-bar:4px;");
+    expect(themeOf({ preset: "teal", accent: "#CB2043" }).accent).toBe("#cb2043");
+  });
+
+  it("keeps primary links readable on the accent wash", () => {
+    const primary = rampFrom(hexToRgb("#044d79")).ramp;
+    expect(accentPasses(primary, accentFrom("#cb2043").ramp)).toBe(true);
+    expect(accentPasses(primary, accentFrom("#facc15").ramp)).toBe(true);
+    // A wash as dark as the links fails.
+    const dark = { ...accentFrom("#cb2043").ramp, "50": primary["500"] };
+    expect(accentPasses(primary, dark)).toBe(false);
+  });
+
+  it("warns when the accent is too like primary", () => {
+    expect(accentTooClose([37, 99, 235], [59, 130, 246])).toBe(true);
+    expect(accentTooClose([4, 77, 121], [203, 32, 67])).toBe(false);
+    expect(accentTooClose([80, 80, 80], [90, 90, 90])).toBe(true);
   });
 });

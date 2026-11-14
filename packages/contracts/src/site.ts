@@ -301,6 +301,7 @@ export const SearchDoc = drafted(SiteSearch).extend({
 export type SearchDoc = z.infer<typeof SearchDoc>;
 
 const Byte = z.number().int().min(0).max(255);
+const Ramp = z.record(z.enum(rampSteps), z.tuple([Byte, Byte, Byte]));
 
 /** What the officer chooses: a preset, or their own colour. */
 export const ThemeChoice = z
@@ -308,6 +309,8 @@ export const ThemeChoice = z
     preset: z.enum([...(Object.keys(themePresets) as (keyof typeof themePresets)[]), "custom"]),
     /** "#0b6b3a"; only with "custom". */
     seed: z.string().regex(hexPattern, "Enter a colour like #0b6b3a").optional(),
+    /** A second brand colour, "#cb2043", for decoration only; none when unset. */
+    accent: z.string().regex(hexPattern, "Enter a colour like #cb2043").optional(),
   })
   .refine((t) => t.preset !== "custom" || t.seed, {
     message: "Enter a colour like #0b6b3a",
@@ -322,7 +325,11 @@ export type ThemeChoice = z.infer<typeof ThemeChoice>;
 export const SiteTheme = z.object({
   preset: ThemeChoice.shape.preset,
   seed: ThemeChoice.shape.seed,
-  primary: z.record(z.enum(rampSteps), z.tuple([Byte, Byte, Byte])),
+  primary: Ramp,
+  /** The accent as chosen, "#cb2043"; none when the site has one colour. */
+  accent: ThemeChoice.shape.accent,
+  /** The ramp made from the accent on save, stored like `primary`. */
+  accentRamp: Ramp.optional(),
 });
 export type SiteTheme = z.infer<typeof SiteTheme>;
 

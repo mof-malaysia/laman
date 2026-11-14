@@ -15,7 +15,7 @@ const options = p.options.flatMap((option) => {
 });
 ---
 
-<CtaCards options={options} tone={p.tone}>
+<CtaCards class="accent-icons" options={options} tone={p.tone}>
   {
     (edit || p.title) && (
       <Field slot="title" name="title" edit={edit} placeholder="Tajuk">{p.title}</Field>

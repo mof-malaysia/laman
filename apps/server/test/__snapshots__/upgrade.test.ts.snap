@@ -1394,8 +1394,10 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "paper",
                           "well",
                           "primary",
+                          "accent",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -1464,6 +1466,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "paper",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -1621,6 +1624,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -1888,6 +1892,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -1998,6 +2003,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "primary",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -2212,6 +2218,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -2352,6 +2359,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -2638,6 +2646,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -2775,6 +2784,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -2914,6 +2924,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -3069,6 +3080,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -3413,6 +3425,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "paper",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -3662,6 +3675,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "paper",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -3828,6 +3842,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -3965,6 +3980,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -4489,6 +4505,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -4712,6 +4729,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -4801,6 +4819,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -4928,6 +4947,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -5025,6 +5045,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -5355,8 +5376,10 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "paper",
                           "well",
                           "primary",
+                          "accent",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -5425,6 +5448,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "paper",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -5582,6 +5606,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -5849,6 +5874,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -5959,6 +5985,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "primary",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -6173,6 +6200,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -6313,6 +6341,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -6599,6 +6628,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -6736,6 +6766,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -6875,6 +6906,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -7030,6 +7062,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -7374,6 +7407,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "paper",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -7623,6 +7657,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "paper",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -7789,6 +7824,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -7926,6 +7962,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -8450,6 +8487,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -8673,6 +8711,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -8762,6 +8801,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -8889,6 +8929,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -8986,6 +9027,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                           "well",
                         ],
                         "optionLabels": {
+                          "accent": "Accent wash",
                           "paper": "Paper",
                           "primary": "Primary wash",
                           "well": "Well",
@@ -9608,6 +9650,65 @@ exports[`stored document schemas > theme 1`] = `
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "accent": {
+      "pattern": "^#[0-9a-f]{6}$",
+      "type": "string",
+    },
+    "accentRamp": {
+      "additionalProperties": {
+        "items": false,
+        "maxItems": 3,
+        "minItems": 3,
+        "prefixItems": [
+          {
+            "maximum": 255,
+            "minimum": 0,
+            "type": "integer",
+          },
+          {
+            "maximum": 255,
+            "minimum": 0,
+            "type": "integer",
+          },
+          {
+            "maximum": 255,
+            "minimum": 0,
+            "type": "integer",
+          },
+        ],
+        "type": "array",
+      },
+      "propertyNames": {
+        "enum": [
+          "50",
+          "100",
+          "200",
+          "300",
+          "400",
+          "500",
+          "600",
+          "700",
+          "800",
+          "900",
+          "950",
+        ],
+        "type": "string",
+      },
+      "required": [
+        "50",
+        "100",
+        "200",
+        "300",
+        "400",
+        "500",
+        "600",
+        "700",
+        "800",
+        "900",
+        "950",
+      ],
+      "type": "object",
+    },
     "preset": {
       "enum": [
         "ftds",

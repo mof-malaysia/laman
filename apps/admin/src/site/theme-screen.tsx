@@ -1,11 +1,15 @@
 /**
  * Site colours: the primary colour of the published site, from a tested
- * preset or the agency's own colour. Its own document, like the announcement:
- * Publish colours saves and sends it live in one step. The shades are made
+ * preset or the agency's own colour, and an optional accent for decoration.
+ * Its own document, like the announcement: Publish colours saves and sends it
+ * live in one step. The shades are made
  * here with the same function the server runs on save, so the preview is what
  * will be stored; the server makes them again and keeps its own.
  */
 import {
+  accentFrom,
+  accentPasses,
+  accentTooClose,
   contrast,
   hexPattern,
   type Ramp,
@@ -20,7 +24,7 @@ import {
 } from "@fiscal-sb/blocks";
 import type { SiteTheme, ThemeChoice, ThemeDoc } from "@fiscal-sb/contracts";
 import { useQueryClient } from "@tanstack/react-query";
-import { useId, useMemo, useState } from "react";
+import { type ReactNode, useId, useMemo, useState } from "react";
 import { card } from "@/components/card";
 import { PaletteIcon } from "@/components/palette-icon";
 import { PublishControl } from "@/components/publish-control";
@@ -31,7 +35,9 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { SplitPane } from "@/components/ui/split-pane";
 import { CheckCircleIcon } from "@/components/ui/icons/check-circle";
+import { StarIcon } from "@/components/ui/icons/star";
 import { WarningCircleIcon } from "@/components/ui/icons/warning-circle";
+import { SwitchSetting } from "@/components/switch-setting";
 import { Tag } from "@/components/ui/tag";
 import { type MessageKey, t } from "@/i18n";
 import { siteApi } from "@/lib/api";
@@ -108,20 +114,36 @@ function Editor({ doc }: { doc: ThemeDoc }) {
   const [discarding, setDiscarding] = useState(false);
   // The shades follow the last whole code, so a half-typed one doesn't flash the preview.
   const [lastHex, setLastHex] = useState(hex);
+  const [accentOn, setAccentOn] = useState(Boolean(doc.draft.accent));
+  const [accentHex, setAccentHex] = useState(doc.draft.accent ?? "");
+  const [lastAccent, setLastAccent] = useState(doc.draft.accent ?? "");
 
-  const valid = preset !== "custom" || hexPattern.test(hex);
-  const choice: ThemeChoice =
-    preset === "custom" ? { preset, seed: hex.toLowerCase() } : { preset };
+  const accentValid = !accentOn || hexPattern.test(accentHex);
+  const valid = (preset !== "custom" || hexPattern.test(hex)) && accentValid;
+  const accent = accentOn && hexPattern.test(accentHex) ? accentHex.toLowerCase() : undefined;
+  const choice: ThemeChoice = {
+    ...(preset === "custom" ? { preset, seed: hex.toLowerCase() } : { preset }),
+    ...(accent && { accent }),
+  };
   const dirty =
-    preset !== doc.draft.preset || (preset === "custom" && hex.toLowerCase() !== doc.draft.seed);
-  const shown: ThemeChoice = preset === "custom" ? { preset, seed: lastHex } : { preset };
+    preset !== doc.draft.preset ||
+    (preset === "custom" && hex.toLowerCase() !== doc.draft.seed) ||
+    (accentOn ? accentHex.toLowerCase() : undefined) !== doc.draft.accent;
+  const shownAccent = accentOn && lastAccent ? lastAccent : undefined;
+  const shown: ThemeChoice = {
+    ...(preset === "custom" ? { preset, seed: lastHex } : { preset }),
+    ...(shownAccent && { accent: shownAccent }),
+  };
   const generated = useMemo(() => rampFor(shown.preset, shown.seed), [shown.preset, shown.seed]);
 
-  const load = (next: { preset: Preset; seed?: string | undefined; primary: Ramp }) => {
+  const load = (next: SiteTheme) => {
     setPreset(next.preset);
     const code = next.seed ?? rgbToHex(next.primary["600"]);
     setHex(code);
     setLastHex(code);
+    setAccentOn(Boolean(next.accent));
+    setAccentHex(next.accent ?? "");
+    setLastAccent(next.accent ?? "");
   };
   const leaveGuard = useLeaveGuard(dirty, t("theme.leave.body"));
   const conflict = useDocConflict<SiteTheme>("theme", {
@@ -161,6 +183,13 @@ function Editor({ doc }: { doc: ThemeDoc }) {
             className="border-otl-gray-200 size-4 shrink-0 rounded-full border"
             style={{ background: rgb(doc.published.primary, "600") }}
           />
+          {doc.published.accent && (
+            <span
+              aria-hidden
+              className="border-otl-gray-200 -ml-2.5 size-4 shrink-0 rounded-full border"
+              style={{ background: doc.published.accent }}
+            />
+          )}
           {t("theme.state.live", { name: nameOf(doc.published) })}
         </>
       }
@@ -194,6 +223,7 @@ function Editor({ doc }: { doc: ThemeDoc }) {
                     </p>
                   )}
                   <p>{t("theme.review.body", { name: nameOf(choice) })}</p>
+                  {choice.accent && <p>{t("theme.review.accent", { hex: choice.accent })}</p>}
                   <p className="text-txt-black-700">{t("theme.review.undo")}</p>
                 </div>
               ),
@@ -217,7 +247,27 @@ function Editor({ doc }: { doc: ThemeDoc }) {
           setHex(next);
           if (hexPattern.test(next)) setLastHex(next.toLowerCase());
         }}
-      />
+      >
+        <AccentChoice
+          on={accentOn}
+          hex={accentHex}
+          shown={shownAccent}
+          primary={generated.ramp}
+          error={!accentValid && accentHex.length >= 7 ? t("theme.hexInvalid") : undefined}
+          onToggle={(on) => {
+            setAccentOn(on);
+            // A first accent starts from something to change, not an empty box.
+            if (on && !accentHex) {
+              setAccentHex(defaultAccent);
+              setLastAccent(defaultAccent);
+            }
+          }}
+          onHex={(next) => {
+            setAccentHex(next);
+            if (hexPattern.test(next)) setLastAccent(next.toLowerCase());
+          }}
+        />
+      </Choose>
       <Shades
         ramp={generated.ramp}
         seedStep={preset === "custom" ? generated.seedStep : undefined}
@@ -271,17 +321,21 @@ function Choose({
   error,
   onPreset,
   onHex,
+  children,
 }: {
   preset: Preset;
   hex: string;
   error?: string | undefined;
   onPreset: (preset: Preset) => void;
   onHex: (hex: string) => void;
+  /** The accent, below the main colour in the same card. */
+  children?: ReactNode;
 }) {
   const customSwatch = preset === "custom" && hexPattern.test(hex) ? hex : anyColour;
   return (
     <div className={clx(card, "border-otl-gray-200 flex shrink-0 flex-col gap-4 p-4")}>
-      <h2 className="text-label-lg text-txt-black-900 font-semibold">{t("theme.choose")}</h2>
+      <h2 className="text-label-lg text-txt-black-900 font-semibold">{t("theme.colours")}</h2>
+      <h3 className="text-label-md text-txt-black-900 -mb-2 font-semibold">{t("theme.choose")}</h3>
       <Choice
         name="preset"
         legend={t("theme.choose")}
@@ -305,30 +359,129 @@ function Choose({
       {preset === "custom" && (
         <Field name="seed" invalid={Boolean(error)} className="border-otl-gray-200 border-t pt-4">
           <FieldLabel>{t("theme.hex")}</FieldLabel>
-          <div className="flex items-center gap-2">
-            <Input
-              value={hex}
-              maxLength={7}
-              spellCheck={false}
-              autoComplete="off"
-              className="max-w-40 font-mono"
-              onChange={(e) => {
-                const v = e.target.value.trim();
-                onHex(v && !v.startsWith("#") ? `#${v}` : v);
-              }}
-            />
-            <input
-              type="color"
-              aria-label={t("theme.picker")}
-              value={hexPattern.test(hex) ? hex.toLowerCase() : "#000000"}
-              onChange={(e) => onHex(e.target.value)}
-              className="border-otl-gray-300 focus-visible:ring-fr-primary h-10 w-12 shrink-0 cursor-pointer rounded-md border bg-transparent p-1 focus-visible:ring-2 focus-visible:outline-none"
-            />
-          </div>
+          <ColourInput hex={hex} onHex={onHex} />
           <FieldError>{error}</FieldError>
         </Field>
       )}
+      {children}
     </div>
+  );
+}
+
+/** A colour code and the browser's picker, kept in step. */
+function ColourInput({ hex, onHex }: { hex: string; onHex: (hex: string) => void }) {
+  return (
+    <div className="flex items-center gap-2">
+      <Input
+        value={hex}
+        maxLength={7}
+        spellCheck={false}
+        autoComplete="off"
+        className="max-w-40 font-mono"
+        onChange={(e) => {
+          const v = e.target.value.trim();
+          onHex(v && !v.startsWith("#") ? `#${v}` : v);
+        }}
+      />
+      <input
+        type="color"
+        aria-label={t("theme.picker")}
+        value={hexPattern.test(hex) ? hex.toLowerCase() : "#000000"}
+        onChange={(e) => onHex(e.target.value)}
+        className="border-otl-gray-300 focus-visible:ring-fr-primary h-10 w-12 shrink-0 cursor-pointer rounded-md border bg-transparent p-1 focus-visible:ring-2 focus-visible:outline-none"
+      />
+    </div>
+  );
+}
+
+/** Where a first accent starts, for the officer to change. */
+const defaultAccent = "#cb2043";
+
+/**
+ * The accent, in the colour card under the main colour: off, or a colour for
+ * the brand bars, icon badges, figures and date tiles. Shows a card drawn in
+ * it, and warns when it's too like primary to tell apart or primary links
+ * can't be read on its wash.
+ */
+function AccentChoice({
+  on,
+  hex,
+  shown,
+  primary,
+  error,
+  onToggle,
+  onHex,
+}: {
+  on: boolean;
+  hex: string;
+  shown: string | undefined;
+  primary: Ramp;
+  error?: string | undefined;
+  onToggle: (on: boolean) => void;
+  onHex: (hex: string) => void;
+}) {
+  const id = useId();
+  const { accent, close, unreadable } = useMemo(() => {
+    const made = shown ? accentFrom(shown) : undefined;
+    return {
+      accent: made,
+      close: made && accentTooClose(primary["600"], made.seed),
+      unreadable: made && !accentPasses(primary, made.ramp),
+    };
+  }, [shown, primary]);
+  return (
+    <section aria-labelledby={id} className="border-otl-gray-200 flex flex-col gap-4 border-t pt-4">
+      <h3 id={id} className="text-label-md text-txt-black-900 -mb-2 font-semibold">
+        {t("theme.accent.title")}
+      </h3>
+      <SwitchSetting
+        title={t("theme.accent.toggle")}
+        description={t("theme.accent.hint")}
+        checked={on}
+        onCheckedChange={onToggle}
+      />
+      {on && (
+        <>
+          <Field name="accent" invalid={Boolean(error)}>
+            <FieldLabel>{t("theme.hex")}</FieldLabel>
+            <ColourInput hex={hex} onHex={onHex} />
+            <FieldError>{error}</FieldError>
+          </Field>
+          {accent && (
+            // A card as the site draws one: the bar, an icon badge in the accent, a primary link.
+            <div
+              aria-hidden
+              className="border-otl-gray-200 bg-bg-white overflow-hidden rounded-lg border"
+            >
+              <div className="h-1" style={{ background: rgbToHex(accent.seed) }} />
+              <div className="flex items-center gap-3 p-3">
+                <span
+                  className="flex size-10 shrink-0 items-center justify-center rounded-full"
+                  style={{
+                    background: rgb(accent.ramp, "50"),
+                    color: rgb(accent.ramp, "700"),
+                  }}
+                >
+                  <StarIcon className="size-5" />
+                </span>
+                <span
+                  className="text-body-sm font-medium underline"
+                  style={{ color: rgb(primary, "600") }}
+                >
+                  {t("theme.accent.sampleLink")}
+                </span>
+              </div>
+            </div>
+          )}
+          {(close || unreadable) && (
+            <p className="text-body-sm text-txt-warning flex items-start gap-2" aria-live="polite">
+              <WarningCircleIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
+              {unreadable ? t("theme.accent.unreadable") : t("theme.accent.close")}
+            </p>
+          )}
+        </>
+      )}
+    </section>
   );
 }
 

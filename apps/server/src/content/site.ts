@@ -7,6 +7,8 @@
  */
 import {
   ftdsPrimary,
+  accentPasses,
+  hexToRgb,
   rampPasses,
   type SiteContext,
   type SiteLink,
@@ -219,6 +221,12 @@ export async function saveThemeDraft(db: Db, choice: ThemeChoice, base?: string)
       400,
       "theme_contrast",
       "These colours aren't readable enough for links and buttons",
+    );
+  if (draft.accentRamp && !accentPasses(draft.primary, draft.accentRamp))
+    throw new HttpError(
+      400,
+      "theme_contrast",
+      "Links and buttons aren't readable enough on this accent colour",
     );
   await writeDraft(db, "theme", draft, base);
   return getThemeDoc(db);
@@ -515,6 +523,12 @@ export async function siteContext(
     ...(siteUrl && { url: siteUrl }),
     embeds: settings.embeds,
     ...(settings.analytics.on && { analytics: true }),
-    theme: { primary: theme.primary },
+    theme: {
+      primary: theme.primary,
+      ...(theme.accent &&
+        theme.accentRamp && {
+          accent: { seed: hexToRgb(theme.accent), ramp: theme.accentRamp },
+        }),
+    },
   };
 }

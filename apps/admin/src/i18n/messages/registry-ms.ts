@@ -34,7 +34,8 @@ export const registryMs: Record<string, string> = {
   Background: "Latar",
   Paper: "Kertas",
   Well: "Kelabu",
-  "Primary wash": "Biru lembut",
+  "Primary wash": "Warna utama lembut",
+  "Accent wash": "Warna aksen lembut",
 
   // Page intro
   "Page intro": "Pengenalan halaman",

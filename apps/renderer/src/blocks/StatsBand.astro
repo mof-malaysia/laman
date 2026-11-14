@@ -8,7 +8,7 @@ const { block, edit } = Astro.props;
 const p = block.props;
 ---
 
-<StatsBand stats={p.stats}>
+<StatsBand class="accent-figures" stats={p.stats}>
   {
     (edit || p.title) && (
       <Field slot="title" name="title" edit={edit} placeholder="Tajuk">{p.title}</Field>

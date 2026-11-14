@@ -17,3 +17,54 @@
 [data-column="article"] .max-w-\[1280px\] {
   max-width: 808px;
 }
+
+/*
+ * The site's accent (docs/laman.md § Site colours): a second brand colour for
+ * decoration only. Links, buttons, tags and focus rings stay primary. The
+ * layout's #site-theme writes --_accent-* only when the site has an accent;
+ * without one every token here falls back to primary and the bars to nothing,
+ * so the page is exactly as before.
+ */
+:root {
+  --bg-accent-50: var(--_accent-50, var(--_primary-50));
+  --txt-accent: var(--_accent-700, var(--_primary-600));
+  --otl-accent: var(--_accent-brand, var(--_primary-600));
+}
+
+@theme inline {
+  --color-bg-accent-50: rgb(var(--bg-accent-50));
+  --color-txt-accent: rgb(var(--txt-accent));
+  --color-otl-accent: rgb(var(--otl-accent));
+}
+
+/* The brand bars above the masthead and the footer. */
+.site-accent-bar {
+  height: var(--_accent-bar, 0);
+  background: rgb(var(--otl-accent));
+}
+
+/*
+ * FTDS's icon badges, in the blocks whose wrappers opt in with
+ * `accent-icons` (feature grid, service highlights, CTA cards, contact, step
+ * numbers): a primary-wash circle, told from a primary Tag by `flex` where a
+ * Tag is `inline-flex`. Matches FTDS 0.2.2's classes; check on an upgrade.
+ */
+.accent-icons .flex.rounded-full.bg-bg-primary-50.text-txt-primary {
+  --bg-primary-50: var(--bg-accent-50);
+  --txt-primary: var(--txt-accent);
+}
+
+/* The hero's Accent wash: FTDS's primary tone with its wash swapped. */
+.accent-wash {
+  --bg-primary-50: var(--bg-accent-50);
+}
+
+/* A short accent rule over each figure in Impact stats and Stats band (FTDS 0.2.2's markup). */
+.accent-figures dd.order-1::before {
+  content: "";
+  display: block;
+  width: 2rem;
+  height: var(--_accent-bar, 0);
+  margin-bottom: calc(var(--_accent-bar, 0px) * 2);
+  background: rgb(var(--otl-accent));
+}

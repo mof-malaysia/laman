@@ -254,13 +254,68 @@ export function rampFor(preset: ThemePreset | "custom", seed?: string): Generate
   return preset === "ftds" || !hex || !hexPattern.test(hex) ? ftds : rampFrom(hexToRgb(hex));
 }
 
+/**
+ * The site's second brand colour, for decoration only: brand bars, icon
+ * badges, figures, date tiles and the accent hero wash, never anything people
+ * click. Links, buttons and focus rings stay primary, so visitors learn one
+ * colour for "this does something". `seed` is the colour as given, which the
+ * bars use; the ramp is made like primary's, so 700 reads on the 50 wash.
+ */
+export type Accent = { seed: Rgb; ramp: Ramp };
+
+/** The accent from the officer's colour. */
+export const accentFrom = (hex: string): Accent => {
+  const seed = hexToRgb(hex);
+  return { seed, ramp: rampFrom(seed).ramp };
+};
+
+/**
+ * Whether the accent can sit beside primary: its own ramp passes, and primary
+ * links and buttons still read on the accent wash, since an accent hero puts
+ * them there.
+ */
+export const accentPasses = (primary: Ramp, accent: Ramp) =>
+  rampPasses(accent) && contrast(primary["600"], accent["50"]) >= 4.5;
+
+/**
+ * Whether the accent is too like primary to read as a second colour: a
+ * similar hue at a similar lightness, or both nearly grey. A warning, not a
+ * rule; some brands are two blues.
+ */
+export function accentTooClose(primary: Rgb, accent: Rgb) {
+  const [a, b] = [toLch(primary), toLch(accent)];
+  if (a.c < 0.04 && b.c < 0.04) return Math.abs(a.l - b.l) < 0.2;
+  const hue = Math.abs(a.h - b.h) % 360;
+  return Math.min(hue, 360 - hue) < 30 && Math.abs(a.l - b.l) < 0.15;
+}
+
 /** A preset or the officer's colour, and the ramp it publishes with: the stored theme. */
-export const themeOf = (choice: { preset: ThemePreset | "custom"; seed?: string | undefined }) => ({
+export const themeOf = (choice: {
+  preset: ThemePreset | "custom";
+  seed?: string | undefined;
+  accent?: string | undefined;
+}) => ({
   preset: choice.preset,
   ...(choice.preset === "custom" ? { seed: choice.seed?.toLowerCase() } : {}),
   primary: rampFor(choice.preset, choice.seed).ramp,
+  ...(choice.accent && {
+    accent: choice.accent.toLowerCase(),
+    accentRamp: accentFrom(choice.accent).ramp,
+  }),
 });
 
 /** `--_primary-50:239 246 255;…`, the declarations the renderer writes on `:root`. */
-export const rampCss = (ramp: Ramp) =>
-  rampSteps.map((s) => `--_primary-${s}:${ramp[s].join(" ")};`).join("");
+export const rampCss = (ramp: Ramp, name: "primary" | "accent" = "primary") =>
+  rampSteps.map((s) => `--_${name}-${s}:${ramp[s].join(" ")};`).join("");
+
+/**
+ * Everything `#site-theme` writes on `:root`: the primary ramp and, with an
+ * accent, its ramp, its colour as given (`--_accent-brand`) and the brand
+ * bars' height. Without an accent the accent tokens in `global.css` fall back
+ * to primary and the bars to nothing, so the page is as it was.
+ */
+export const themeCss = (theme: { primary: Ramp; accent?: Accent | undefined }) =>
+  rampCss(theme.primary) +
+  (theme.accent
+    ? `${rampCss(theme.accent.ramp, "accent")}--_accent-brand:${theme.accent.seed.join(" ")};--_accent-bar:4px;`
+    : "");

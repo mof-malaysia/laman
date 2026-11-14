@@ -1,5 +1,6 @@
 import { can } from "@fiscal-sb/contracts";
 import type { FastifyPluginAsync, FastifyRequest } from "fastify";
+import { isDeepStrictEqual } from "node:util";
 import { sql } from "kysely";
 import { z } from "zod";
 import {
@@ -73,6 +74,9 @@ type CreateBody = z.output<typeof CreatePageBody>;
 type MoveBody = z.output<typeof MovePageBody>;
 type DuplicateBody = z.output<typeof DuplicatePageBody>;
 
+/** Whether two values hold the same JSON, whatever their key order or undefined fields. */
+const sameJson = (a: unknown, b: unknown) =>
+  isDeepStrictEqual(JSON.parse(JSON.stringify(a ?? null)), JSON.parse(JSON.stringify(b ?? null)));
 export const pageRoutes: FastifyPluginAsync = async (app) => {
   const { db, jobs } = app;
   /**
@@ -179,16 +183,25 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
       schema: {
         summary: "Save a page's draft",
         description:
-          "The draft is validated against the block registry. A redirect may not point at the page itself or at a page that redirects, and a page that others redirect to can't redirect. With `base`, a draft someone else saved since is never overwritten: 409 `draft_conflict` says who and when, and the refused draft is kept in the page's history.",
+          "The draft is validated against the block registry. A redirect may not point at the page itself or at a page that redirects, and a page that others redirect to can't redirect. With `base`, a draft someone else saved since is never overwritten: 409 `draft_conflict` says who and when, and the refused draft is kept in the page's history. An entry's event that came from a calendar sync (`event.source`) can't be changed or given a source: 409 `event_synced`.",
         tags: ["pages"],
         params: PageParams,
         body: SaveDraftBody,
         response: { 200: envelope(Page) },
       },
     },
-    async (request) => ({
-      data: await saveDraft(db, request.params.id, request.body.draft, request.body.base),
-    }),
+    async (request) => {
+      const { draft } = request.body;
+      const stored = (await getPage(db, request.params.id)).draft.entry?.event;
+      // An event from a calendar is the sync's: the next sync would undo an edit, and only it sets `source`.
+      if ((stored?.source || draft.entry?.event?.source) && !sameJson(stored, draft.entry?.event))
+        throw new HttpError(
+          409,
+          "event_synced",
+          "This event comes from a calendar sync, which would undo the change. Change it in its calendar.",
+        );
+      return { data: await saveDraft(db, request.params.id, draft, request.body.base) };
+    },
   );
 
   app.get<{ Querystring: z.infer<typeof PageChecksQuery> }>(

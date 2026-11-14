@@ -15,7 +15,7 @@ const steps = p.steps.map((step) => ({
 }));
 ---
 
-<Steps width={width} steps={steps} action={action(p.action)} tone={p.tone} lang={lang}>
+<Steps class="accent-icons" width={width} steps={steps} action={action(p.action)} tone={p.tone} lang={lang}>
   {
     (edit || p.title) && (
       <Field slot="title" name="title" edit={edit} placeholder="Cara memohon">{p.title}</Field>

@@ -34,12 +34,13 @@ import {
   SiteDocName,
   type SiteSearch,
   SiteSettings,
+  type SiteTheme,
   UpdateMediaBody,
 } from "@fiscal-sb/contracts";
 import { z } from "zod";
-import { ThemeInput } from "./theme.js";
+import { choiceFrom, ThemeInput } from "./theme.js";
 import { addMedia, issueUploadLink } from "./uploads.js";
-import { type Api, drafting, type Tool, ToolError } from "./tool.js";
+import { type Api, drafting, type Tool, ToolError, tool } from "./tool.js";
 
 const Position = z
   .number()
@@ -229,6 +230,7 @@ const patchOf = <S extends z.ZodRawShape>(section: z.ZodObject<S>) =>
     ),
   ) as unknown as Patch<S>;
 const { shape: identity } = sections.identity;
+const { shape: embeds } = sections.embeds.unwrap();
 const SettingsChanges = z.object({
   identity: patchOf(sections.identity)
     .extend({
@@ -274,7 +276,7 @@ export const draftingTools: Tool[] = [
     name: "update_page_details",
     title: "Update page details",
     description:
-      "A page's title and meta description (per language), search-engine settings, redirect, and for entries their fixed fields (date, category, summary, cover, pinned). Only what's given changes. To change its address, use move_page.",
+      "A page's title and meta description (per language), search-engine settings, redirect, and for entries their fixed fields (date, category, summary, cover, pinned, and event: start, end, allDay, location, venue). Only what's given changes. An event that came from a calendar sync (event.source) can't be changed here: the next sync would put it back, so change it in its calendar. To change its address, use move_page.",
     input: z.object({
       id: Id,
       locale: LocaleInput,
@@ -455,8 +457,8 @@ export const draftingTools: Tool[] = [
     name: "update_listing",
     title: "Update a listing's settings",
     description:
-      "A listing's entry categories, its entries' addresses (slug or year), the blocks new entries start with, and its RSS feed. Only what's given changes; categories are replaced whole.",
-    input: z.object({ id: Id, ...ListingSettings.partial().shape }),
+      "A listing's settings (get_listing): entry categories, event locations (for the event calendar's filter), the order of its entries (publishAt: newest first; eventStart: coming events first), its entries' addresses (slug or year), the blocks new entries start with, and its RSS feed. Only what's given changes; categories and locations are replaced whole.",
+    input: z.object({ id: Id, ...patchOf(ListingSettings).shape }),
     target: ({ id }) => id,
     run: async ({ api }, { id, ...changes }) => {
       const { settings } = (await api.get(`/api/pages/${id}/listing`)) as {
@@ -761,18 +763,16 @@ export const draftingTools: Tool[] = [
     name: "set_theme",
     title: "Set the site's colours",
     description:
-      "Chooses a preset (list_theme_presets) or the agency's own colour for the site's primary colour. The builder makes the rest of the ramp, darkened where needed to pass WCAG 2.2 AA; preview_theme shows it first.",
+      "Sets the main colour, the accent, or both. The main colour is a preset (list_theme_presets) or the agency's own colour; it's what links, buttons and focus outlines use, and the builder makes its ramp, darkened where needed to pass WCAG 2.2 AA. The accent is an optional second brand colour for decoration only (brand bars, icon circles, figures, event dates and the hero's Accent wash); null takes it away. What isn't given stays as it is. preview_theme shows the result first; publish_theme sends it live.",
     input: ThemeInput,
-    run: ({ api }, { preset, colour }) => {
-      if (!preset === !colour)
-        throw new ToolError("invalid_input", "Give a preset or a colour, not both.");
-      // The save takes the choice; the ramp stored beside it is made again from it.
-      return editDoc<{ preset: string; seed?: string }>(api, "theme", (doc) => {
-        doc.preset = colour ? "custom" : preset!;
-        if (colour) doc.seed = colour.toLowerCase();
-        else delete doc.seed;
-      });
-    },
+    run: ({ api }, input) =>
+      // The save takes only the colours; the ramps stored beside them are made again from them.
+      editDoc<SiteTheme>(api, "theme", (draft) => {
+        const choice = choiceFrom(draft, input);
+        delete draft.seed;
+        delete draft.accent;
+        Object.assign(draft, choice);
+      }),
   }),
 
   // Site settings and the announcement
@@ -780,7 +780,7 @@ export const draftingTools: Tool[] = [
     name: "update_settings",
     title: "Update site settings",
     description:
-      "Changes site settings section by section (get_settings): identity, contact, social (replaced whole), phase, search, publishing, analytics. In each section only the fields given change; null takes away the logo, favicon, social image or feedback address.",
+      "Changes site settings section by section (get_settings): identity, contact, social (replaced whole), phase, search, publishing, analytics. In each section only the fields given change; null takes away the logo, favicon, social image or feedback address. What pages may embed is update_embeds, for Admins.",
     input: SettingsChanges,
     run: ({ api }, changes) =>
       editDoc<Record<string, unknown>>(api, "settings", (doc) => {
@@ -798,6 +798,24 @@ export const draftingTools: Tool[] = [
           doc[section] = merged;
         }
       }),
+  }),
+  tool({
+    name: "update_embeds",
+    title: "Change what pages may embed",
+    description:
+      "Which sites the Embed block may frame (get_settings `embeds`): built-in services switched on (only each one's embed addresses, never the rest of its site) and the site's own host names, each allowed whole. Each list given replaces the old one. Saved in the settings draft; publish_settings sends it live, and a page whose embed is no longer allowed loses it at that publish.",
+    access: "site.manage",
+    input: z.object({
+      services: embeds.services.unwrap().optional(),
+      hosts: embeds.hosts.optional(),
+    }),
+    run: ({ api }, change) => {
+      if (!change.services && !change.hosts)
+        throw new ToolError("invalid_input", "Give services, hosts or both.");
+      return editDoc<SiteSettings>(api, "settings", (doc) => {
+        doc.embeds = { ...doc.embeds, ...defined(change) };
+      });
+    },
   }),
   drafting({
     name: "update_announcement",

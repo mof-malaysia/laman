@@ -57,7 +57,7 @@ const columns = count === 2 ? "lg:grid-cols-2" : count === 4 ? "lg:grid-cols-4" 
           const where = whereLabel(event);
           return (
             <li class={clx(linked_item_class, "bg-bg-white border-otl-gray-200 flex gap-4 rounded-lg border p-4")}>
-              <time datetime={first} class="bg-bg-primary-50 text-txt-primary flex size-16 shrink-0 flex-col items-center justify-center rounded-md">
+              <time datetime={first} class="bg-bg-accent-50 text-txt-accent flex size-16 shrink-0 flex-col items-center justify-center rounded-md">
                 <span class="text-heading-xs leading-none font-semibold">{Number(first.slice(8))}</span>
                 <span class="text-label-sm uppercase">{monthAbbr(first, lang)}</span>
               </time>

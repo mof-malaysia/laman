@@ -7,7 +7,7 @@
  */
 import "@fontsource-variable/inter";
 import "@/styles/global.css";
-import { rampCss, type RenderInput, SEARCH_PATH } from "@fiscal-sb/blocks";
+import { themeCss, type RenderInput, SEARCH_PATH } from "@fiscal-sb/blocks";
 import { longDate } from "@/blocks/date";
 import { featureIconComponents } from "@/blocks/icons";
 import AnnounceBar from "@/components/ui/announce-bar.astro";
@@ -106,11 +106,12 @@ const searchFilters = [
     {site.socialImage && <meta property="og:image" content={(site.url?.replace(/\/$/, "") ?? "") + site.socialImage} />}
     {
       /* The site's colours, over ftds.css's primitives; html:root outranks its :root wherever Astro puts it. */
-      <style is:inline id="site-theme" set:html={`html:root{${rampCss(site.theme.primary)}}`} />
+      <style is:inline id="site-theme" set:html={`html:root{${themeCss(site.theme)}}`} />
     }
   </head>
   <body class="bg-bg-white text-txt-black-900 font-body">
     <Skiplink href="#main" lang={lang} />
+    <div class="site-accent-bar" aria-hidden="true"></div>
     <Masthead lang={lang} />
     {
       site.phase && (
@@ -167,6 +168,7 @@ const searchFilters = [
       }
       <slot />
     </main>
+    <div class="site-accent-bar" aria-hidden="true"></div>
     <SiteFooter logoTitle={owner} groups={site.footer}>
       {site.logo && !site.hideFooterLogo && <img slot="logo" src={site.logo.src} alt="" height="36" class="h-9 w-auto" />}
       {contact.address && <p class="whitespace-pre-line">{contact.address}</p>}

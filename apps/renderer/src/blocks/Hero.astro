@@ -27,7 +27,8 @@ const sizes = p.layout === "image" ? "100vw" : "(min-width: 1024px) 50vw, 100vw"
   layout={p.layout}
   align={p.align}
   mediaPosition={p.mediaPosition}
-  tone={p.tone}
+  tone={p.tone === "accent" ? "primary" : p.tone}
+  class={p.tone === "accent" ? "accent-wash" : undefined}
   primaryAction={action(p.primaryAction)}
   secondaryAction={action(p.secondaryAction)}
 >

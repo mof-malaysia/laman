@@ -73,8 +73,13 @@ export const Href = z
   .max(500)
   .regex(/^(\/|#|https?:\/\/|mailto:|$)/, "Start the link with /, #, https:// or mailto:");
 
-type Tone = "paper" | "well" | "primary";
-const toneLabels: Record<Tone, string> = { paper: "Paper", well: "Well", primary: "Primary wash" };
+type Tone = "paper" | "well" | "primary" | "accent";
+const toneLabels: Record<Tone, string> = {
+  paper: "Paper",
+  well: "Well",
+  primary: "Primary wash",
+  accent: "Accent wash",
+};
 
 type Columns = "2" | "3" | "4";
 const columnLabels: Record<Columns, string> = { "2": "Two", "3": "Three", "4": "Four" };
@@ -107,7 +112,8 @@ export const field = {
 
   /**
    * The band behind a block, from the FTDS tones it takes; the first is the
-   * default. "primary" is the primary wash, never a solid band.
+   * default. "primary" is the primary wash, never a solid band; "accent" is the
+   * accent's wash, or primary's on a site without an accent.
    */
   tone: <const T extends readonly [Tone, ...Tone[]] = readonly ["paper", "well"]>(
     tones: T = ["paper", "well"] as unknown as T,

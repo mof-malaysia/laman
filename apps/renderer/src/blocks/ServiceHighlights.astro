@@ -17,7 +17,7 @@ const services = p.services.map((service) => ({
 }));
 ---
 
-<ServiceHighlights services={services} columns={Number(p.columns) as 2 | 3} tone={p.tone}>
+<ServiceHighlights class="accent-icons" services={services} columns={Number(p.columns) as 2 | 3} tone={p.tone}>
   {
     (edit || p.title) && (
       <Field slot="title" name="title" edit={edit} placeholder="Tajuk">{p.title}</Field>

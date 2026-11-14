@@ -14,7 +14,7 @@ const stats = p.stats.map((stat) => ({
 }));
 ---
 
-<ImpactStats stats={stats} columns={Number(p.columns) as 2 | 3 | 4} tone={p.tone} lang={lang}>
+<ImpactStats class="accent-figures" stats={stats} columns={Number(p.columns) as 2 | 3 | 4} tone={p.tone} lang={lang}>
   {
     (edit || p.title) && (
       <Field slot="title" name="title" edit={edit} placeholder="Tajuk">{p.title}</Field>

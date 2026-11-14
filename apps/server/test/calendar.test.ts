@@ -298,6 +298,19 @@ describe("calendar sources", () => {
     expect(jobs.items[0].result).toMatchObject({ created: 0, updated: 0, removed: 0 });
   });
 
+  it("keeps a synced event as the sync wrote it", async () => {
+    const page = (await entries()).find((e) => e.title === "Taklimat Sabah")!;
+    const draft = await draftOf(page.id);
+    const save = (next: object) => call("PUT", `/api/pages/${page.id}/draft`, { draft: next });
+    const moved = {
+      ...draft,
+      entry: { ...draft.entry, event: { ...draft.entry.event, venue: "Lain" } },
+    };
+    expect((await save(moved)).json().error.code).toBe("event_synced");
+    // Unchanged, it saves: the rest of the entry is still the officer's.
+    expect((await save(draft)).statusCode).toBe(200);
+  });
+
   it("keeps a failing calendar's events, and the meeting another calendar still has", async () => {
     feeds.set(A, new Error("The calendar answered 503"));
     await sync();

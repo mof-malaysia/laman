@@ -124,6 +124,16 @@ export const publishingTools: Tool[] = [
       return { deleted: true, id };
     },
   }),
+  tool({
+    name: "restore_page",
+    title: "Restore a deleted page",
+    description:
+      "Brings a page back from Recently deleted (list_deleted_pages), with the pages deleted along with it, under its old parent (or the home page if that's gone too). A taken address gets a suffix. A page that was live goes back on the site, which needs a role that can publish.",
+    access: "content.edit",
+    input: z.object({ id: Id }),
+    target: ({ id }) => id,
+    run: ({ api }, { id }) => api.post(`/api/trash/${id}/restore`),
+  }),
   publishDoc("settings", "site settings"),
   publishDoc("navigation", "navigation (navbar and footer)"),
   publishDoc("announcement", "announcement"),
@@ -175,6 +185,38 @@ export const publishingTools: Tool[] = [
     input: z.object({ id: Id }),
     target: ({ id }) => id,
     run: ({ api }, { id }) => api.post(`/api/media/${id}/restore`),
+  }),
+
+  // Calendars: ICS feeds that sync into a listing's events
+  tool({
+    name: "list_calendar_sources",
+    title: "List a listing's calendar sources",
+    description:
+      "The ICS calendars that sync into a listing's events: each one's name, when it last synced, how many events it brought, and whether a sync is held because it found far fewer events than before (accept_calendar_drop lets it go ahead). Adding or changing sources is for an admin in the builder.",
+    access: "content.publish",
+    readOnly: true,
+    input: z.object({ listingId: Id }),
+    target: ({ listingId }) => listingId,
+    run: ({ api }, { listingId }) => api.get(`/api/pages/${listingId}/calendar-sources`),
+  }),
+  tool({
+    name: "accept_calendar_drop",
+    title: "Let a held calendar sync go ahead",
+    description:
+      "A calendar's last read found far fewer events than before, so they were kept on the site. This queues a sync that takes the missing ones off. Check with the officer first: it removes events from the live site.",
+    access: "content.publish",
+    destructive: true,
+    input: z.object({ sourceId: Id }),
+    run: ({ api }, { sourceId }) => api.post(`/api/calendar-sources/${sourceId}/accept`),
+  }),
+  tool({
+    name: "sync_calendars",
+    title: "Sync calendars now",
+    description:
+      "Reads every listing's calendar sources now instead of waiting for the next one (every 30 minutes); a sync that changed events publishes. Returns the job (list_jobs follows it).",
+    access: "content.publish",
+    input: none,
+    run: ({ api }) => api.post("/api/calendar-sources/sync"),
   }),
 
   // The publishing machinery
