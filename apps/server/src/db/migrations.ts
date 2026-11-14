@@ -384,7 +384,32 @@ export const migrations: Record<string, Migration> = {
       await rewriteDocuments(db, ["page drafts", "revisions"], keepPageIntroTone);
     },
   },
+  /**
+   * The navbar name and footer logo switches left Identity for their own
+   * Appearance section, with the new masthead switch.
+   */
+  "0003_settings_appearance": {
+    async up(db: Kysely<unknown>) {
+      await rewriteDocuments(db, ["settings"], moveToAppearance);
+    },
+  },
 };
+
+/** Moves Identity's display switches into `appearance`, on unless they were off, with the masthead on. */
+export function moveToAppearance(doc: unknown): unknown {
+  if (!doc || typeof doc !== "object" || "appearance" in doc) return doc;
+  const { identity = {} } = doc as { identity?: Record<string, unknown> };
+  const { navbarName, footerLogo, ...kept } = identity;
+  return {
+    ...doc,
+    identity: kept,
+    appearance: {
+      masthead: true,
+      navbarName: navbarName !== false,
+      footerLogo: footerLogo !== false,
+    },
+  };
+}
 
 /**
  * Gives every Page intro block without a tone `tone: "well"`, wherever it

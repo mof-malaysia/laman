@@ -16,7 +16,7 @@ import {
 import { type EmbedService, embedAddresses, embedHost, embedServices } from "@fiscal-sb/blocks";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useId, useRef, useState } from "react";
 import { SettingsRow } from "@/components/blocks/settings-layout";
 import {
   SavedNote,
@@ -53,6 +53,7 @@ import { EyeShowIcon } from "@/components/ui/icons/eye-show";
 import { FolderIcon } from "@/components/ui/icons/folder";
 import { GlobeIcon } from "@/components/ui/icons/globe";
 import { GovtOfficeIcon } from "@/components/ui/icons/govt-office";
+import { GridIcon } from "@/components/ui/icons/grid";
 import { InfoIcon } from "@/components/ui/icons/info";
 import { PhoneIcon } from "@/components/ui/icons/phone";
 import { SearchIcon } from "@/components/ui/icons/search";
@@ -94,9 +95,10 @@ import { Screen } from "@/components/screen";
 /** Sections of the settings document: each saves into its draft. */
 const documentSections = [
   "identity",
+  "appearance",
+  "phase",
   "contact",
   "social",
-  "phase",
   "search",
   "publishing",
   "analytics",
@@ -113,6 +115,21 @@ export const settingsSections = [
 ] as const;
 export type SettingsSectionId = (typeof settingsSections)[number];
 
+/** Sections shown as a further card on another section's page, rather than in the list. */
+const moreCards: Partial<Record<SettingsSectionId, DocumentSection[]>> = {
+  appearance: ["phase"],
+};
+/** The cards on a section's page: its own, then any shown with it. */
+const cardsOf = (page: SettingsSectionId): SettingsSectionId[] => [
+  page,
+  ...(moreCards[page] ?? []),
+];
+/** The section whose page shows this one: itself, unless it's a further card on another's. */
+export const pageOf = (id: SettingsSectionId) =>
+  (Object.keys(moreCards) as SettingsSectionId[]).find((page) =>
+    moreCards[page]?.includes(id as DocumentSection),
+  ) ?? id;
+
 /** Sections that aren't part of the settings document, so they show without it. */
 const panels: Record<
   Exclude<SettingsSectionId, DocumentSection>,
@@ -126,9 +143,10 @@ const panels: Record<
 
 const sectionLabels: Record<SettingsSectionId, MessageKey> = {
   identity: "settings.identity",
+  appearance: "settings.appearance",
+  phase: "settings.phase",
   contact: "settings.contact",
   social: "settings.social",
-  phase: "settings.phase",
   search: "settings.search",
   publishing: "settings.publishing",
   analytics: "settings.analytics",
@@ -142,9 +160,10 @@ const sectionLabels: Record<SettingsSectionId, MessageKey> = {
 /** A small mark per section, so the list scans at a glance (shown on wide screens). */
 const sectionIcons: Record<SettingsSectionId, ReactNode> = {
   identity: <GovtOfficeIcon />,
+  appearance: <GridIcon />,
+  phase: <InfoIcon />,
   contact: <PhoneIcon />,
   social: <UserGroupIcon />,
-  phase: <InfoIcon />,
   search: <SearchIcon />,
   publishing: <ClockIcon />,
   analytics: <EyeShowIcon />,
@@ -170,9 +189,10 @@ const sectionDescriptions: Partial<Record<SettingsSectionId, MessageKey>> = {
  */
 const sectionApplies: Partial<Record<SettingsSectionId, "publish" | "save" | "now">> = {
   identity: "publish",
+  appearance: "publish",
+  phase: "publish",
   contact: "publish",
   social: "publish",
-  phase: "publish",
   search: "publish",
   analytics: "publish",
   embeds: "publish",
@@ -194,11 +214,14 @@ function Applies({ section }: { section: SettingsSectionId }) {
 
 export function SettingsScreen() {
   const canSecure = useCan("security.manage");
-  const shown = settingsSections.filter((id) => id !== "security" || canSecure);
+  const shown = settingsSections.filter(
+    (id) => pageOf(id) === id && (id !== "security" || canSecure),
+  );
   const { section: asked = "identity" } = useSearch({ strict: false }) as {
     section?: SettingsSectionId;
   };
   const section = shown.includes(asked) ? asked : "identity";
+  const cards = cardsOf(section);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -207,11 +230,23 @@ export function SettingsScreen() {
   /** Saved into the draft but not published yet. */
   const notLive = (id: SettingsSectionId) =>
     doc.data !== undefined &&
-    (documentSections as readonly string[]).includes(id) &&
-    JSON.stringify(doc.data.published[id as DocumentSection]) !==
-      JSON.stringify(doc.data.draft[id as DocumentSection]);
-  // The section in view has edits that aren't saved: Publish waits, and leaving asks first.
-  const [dirty, setDirty] = useState(false);
+    cardsOf(id).some(
+      (card) =>
+        (documentSections as readonly string[]).includes(card) &&
+        JSON.stringify(doc.data.published[card as DocumentSection]) !==
+          JSON.stringify(doc.data.draft[card as DocumentSection]),
+    );
+  // A card in view has edits that aren't saved: Publish waits, and leaving asks first.
+  // Cards on other pages don't count; each reports afresh when it's shown again.
+  const [dirtyCards, setDirtyCards] = useState<Partial<Record<SettingsSectionId, boolean>>>({});
+  const dirty = cards.some((card) => dirtyCards[card]);
+  /** A card saying whether it has unsaved edits. */
+  const markDirty = useCallback(
+    (card: SettingsSectionId, next: boolean) =>
+      setDirtyCards((all) => (Boolean(all[card]) === next ? all : { ...all, [card]: next })),
+    [],
+  );
+  const panelDirty = useCallback((next: boolean) => markDirty(section, next), [markDirty, section]);
   const [discarding, setDiscarding] = useState(false);
   // The section just saved, to say so beside its title: its form remounts with the new draft.
   const [savedSection, setSavedSection] = useState<SettingsSectionId>();
@@ -296,7 +331,7 @@ export function SettingsScreen() {
         }
       >
         {Panel ? (
-          <Panel onDirtyChange={setDirty} />
+          <Panel onDirtyChange={panelDirty} />
         ) : doc.isError ? (
           <Callout variant="danger">
             <CalloutTitle>{t("settings.loadFailed")}</CalloutTitle>
@@ -305,14 +340,16 @@ export function SettingsScreen() {
           <Skeleton className="h-64 w-full" />
         ) : (
           <>
-            <SectionForm
-              key={`${section}-${JSON.stringify(doc.data.draft[section as DocumentSection])}`}
-              section={section as DocumentSection}
-              draft={doc.data.draft}
-              saved={savedSection === section && !dirty}
-              onSaved={() => setSavedSection(section)}
-              onDirtyChange={setDirty}
-            />
+            {cards.map((card) => (
+              <SectionForm
+                key={`${card}-${JSON.stringify(doc.data.draft[card as DocumentSection])}`}
+                section={card as DocumentSection}
+                draft={doc.data.draft}
+                saved={savedSection === card && !dirtyCards[card]}
+                onSaved={() => setSavedSection(card)}
+                onDirtyChange={markDirty}
+              />
+            ))}
             {doc.data.previous && !doc.data.changed && !dirty && (
               <PutBackPrevious
                 label={t("settings.previous.load")}
@@ -349,7 +386,8 @@ function SectionForm<S extends DocumentSection>({
   /** Just saved: says so beside the title. */
   saved: boolean;
   onSaved: () => void;
-  onDirtyChange: (dirty: boolean) => void;
+  /** Says, for this card, whether it has unsaved edits. */
+  onDirtyChange: (section: S, dirty: boolean) => void;
 }) {
   const queryClient = useQueryClient();
   const [value, setValue] = useState<SiteSettings[S]>(draft[section]);
@@ -359,7 +397,7 @@ function SectionForm<S extends DocumentSection>({
   // Keeping fewer revisions removes older drafts: what it would remove, while the officer decides.
   const [pruning, setPruning] = useState<PrunePreview | null>(null);
   const dirty = JSON.stringify(value) !== JSON.stringify(draft[section]);
-  useEffect(() => onDirtyChange(dirty), [dirty, onDirtyChange]);
+  useEffect(() => onDirtyChange(section, dirty), [section, dirty, onDirtyChange]);
 
   const set = (update: Partial<SiteSettings[S]>) => {
     // Lists (social links) are replaced whole; objects merge.
@@ -443,7 +481,7 @@ function SectionForm<S extends DocumentSection>({
         >
           {/* Fields keep a readable width; the card can be wider than a form needs. */}
           <div className="gap-stack-md flex max-w-2xl flex-col">
-            {renderFields(section, value, set, issue)}
+            {renderFields(section, value, set, issue, Boolean(draft.identity.logo))}
           </div>
         </SettingsForm>
       </SettingsCard>
@@ -469,6 +507,8 @@ function renderFields<S extends DocumentSection>(
   value: SiteSettings[S],
   set: (update: Partial<SiteSettings[S]>) => void,
   issue: (path: string) => string | undefined,
+  /** The saved Identity has a logo: the navbar can show it without the site name. */
+  hasLogo: boolean,
 ) {
   const text = (
     key: string,
@@ -530,20 +570,57 @@ function renderFields<S extends DocumentSection>(
               onChange={(next) => setI({ [key]: next ? { mediaId: next.mediaId } : undefined })}
             />
           ))}
+        </>
+      );
+    }
+    case "appearance": {
+      const v = value as SiteSettings["appearance"];
+      const setA = set as (u: Partial<SiteSettings["appearance"]>) => void;
+      return (
+        <>
           <CheckRow
-            title={t("settings.identity.navbarName")}
+            title={t("settings.appearance.masthead")}
+            checked={v.masthead}
+            onChange={(checked) => setA({ masthead: checked })}
+          />
+          <CheckRow
+            title={t("settings.appearance.navbarName")}
             description={t(
-              v.logo ? "settings.identity.navbarNameHint" : "settings.identity.navbarNameNoLogo",
+              hasLogo
+                ? "settings.appearance.navbarNameHint"
+                : "settings.appearance.navbarNameNoLogo",
             )}
-            checked={v.navbarName || !v.logo}
-            disabled={!v.logo}
-            onChange={(checked) => setI({ navbarName: checked })}
+            checked={v.navbarName || !hasLogo}
+            disabled={!hasLogo}
+            onChange={(checked) => setA({ navbarName: checked })}
           />
           <CheckRow
-            title={t("settings.identity.footerLogo")}
+            title={t("settings.appearance.footerLogo")}
             checked={v.footerLogo}
-            onChange={(checked) => setI({ footerLogo: checked })}
+            onChange={(checked) => setA({ footerLogo: checked })}
           />
+        </>
+      );
+    }
+    case "phase": {
+      const v = value as SiteSettings["phase"];
+      const setP = set as (u: Partial<SiteSettings["phase"]>) => void;
+      return (
+        <>
+          <RadioChoices
+            name="phase"
+            legend={t("settings.phase.label")}
+            options={["off", "alpha", "beta"] as const}
+            value={v.phase}
+            onChange={(phase) => setP({ phase })}
+            label={(p) => t(`settings.phase.${p}`)}
+            hint={(p) => t(`settings.phase.${p}Hint`)}
+          />
+          {v.phase !== "off" &&
+            text("feedbackUrl", "settings.phase.feedback", {
+              hint: "settings.phase.feedbackHint",
+              max: 500,
+            })}
         </>
       );
     }
@@ -619,28 +696,6 @@ function renderFields<S extends DocumentSection>(
             </Field>
           )}
         </div>
-      );
-    }
-    case "phase": {
-      const v = value as SiteSettings["phase"];
-      const setP = set as (u: Partial<SiteSettings["phase"]>) => void;
-      return (
-        <>
-          <RadioChoices
-            name="phase"
-            legend={t("settings.phase.label")}
-            options={["off", "alpha", "beta"] as const}
-            value={v.phase}
-            onChange={(phase) => setP({ phase })}
-            label={(p) => t(`settings.phase.${p}`)}
-            hint={(p) => t(`settings.phase.${p}Hint`)}
-          />
-          {v.phase !== "off" &&
-            text("feedbackUrl", "settings.phase.feedback", {
-              hint: "settings.phase.feedbackHint",
-              max: 500,
-            })}
-        </>
       );
     }
     case "search": {
@@ -953,25 +1008,17 @@ function settingsChanges(from: SiteSettings, to: SiteSettings): string[] {
     lines.push(t(message, { label: t(`settings.identity.${key}`) }));
   }
   change(
-    "settings.identity.navbarName",
-    onOff(from.identity.navbarName),
-    onOff(to.identity.navbarName),
-  );
-  change(
-    "settings.identity.footerLogo",
-    onOff(from.identity.footerLogo),
-    onOff(to.identity.footerLogo),
-  );
-  for (const key of ["address", "phone", "email", "hours"] as const)
-    text(`settings.contact.${key}`, (s) => s.contact[key]);
-  for (const platform of socialPlatforms)
-    text(`settings.social.${platform}`, (s) => s.social.find((x) => x.platform === platform)?.url);
-  change(
     "settings.phase.label",
     t(`settings.phase.${from.phase.phase}`),
     t(`settings.phase.${to.phase.phase}`),
   );
   text("settings.phase.feedback", (s) => s.phase.feedbackUrl);
+  for (const key of ["masthead", "navbarName", "footerLogo"] as const)
+    change(`settings.appearance.${key}`, onOff(from.appearance[key]), onOff(to.appearance[key]));
+  for (const key of ["address", "phone", "email", "hours"] as const)
+    text(`settings.contact.${key}`, (s) => s.contact[key]);
+  for (const platform of socialPlatforms)
+    text(`settings.social.${platform}`, (s) => s.social.find((x) => x.platform === platform)?.url);
   change("settings.search.hide", onOff(from.search.hideSite), onOff(to.search.hideSite));
   change("settings.search.sitemap", onOff(from.search.sitemap), onOff(to.search.sitemap));
   change("settings.analytics.on", onOff(from.analytics.on), onOff(to.analytics.on));

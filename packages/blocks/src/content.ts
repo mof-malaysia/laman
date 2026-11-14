@@ -226,6 +226,8 @@ export type SiteContext = {
   hideNavbarName?: true;
   /** The footer leaves the logo out. */
   hideFooterLogo?: true;
+  /** No government masthead above the navbar. */
+  hideMasthead?: true;
   favicon?: string;
   socialImage?: string;
   nav: SiteNavItem[];

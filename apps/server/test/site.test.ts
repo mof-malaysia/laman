@@ -121,6 +121,19 @@ describe("site settings and navigation", () => {
     expect((await call("GET", "/api/settings/prune-preview?keep=1")).statusCode).toBe(400);
   });
 
+  it("leaves the government masthead out when the agency turns it off", async () => {
+    const doc = (await call("GET", "/api/settings")).json().data;
+    expect(doc.draft.appearance.masthead).toBe(true);
+    expect(await live()).toContain('id="masthead"');
+    const off = { ...doc.draft, appearance: { ...doc.draft.appearance, masthead: false } };
+    await call("PUT", "/api/settings", { draft: off, base: doc.version });
+    expect(await publishDoc("settings")).not.toContain('id="masthead"');
+    const on = (await call("GET", "/api/settings")).json().data;
+    const back = { ...on.draft, appearance: { ...on.draft.appearance, masthead: true } };
+    await call("PUT", "/api/settings", { draft: back, base: on.version });
+    expect(await publishDoc("settings")).toContain('id="masthead"');
+  });
+
   it("builds the navbar from the navigation, warning about pages that aren't live", async () => {
     const page = (
       await call("POST", "/api/pages", { title: "Perkhidmatan", slug: "perkhidmatan" })

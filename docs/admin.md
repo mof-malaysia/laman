@@ -300,9 +300,11 @@ The screen is a `SplitPane`: the editor on the left, and on the right a live pre
   - Site name
   - Agency name, which is the masthead and footer owner
   - Logo, favicon and the default social image, all picked from Media
+- **Appearance:** what the site around every page shows, in two cards, each saved on its own:
+  - Appearance: the government masthead, on by default (an agency outside the government itself, such as a statutory body or a government-owned company, may turn it off), the site name in the navbar (it can be turned off once there's a logo) and the logo in the footer
+  - Phase banner: off, Alpha or Beta, with a feedback link. The announcement bar is in Navigation
 - **Contact:** address, phone, email and office hours, used by the footer and the contact block.
 - **Social:** a list of platform and URL pairs (Facebook, X, Instagram, YouTube, TikTok, LinkedIn).
-- **Phase banner:** off, Alpha or Beta, with a feedback link. The announcement bar is in Navigation.
 - **Search engines:**
   - The site address (from `SITE_URL`, read-only, with what to set)
   - "Hide the whole site from search engines"

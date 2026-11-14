@@ -152,10 +152,15 @@ export const SiteSettings = z.object({
     logo: MediaRef.optional(),
     favicon: MediaRef.optional(),
     socialImage: MediaRef.optional(),
+  }),
+  /** What the site around every page shows. */
+  appearance: z.object({
+    /** The Malaysian government masthead above the navbar. Off suits an agency that isn't part of the government itself. */
+    masthead: z.boolean(),
     /** The site name beside the navbar logo. Off suits a logo that already says it; needs a logo. */
-    navbarName: z.boolean().default(true),
+    navbarName: z.boolean(),
     /** The logo in the footer, beside the agency name. */
-    footerLogo: z.boolean().default(true),
+    footerLogo: z.boolean(),
   }),
   contact: z.object({
     address: z.string().trim().max(300),
@@ -174,6 +179,7 @@ export const SiteSettings = z.object({
       }),
     )
     .max(socialPlatforms.length),
+  /** The phase banner under the masthead, telling visitors the site is new. Shown on the Appearance page. */
   phase: z.object({
     phase: z.enum(["off", "alpha", "beta"]),
     feedbackUrl: z

@@ -239,6 +239,7 @@ const SettingsChanges = z.object({
       socialImage: removable(identity.socialImage),
     })
     .optional(),
+  appearance: patchOf(sections.appearance).optional(),
   contact: patchOf(sections.contact).optional(),
   social: sections.social.optional(),
   phase: patchOf(sections.phase)
@@ -780,7 +781,7 @@ export const draftingTools: Tool[] = [
     name: "update_settings",
     title: "Update site settings",
     description:
-      "Changes site settings section by section (get_settings): identity, contact, social (replaced whole), phase, search, publishing, analytics. In each section only the fields given change; null takes away the logo, favicon, social image or feedback address. What pages may embed is update_embeds, for Admins.",
+      "Changes site settings section by section (get_settings): identity, appearance (masthead, site name in the navbar, logo in the footer), contact, social (replaced whole), phase, search, publishing, analytics. In each section only the fields given change; null takes away the logo, favicon, social image or feedback address. What pages may embed is update_embeds, for Admins.",
     input: SettingsChanges,
     run: ({ api }, changes) =>
       editDoc<Record<string, unknown>>(api, "settings", (doc) => {
