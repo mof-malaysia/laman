@@ -90,9 +90,8 @@ const sections = input.site.nav.flatMap((item) => (item.href ? [{ label: item.la
 </div>
 
 <script>
-  import { loadPagefind, type Pagefind, resultList } from "./pagefind";
+  import { loadPagefind, type Pagefind, type Pin, resultList } from "./pagefind";
 
-  type Pin = { url: string; title: string; excerpt?: string };
 
   const root = document.querySelector<HTMLElement>("[data-search]")!;
   const form = root.querySelector<HTMLFormElement>("[data-search-form]")!;

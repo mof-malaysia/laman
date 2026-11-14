@@ -5,6 +5,7 @@
  * the next publish, like content does.
  */
 import { randomUUID } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
 import {
   type Block,
   type EntryFields,
@@ -339,16 +340,37 @@ async function kindOf(db: Db, id: string) {
   return row?.kind;
 }
 
+/** Whether two values hold the same JSON, whatever their key order or undefined fields. */
+const sameJson = (a: unknown, b: unknown) =>
+  isDeepStrictEqual(JSON.parse(JSON.stringify(a ?? null)), JSON.parse(JSON.stringify(b ?? null)));
+
+/**
+ * Refuses a change to an entry's event that came from a calendar sync, or a
+ * `source` given by hand: the next sync would undo an edit, and only it sets one.
+ */
+function checkSyncedEvent(stored: string, draft: PageDocument) {
+  const event = withDefaults(PageDocument, JSON.parse(stored)).entry?.event;
+  if ((event?.source || draft.entry?.event?.source) && !sameJson(event, draft.entry?.event))
+    throw new HttpError(
+      409,
+      "event_synced",
+      "This event comes from a calendar sync, which would undo the change. Change it in its calendar.",
+    );
+}
+
 /**
  * Saves the draft. With `base` (the `draftVersion` the edit started from), a
  * draft someone else saved since is never overwritten: the save is refused
  * with 409 `draft_conflict`, and the refused copy is kept in the history.
+ * With `keepSyncedEvent` (the API's saves; not the calendar sync's own), an
+ * entry's synced event can't be changed: 409 `event_synced`.
  */
 export async function saveDraft(
   db: Db,
   id: string,
   draft: PageDocument,
   base?: string,
+  { keepSyncedEvent = false }: { keepSyncedEvent?: boolean } = {},
 ): Promise<Page> {
   await checkRedirect(db, id, draft.redirect);
   const kind = await checkKind(db, id, draft);
@@ -365,6 +387,7 @@ export async function saveDraft(
         .where("pages.deleted_at", "is", null)
         .executeTakeFirst();
       if (!current) throw notFound();
+      if (keepSyncedEvent && kind === "entry") checkSyncedEvent(current.draft, draft);
       const conflict = conflictWith(base, current.draft, {
         by: current.display_name,
         at: current.updated_at,

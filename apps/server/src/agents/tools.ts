@@ -320,12 +320,9 @@ const readingTools: Tool[] = [
       "What set_theme would make, without saving it. The main colour's ramp (from preset or colour, else the current draft's) as hex, whether it passes the WCAG 2.2 AA contrast FTDS needs, and the contrast of the steps used for text, hover and focus. With an accent, its ramp too: whether main-colour links read on its wash (a save is refused if not) and whether it's too like the main colour to stand apart.",
     input: ThemeInput,
     run: async ({ api }, input) => {
-      // The draft only fills in a part that isn't given.
-      const whole = (input.preset || input.colour) && input.accent !== undefined;
-      const current = whole
-        ? { preset: "ftds" as const }
-        : ((await api.get("/api/theme")) as ThemeDoc).draft;
-      const choice = choiceFrom(current, input);
+      // The draft fills in a part that isn't given.
+      const { draft } = (await api.get("/api/theme")) as ThemeDoc;
+      const choice = choiceFrom(draft, input);
       const { ramp, seedStep } = rampFor(choice.preset, choice.seed);
       return {
         ...(choice.preset === "custom" ? { colour: choice.seed } : { preset: choice.preset }),

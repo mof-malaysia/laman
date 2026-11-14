@@ -106,46 +106,71 @@ export function ThemeScreen() {
   return <Editor doc={doc.data} />;
 }
 
+/**
+ * A colour code as typed, and the last whole #rrggbb in it: the shades and
+ * preview follow `last`, so a half-typed code doesn't flash them.
+ */
+function useColourCode(initial: string) {
+  const [hex, setHex] = useState(initial);
+  const [last, setLast] = useState(initial);
+  return {
+    hex,
+    last,
+    set: (next: string) => {
+      setHex(next);
+      if (hexPattern.test(next)) setLast(next.toLowerCase());
+    },
+    reset: (code: string) => {
+      setHex(code);
+      setLast(code);
+    },
+  };
+}
+
+/** A round sample of a colour. */
+function Swatch({ colour, className }: { colour: string; className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={clx("border-otl-gray-200 size-4 shrink-0 rounded-full border", className)}
+      style={{ background: colour }}
+    />
+  );
+}
+
 function Editor({ doc }: { doc: ThemeDoc }) {
   const queryClient = useQueryClient();
   const wide = useMediaQuery("(min-width: 768px)");
   const [preset, setPreset] = useState<Preset>(doc.draft.preset);
-  // The colour as typed; it only counts once it's a whole #rrggbb.
-  const [hex, setHex] = useState(doc.draft.seed ?? rgbToHex(doc.draft.primary["600"]));
+  const main = useColourCode(doc.draft.seed ?? rgbToHex(doc.draft.primary["600"]));
   const [saving, setSaving] = useState(false);
   const [discarding, setDiscarding] = useState(false);
-  // The shades follow the last whole code, so a half-typed one doesn't flash the preview.
-  const [lastHex, setLastHex] = useState(hex);
   const [accentOn, setAccentOn] = useState(Boolean(doc.draft.accent));
-  const [accentHex, setAccentHex] = useState(doc.draft.accent ?? "");
-  const [lastAccent, setLastAccent] = useState(doc.draft.accent ?? "");
+  const accentCode = useColourCode(doc.draft.accent ?? "");
 
-  const accentValid = !accentOn || hexPattern.test(accentHex);
-  const valid = (preset !== "custom" || hexPattern.test(hex)) && accentValid;
-  const accent = accentOn && hexPattern.test(accentHex) ? accentHex.toLowerCase() : undefined;
-  const choice: ThemeChoice = {
-    ...(preset === "custom" ? { preset, seed: hex.toLowerCase() } : { preset }),
+  const accentValid = !accentOn || hexPattern.test(accentCode.hex);
+  const valid = (preset !== "custom" || hexPattern.test(main.hex)) && accentValid;
+  const choiceOf = (seed: string, accent: string | undefined): ThemeChoice => ({
+    ...(preset === "custom" ? { preset, seed } : { preset }),
     ...(accent && { accent }),
-  };
+  });
+  const choice = choiceOf(
+    main.hex.toLowerCase(),
+    accentOn && hexPattern.test(accentCode.hex) ? accentCode.hex.toLowerCase() : undefined,
+  );
   const dirty =
     preset !== doc.draft.preset ||
-    (preset === "custom" && hex.toLowerCase() !== doc.draft.seed) ||
-    (accentOn ? accentHex.toLowerCase() : undefined) !== doc.draft.accent;
-  const shownAccent = accentOn && lastAccent ? lastAccent : undefined;
-  const shown: ThemeChoice = {
-    ...(preset === "custom" ? { preset, seed: lastHex } : { preset }),
-    ...(shownAccent && { accent: shownAccent }),
-  };
+    (preset === "custom" && main.hex.toLowerCase() !== doc.draft.seed) ||
+    (accentOn ? accentCode.hex.toLowerCase() : undefined) !== doc.draft.accent;
+  const shownAccent = accentOn && accentCode.last ? accentCode.last : undefined;
+  const shown = choiceOf(main.last, shownAccent);
   const generated = useMemo(() => rampFor(shown.preset, shown.seed), [shown.preset, shown.seed]);
 
   const load = (next: SiteTheme) => {
     setPreset(next.preset);
-    const code = next.seed ?? rgbToHex(next.primary["600"]);
-    setHex(code);
-    setLastHex(code);
+    main.reset(next.seed ?? rgbToHex(next.primary["600"]));
     setAccentOn(Boolean(next.accent));
-    setAccentHex(next.accent ?? "");
-    setLastAccent(next.accent ?? "");
+    accentCode.reset(next.accent ?? "");
   };
   const leaveGuard = useLeaveGuard(dirty, t("theme.leave.body"));
   const conflict = useDocConflict<SiteTheme>("theme", {
@@ -180,18 +205,8 @@ function Editor({ doc }: { doc: ThemeDoc }) {
       {...identity()}
       status={
         <>
-          <span
-            aria-hidden
-            className="border-otl-gray-200 size-4 shrink-0 rounded-full border"
-            style={{ background: rgb(doc.published.primary, "600") }}
-          />
-          {doc.published.accent && (
-            <span
-              aria-hidden
-              className="border-otl-gray-200 -ml-2.5 size-4 shrink-0 rounded-full border"
-              style={{ background: doc.published.accent }}
-            />
-          )}
+          <Swatch colour={rgb(doc.published.primary, "600")} />
+          {doc.published.accent && <Swatch colour={doc.published.accent} className="-ml-2.5" />}
           {t("theme.state.live", { name: nameOf(doc.published) })}
         </>
       }
@@ -241,33 +256,24 @@ function Editor({ doc }: { doc: ThemeDoc }) {
     <div className="bg-bg-washed flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
       <Choose
         preset={preset}
-        hex={hex}
+        hex={main.hex}
         // A whole code that isn't a colour; a short one is still being typed.
-        error={!valid && hex.length >= 7 ? t("theme.hexInvalid") : undefined}
+        error={!valid && main.hex.length >= 7 ? t("theme.hexInvalid") : undefined}
         onPreset={setPreset}
-        onHex={(next) => {
-          setHex(next);
-          if (hexPattern.test(next)) setLastHex(next.toLowerCase());
-        }}
+        onHex={main.set}
       >
         <AccentChoice
           on={accentOn}
-          hex={accentHex}
+          hex={accentCode.hex}
           shown={shownAccent}
           primary={generated.ramp}
-          error={!accentValid && accentHex.length >= 7 ? t("theme.hexInvalid") : undefined}
+          error={!accentValid && accentCode.hex.length >= 7 ? t("theme.hexInvalid") : undefined}
           onToggle={(on) => {
             setAccentOn(on);
             // A first accent starts from something to change, not an empty box.
-            if (on && !accentHex) {
-              setAccentHex(defaultAccent);
-              setLastAccent(defaultAccent);
-            }
+            if (on && !accentCode.hex) accentCode.reset(defaultAccent);
           }}
-          onHex={(next) => {
-            setAccentHex(next);
-            if (hexPattern.test(next)) setLastAccent(next.toLowerCase());
-          }}
+          onHex={accentCode.set}
         />
       </Choose>
       <Shades
@@ -348,11 +354,7 @@ function Choose({
           value: p,
           label: (
             <>
-              <span
-                aria-hidden
-                className="border-otl-gray-200 size-5 shrink-0 rounded-full border"
-                style={{ background: p === "custom" ? customSwatch : presetSwatch[p] }}
-              />
+              <Swatch colour={p === "custom" ? customSwatch : presetSwatch[p]} className="size-5" />
               {t(presetName[p])}
             </>
           ),

@@ -6,7 +6,6 @@ import {
   contrast,
   ftdsPrimary,
   hexToRgb,
-  rampCss,
   rampFor,
   rampPasses,
   rampFrom,
@@ -69,11 +68,13 @@ describe("site colours", () => {
   });
 
   it("writes the primitives FTDS reads", () => {
-    expect(rampCss(ftdsPrimary)).toMatch(/^--_primary-50:239 246 255;.*--_primary-950:23 37 84;$/);
+    expect(themeCss({ primary: ftdsPrimary })).toMatch(
+      /^--_primary-50:239 246 255;.*--_primary-950:23 37 84;$/,
+    );
   });
 
   it("writes nothing for the accent when there isn't one", () => {
-    expect(themeCss({ primary: ftdsPrimary })).toBe(rampCss(ftdsPrimary));
+    expect(themeCss({ primary: ftdsPrimary })).not.toContain("accent");
     expect(themeOf({ preset: "ftds" })).not.toHaveProperty("accent");
   });
 

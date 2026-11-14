@@ -21,46 +21,49 @@ export type Template = {
   blocks: (title: string) => Block[];
 };
 
-/** A new block of `type` with some of its props replaced. */
-function block<T extends BlockType>(type: T, props: Record<string, unknown> = {}): Block {
+/** A new block of `type` with some of its props replaced; the colour sample (`theme-sample.ts`) starts its blocks this way too. */
+export function presetBlock<T extends BlockType>(
+  type: T,
+  props: Record<string, unknown> = {},
+): Block {
   const fresh = newBlock(type);
   return { ...fresh, props: { ...fresh.props, ...props } } as Block;
 }
-
-/** For the colour sample (`theme-sample.ts`), which starts its blocks the same way. */
-export { block as presetBlock };
 
 export const templates = {
   blank: {
     name: "Blank",
     description: "A title and a text block.",
-    blocks: (title) => [block("pageIntro", { title, description: undefined }), block("prose")],
+    blocks: (title) => [
+      presetBlock("pageIntro", { title, description: undefined }),
+      presetBlock("prose"),
+    ],
   },
   utama: {
     name: "Utama",
     description: "The home page.",
     blocks: (title) => [
-      block("hero", {
+      presetBlock("hero", {
         eyebrow: "Selamat datang",
         title,
         description: "Bayar, mohon dan semak status permohonan anda dalam talian.",
         primaryAction: { label: "Lihat perkhidmatan", href: "/perkhidmatan" },
         secondaryAction: { label: "Hubungi kami", href: "/hubungi" },
       }),
-      block("serviceHighlights"),
-      block("callout"),
-      block("ctaBand"),
+      presetBlock("serviceHighlights"),
+      presetBlock("callout"),
+      presetBlock("ctaBand"),
     ],
   },
   perkhidmatan: {
     name: "Perkhidmatan",
     description: "One service: who can apply, how, and the forms.",
     blocks: (title) => [
-      block("pageIntro", {
+      presetBlock("pageIntro", {
         title,
         description: "Terangkan perkhidmatan ini dalam satu atau dua ayat.",
       }),
-      block("prose", {
+      presetBlock("prose", {
         body: {
           type: "doc",
           content: [
@@ -74,30 +77,33 @@ export const templates = {
           ],
         },
       }),
-      block("eligibility"),
-      block("steps", { action: { label: "Mohon sekarang", href: "/" } }),
-      block("downloadList", { title: "Borang dan panduan" }),
-      block("faq"),
-      block("ctaBand", { title: "Sedia untuk memohon?" }),
+      presetBlock("eligibility"),
+      presetBlock("steps", { action: { label: "Mohon sekarang", href: "/" } }),
+      presetBlock("downloadList", { title: "Borang dan panduan" }),
+      presetBlock("faq"),
+      presetBlock("ctaBand", { title: "Sedia untuk memohon?" }),
     ],
   },
   hubungi: {
     name: "Hubungi",
     description: "How to reach the agency.",
     blocks: (title) => [
-      block("pageIntro", {
+      presetBlock("pageIntro", {
         title,
         description: "Kami sedia membantu. Pilih cara yang paling mudah untuk anda.",
       }),
-      block("contact", { title: "Saluran perhubungan" }),
-      block("faq", { title: "Sebelum anda menghubungi kami" }),
+      presetBlock("contact", { title: "Saluran perhubungan" }),
+      presetBlock("faq", { title: "Sebelum anda menghubungi kami" }),
     ],
   },
   koleksi: {
     name: "Blank collection",
     description: "Entries, newest first. For circulars, publications, vacancies.",
     listing: {},
-    blocks: (title) => [block("pageIntro", { title, description: undefined }), block("entryList")],
+    blocks: (title) => [
+      presetBlock("pageIntro", { title, description: undefined }),
+      presetBlock("entryList"),
+    ],
   },
   berita: {
     name: "Berita",
@@ -109,8 +115,8 @@ export const templates = {
       ],
     },
     blocks: (title) => [
-      block("pageIntro", { title, description: "Berita dan kenyataan media terkini." }),
-      block("entryList"),
+      presetBlock("pageIntro", { title, description: "Berita dan kenyataan media terkini." }),
+      presetBlock("entryList"),
     ],
   },
   pengumuman: {
@@ -118,8 +124,8 @@ export const templates = {
     description: "Closures, service changes, reminders.",
     listing: {},
     blocks: (title) => [
-      block("pageIntro", { title, description: "Makluman terkini untuk orang ramai." }),
-      block("entryList", { style: "list" }),
+      presetBlock("pageIntro", { title, description: "Makluman terkini untuk orang ramai." }),
+      presetBlock("entryList", { style: "list" }),
     ],
   },
   tender: {
@@ -132,8 +138,11 @@ export const templates = {
       ],
     },
     blocks: (title) => [
-      block("pageIntro", { title, description: "Tender dan sebut harga yang sedang dibuka." }),
-      block("entryList", { style: "list", emptyText: "Tiada tender dibuka buat masa ini." }),
+      presetBlock("pageIntro", {
+        title,
+        description: "Tender dan sebut harga yang sedang dibuka.",
+      }),
+      presetBlock("entryList", { style: "list", emptyText: "Tiada tender dibuka buat masa ini." }),
     ],
   },
   acara: {
@@ -141,8 +150,8 @@ export const templates = {
     description: "Briefings, workshops, open days, with date and venue.",
     listing: { startingBlocks: ["eventDetails"], sort: "eventStart" },
     blocks: (title) => [
-      block("pageIntro", { title, description: "Taklimat, bengkel dan hari terbuka kami." }),
-      block("entryList", { style: "cards", emptyText: "Belum ada acara lagi." }),
+      presetBlock("pageIntro", { title, description: "Taklimat, bengkel dan hari terbuka kami." }),
+      presetBlock("entryList", { style: "cards", emptyText: "Belum ada acara lagi." }),
     ],
   },
   takwim: {
@@ -151,8 +160,8 @@ export const templates = {
       "A calendar of events, a month at a time, with each month's events listed under it.",
     listing: { startingBlocks: ["prose"], sort: "eventStart" },
     blocks: (title) => [
-      block("pageIntro", { title, description: "Acara dan program yang akan datang." }),
-      block("eventCalendar"),
+      presetBlock("pageIntro", { title, description: "Acara dan program yang akan datang." }),
+      presetBlock("eventCalendar"),
     ],
   },
 } satisfies Record<string, Template>;

@@ -19,7 +19,10 @@ export const pageIntro = defineBlock({
     tone: field.tone(["primary", "accent", "well", "paper"]),
     width: field.pageColumn(),
     // A listing's own search: its entries, filtered as visitors type (docs/laman.md § Site search).
-    search: panel(field.toggle("Search this listing"), { kinds: ["listing"] }).default(false),
+    search: panel(field.toggle("Search this listing"), {
+      kinds: ["listing"],
+      needs: "siteSearch",
+    }).default(false),
     searchPlaceholder: panel(
       field.text("Search hint", { max: 60, placeholder: "Contoh: belanjawan, cukai" }),
       {

@@ -4,8 +4,11 @@
  * filled ten at a time. Each result is a copy of its template filled with
  * text, so nothing from the index becomes HTML but Pagefind's own excerpt.
  */
-export type Data = { url: string; excerpt: string; meta: { title?: string; date?: string } };
-export type Result = { data: () => Promise<Data> };
+/** A pinned result (`carian/pins.json`), shown first for its word. */
+export type Pin = { url: string; title: string; excerpt?: string };
+
+type Data = { url: string; excerpt: string; meta: { title?: string; date?: string } };
+type Result = { data: () => Promise<Data> };
 export type Pagefind = {
   options: (o: Record<string, unknown>) => Promise<void>;
   filters: () => Promise<Record<string, Record<string, number>>>;
@@ -27,10 +30,10 @@ export function loadPagefind(url: string): Promise<Pagefind> {
 }
 
 /** A page's address as the site links it: no trailing slash. */
-export const pageUrl = (url: string) => url.replace(/\/$/, "") || "/";
+const pageUrl = (url: string) => url.replace(/\/$/, "") || "/";
 
 /** One result, from the `<template data-search-result>` inside `root`. */
-export function resultItem(
+function resultItem(
   root: ParentNode,
   { url, title, excerpt, date }: { url: string; title: string; excerpt?: string; date?: string },
   pinned = false,
@@ -104,12 +107,7 @@ export function resultList(root: ParentNode) {
       return ++current;
     },
     /** The results for `q`, after a pinned one when there is one. */
-    async show(
-      id: number,
-      found: Result[],
-      q: string,
-      pin?: { url: string; title: string; excerpt?: string },
-    ) {
+    async show(id: number, found: Result[], q: string, pin?: Pin) {
       if (id !== current) return;
       results = found;
       shown = 0;

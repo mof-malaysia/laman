@@ -615,14 +615,7 @@ function Editor({ page, onReload }: { page: Page; onReload: () => Promise<void> 
       key={selected.id}
       block={selected}
       kind={page.kind}
-      // A listing's own search needs site search to answer it.
-      locked={
-        selected.type === "pageIntro" &&
-        page.kind === "listing" &&
-        searchDoc.data?.draft.on === false
-          ? { search: <SearchOffNote /> }
-          : undefined
-      }
+      off={searchDoc.data?.draft.on === false ? { siteSearch: <SearchOffNote /> } : undefined}
       onChange={(props, key) =>
         dispatch({ type: "setProps", id: selected.id, props, source: "panel", key })
       }

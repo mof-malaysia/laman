@@ -1,6 +1,5 @@
 import { can } from "@fiscal-sb/contracts";
 import type { FastifyPluginAsync, FastifyRequest } from "fastify";
-import { isDeepStrictEqual } from "node:util";
 import { sql } from "kysely";
 import { z } from "zod";
 import {
@@ -74,9 +73,6 @@ type CreateBody = z.output<typeof CreatePageBody>;
 type MoveBody = z.output<typeof MovePageBody>;
 type DuplicateBody = z.output<typeof DuplicatePageBody>;
 
-/** Whether two values hold the same JSON, whatever their key order or undefined fields. */
-const sameJson = (a: unknown, b: unknown) =>
-  isDeepStrictEqual(JSON.parse(JSON.stringify(a ?? null)), JSON.parse(JSON.stringify(b ?? null)));
 export const pageRoutes: FastifyPluginAsync = async (app) => {
   const { db, jobs } = app;
   /**
@@ -190,18 +186,11 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
         response: { 200: envelope(Page) },
       },
     },
-    async (request) => {
-      const { draft } = request.body;
-      const stored = (await getPage(db, request.params.id)).draft.entry?.event;
-      // An event from a calendar is the sync's: the next sync would undo an edit, and only it sets `source`.
-      if ((stored?.source || draft.entry?.event?.source) && !sameJson(stored, draft.entry?.event))
-        throw new HttpError(
-          409,
-          "event_synced",
-          "This event comes from a calendar sync, which would undo the change. Change it in its calendar.",
-        );
-      return { data: await saveDraft(db, request.params.id, draft, request.body.base) };
-    },
+    async (request) => ({
+      data: await saveDraft(db, request.params.id, request.body.draft, request.body.base, {
+        keepSyncedEvent: true,
+      }),
+    }),
   );
 
   app.get<{ Querystring: z.infer<typeof PageChecksQuery> }>(

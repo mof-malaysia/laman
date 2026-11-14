@@ -36,6 +36,8 @@ type Meta = {
   when?: When;
   /** Offered only on these kinds of page; see `panel`. */
   kinds?: readonly PageKind[];
+  /** A site feature it needs: locked, with a note, while that's off; see `panel`. */
+  needs?: SiteFeature;
   /** One line under the field in the property panel. */
   help?: string;
   /** An example in the empty field: site content, so in the site's language, never translated. */
@@ -46,6 +48,9 @@ type Meta = {
 export type PageKind = "page" | "listing" | "entry";
 
 export type MediaKind = "image" | "document" | "any";
+
+/** A site-wide feature a field can need, set up outside the page. */
+export type SiteFeature = "siteSearch";
 
 /**
  * Sibling field name to the values it must hold for a field to show, e.g.
@@ -58,12 +63,13 @@ const meta = (m: Meta) => m;
 /**
  * Adds panel behaviour to a field: `when` hides it unless its siblings hold
  * the given values, `kinds` unless the page is one of those kinds (hidden
- * fields keep their values, and the renderer ignores them), `help` adds a
+ * fields keep their values, and the renderer ignores them), `needs` locks a
+ * toggle while that site feature is off (the panel says why), `help` adds a
  * line under it. Wrap the field before `.optional()` or `.default()`.
  */
 export const panel = <T extends z.ZodType>(
   schema: T,
-  extra: { when?: When; kinds?: readonly PageKind[]; help?: string },
+  extra: { when?: When; kinds?: readonly PageKind[]; needs?: SiteFeature; help?: string },
 ): T => schema.meta({ ...(schema.meta() as Meta), ...extra }) as T;
 
 /** Whether a field shows, given its siblings' values (or their defaults) and the page's kind. */
@@ -261,6 +267,7 @@ export type FieldSpec = {
   pageKind?: "any" | "listing";
   when?: When;
   kinds?: readonly PageKind[];
+  needs?: SiteFeature;
   help?: string;
   placeholder?: string;
   /** The schema's default, which `when` reads when the sibling is unset. */
@@ -277,6 +284,7 @@ type JsonSchema = {
   pageKind?: "any" | "listing";
   when?: When;
   kinds?: readonly PageKind[];
+  needs?: SiteFeature;
   help?: string;
   placeholder?: string;
   default?: unknown;
@@ -305,6 +313,7 @@ function specsOf(object: JsonSchema): FieldSpec[] {
     if (s.pageKind) spec.pageKind = s.pageKind;
     if (s.when) spec.when = s.when;
     if (s.kinds) spec.kinds = s.kinds;
+    if (s.needs) spec.needs = s.needs;
     if (s.help) spec.help = s.help;
     if (s.placeholder) spec.placeholder = s.placeholder;
     if (s.default !== undefined) spec.defaultValue = s.default;

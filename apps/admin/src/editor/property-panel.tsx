@@ -9,6 +9,7 @@ import {
   type Block,
   type FieldSpec,
   type PageKind,
+  type SiteFeature,
   type RichText,
   Block as BlockSchema,
   blockDefinition,
@@ -66,18 +67,11 @@ type PropertyPanelProps = {
   intro?: ReactNode;
   /** The page's kind: some fields are offered only on some kinds. */
   kind: PageKind;
-  /** Fields that can't be changed here, by name, each with a note saying why. */
-  locked?: Partial<Record<string, ReactNode>>;
+  /** Site features that are off, each with a note saying where to turn it on: fields that need one are locked. */
+  off?: Off;
 };
 
-export function PropertyPanel({
-  block,
-  onChange,
-  onRemove,
-  intro,
-  kind,
-  locked,
-}: PropertyPanelProps) {
+export function PropertyPanel({ block, onChange, onRemove, intro, kind, off }: PropertyPanelProps) {
   const definition = blockDefinition(block.type);
   const issues = issuesOf(block);
   const set = (path: string[], value: unknown) =>
@@ -110,7 +104,7 @@ export function PropertyPanel({
                 path={[]}
                 issues={issues}
                 set={set}
-                locked={locked}
+                off={off}
               />
             </div>
           </details>
@@ -154,11 +148,13 @@ type FieldsProps = {
   path: string[];
   issues: Issues;
   set: (path: string[], value: unknown) => void;
-  locked?: Partial<Record<string, ReactNode>> | undefined;
+  off?: Off | undefined;
 };
 
+type Off = Partial<Record<SiteFeature, ReactNode>>;
+
 /** The fields that show for `value`: hidden ones keep what they hold, so switching back loses nothing. */
-function Fields({ fields, siblings = fields, value, path, issues, set, locked }: FieldsProps) {
+function Fields({ fields, siblings = fields, value, path, issues, set, off }: FieldsProps) {
   return (
     <div className="flex flex-col gap-4">
       {fields
@@ -171,9 +167,9 @@ function Fields({ fields, siblings = fields, value, path, issues, set, locked }:
               path={[...path, field.name]}
               issues={issues}
               set={set}
-              disabled={Boolean(locked?.[field.name])}
+              disabled={Boolean(field.needs && off?.[field.needs])}
             />
-            {locked?.[field.name] ??
+            {(field.needs && off?.[field.needs]) ??
               (field.help && <p className="text-body-sm text-txt-black-700">{field.help}</p>)}
           </div>
         ))}
@@ -187,7 +183,7 @@ type FieldEditorProps = {
   path: string[];
   issues: Issues;
   set: (path: string[], value: unknown) => void;
-  /** Shown but not editable (see `locked`). */
+  /** Shown but not editable: a toggle whose site feature is off (see `off`). */
   disabled?: boolean;
 };
 

@@ -1457,6 +1457,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                         "kinds": [
                           "listing",
                         ],
+                        "needs": "siteSearch",
                         "title": "Search this listing",
                         "type": "boolean",
                         "widget": "toggle",
@@ -5466,6 +5467,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                         "kinds": [
                           "listing",
                         ],
+                        "needs": "siteSearch",
                         "title": "Search this listing",
                         "type": "boolean",
                         "widget": "toggle",

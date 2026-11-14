@@ -305,7 +305,7 @@ export const themeOf = (choice: {
 });
 
 /** `--_primary-50:239 246 255;…`, the declarations the renderer writes on `:root`. */
-export const rampCss = (ramp: Ramp, name: "primary" | "accent" = "primary") =>
+const rampCss = (ramp: Ramp, name: "primary" | "accent" = "primary") =>
   rampSteps.map((s) => `--_${name}-${s}:${ramp[s].join(" ")};`).join("");
 
 /**
