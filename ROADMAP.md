@@ -12,7 +12,8 @@ Owned by Irfan. `/pm` reads this file and only proposes changes to it.
 
 ## Not doing
 
-- TODO: things we've decided against, so nobody proposes them again
+- **BM and EN site content (KIV).** A site has one default language, now and for the foreseeable future. No second-language slot, side-by-side BM/EN editing or language switcher on published sites. Kept in view, not planned.
+- **Native (systemd) installs.** Laman installs as a container only (Docker image, `compose.yaml`). No `init` that installs a systemd unit, no bundled `laman-backup.timer`, no native install guide.
 
 ## Known gaps
 
