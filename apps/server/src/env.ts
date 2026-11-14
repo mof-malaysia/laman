@@ -45,7 +45,11 @@ const EnvSchema = z.object({
     .url()
     .optional()
     .transform((url) => url?.replace(/\/+$/, "")),
-  /** Public address of the published site, for the sitemap. Without it no sitemap is written. */
+  /**
+   * Public address of the published site, for the sitemap and the admin's
+   * "View on site" links. Without it no sitemap is written. In development it
+   * defaults to this server's own address (see `loadEnv`).
+   */
   SITE_URL: z.url().optional(),
   /** Largest file the media library accepts, in megabytes. */
   MEDIA_MAX_MB: z.coerce.number().positive().max(200).default(10),
@@ -77,9 +81,19 @@ export type Env = z.infer<typeof EnvSchema>;
 
 export function loadEnv(source: Record<string, string | undefined> = process.env): Env {
   const result = EnvSchema.safeParse(source);
-  if (result.success) return result.data;
+  if (result.success) return withDevSiteUrl(result.data);
   const lines = result.error.issues.map(
     (issue) => `  ${issue.path.join(".") || "env"}: ${issue.message}`,
   );
   throw new Error(`Invalid environment variables:\n${lines.join("\n")}`);
+}
+
+/**
+ * In development the admin (:3001) and the published site (this server) are
+ * on different ports, so a site path alone would open the admin: point at this
+ * server instead. Production serves both from one address and sets SITE_URL.
+ */
+function withDevSiteUrl(env: Env): Env {
+  if (env.SITE_URL || env.NODE_ENV !== "development") return env;
+  return { ...env, SITE_URL: `http://localhost:${env.PORT}` };
 }
