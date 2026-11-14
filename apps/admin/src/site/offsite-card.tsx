@@ -11,7 +11,7 @@ import {
   type OffsiteTestResult,
   needsEndpoint,
   needsRegion,
-} from "@fiscal-sb/contracts";
+} from "@laman/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useState } from "react";
 import { RadioCards } from "@/components/radio-cards";

@@ -9,7 +9,7 @@ import {
   type Role,
   type OneTimeLink,
   type UserSummary,
-} from "@fiscal-sb/contracts";
+} from "@laman/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useId, useState } from "react";

@@ -1,5 +1,5 @@
-import type { PageDocument } from "@fiscal-sb/blocks";
-import type { Page } from "@fiscal-sb/contracts";
+import type { PageDocument } from "@laman/blocks";
+import type { Page } from "@laman/contracts";
 import { useMutation } from "@tanstack/react-query";
 import { pagesApi } from "@/lib/api";
 import { useRefreshPages } from "@/lib/pages";

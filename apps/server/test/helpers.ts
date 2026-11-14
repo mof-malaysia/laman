@@ -1,6 +1,6 @@
 /** Builds the app the way the tests use it: signed in, so the API answers. */
 import { randomUUID } from "node:crypto";
-import type { Role } from "@fiscal-sb/contracts";
+import type { Role } from "@laman/contracts";
 import { type AppOptions, buildApp } from "../src/app.js";
 import { hashPassword } from "../src/auth/password.js";
 import { hashToken, newToken } from "../src/auth/tokens.js";

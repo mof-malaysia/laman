@@ -1,5 +1,5 @@
 /** A media field: the chosen image (or an empty slot), its alt text, and Change or Remove. */
-import type { MediaKind } from "@fiscal-sb/blocks";
+import type { MediaKind } from "@laman/blocks";
 import { useQuery } from "@tanstack/react-query";
 import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";

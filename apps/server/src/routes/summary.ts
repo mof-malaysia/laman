@@ -2,7 +2,7 @@
 import { stat } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { join } from "node:path";
-import { ftdsPrimary } from "@fiscal-sb/blocks";
+import { ftdsPrimary } from "@laman/blocks";
 import type { FastifyPluginAsync } from "fastify";
 import { Summary, envelope } from "../contract.js";
 import { mediaTotals } from "../content/media.js";

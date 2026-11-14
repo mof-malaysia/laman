@@ -2,7 +2,7 @@
  * Recently deleted: the page tree's other mode. Deleted pages on the left,
  * the selected one's last draft on the right, restorable for 30 days.
  */
-import type { DeletedPage } from "@fiscal-sb/contracts";
+import type { DeletedPage } from "@laman/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useState } from "react";

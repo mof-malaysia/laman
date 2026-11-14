@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@rstest/core";
-import { type Block, type PageDocument, blockFields, blocks, newBlock } from "@fiscal-sb/blocks";
+import { type Block, type PageDocument, blockFields, blocks, newBlock } from "@laman/blocks";
 import { blockLabel } from "../src/i18n/registry";
 import { pageChanges } from "../src/lib/page-diff";
 

@@ -6,7 +6,7 @@
  * to Recently deleted, where it can be restored. Closing with unsaved
  * changes asks before throwing them away.
  */
-import type { MediaDetail } from "@fiscal-sb/contracts";
+import type { MediaDetail } from "@laman/contracts";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useId, useRef, useState } from "react";

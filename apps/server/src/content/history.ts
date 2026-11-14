@@ -5,8 +5,8 @@
  * so a restore can be undone. Deleted pages stay restorable for 30 days.
  */
 import { randomUUID } from "node:crypto";
-import { PageDocument, withDefaults } from "@fiscal-sb/blocks";
-import type { DeletedPage, Revision, RevisionDetail } from "@fiscal-sb/contracts";
+import { PageDocument, withDefaults } from "@laman/blocks";
+import type { DeletedPage, Revision, RevisionDetail } from "@laman/contracts";
 import { sql } from "kysely";
 import { type Db, now } from "../db/index.js";
 import { HttpError } from "../errors.js";

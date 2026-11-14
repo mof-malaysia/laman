@@ -3,7 +3,7 @@
  * each with what to do about it. A missing main heading stops the page going
  * live; everything else is a warning the officer can publish past.
  */
-import type { PageCheck } from "@fiscal-sb/contracts";
+import type { PageCheck } from "@laman/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { toneDot } from "@/components/page-status";
 import { linkClass } from "@/components/text-link";

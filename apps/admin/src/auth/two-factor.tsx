@@ -3,7 +3,7 @@
  * code, then keep the recovery codes, which are shown only this once. Used
  * at sign-in when the site requires it, and from Account.
  */
-import type { Me } from "@fiscal-sb/contracts";
+import type { Me } from "@laman/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { encode } from "uqr";

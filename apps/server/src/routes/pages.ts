@@ -1,4 +1,4 @@
-import { can } from "@fiscal-sb/contracts";
+import { can } from "@laman/contracts";
 import type { FastifyPluginAsync, FastifyRequest } from "fastify";
 import { sql } from "kysely";
 import { z } from "zod";

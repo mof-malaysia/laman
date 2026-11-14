@@ -5,8 +5,8 @@
  * text that differs from the library's is kept as this use's own alt.
  * Decorative is a property of the image, so it's saved to the library too.
  */
-import type { MediaKind } from "@fiscal-sb/blocks";
-import type { Media } from "@fiscal-sb/contracts";
+import type { MediaKind } from "@laman/blocks";
+import type { Media } from "@laman/contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";

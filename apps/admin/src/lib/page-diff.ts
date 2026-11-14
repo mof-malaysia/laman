@@ -10,7 +10,7 @@ import {
   type RichNode,
   blockFields,
   richTextToText,
-} from "@fiscal-sb/blocks";
+} from "@laman/blocks";
 import { type MessageKey, t } from "@/i18n";
 import { blockLabel, localBlockFields } from "@/i18n/registry";
 

@@ -1,5 +1,5 @@
 /** How the site's backups stand, in one word: the settings panel, the dashboard and the status bar agree. */
-import type { Summary } from "@fiscal-sb/contracts";
+import type { Summary } from "@laman/contracts";
 
 /**
  * `failed` beats the rest: a failure after the newest archive. `never` and

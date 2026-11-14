@@ -12,7 +12,7 @@ import {
   type SettingsDoc,
   type Summary,
   announcementShowing,
-} from "@fiscal-sb/contracts";
+} from "@laman/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";

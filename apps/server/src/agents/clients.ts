@@ -4,7 +4,7 @@
  * checked against that before anyone is asked to consent.
  */
 import { randomUUID } from "node:crypto";
-import type { ConsentRequest } from "@fiscal-sb/contracts";
+import type { ConsentRequest } from "@laman/contracts";
 import type { FastifyRequest } from "fastify";
 import { z } from "zod";
 import { type Db, now } from "../db/index.js";

@@ -4,7 +4,7 @@
  * up and says so; run it against a throwaway DATA_DIR, never a real site.
  *
  *   DEMO_URL=http://127.0.0.1:3020 DEMO_USER=… DEMO_PASS=… DEMO_NEW_PASS=… \
- *     pnpm --filter @fiscal-sb/server exec tsx scripts/demo-site.ts
+ *     pnpm --filter @laman/server exec tsx scripts/demo-site.ts
  *
  * DEMO_USER and DEMO_PASS are the first account from the server's
  * environment; DEMO_NEW_PASS is the password it must change to at first
@@ -18,8 +18,8 @@ import {
   dayOf,
   newBlock,
   templateById,
-} from "@fiscal-sb/blocks";
-import type { Announcement, Me, PageSummary, SiteSettings } from "@fiscal-sb/contracts";
+} from "@laman/blocks";
+import type { Announcement, Me, PageSummary, SiteSettings } from "@laman/contracts";
 
 const base = process.env.DEMO_URL ?? "http://127.0.0.1:3020";
 const username = process.env.DEMO_USER ?? "demo";

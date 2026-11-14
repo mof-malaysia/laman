@@ -4,7 +4,7 @@
  * Hover or arrow keys show a bucket's figures; the same figures are in a table
  * under the chart.
  */
-import type { AnalyticsSummary } from "@fiscal-sb/contracts";
+import type { AnalyticsSummary } from "@laman/contracts";
 import { useRef, useState } from "react";
 import { Details, DetailsContent, DetailsTrigger } from "@/components/ui/details";
 import {

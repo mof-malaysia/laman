@@ -2,7 +2,7 @@
  * Reading audit entries: what an entry says, which agent made it and what
  * kind of call it was. The Audit log and the Agents screen read them alike.
  */
-import type { AuditEntry, SiteDocName } from "@fiscal-sb/contracts";
+import type { AuditEntry, SiteDocName } from "@laman/contracts";
 import { Tag } from "@/components/ui/tag";
 import { type MessageKey, t } from "@/i18n";
 import { roleLabels } from "@/lib/auth";

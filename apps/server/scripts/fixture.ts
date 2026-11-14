@@ -6,7 +6,7 @@
  * publish, and its analytics as analytics-<last migration>.sql, which every
  * later build must open and report on. A file already saved is left alone.
  *
- *   pnpm --filter @fiscal-sb/server fixture
+ *   pnpm --filter @laman/server fixture
  *
  * Run it once per release, from that release's build: a saved database is
  * never made again or edited. Needs the sqlite3 command. Nothing touches
@@ -26,7 +26,7 @@ import {
   type TemplateId,
   templateIds,
   templatesFor,
-} from "@fiscal-sb/blocks";
+} from "@laman/blocks";
 import { sql } from "kysely";
 import sharp from "sharp";
 import { storedDocuments } from "../src/db/documents.js";

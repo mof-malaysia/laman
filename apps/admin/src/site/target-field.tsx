@@ -2,7 +2,7 @@
  * Where a link goes: a page picked from the tree (it follows renames and moves), or,
  * with the switch on, a web address on another website.
  */
-import type { LinkTarget } from "@fiscal-sb/contracts";
+import type { LinkTarget } from "@laman/contracts";
 import { useId } from "react";
 import { PagePicker } from "@/components/page-picker";
 import { isLive } from "@/components/page-status";

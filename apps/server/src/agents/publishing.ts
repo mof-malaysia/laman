@@ -7,12 +7,7 @@
  * apply. Anything that takes content off the site is marked destructive, so
  * clients ask the officer first.
  */
-import {
-  JobsQuery,
-  PublishSiteBody,
-  type SiteDocName,
-  UnpublishPageBody,
-} from "@fiscal-sb/contracts";
+import { JobsQuery, PublishSiteBody, type SiteDocName, UnpublishPageBody } from "@laman/contracts";
 import { z } from "zod";
 import { none, reading, type Tool, ToolError, tool } from "./tool.js";
 

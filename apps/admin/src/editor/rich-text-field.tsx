@@ -2,7 +2,7 @@
  * Rich text in the property panel: Tiptap, limited to what the block schema
  * stores (headings 2–3, paragraphs, lists, quotes, bold, italic, links).
  */
-import type { RichText } from "@fiscal-sb/blocks";
+import type { RichText } from "@laman/blocks";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import { StarterKit } from "@tiptap/starter-kit";
 import { type ReactNode, useEffect } from "react";

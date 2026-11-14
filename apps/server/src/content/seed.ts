@@ -1,5 +1,5 @@
 /** The home page a new install starts with, so the first sign-in isn't a blank screen. */
-import { newBlock } from "@fiscal-sb/blocks";
+import { newBlock } from "@laman/blocks";
 import type { Db } from "../db/index.js";
 import { createPage } from "./pages.js";
 

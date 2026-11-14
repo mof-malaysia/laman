@@ -9,7 +9,7 @@ import {
   type BlockType,
   blockDefinition,
   blocks as registry,
-} from "@fiscal-sb/blocks";
+} from "@laman/blocks";
 import {
   type Announcements,
   DndContext,

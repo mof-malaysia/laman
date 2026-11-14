@@ -1,8 +1,8 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { newBlock } from "@fiscal-sb/blocks";
-import type { Role } from "@fiscal-sb/contracts";
+import { newBlock } from "@laman/blocks";
+import type { Role } from "@laman/contracts";
 import { afterEach, beforeEach, describe, expect, it } from "@rstest/core";
 import { buildApp } from "../src/app.js";
 import { codeFor, stepAt } from "../src/auth/totp.js";

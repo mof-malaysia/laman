@@ -5,7 +5,7 @@
  * so a redirect follows its target through later renames and moves.
  */
 import { randomUUID } from "node:crypto";
-import type { PageDocument, RedirectStatus } from "@fiscal-sb/blocks";
+import type { PageDocument, RedirectStatus } from "@laman/blocks";
 import { type Db, now } from "../db/index.js";
 
 export async function addRedirect(

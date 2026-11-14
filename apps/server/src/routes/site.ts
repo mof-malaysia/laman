@@ -8,7 +8,7 @@ import {
   SiteDocName,
   type SiteSettings,
   can,
-} from "@fiscal-sb/contracts";
+} from "@laman/contracts";
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import {

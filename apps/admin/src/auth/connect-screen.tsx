@@ -9,7 +9,7 @@ import {
   type ConsentRequest,
   type Permission,
   permissionsOf,
-} from "@fiscal-sb/contracts";
+} from "@laman/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";

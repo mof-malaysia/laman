@@ -10,7 +10,7 @@ import {
   type SessionStage,
   type UserSummary,
   Username,
-} from "@fiscal-sb/contracts";
+} from "@laman/contracts";
 import type { Selectable } from "kysely";
 import { readRow, writeRow } from "../content/kv.js";
 import { parseStored } from "../db/documents.js";

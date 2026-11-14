@@ -12,8 +12,8 @@ import {
   type PrunePreview,
   type SiteSettings,
   socialPlatforms,
-} from "@fiscal-sb/contracts";
-import { type EmbedService, embedAddresses, embedHost, embedServices } from "@fiscal-sb/blocks";
+} from "@laman/contracts";
+import { type EmbedService, embedAddresses, embedHost, embedServices } from "@laman/blocks";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { type ReactNode, useCallback, useEffect, useId, useRef, useState } from "react";

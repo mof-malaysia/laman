@@ -1,4 +1,4 @@
-import type { PageSummary } from "@fiscal-sb/contracts";
+import type { PageSummary } from "@laman/contracts";
 import type { SVGProps } from "react";
 import { ArrowForwardIcon } from "@/components/ui/icons/arrow-forward";
 import { DocumentIcon } from "@/components/ui/icons/document";

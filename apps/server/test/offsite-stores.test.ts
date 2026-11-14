@@ -5,7 +5,7 @@
  *   docker run -d --rm -p 9100:9000 -e MINIO_ROOT_USER=laman \
  *     -e MINIO_ROOT_PASSWORD=laman-secret-key minio/minio server /data
  *   OFFSITE_TEST_S3=http://127.0.0.1:9100 \
- *     pnpm --filter @fiscal-sb/server test offsite-stores
+ *     pnpm --filter @laman/server test offsite-stores
  *
  * Azure (parked): the Azure tests below ran against Azurite, Microsoft's
  * emulator, with OFFSITE_TEST_AZURE=http://127.0.0.1:10100 and

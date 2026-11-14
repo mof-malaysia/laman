@@ -6,8 +6,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join } from "node:path";
-import type { PageDocument } from "@fiscal-sb/blocks";
-import type { SiteSearch } from "@fiscal-sb/contracts";
+import type { PageDocument } from "@laman/blocks";
+import type { SiteSearch } from "@laman/contracts";
 import * as pagefind from "pagefind";
 
 /**

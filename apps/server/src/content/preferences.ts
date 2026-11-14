@@ -2,7 +2,7 @@
  * Each person's admin preferences, kept on their account. Not a drafted
  * document: they change the admin, not the site, so they apply on save.
  */
-import { AdminPreferences } from "@fiscal-sb/contracts";
+import { AdminPreferences } from "@laman/contracts";
 import type { User } from "../auth/users.js";
 import { parseStored } from "../db/documents.js";
 import type { Db } from "../db/index.js";

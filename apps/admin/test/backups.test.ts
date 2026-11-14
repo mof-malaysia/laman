@@ -1,4 +1,4 @@
-import type { Summary } from "@fiscal-sb/contracts";
+import type { Summary } from "@laman/contracts";
 import { describe, expect, it } from "@rstest/core";
 import { backupHealth } from "../src/lib/backups";
 

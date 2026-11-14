@@ -1,5 +1,5 @@
 {
-  "name": "@fiscal-sb/renderer",
+  "name": "@laman/renderer",
   "version": "0.0.0",
   "private": true,
   "files": [
@@ -27,8 +27,8 @@
   },
   "dependencies": {
     "@astrojs/node": "catalog:",
-    "@fiscal-sb/blocks": "workspace:*",
     "@fontsource-variable/inter": "catalog:",
+    "@laman/blocks": "workspace:*",
     "@oddbird/popover-polyfill": "catalog:",
     "astro": "catalog:",
     "class-variance-authority": "catalog:",
@@ -36,8 +36,8 @@
     "tw-animate-css": "catalog:"
   },
   "devDependencies": {
-    "@fiscal-sb/oxlint-config": "workspace:*",
-    "@fiscal-sb/typescript-config": "workspace:*",
+    "@laman/oxlint-config": "workspace:*",
+    "@laman/typescript-config": "workspace:*",
     "@tailwindcss/vite": "catalog:",
     "@types/node": "catalog:",
     "oxlint": "catalog:",

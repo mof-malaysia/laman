@@ -9,7 +9,7 @@ import {
   SEARCH_PATH,
   listingReservedSlug,
   pathOf,
-} from "@fiscal-sb/blocks";
+} from "@laman/blocks";
 import { sql } from "kysely";
 import type { Db } from "../db/index.js";
 import { type Loads, once } from "./loads.js";

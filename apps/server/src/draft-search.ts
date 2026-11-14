@@ -11,7 +11,7 @@
  * a page whose render input is unchanged keeps its HTML, and an unchanged set
  * of pages keeps the whole index.
  */
-import type { DraftSearchIndex } from "@fiscal-sb/contracts";
+import type { DraftSearchIndex } from "@laman/contracts";
 import { newLoads } from "./content/loads.js";
 import { draftPages } from "./content/pages.js";
 import { liveRedirects } from "./content/redirects.js";

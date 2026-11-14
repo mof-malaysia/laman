@@ -4,7 +4,7 @@
  * whatever is open, so unsaved work stays where it is. Someone else at the
  * keyboard can still go to the full Sign in instead.
  */
-import type { Me } from "@fiscal-sb/contracts";
+import type { Me } from "@laman/contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { useState } from "react";

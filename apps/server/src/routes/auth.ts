@@ -3,7 +3,7 @@
  * password, two-factor and sessions. See docs/auth.md.
  */
 import { randomUUID } from "node:crypto";
-import { can, type SessionStage } from "@fiscal-sb/contracts";
+import { can, type SessionStage } from "@laman/contracts";
 import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { audit } from "../auth/audit.js";

@@ -13,8 +13,8 @@ import {
   PageContent,
   templateById,
   themeSample,
-} from "@fiscal-sb/blocks";
-import { Announcement, Navigation, PageTemplate, ThemeChoice } from "@fiscal-sb/contracts";
+} from "@laman/blocks";
+import { Announcement, Navigation, PageTemplate, ThemeChoice } from "@laman/contracts";
 import type { FastifyPluginAsync, FastifyReply } from "fastify";
 import { z } from "zod";
 import { PageParams } from "../contract.js";

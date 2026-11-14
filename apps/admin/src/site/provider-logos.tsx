@@ -5,7 +5,7 @@
  * both sets are CC0. The marks themselves are their owners' trademarks, used
  * only to name the service.
  */
-import type { OffsiteProvider } from "@fiscal-sb/contracts";
+import type { OffsiteProvider } from "@laman/contracts";
 import { useId } from "react";
 import { FolderIcon } from "@/components/ui/icons/folder";
 

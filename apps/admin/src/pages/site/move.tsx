@@ -1,5 +1,5 @@
 /** The addresses a move or a new address would change, listed before anything is saved. */
-import type { PathChange } from "@fiscal-sb/contracts";
+import type { PathChange } from "@laman/contracts";
 import { t } from "@/i18n";
 
 /** Old address → new address, one row per page. */

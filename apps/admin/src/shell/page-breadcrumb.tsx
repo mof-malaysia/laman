@@ -3,7 +3,7 @@
  * collection, at its entries); the page's own name opens the page switcher. The
  * shell's top bar shows it on a page's screens; the editor shows it in its own bar.
  */
-import type { PageSummary } from "@fiscal-sb/contracts";
+import type { PageSummary } from "@laman/contracts";
 import { Link } from "@tanstack/react-router";
 import { Fragment } from "react";
 import {

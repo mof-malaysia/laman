@@ -11,7 +11,7 @@ import {
   type RenderMode,
   defaultLocale,
   withDefaults,
-} from "@fiscal-sb/blocks";
+} from "@laman/blocks";
 import type { Db } from "../db/index.js";
 import { entryRender, latestRender, listingRender, upcomingRender } from "./entries.js";
 import type { Loads } from "./loads.js";

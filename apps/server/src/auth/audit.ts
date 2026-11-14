@@ -1,10 +1,5 @@
 /** The audit log: who signed in, changed an account, or changed what's live. Kept for a year. */
-import {
-  AUDIT_PAGE,
-  type AuditAction,
-  type AuditEntry,
-  type AuditQuery,
-} from "@fiscal-sb/contracts";
+import { AUDIT_PAGE, type AuditAction, type AuditEntry, type AuditQuery } from "@laman/contracts";
 import { addDays, startOfDay } from "../analytics/db.js";
 import { actingAgent, actingConnection } from "./acting.js";
 import { pageFacts } from "../content/pages.js";

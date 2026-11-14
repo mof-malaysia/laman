@@ -6,7 +6,7 @@
  * its edge; then an open log of recent calls grouped by person and agent,
  * older calls on Load more.
  */
-import { type AgentConnection, type AuditEntry, CONNECTION_DAYS } from "@fiscal-sb/contracts";
+import { type AgentConnection, type AuditEntry, CONNECTION_DAYS } from "@laman/contracts";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useMemo, useState } from "react";

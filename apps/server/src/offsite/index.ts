@@ -21,7 +21,7 @@ import {
   OffsiteStored,
   type OffsiteTestResult,
   offsiteKeepDays,
-} from "@fiscal-sb/contracts";
+} from "@laman/contracts";
 import { sql } from "kysely";
 import { parseName, sha256, verifyBackup } from "../backup.js";
 import { readRow, writeRow } from "../content/kv.js";

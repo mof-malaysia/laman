@@ -5,7 +5,7 @@
  * needs to restore one. Restore itself is the CLI's: it replaces every account
  * and needs the server stopped. Last, for the super admin, the cloud backup.
  */
-import type { Summary } from "@fiscal-sb/contracts";
+import type { Summary } from "@laman/contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
 import { ConfirmDialog } from "@/components/confirm-dialog";

@@ -6,7 +6,7 @@
  * Replaced files have no tick: every publish copies the files as they are,
  * so they go with whatever is published.
  */
-import type { PageCheck, WaitingItem } from "@fiscal-sb/contracts";
+import type { PageCheck, WaitingItem } from "@laman/contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { type ReactNode, useState } from "react";

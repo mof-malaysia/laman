@@ -5,8 +5,8 @@
  * read, or suddenly has far fewer events, keeps what it had on the site.
  */
 import { createHash } from "node:crypto";
-import type { EntryEvent, ListingSettings } from "@fiscal-sb/blocks";
-import type { Page } from "@fiscal-sb/contracts";
+import type { EntryEvent, ListingSettings } from "@laman/blocks";
+import type { Page } from "@laman/contracts";
 import { type Db, now } from "../db/index.js";
 import type { CalendarSourceRow } from "../db/schema.js";
 import { HttpError } from "../errors.js";

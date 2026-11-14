@@ -5,7 +5,7 @@
  * duplicate, move, unpublish, delete), History and Analytics. The address says which is
  * open (`?panel=`), so a link can open it straight to the right place.
  */
-import type { Page } from "@fiscal-sb/contracts";
+import type { Page } from "@laman/contracts";
 import type { ReactNode } from "react";
 import { PageAnalyticsTab } from "@/analytics/page-tab";
 import {

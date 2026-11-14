@@ -7,9 +7,9 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { RenderInput } from "@fiscal-sb/blocks";
-import { handler } from "@fiscal-sb/renderer";
-import { clientDir } from "@fiscal-sb/renderer/paths";
+import type { RenderInput } from "@laman/blocks";
+import { handler } from "@laman/renderer";
+import { clientDir } from "@laman/renderer/paths";
 import inject from "light-my-request";
 import { filesIn } from "./manifest.js";
 

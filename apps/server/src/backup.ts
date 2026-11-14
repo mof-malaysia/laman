@@ -25,7 +25,7 @@ import {
 import { createRequire } from "node:module";
 import { hostname } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
-import { slugify } from "@fiscal-sb/blocks";
+import { slugify } from "@laman/blocks";
 import SQLite from "better-sqlite3";
 import { sql } from "kysely";
 import * as tar from "tar";

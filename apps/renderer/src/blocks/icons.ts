@@ -1,5 +1,5 @@
 /** The FTDS icons a feature, service or navbar link may use, by the registry's names. */
-import type { featureIcons } from "@fiscal-sb/blocks";
+import type { featureIcons } from "@laman/blocks";
 import Accessible from "@/components/ui/icons/accessible.astro";
 import Attachment from "@/components/ui/icons/attachment.astro";
 import Bell from "@/components/ui/icons/bell.astro";

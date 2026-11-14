@@ -1,5 +1,5 @@
 {
-  "name": "@fiscal-sb/server",
+  "name": "@laman/server",
   "version": "0.0.0",
   "private": true,
   "bin": {
@@ -28,9 +28,9 @@
     "@fastify/multipart": "catalog:",
     "@fastify/static": "catalog:",
     "@fastify/swagger": "catalog:",
-    "@fiscal-sb/blocks": "workspace:*",
-    "@fiscal-sb/contracts": "workspace:*",
-    "@fiscal-sb/renderer": "workspace:*",
+    "@laman/blocks": "workspace:*",
+    "@laman/contracts": "workspace:*",
+    "@laman/renderer": "workspace:*",
     "@scalar/fastify-api-reference": "catalog:",
     "better-sqlite3": "catalog:",
     "fastify": "catalog:",
@@ -45,8 +45,8 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@fiscal-sb/oxlint-config": "workspace:*",
-    "@fiscal-sb/typescript-config": "workspace:*",
+    "@laman/oxlint-config": "workspace:*",
+    "@laman/typescript-config": "workspace:*",
     "@modelcontextprotocol/sdk": "catalog:",
     "@rstest/core": "catalog:",
     "@types/better-sqlite3": "catalog:",

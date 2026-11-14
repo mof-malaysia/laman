@@ -10,7 +10,7 @@ import {
   type SiteDocName,
   type UndoPublishResult,
   type WaitingItem,
-} from "@fiscal-sb/contracts";
+} from "@laman/contracts";
 import { type Db, now } from "../db/index.js";
 import { HttpError } from "../errors.js";
 import type { Jobs } from "../jobs.js";

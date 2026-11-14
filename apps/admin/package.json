@@ -1,5 +1,5 @@
 {
-  "name": "@fiscal-sb/admin",
+  "name": "@laman/admin",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -16,9 +16,9 @@
     "@dnd-kit/core": "catalog:",
     "@dnd-kit/sortable": "catalog:",
     "@dnd-kit/utilities": "catalog:",
-    "@fiscal-sb/blocks": "workspace:*",
-    "@fiscal-sb/contracts": "workspace:*",
     "@fontsource-variable/inter": "catalog:",
+    "@laman/blocks": "workspace:*",
+    "@laman/contracts": "workspace:*",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-table": "catalog:",
@@ -37,8 +37,8 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@fiscal-sb/oxlint-config": "workspace:*",
-    "@fiscal-sb/typescript-config": "workspace:*",
+    "@laman/oxlint-config": "workspace:*",
+    "@laman/typescript-config": "workspace:*",
     "@rsbuild/core": "catalog:",
     "@rsbuild/plugin-react": "catalog:",
     "@rstest/adapter-rsbuild": "catalog:",

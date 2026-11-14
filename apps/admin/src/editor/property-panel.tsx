@@ -14,7 +14,7 @@ import {
   Block as BlockSchema,
   blockDefinition,
   fieldShown,
-} from "@fiscal-sb/blocks";
+} from "@laman/blocks";
 import { type ReactNode, useId } from "react";
 import { SortableList, sortId, sortIds, useSortableRow } from "@/components/sortable";
 import { clx } from "@/lib/ftds/utils";

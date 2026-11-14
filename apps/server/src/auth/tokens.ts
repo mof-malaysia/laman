@@ -4,7 +4,7 @@
  * none that work. They are random enough that a fast hash is the right one.
  */
 import { createHash, randomBytes } from "node:crypto";
-import type { GrantStatus } from "@fiscal-sb/contracts";
+import type { GrantStatus } from "@laman/contracts";
 import type { FastifyRequest } from "fastify";
 import { base32 } from "./totp.js";
 

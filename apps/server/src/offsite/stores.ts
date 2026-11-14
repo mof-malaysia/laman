@@ -22,7 +22,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 // Azure (parked): import { BlobServiceClient, StorageSharedKeyCredential } from "@azure/storage-blob";
-import type { OffsiteProvider } from "@fiscal-sb/contracts";
+import type { OffsiteProvider } from "@laman/contracts";
 
 export type RemoteObject = { key: string; bytes: number; at: string };
 

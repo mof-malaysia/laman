@@ -3,7 +3,7 @@
  * newest first, 50 at a time. Kept for a year. Each entry says what it was
  * about, by name, and can be downloaded as CSV for an inquiry.
  */
-import { AUDIT_PAGE, AuditAction, type AuditEntry } from "@fiscal-sb/contracts";
+import { AUDIT_PAGE, AuditAction, type AuditEntry } from "@laman/contracts";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useState } from "react";

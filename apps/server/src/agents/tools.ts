@@ -18,8 +18,8 @@ import {
   templateKind,
   themePresets,
   type ThemePreset,
-} from "@fiscal-sb/blocks";
-import { Breakdown, Id, type Navigation, permissionsOf, type ThemeDoc } from "@fiscal-sb/contracts";
+} from "@laman/blocks";
+import { Breakdown, Id, type Navigation, permissionsOf, type ThemeDoc } from "@laman/contracts";
 import { allows } from "../auth/guard.js";
 import { jsonSchemaOf } from "../validation.js";
 import { z } from "zod";

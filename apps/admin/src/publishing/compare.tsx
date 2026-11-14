@@ -3,7 +3,7 @@
  * the chosen one on the right as the live site has it beside what publishing
  * will make of it, block by block.
  */
-import type { WaitingItem } from "@fiscal-sb/contracts";
+import type { WaitingItem } from "@laman/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";

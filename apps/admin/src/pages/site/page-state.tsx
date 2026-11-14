@@ -1,5 +1,5 @@
 /** A page's state as the Pages screens show it: a small dot and a word, never a coloured pill. */
-import type { PageSummary } from "@fiscal-sb/contracts";
+import type { PageSummary } from "@laman/contracts";
 import { t } from "@/i18n";
 import { clx } from "@/lib/ftds/utils";
 

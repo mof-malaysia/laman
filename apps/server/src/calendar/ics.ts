@@ -4,7 +4,7 @@
  * dropped, and only what the site shows kept (title, times, place). The
  * description and attendees are never read.
  */
-import { atSiteTime, dayOf, siteClock } from "@fiscal-sb/blocks";
+import { atSiteTime, dayOf, siteClock } from "@laman/blocks";
 import ICAL from "ical.js";
 
 /** One occurrence of an event, keyed so the same meeting on several calendars matches. */

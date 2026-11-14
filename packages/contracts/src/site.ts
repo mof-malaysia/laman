@@ -10,7 +10,7 @@ import {
   hexPattern,
   rampSteps,
   themePresets,
-} from "@fiscal-sb/blocks";
+} from "@laman/blocks";
 import { z } from "zod";
 
 const Id = z.uuid();

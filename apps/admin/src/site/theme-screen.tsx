@@ -21,8 +21,8 @@ import {
   rgbToHex,
   type ThemePreset,
   themePresets,
-} from "@fiscal-sb/blocks";
-import type { SiteTheme, ThemeChoice, ThemeDoc } from "@fiscal-sb/contracts";
+} from "@laman/blocks";
+import type { SiteTheme, ThemeChoice, ThemeDoc } from "@laman/contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useId, useMemo, useState } from "react";
 import { card } from "@/components/card";
