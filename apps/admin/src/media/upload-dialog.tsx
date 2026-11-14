@@ -5,7 +5,7 @@
  * field is left and when the dialog closes; a save that fails says so on that
  * image and keeps the dialog open, so nothing typed is lost unnoticed.
  */
-import type { MediaDetail } from "@fiscal-sb/contracts";
+import type { MediaDetail } from "@laman/contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";

@@ -1,5 +1,5 @@
 {
-  "extends": "@fiscal-sb/typescript-config/node.json",
+  "extends": "@laman/typescript-config/node.json",
   "compilerOptions": {
     "noEmit": true
   },

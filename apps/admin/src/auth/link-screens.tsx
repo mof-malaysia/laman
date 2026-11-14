@@ -3,7 +3,7 @@
  * password). The token is in the address's fragment, so it never reaches a
  * server log; the page reads it and posts it.
  */
-import { DisplayName, type LinkInfo, Username } from "@fiscal-sb/contracts";
+import { DisplayName, type LinkInfo, Username } from "@laman/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";

@@ -6,7 +6,7 @@
  * after consent, when revoked, or when its refresh token is used twice.
  */
 import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
-import { type AgentConnection, CONNECTION_DAYS } from "@fiscal-sb/contracts";
+import { type AgentConnection, CONNECTION_DAYS } from "@laman/contracts";
 import type { FastifyRequest } from "fastify";
 import { audit } from "../auth/audit.js";
 import { userAgentOf } from "../auth/sessions.js";

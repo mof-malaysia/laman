@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "@rstest/core";
-import { blockFields, blocks, featureIconGroups, templates } from "@fiscal-sb/blocks";
+import { blockFields, blocks, featureIconGroups, templates } from "@laman/blocks";
 import { rt, setLanguage } from "../src/i18n";
 import { registryMs } from "../src/i18n/messages/registry-ms";
 import { blockLabel, fieldLabelAt, localBlockFields, specStrings } from "../src/i18n/registry";

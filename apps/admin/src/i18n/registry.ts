@@ -11,7 +11,7 @@ import {
   blockFields,
   blocks,
   templates,
-} from "@fiscal-sb/blocks";
+} from "@laman/blocks";
 import { rt } from "./index";
 
 const definitionOf = (type: string) => blocks.find((b) => b.type === type);

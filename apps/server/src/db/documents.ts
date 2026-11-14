@@ -4,7 +4,7 @@
  * schema change that stored content wouldn't pass ships with a migration
  * that rewrites it (`rewriteDocuments`). See docs/upgrades.md.
  */
-import { ListingSettings, PageDocument } from "@fiscal-sb/blocks";
+import { ListingSettings, PageDocument } from "@laman/blocks";
 import {
   AdminPreferences,
   Announcement,
@@ -20,7 +20,7 @@ import {
   SiteSearch,
   SiteSettings,
   SiteTheme,
-} from "@fiscal-sb/contracts";
+} from "@laman/contracts";
 import { type Kysely, type RawBuilder, sql } from "kysely";
 import { z } from "zod";
 import { HttpError } from "../errors.js";

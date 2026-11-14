@@ -4,7 +4,7 @@
  * section of the site. A row's main click opens the editor; everything else
  * a page can do is in its More menu.
  */
-import type { PageSummary } from "@fiscal-sb/contracts";
+import type { PageSummary } from "@laman/contracts";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useMemo, useRef, useState } from "react";

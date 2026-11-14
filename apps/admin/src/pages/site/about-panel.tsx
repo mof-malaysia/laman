@@ -1,6 +1,6 @@
 /** "About this page", in the page drawer's Details tab. */
-import { type TemplateId, templates } from "@fiscal-sb/blocks";
-import type { Page, PageSummary } from "@fiscal-sb/contracts";
+import { type TemplateId, templates } from "@laman/blocks";
+import type { Page, PageSummary } from "@laman/contracts";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { Link as TextLink } from "@/components/ui/link";

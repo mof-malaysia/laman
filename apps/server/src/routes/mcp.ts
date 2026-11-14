@@ -286,7 +286,7 @@ export const mcpRoutes: FastifyPluginAsync<{ maxUploadBytes: number }> = async (
         return {
           protocolVersion: protocolVersions.includes(asked) ? asked : protocolVersions[0],
           capabilities: { tools: { listChanged: false } },
-          serverInfo: { name: "fiscal-sb", title: "Laman", version },
+          serverInfo: { name: "laman", title: "Laman", version },
           instructions,
         };
       }

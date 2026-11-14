@@ -1,4 +1,4 @@
-import type { Role } from "@fiscal-sb/contracts";
+import type { Role } from "@laman/contracts";
 import { afterAll, beforeAll, describe, expect, it } from "@rstest/core";
 import sharp from "sharp";
 import { AGENT_IP, agentApp, agentHelpers } from "./agents.js";

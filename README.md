@@ -42,7 +42,7 @@ State lives in `apps/server/data/` (git-ignored): `site.db` and the published si
 | `pnpm check`       | Lint, type check and test: what the pre-commit hook runs |
 | `pnpm verify`      | `check` plus build                                       |
 
-The server's CLI runs the same code: `pnpm --filter @fiscal-sb/server cli migrate` creates or upgrades the database, and `… cli publish` rebuilds the published site.
+The server's CLI runs the same code: `pnpm --filter @laman/server cli migrate` creates or upgrades the database, and `… cli publish` rebuilds the published site.
 
 ## Configuration
 

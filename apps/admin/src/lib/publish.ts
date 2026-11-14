@@ -8,7 +8,7 @@ import {
   SiteDocName,
   type Summary,
   type WaitingItem,
-} from "@fiscal-sb/contracts";
+} from "@laman/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import type { MessageKey } from "@/i18n";

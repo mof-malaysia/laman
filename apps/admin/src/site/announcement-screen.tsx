@@ -7,7 +7,7 @@
  * (what's happening, until when, where), and the preview shows the bar as
  * it's written. It works on a phone, where the preview is left out.
  */
-import { Announcement, type AnnouncementDoc, type AnnouncementVariant } from "@fiscal-sb/contracts";
+import { Announcement, type AnnouncementDoc, type AnnouncementVariant } from "@laman/contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useId, useMemo, useRef, useState } from "react";
 import { card } from "@/components/card";

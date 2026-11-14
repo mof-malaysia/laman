@@ -5,7 +5,7 @@
  * endpoint and revocation (RFC 7009). Answers are OAuth's own shape,
  * `{ error, error_description }`, not the API's.
  */
-import { ConsentRequest } from "@fiscal-sb/contracts";
+import { ConsentRequest } from "@laman/contracts";
 import type { FastifyPluginAsync, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { Throttle } from "../auth/throttle.js";

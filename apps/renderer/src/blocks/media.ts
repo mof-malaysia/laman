@@ -1,4 +1,4 @@
-import type { MediaInfo } from "@fiscal-sb/blocks";
+import type { MediaInfo } from "@laman/blocks";
 
 /** A picture's narrower WebP copies, for `srcset`; undefined when it has none. */
 export const srcsetOf = (info: MediaInfo) =>

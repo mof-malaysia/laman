@@ -3,8 +3,8 @@
  * redirect, duplicate, move, unpublish, delete. The home page only duplicates.
  * A collection's own settings come first.
  */
-import type { PageRedirect, RedirectStatus } from "@fiscal-sb/blocks";
-import type { DeletePreview, Page, PageSummary } from "@fiscal-sb/contracts";
+import type { PageRedirect, RedirectStatus } from "@laman/blocks";
+import type { DeletePreview, Page, PageSummary } from "@laman/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";

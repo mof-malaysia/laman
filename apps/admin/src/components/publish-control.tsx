@@ -4,7 +4,7 @@
  * here, with a link to the page on the site as proof. With `review`, Publish
  * first shows what will change and asks.
  */
-import type { Job } from "@fiscal-sb/contracts";
+import type { Job } from "@laman/contracts";
 import { type ReactNode, useState } from "react";
 import { createPortal } from "react-dom";
 import { StatusDot, type Tone } from "@/components/page-status";

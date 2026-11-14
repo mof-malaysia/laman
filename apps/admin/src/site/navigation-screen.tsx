@@ -16,7 +16,7 @@ import {
   type Navigation,
   type NavigationDoc,
   type NavWarning,
-} from "@fiscal-sb/contracts";
+} from "@laman/contracts";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import {

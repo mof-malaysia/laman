@@ -19,7 +19,7 @@ import {
   PageSeo,
   slugify,
   Slug,
-} from "@fiscal-sb/blocks";
+} from "@laman/blocks";
 import {
   Announcement,
   DropdownLayout,
@@ -36,7 +36,7 @@ import {
   SiteSettings,
   type SiteTheme,
   UpdateMediaBody,
-} from "@fiscal-sb/contracts";
+} from "@laman/contracts";
 import { z } from "zod";
 import { choiceFrom, ThemeInput } from "./theme.js";
 import { addMedia, issueUploadLink } from "./uploads.js";

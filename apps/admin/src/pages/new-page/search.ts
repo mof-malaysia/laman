@@ -1,4 +1,4 @@
-import { type TemplateId, type TemplateKind, templateIds, templateKinds } from "@fiscal-sb/blocks";
+import { type TemplateId, type TemplateKind, templateIds, templateKinds } from "@laman/blocks";
 
 export const newPageSteps = ["kind", "start", "place", "name", "check"] as const;
 export type NewPageStep = (typeof newPageSteps)[number];

@@ -15,7 +15,7 @@ import {
   type SearchDoc,
   SiteSearch,
   searchLimits,
-} from "@fiscal-sb/contracts";
+} from "@laman/contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useId, useMemo, useRef, useState } from "react";
 import { card } from "@/components/card";

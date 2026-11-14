@@ -11,8 +11,8 @@ import {
   dayOf,
   newEventStart,
   siteClock,
-} from "@fiscal-sb/blocks";
-import type { Page } from "@fiscal-sb/contracts";
+} from "@laman/blocks";
+import type { Page } from "@laman/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";

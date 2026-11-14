@@ -6,7 +6,7 @@ import {
   richTextToText,
   type RichText,
   blockFields,
-} from "@fiscal-sb/blocks";
+} from "@laman/blocks";
 import { type ComponentType, type SVGProps, createElement } from "react";
 import { CalendarIcon } from "@/components/ui/icons/calendar";
 import { ChatBubbleIcon } from "@/components/ui/icons/chat-bubble";

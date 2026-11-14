@@ -2,7 +2,7 @@
  * Thumbnails with their file name and, in words, what an officer needs to
  * know without opening each one: no alt text, decorative, not used, not live yet.
  */
-import type { Media } from "@fiscal-sb/contracts";
+import type { Media } from "@laman/contracts";
 import { PdfIcon } from "@/components/ui/icons/pdf";
 import { Tag } from "@/components/ui/tag";
 import { t } from "@/i18n";

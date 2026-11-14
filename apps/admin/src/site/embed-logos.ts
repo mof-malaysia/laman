@@ -5,7 +5,7 @@
  * icons don't earn a dependency. The marks are their owners' trademarks, shown
  * only to name the service. A service with no mark here gets the Embed block's icon.
  */
-import type { EmbedServiceId } from "@fiscal-sb/blocks";
+import type { EmbedServiceId } from "@laman/blocks";
 
 export const embedLogos: Partial<Record<EmbedServiceId, { hex: string; path: string }>> = {
   // Power BI

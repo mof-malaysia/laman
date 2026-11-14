@@ -11,8 +11,8 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { type MediaInfo, type PageDocument, mediaIdsOf } from "@fiscal-sb/blocks";
-import type { Media, MediaDetail, MediaKind, MediaList, WaitingItem } from "@fiscal-sb/contracts";
+import { type MediaInfo, type PageDocument, mediaIdsOf } from "@laman/blocks";
+import type { Media, MediaDetail, MediaKind, MediaList, WaitingItem } from "@laman/contracts";
 import type { ExpressionBuilder, Selectable } from "kysely";
 import type { Db } from "../db/index.js";
 import { now } from "../db/index.js";

@@ -14,7 +14,7 @@ import {
   type SiteLink,
   type SiteNavItem,
   themeOf,
-} from "@fiscal-sb/blocks";
+} from "@laman/blocks";
 import {
   type Announcement,
   type AnnouncementDoc,
@@ -32,7 +32,7 @@ import {
   type SiteTheme,
   type ThemeChoice,
   type ThemeDoc,
-} from "@fiscal-sb/contracts";
+} from "@laman/contracts";
 import type { z } from "zod";
 import { parseStored, siteDocSchemas } from "../db/documents.js";
 import type { Db } from "../db/index.js";

@@ -1,4 +1,4 @@
-import type { PageDocument } from "@fiscal-sb/blocks";
+import type { PageDocument } from "@laman/blocks";
 import type {
   CalendarSource,
   SaveCalendarSourceBody,
@@ -57,8 +57,8 @@ import type {
   OffsiteSettings,
   OffsiteSettingsSave,
   OffsiteTestResult,
-} from "@fiscal-sb/contracts";
-import { DraftConflict } from "@fiscal-sb/contracts";
+} from "@laman/contracts";
+import { DraftConflict } from "@laman/contracts";
 import ky, { HTTPError } from "ky";
 
 let onSignedOut = () => {};

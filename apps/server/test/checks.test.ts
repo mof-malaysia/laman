@@ -1,7 +1,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { newBlock } from "@fiscal-sb/blocks";
+import { newBlock } from "@laman/blocks";
 import { afterAll, beforeAll, describe, expect, it } from "@rstest/core";
 import sharp from "sharp";
 import { type App, multipartFile, signedInApp } from "./helpers.js";

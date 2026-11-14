@@ -6,7 +6,7 @@
  * /render, /media, /docs and /openapi.json need a finished sign-in too; the
  * published site, /_v and /healthz don't.
  */
-import { can, type Permission, type Role, type SessionStage } from "@fiscal-sb/contracts";
+import { can, type Permission, type Role, type SessionStage } from "@laman/contracts";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { Db } from "../db/index.js";
 import { HttpError } from "../errors.js";

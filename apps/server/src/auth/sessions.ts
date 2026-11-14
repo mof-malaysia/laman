@@ -4,7 +4,7 @@
  * each, so a token from an unfinished sign-in never becomes a signed-in one.
  */
 import { randomUUID } from "node:crypto";
-import type { SessionStage } from "@fiscal-sb/contracts";
+import type { SessionStage } from "@laman/contracts";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import type { Selectable } from "kysely";
 import { ago, type Db, now } from "../db/index.js";

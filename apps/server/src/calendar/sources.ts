@@ -4,7 +4,7 @@ import {
   type CalendarSource,
   MAX_CALENDAR_SOURCES,
   type SaveCalendarSourceBody,
-} from "@fiscal-sb/contracts";
+} from "@laman/contracts";
 import { type Db, now } from "../db/index.js";
 import type { CalendarSourceRow } from "../db/schema.js";
 import { HttpError } from "../errors.js";

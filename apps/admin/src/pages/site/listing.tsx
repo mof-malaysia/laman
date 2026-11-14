@@ -4,8 +4,8 @@
  * collection's settings.
  */
 import { choiceCard } from "@/components/card";
-import { type ListingSettings, blockDefinition, blocksFor, slugify } from "@fiscal-sb/blocks";
-import type { EntrySummary, ListingDetail, Page, PageStatus } from "@fiscal-sb/contracts";
+import { type ListingSettings, blockDefinition, blocksFor, slugify } from "@laman/blocks";
+import type { EntrySummary, ListingDetail, Page, PageStatus } from "@laman/contracts";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";

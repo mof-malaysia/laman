@@ -32,8 +32,8 @@ import {
   monthOf,
   newBlock,
   slugify,
-} from "@fiscal-sb/blocks";
-import type { EntrySummary, ListingDetail, PageStatus } from "@fiscal-sb/contracts";
+} from "@laman/blocks";
+import type { EntrySummary, ListingDetail, PageStatus } from "@laman/contracts";
 import { sql } from "kysely";
 import { parseStored } from "../db/documents.js";
 import type { Db } from "../db/index.js";

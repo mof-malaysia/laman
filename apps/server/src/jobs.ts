@@ -5,7 +5,7 @@
  * process down with it can't do so on every restart.
  */
 import { randomUUID } from "node:crypto";
-import type { Job } from "@fiscal-sb/contracts";
+import type { Job } from "@laman/contracts";
 import type { FastifyBaseLogger } from "fastify";
 import { type Db, now, utc } from "./db/index.js";
 import type { JobsTable } from "./db/schema.js";

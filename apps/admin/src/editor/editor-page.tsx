@@ -2,8 +2,8 @@
  * The editor: a toolbar row, then the Layers and Insert column, the canvas,
  * and the properties panel.
  */
-import { type BlockType, type PageDocument, blocksFor, isCollectionBlock } from "@fiscal-sb/blocks";
-import type { DraftConflict, Page } from "@fiscal-sb/contracts";
+import { type BlockType, type PageDocument, blocksFor, isCollectionBlock } from "@laman/blocks";
+import type { DraftConflict, Page } from "@laman/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";

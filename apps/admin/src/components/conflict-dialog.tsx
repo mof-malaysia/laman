@@ -4,7 +4,7 @@
  * carry on from it, or keep yours, which replaces theirs. It doesn't close
  * any other way: until one is chosen, nothing more is saved.
  */
-import type { DraftConflict, SiteDocName } from "@fiscal-sb/contracts";
+import type { DraftConflict, SiteDocName } from "@laman/contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLayoutEffect, useState } from "react";
 import type { SaveState } from "@/components/publish-control";

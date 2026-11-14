@@ -4,7 +4,7 @@
  * what's waiting to publish and ⌘K search, and the screen. It also owns the
  * dialogs and commands every screen can reach.
  */
-import { announcementShowing } from "@fiscal-sb/contracts";
+import { announcementShowing } from "@laman/contracts";
 import { useQuery } from "@tanstack/react-query";
 import {
   Link,

@@ -5,7 +5,7 @@
  * on a shared computer nobody else is offered them. Storage can be full or
  * blocked; then nothing is kept, and saving works as before.
  */
-import type { PageDocument } from "@fiscal-sb/blocks";
+import type { PageDocument } from "@laman/blocks";
 
 export type LocalDraft = {
   doc: PageDocument;

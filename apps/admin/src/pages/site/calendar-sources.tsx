@@ -3,7 +3,7 @@
  * synced from, how each last read went, and (for admins) adding, changing and
  * removing them. Content Managers can sync now and accept a held drop.
  */
-import type { CalendarSource, Job, Page } from "@fiscal-sb/contracts";
+import type { CalendarSource, Job, Page } from "@laman/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
 import {

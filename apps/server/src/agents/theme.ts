@@ -12,8 +12,8 @@ import {
   rgbToHex,
   themePresets,
   type ThemePreset,
-} from "@fiscal-sb/blocks";
-import type { SiteTheme, ThemeChoice } from "@fiscal-sb/contracts";
+} from "@laman/blocks";
+import type { SiteTheme, ThemeChoice } from "@laman/contracts";
 import { z } from "zod";
 import { ToolError } from "./tool.js";
 

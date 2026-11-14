@@ -10,7 +10,7 @@ import {
   PageRedirect,
   Slug,
   templateIds,
-} from "@fiscal-sb/blocks";
+} from "@laman/blocks";
 import { z } from "zod";
 import { OffsiteStatus } from "./offsite.js";
 import { SiteDocName, savable } from "./site.js";

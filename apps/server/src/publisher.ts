@@ -23,8 +23,8 @@ import {
   calendarPath,
   listingPagePath,
   mediaIdsOf,
-} from "@fiscal-sb/blocks";
-import type { PublishLogEntry } from "@fiscal-sb/contracts";
+} from "@laman/blocks";
+import type { PublishLogEntry } from "@laman/contracts";
 import { mediaFolders } from "./content/media.js";
 import { publishedPages } from "./content/pages.js";
 import { type LiveRedirect, liveRedirects } from "./content/redirects.js";

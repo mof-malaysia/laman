@@ -1,5 +1,5 @@
 {
-  "name": "@fiscal-sb/blocks",
+  "name": "@laman/blocks",
   "version": "0.0.0",
   "private": true,
   "files": [
@@ -23,8 +23,8 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@fiscal-sb/oxlint-config": "workspace:*",
-    "@fiscal-sb/typescript-config": "workspace:*",
+    "@laman/oxlint-config": "workspace:*",
+    "@laman/typescript-config": "workspace:*",
     "@rstest/core": "catalog:",
     "oxlint": "catalog:",
     "typescript": "catalog:"

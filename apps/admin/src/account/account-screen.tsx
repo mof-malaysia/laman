@@ -3,7 +3,7 @@
  * where you're signed in and the agents you've connected. Your role and MCP
  * access are set by an Admin, on Users; the super admin sets their own here.
  */
-import { type AgentConnection, CONNECTION_DAYS, type Me } from "@fiscal-sb/contracts";
+import { type AgentConnection, CONNECTION_DAYS, type Me } from "@laman/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { AuthField, AuthForm } from "@/auth/frame";

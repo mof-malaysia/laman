@@ -2,7 +2,7 @@
  * Add block: a searchable list of the blocks this page can hold, opened from
  * the canvas's "Add block" line or under Layers, so the Layers list stays in view.
  */
-import type { BlockType } from "@fiscal-sb/blocks";
+import type { BlockType } from "@laman/blocks";
 import { useState } from "react";
 import {
   Dialog,

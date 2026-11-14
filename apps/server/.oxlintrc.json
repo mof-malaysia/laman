@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "extends": ["./node_modules/@fiscal-sb/oxlint-config/node.json"],
+  "extends": ["./node_modules/@laman/oxlint-config/node.json"],
   "rules": {
     // An Express rule; Fastify awaits async handlers and routes their errors.
     "oxc/no-async-endpoint-handlers": "off"

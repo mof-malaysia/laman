@@ -27,7 +27,7 @@ import type {
   SessionSummary,
   UserPatch,
   UserSummary,
-} from "@fiscal-sb/contracts";
+} from "@laman/contracts";
 import { useQuery } from "@tanstack/react-query";
 import type { z } from "zod";
 import type { MessageKey } from "@/i18n";

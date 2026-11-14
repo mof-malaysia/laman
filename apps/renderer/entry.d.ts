@@ -1,6 +1,6 @@
 /** Types for the built entry (dist/server/entry.mjs) the server imports. */
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { RenderInput } from "@fiscal-sb/blocks";
+import type { RenderInput } from "@laman/blocks";
 
 export type RenderLocals = { render: RenderInput };
 

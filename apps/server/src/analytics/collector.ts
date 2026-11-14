@@ -4,7 +4,7 @@
  * writes in batches. No address is stored. See docs/analytics.md.
  */
 import { createHash, randomBytes } from "node:crypto";
-import type { Beacon } from "@fiscal-sb/contracts";
+import type { Beacon } from "@laman/contracts";
 import type { FastifyBaseLogger } from "fastify";
 import { isbot } from "isbot";
 import maxmind, { type CountryResponse, type Reader } from "maxmind";

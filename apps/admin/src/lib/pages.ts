@@ -1,5 +1,5 @@
 /** The page list as the admin uses it: queries, the tree, and dates. */
-import type { PageSummary } from "@fiscal-sb/contracts";
+import type { PageSummary } from "@laman/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { locale, t } from "@/i18n";

@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "@rstest/core";
-import { blockTypes, newBlock } from "@fiscal-sb/blocks";
+import { blockTypes, newBlock } from "@laman/blocks";
 import { type App, signedInApp } from "./helpers.js";
 import { loadEnv } from "../src/env.js";
 

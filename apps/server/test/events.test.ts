@@ -1,7 +1,7 @@
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { addDays, addMonths, dayOf, monthOf } from "@fiscal-sb/blocks";
+import { addDays, addMonths, dayOf, monthOf } from "@laman/blocks";
 import { afterAll, beforeAll, describe, expect, it } from "@rstest/core";
 import { type App, signedInApp } from "./helpers.js";
 import { showsEvents } from "../src/content/entries.js";

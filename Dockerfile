@@ -19,7 +19,7 @@ RUN --mount=type=cache,id=turbo,target=/app/.turbo/cache pnpm build
 # The server with only its production dependencies, workspace packages
 # copied in by their `files`: what the image runs.
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    pnpm --filter @fiscal-sb/server deploy --prod --legacy /prod
+    pnpm --filter @laman/server deploy --prod --legacy /prod
 
 FROM node:24-bookworm-slim
 ENV NODE_ENV=production \

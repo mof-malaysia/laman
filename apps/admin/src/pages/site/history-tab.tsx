@@ -4,8 +4,8 @@
  * Restore as draft copies one into the draft (never publishing it), after
  * keeping the current draft as a revision, so a restore can be undone.
  */
-import type { PageDocument } from "@fiscal-sb/blocks";
-import type { Page, Revision } from "@fiscal-sb/contracts";
+import type { PageDocument } from "@laman/blocks";
+import type { Page, Revision } from "@laman/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { type ActivityEvent, ActivityTimeline } from "@/components/blocks/activity-timeline";

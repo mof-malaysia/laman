@@ -6,7 +6,7 @@
  * here" line between blocks, take blocks dragged from the palette, and swap
  * in fresh HTML from the renderer after changes made elsewhere.
  */
-import type { EntryFields, PageContent } from "@fiscal-sb/blocks";
+import type { EntryFields, PageContent } from "@laman/blocks";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { t } from "@/i18n";
 import { blockLabel, fieldLabelAt } from "@/i18n/registry";

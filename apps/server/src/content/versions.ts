@@ -4,7 +4,7 @@
  * it does; a save says which version it started from (`base`), and is
  * refused when someone else has saved since. See SaveDraftBody.
  */
-import type { DraftConflict } from "@fiscal-sb/contracts";
+import type { DraftConflict } from "@laman/contracts";
 import { HttpError } from "../errors.js";
 import { fingerprint } from "../manifest.js";
 

@@ -1,4 +1,4 @@
-import { embedAddresses, embedServices } from "@fiscal-sb/blocks";
+import { embedAddresses, embedServices } from "@laman/blocks";
 import { useQuery } from "@tanstack/react-query";
 import { Details, DetailsContent, DetailsTrigger } from "@/components/ui/details";
 import { t } from "@/i18n";

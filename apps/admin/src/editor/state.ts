@@ -9,7 +9,7 @@ import {
   type PageDocument,
   isCollectionBlock,
   newBlock,
-} from "@fiscal-sb/blocks";
+} from "@laman/blocks";
 
 export type EditorState = {
   doc: PageDocument;

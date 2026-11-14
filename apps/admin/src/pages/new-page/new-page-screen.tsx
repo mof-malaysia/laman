@@ -13,8 +13,8 @@ import {
   templateById,
   templates,
   templatesFor,
-} from "@fiscal-sb/blocks";
-import type { Page, PageSummary } from "@fiscal-sb/contracts";
+} from "@laman/blocks";
+import type { Page, PageSummary } from "@laman/contracts";
 import { useMutation } from "@tanstack/react-query";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";

@@ -7,7 +7,7 @@ import multipart from "@fastify/multipart";
 import fastifyStatic from "@fastify/static";
 import swagger from "@fastify/swagger";
 import scalar from "@scalar/fastify-api-reference";
-import { NOT_FOUND_FILE } from "@fiscal-sb/blocks";
+import { NOT_FOUND_FILE } from "@laman/blocks";
 import Fastify, { type FastifyReply, type FastifyServerOptions } from "fastify";
 import { makeVariants, purgeDeletedMedia } from "./content/media.js";
 import { seedIfEmpty } from "./content/seed.js";
@@ -28,7 +28,7 @@ import type {
   BackupUploadPayload,
   OffsiteFolder,
   PublishPayload,
-} from "@fiscal-sb/contracts";
+} from "@laman/contracts";
 import { backupDirOf, listBackups, makeBackup, nextRun, retentionOf } from "./backup.js";
 import { runPublish } from "./content/publishing.js";
 import {

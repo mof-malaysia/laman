@@ -1,5 +1,5 @@
 {
-  "name": "@fiscal-sb/oxlint-config",
+  "name": "@laman/oxlint-config",
   "version": "0.0.0",
   "private": true,
   "files": [

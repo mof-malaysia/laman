@@ -19,7 +19,7 @@ import {
   slugify,
   templateById,
   templateKind,
-} from "@fiscal-sb/blocks";
+} from "@laman/blocks";
 import type {
   DeletePreview,
   DraftConflict,
@@ -30,7 +30,7 @@ import type {
   PageSummary,
   PathChange,
   PublishSwap,
-} from "@fiscal-sb/contracts";
+} from "@laman/contracts";
 import { type Db, now, utc } from "../db/index.js";
 import { type Selectable, sql } from "kysely";
 import type { PagesTable } from "../db/schema.js";

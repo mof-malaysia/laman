@@ -9,7 +9,7 @@ import type {
   AnalyticsTotals,
   Breakdown,
   BreakdownRow,
-} from "@fiscal-sb/contracts";
+} from "@laman/contracts";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { type ReactNode, useState } from "react";

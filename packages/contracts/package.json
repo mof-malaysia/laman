@@ -1,5 +1,5 @@
 {
-  "name": "@fiscal-sb/contracts",
+  "name": "@laman/contracts",
   "version": "0.0.0",
   "private": true,
   "files": [
@@ -19,12 +19,12 @@
     "lint": "oxlint"
   },
   "dependencies": {
-    "@fiscal-sb/blocks": "workspace:*",
+    "@laman/blocks": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@fiscal-sb/oxlint-config": "workspace:*",
-    "@fiscal-sb/typescript-config": "workspace:*",
+    "@laman/oxlint-config": "workspace:*",
+    "@laman/typescript-config": "workspace:*",
     "oxlint": "catalog:",
     "typescript": "catalog:"
   }

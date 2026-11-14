@@ -1,4 +1,4 @@
-import type { PageSummary } from "@fiscal-sb/contracts";
+import type { PageSummary } from "@laman/contracts";
 import { useMemo } from "react";
 import {
   Combobox,

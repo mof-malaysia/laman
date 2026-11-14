@@ -1,5 +1,5 @@
 /** The icons features, services and navigation links may use, drawn as the site draws them. */
-import { featureIconGroups, featureIconLabels, type featureIcons } from "@fiscal-sb/blocks";
+import { featureIconGroups, featureIconLabels, type featureIcons } from "@laman/blocks";
 import type { FunctionComponent, SVGProps } from "react";
 import { AccessibleIcon } from "@/components/ui/icons/accessible";
 import { AttachmentIcon } from "@/components/ui/icons/attachment";

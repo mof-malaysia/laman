@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "extends": ["./node_modules/@fiscal-sb/oxlint-config/react.json"],
+  "extends": ["./node_modules/@laman/oxlint-config/react.json"],
   // FTDS files are installed by the shadcn CLI and kept as the registry ships them.
   "ignorePatterns": [
     "dist/**",

@@ -3,7 +3,7 @@
  * or list. "Needs alt text" and "Recently deleted" are views of their own;
  * the search, filters and open file live in the address.
  */
-import type { Media, MediaKind } from "@fiscal-sb/contracts";
+import type { Media, MediaKind } from "@laman/contracts";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { type DragEvent, useEffect, useMemo, useState } from "react";

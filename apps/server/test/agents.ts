@@ -3,7 +3,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { Role } from "@fiscal-sb/contracts";
+import type { Role } from "@laman/contracts";
 import { expect } from "@rstest/core";
 import { loadEnv } from "../src/env.js";
 import { type App, sessionCookie, testApp } from "./helpers.js";

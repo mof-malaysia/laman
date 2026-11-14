@@ -2,7 +2,7 @@
  * Date ranges for the analytics reports, as local days in the server's time
  * zone (days are counted there), and how figures are written out.
  */
-import type { AnalyticsInterval } from "@fiscal-sb/contracts";
+import type { AnalyticsInterval } from "@laman/contracts";
 import { locale, t } from "@/i18n";
 
 export const presets = ["today", "7d", "30d", "12m"] as const;

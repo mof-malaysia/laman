@@ -13,7 +13,7 @@ import {
   dayOf,
   eventDays,
   siteClock,
-} from "@fiscal-sb/blocks";
+} from "@laman/blocks";
 import type { Lang } from "@/lib/ftds/i18n";
 
 export type EventInfo = NonNullable<EntryItem["event"]>;

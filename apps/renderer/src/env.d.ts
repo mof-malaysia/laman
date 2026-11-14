@@ -1,5 +1,5 @@
 /// <reference types="astro/client" />
-import type { RenderInput } from "@fiscal-sb/blocks";
+import type { RenderInput } from "@laman/blocks";
 
 declare global {
   namespace App {

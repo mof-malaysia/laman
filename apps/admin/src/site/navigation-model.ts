@@ -10,7 +10,7 @@ import {
   type NavItem,
   type NavLink,
   Navigation,
-} from "@fiscal-sb/contracts";
+} from "@laman/contracts";
 
 export type Selection = string | null;
 

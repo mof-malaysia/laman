@@ -3,7 +3,7 @@
  * (and a backup that's missing or failed) in the header, and the renderer and
  * version at the foot of the sidebar.
  */
-import { type Summary, announcementShowing } from "@fiscal-sb/contracts";
+import { type Summary, announcementShowing } from "@laman/contracts";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { StatusDot, type Tone } from "@/components/page-status";

@@ -3,7 +3,7 @@
  * authenticator app, a new password (the first account's, or one an admin
  * asked to change), or setting up two-factor when the site requires it.
  */
-import { type Me, Password } from "@fiscal-sb/contracts";
+import { type Me, Password } from "@laman/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { Navigate } from "@tanstack/react-router";
 import { type ReactNode, useState } from "react";

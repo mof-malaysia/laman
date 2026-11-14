@@ -3,7 +3,7 @@
  * A block set to "Follow page" takes the page's: an entry's is the article
  * column its header uses; any other page's is its intro's width.
  */
-import type { RenderInput } from "@fiscal-sb/blocks";
+import type { RenderInput } from "@laman/blocks";
 
 export type Column = "wide" | "article";
 

@@ -10,7 +10,7 @@ import type {
   AnalyticsTotals,
   Breakdown,
   BreakdownList,
-} from "@fiscal-sb/contracts";
+} from "@laman/contracts";
 import { type RawBuilder, sql } from "kysely";
 import type { Db } from "../db/index.js";
 import { HttpError } from "../errors.js";

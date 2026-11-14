@@ -6,7 +6,7 @@
  * in this process's memory; only its hash is kept. Using it uploads through
  * /api/media as the officer, after checking the connection is still open.
  */
-import type { UpdateMediaBody } from "@fiscal-sb/contracts";
+import type { UpdateMediaBody } from "@laman/contracts";
 import type { z } from "zod";
 import { hashToken, newToken } from "../auth/tokens.js";
 import type { Api } from "./tool.js";

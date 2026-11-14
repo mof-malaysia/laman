@@ -3,7 +3,7 @@
  * listing of N entries (5,000 by default), then times a full publish, a
  * publish after editing one entry, and one after adding an entry.
  *
- *   pnpm --filter @fiscal-sb/server scale [entries]
+ *   pnpm --filter @laman/server scale [entries]
  *
  * Nothing touches DATA_DIR: the site lives in a temporary folder that is
  * removed at the end.
@@ -11,7 +11,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { templatesFor } from "@fiscal-sb/blocks";
+import { templatesFor } from "@laman/blocks";
 import { createEntry } from "../src/content/entries.js";
 import { publishPages } from "../src/content/pages.js";
 import { loadEnv } from "../src/env.js";

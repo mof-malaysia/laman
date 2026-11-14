@@ -12,7 +12,7 @@ import {
   type ApiTokenCreated,
   ApiTokenRole,
   type CreateApiTokenBody,
-} from "@fiscal-sb/contracts";
+} from "@laman/contracts";
 import type { FastifyRequest } from "fastify";
 import { pageFacts } from "../content/pages.js";
 import { ago, type Db, later, now } from "../db/index.js";

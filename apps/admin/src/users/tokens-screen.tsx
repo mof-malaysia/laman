@@ -12,7 +12,7 @@ import {
   ApiTokenArea,
   type ApiTokenCreated,
   ApiTokenRole,
-} from "@fiscal-sb/contracts";
+} from "@laman/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/confirm-dialog";

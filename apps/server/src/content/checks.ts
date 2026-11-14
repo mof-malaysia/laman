@@ -16,8 +16,8 @@ import {
   openingNames,
   templateIds,
   templateById,
-} from "@fiscal-sb/blocks";
-import type { PageCheck } from "@fiscal-sb/contracts";
+} from "@laman/blocks";
+import type { PageCheck } from "@laman/contracts";
 import { sql } from "kysely";
 import type { Db } from "../db/index.js";
 import { HttpError } from "../errors.js";

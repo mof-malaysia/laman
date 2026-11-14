@@ -1,5 +1,5 @@
 /** Table types for Kysely. JSON columns hold text; see the repositories for shapes. */
-import type { AuditAction, Role, SessionStage } from "@fiscal-sb/contracts";
+import type { AuditAction, Role, SessionStage } from "@laman/contracts";
 import type { Generated, Selectable } from "kysely";
 
 export type PagesTable = {

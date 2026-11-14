@@ -10,7 +10,7 @@ import {
   type PublishPayload,
   type PublishTrigger,
   canUndo,
-} from "@fiscal-sb/contracts";
+} from "@laman/contracts";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { type FormEvent, useMemo, useState } from "react";

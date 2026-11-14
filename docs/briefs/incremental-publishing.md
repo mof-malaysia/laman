@@ -97,7 +97,7 @@ If a site grows well past the target (20,000+ entries) and building inputs becom
 
 ## Results
 
-Measured with `pnpm --filter @fiscal-sb/server scale` (a listing of 5,000 entries, 12 a page: 5,420 addresses), on an M-series Mac, APFS:
+Measured with `pnpm --filter @laman/server scale` (a listing of 5,000 entries, 12 a page: 5,420 addresses), on an M-series Mac, APFS:
 
 | Publish          | Time  | Written | Unchanged |
 | ---------------- | ----- | ------- | --------- |

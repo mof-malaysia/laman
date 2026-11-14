@@ -1,5 +1,5 @@
 {
-  "name": "@fiscal-sb/www",
+  "name": "@laman/www",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -22,8 +22,8 @@
     "tw-animate-css": "catalog:"
   },
   "devDependencies": {
-    "@fiscal-sb/oxlint-config": "workspace:*",
-    "@fiscal-sb/typescript-config": "workspace:*",
+    "@laman/oxlint-config": "workspace:*",
+    "@laman/typescript-config": "workspace:*",
     "@tailwindcss/vite": "catalog:",
     "@types/node": "catalog:",
     "oxlint": "catalog:",

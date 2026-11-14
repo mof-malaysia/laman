@@ -1,5 +1,5 @@
 /** The signed-in person's admin preferences. */
-import type { AdminPreferences as Preferences } from "@fiscal-sb/contracts";
+import type { AdminPreferences as Preferences } from "@laman/contracts";
 import type { FastifyPluginAsync } from "fastify";
 import { AdminPreferences, envelope } from "../contract.js";
 import { userOf } from "../auth/guard.js";

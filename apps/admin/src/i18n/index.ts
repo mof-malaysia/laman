@@ -6,7 +6,7 @@
  * The language is set once, before the app's modules load (index.tsx), so
  * formatters made at module level read it too. Changing it reloads the admin.
  */
-import type { AdminLanguage } from "@fiscal-sb/contracts";
+import type { AdminLanguage } from "@laman/contracts";
 import { en } from "./messages/en";
 
 export type MessageKey = keyof typeof en;
