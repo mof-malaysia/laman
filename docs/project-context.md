@@ -38,7 +38,7 @@ The rakyat looking for a form, an office address, opening hours, a tender, or wh
 
 ### The ICT administrator (supporting)
 
-Installs and upgrades the Docker image or the systemd service, manages backups, resets passwords from the CLI. Cares about it running quietly on the agency's own infrastructure with little to look after.
+Installs and upgrades the Docker image, manages backups, resets passwords from the CLI. Cares about it running quietly on the agency's own infrastructure with little to look after.
 
 ## What they do today
 
@@ -54,7 +54,7 @@ Built (on `feat/site-builder-slice`):
 - An admin on FTDS `AppShell`: dashboard, page tree with Recently deleted, a full-screen new page flow (page or collection, then a template), page detail with live preview, the block editor (canvas, layers, property panel generated from block schemas, inline text), media library with required alt text, navigation (navbar, announcement, footer), site settings, publishing with schedules and history with restore.
 - Eleven blocks: hero, prose, feature grid, image, callout, CTA band, link list, FAQ, contact, entry list, latest entries. Pages have kinds (page, listing, entry) that limit which blocks fit.
 
-Not built yet: BM/EN side by side. Built since: sign-in, users and roles and an audit log (`docs/auth.md`), site search (Pagefind), and backups (`docs/laman.md` § Backup and restore).
+Kept in view, not planned: BM/EN side by side (a site has one language). Built since: sign-in, users and roles and an audit log (`docs/auth.md`), site search (Pagefind), and backups (`docs/laman.md` § Backup and restore).
 
 ## Hard constraints
 
@@ -64,7 +64,7 @@ Not built yet: BM/EN side by side. Built since: sign-in, users and roles and an 
 | Design freedom | Officers arrange approved FTDS blocks and choose preset variants. No free styling, no custom HTML, no new blocks or kinds from the admin.                                       |
 | Design system  | FTDS v0.2.6 via the shadcn registry. Gaps are built from FTDS tokens, never raw colours.                                                                                        |
 | Output         | Static HTML that keeps working when the builder is off.                                                                                                                         |
-| Languages      | Site content BM by default, EN as a second slot. Admin UI in English today.                                                                                                     |
+| Languages      | Site content in one language, BM by default; a second content language is kept in view. Admin UI in English today.                                                              |
 | Workflow       | No approval layer in the first version, to keep it simple. Not a permanent decision. Draft, published, history.                                                                 |
 | Standards      | WCAG 2.2 AA is the only standard we design to. Government web guidelines and assessments (SPLaSK and the like) are out of scope, even where an agency is measured against them. |
 | Pilot          | The first site is our own project, not an agency. Agencies come later, and each runs its own copy with no central support team.                                                 |

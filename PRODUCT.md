@@ -20,7 +20,7 @@ web
   - **Assumption:** mostly on mobile, often a mid-range or older Android phone, sometimes on a slow or metered connection. BM first for most; English, Chinese and Tamil speakers also visit.
   - They include elderly visitors, people with low literacy, people with disabilities, and people under stress (a disaster, a deadline, a benefit they depend on).
 - **The approver.** A head of unit or director who signs off on what goes public. **Assumption:** sign-off happens today outside the system (often WhatsApp screenshots). Not in the product yet.
-- **The ICT administrator (supporting).** Installs and upgrades the Docker image or systemd service, manages backups, resets passwords from the CLI. Wants it to run quietly on the agency's own infrastructure.
+- **The ICT administrator (supporting).** Installs and upgrades the Docker image, manages backups, resets passwords from the CLI. Wants it to run quietly on the agency's own infrastructure.
 
 ## Product Purpose
 
@@ -36,7 +36,7 @@ A self-hosted, single-tenant website builder in the spirit of Isomer and WordPre
 
 ## Operating Context
 
-- Each agency installs and runs its own copy (Docker or Node with systemd), ideally on an internal network or behind a VPN. There is no cloud we operate and **no central support team**: the admin has to teach itself through plain labels, explanations at the point of need, empty states that say what to do, and errors that say how to recover.
+- Each agency installs and runs its own copy as a container (Docker), ideally on an internal network or behind a VPN. There is no cloud we operate and **no central support team**: the admin has to teach itself through plain labels, explanations at the point of need, empty states that say what to do, and errors that say how to recover.
 - The published site is static HTML in `data/public`, served by the same process or any web server, and keeps working when the builder is off.
 - The workflow is draft, publish, history and restore. Settings and navigation are drafted and published like pages.
 - The pilot site is our own project, not an agency. It proves the builder works but won't show how a cold, rotating officer copes.
@@ -46,8 +46,8 @@ A self-hosted, single-tenant website builder in the spirit of Isomer and WordPre
 
 - **Built:** Fastify server, SQLite, a static publisher, an Astro renderer on FTDS components; an admin on FTDS `AppShell` with dashboard, page tree with Recently deleted, a new-page flow (page or collection, then a template), page detail with live preview, the block editor (canvas, layers, schema-generated property panel, inline text), a media library with required alt text, navigation (navbar, announcement, footer), site settings, and publishing with schedules and history with restore.
 - **Blocks:** hero, prose, feature grid, image, callout, CTA band, link list, FAQ, contact, entry list, latest entries. Page kinds (`page`, `listing`, `entry`) limit which blocks fit. Agencies can't add blocks or kinds.
-- **Not built yet:** sign-in, users and roles, an audit log of who did what, BM/EN side by side, Pagefind search, backups from the admin.
-- **Languages:** site content is BM by default with EN as a second slot. **Decided:** the admin will support both BM and EN for its own text. Open: which is the default, and when it ships (today it is English only, through `t()`).
+- **Not built yet:** sign-in, users and roles, an audit log of who did what, Pagefind search, backups from the admin.
+- **Languages:** a site has one language, BM by default. A second content language (BM and EN side by side) is kept in view, not planned. **Decided:** the admin will support both BM and EN for its own text. Open: which is the default, and when it ships (today it is English only, through `t()`).
 - **Terminology:** "page", "listing" (collects dated entries), "entry" (an article under a listing), "draft", "publish", "live", "announcement".
 - **Open decisions:**
   - Approval: the RFC has no approval layer. A lighter option (a shareable expiring preview link and an "Approved by" note in history) is proposed, not decided.

@@ -97,9 +97,9 @@ Every claim on the site comes from this table. Anything not in it needs a source
 
 **Can't say (not built, not true, or not known):**
 
-- BM and EN edited side by side (a second language slot exists; side-by-side editing isn't built).
+- BM and EN edited side by side, or any second site language (a site has one language; a second is kept in view, not planned).
 - An approval workflow (there isn't one; the Content Manager's waiting list is the review step).
-- A native or systemd install (Docker only).
+- A native or systemd install (container only, by decision).
 - "WCAG compliant" or "certified". Say "designed to WCAG 2.2 AA" and "checks before publishing", and say what's left to the officer.
 - SPLaSK or any government assessment score. Out of scope for the product.
 - Adoption figures, agency logos, testimonials or quotes. None exist. The pilot is our own site. Sections that would hold these are left out, not filled with placeholders.

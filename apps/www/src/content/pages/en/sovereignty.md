@@ -44,7 +44,7 @@ No licence to expire, no server of ours to reach, no account to close.
 
 Every block is a component of FTDS, a Malaysian design system, so every Laman website shares the same accessible typography, colours, keyboard focus and layout.
 
-- **Bahasa Melayu first,** with English as a second language.
+- **In Bahasa Melayu,** from the content to the built-in labels.
 - **Your identity, not a free-for-all theme.** Choose your name, logo and primary colour. Laman generates its shades and checks that their contrast meets WCAG AA.
 
 ## Control: with the officers

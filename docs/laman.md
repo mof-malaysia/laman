@@ -17,11 +17,11 @@ A self-hosted website builder for agency sites, in the spirit of Isomer and Word
 | Freedom   | Editors arrange approved blocks and pick preset variants. No free styling.               |
 | Workflow  | No approval layer. Draft and published versions, with history.                           |
 | Auth      | Username and password, with TOTP two-factor. No mail server. See [auth.md](auth.md).     |
-| Install   | Docker image and native (Node, systemd).                                                 |
+| Install   | Container only: the Docker image. No native (systemd) install.                           |
 | Repo      | Its own repository, not the FTDS monorepo. FTDS components come in through the registry. |
 | Runtime   | Node only. See Alternatives considered for why not Go.                                   |
 | Output    | Static HTML, served by the same process or copied to any web server.                     |
-| Languages | BM and EN, BM by default.                                                                |
+| Languages | One site language, BM by default. A second language is kept in view, not planned.        |
 
 ## Shape: one process, several modules
 
@@ -49,7 +49,7 @@ Astro is used only as a rendering engine, because only Astro renders `.astro` co
 | 1   | **Block registry** | Every block an editor can place: its Zod schema (fields, variants, defaults, limits), the FTDS component that renders it, its label and icon. Code, not data: agencies don't add blocks.                                                                                                                                                       |
 | 2   | **Database**       | SQLite through Kysely (`better-sqlite3` dialect): typed queries, Kysely migrations, WAL mode. Tables for users, sessions, pages, revisions, navigation, settings, media, jobs, audit log.                                                                                                                                                      |
 | 3   | **Auth**           | Username and password (argon2id), TOTP two-factor, sessions in SQLite, sign-in throttling, roles (Editor, Content Manager, Admin, super admin), one-time invite and reset links, an audit log. See [auth.md](auth.md).                                                                                                                         |
-| 4   | **Content**        | Pages as a tree of blocks (JSON validated against the registry), page tree and slugs, BM/EN variants, navigation, footer and site settings, drafts, published revisions, history and restore.                                                                                                                                                  |
+| 4   | **Content**        | Pages as a tree of blocks (JSON validated against the registry), page tree and slugs, navigation, footer and site settings, drafts, published revisions, history and restore.                                                                                                                                                                  |
 | 5   | **Media**          | Uploads, type and size checks, sharp resizing into responsive variants, alt text, files on disk under `data/media`.                                                                                                                                                                                                                            |
 | 6   | **Renderer**       | The internal Astro build at `/render`: turns a page's block tree into HTML with the FTDS components, inside the site layout. Modes: `edit` (adds `data-ftds-block` / `data-ftds-field` hooks), `preview` (draft) and `publish` (published revision).                                                                                           |
 | 7   | **Jobs**           | A small queue in a SQLite table, worked in-process: publish, image processing, scheduled backups. Survives restarts.                                                                                                                                                                                                                           |
@@ -58,7 +58,7 @@ Astro is used only as a rendering engine, because only Astro renders `.astro` co
 | 10  | **Admin app**      | React SPA built with Rsbuild, using FTDS React, at `/admin`: sign-in, dashboard, page tree, media library, navigation, settings, users, history. Hosts the editor.                                                                                                                                                                             |
 | 11  | **Editor**         | Inside the admin: the canvas (an iframe showing the renderer in `edit` mode), an overlay for selection and drag and drop (dnd-kit), inline text and rich text (Tiptap), the property panel generated from block schemas, undo and redo. Talks to the canvas by `postMessage`.                                                                  |
 | 12  | **API**            | Fastify routes under `/api` (JSON Schema validation, `@fastify/rate-limit`, session plugin), the only way the admin changes anything. Validates input against the registry, checks the session and role, writes the audit log.                                                                                                                 |
-| 13  | **CLI**            | `init`, `migrate`, `create-admin`, `publish`, `backup`, `restore`. The same code the server uses; the Docker entrypoint and systemd unit call it.                                                                                                                                                                                              |
+| 13  | **CLI**            | `init`, `migrate`, `create-admin`, `publish`, `backup`, `restore`. The same code the server uses; the Docker entrypoint calls it.                                                                                                                                                                                                              |
 | 14  | **Analytics**      | Cookie-free visitor counts for the published site: an inline beacon posts to `/_v`, kept in `data/analytics.db`, reported in the admin. See `docs/analytics.md`.                                                                                                                                                                               |
 
 ### Outside the process
@@ -291,7 +291,6 @@ data/
 ```
 
 - **Docker** (built): one image, one volume at `/data`, one port, with Compose and optional Caddy for HTTPS. See [install-docker.md](install-docker.md).
-- **Native**: `npx @ftds/laman init`, then a systemd unit that runs the server. Node LTS is the only prerequisite.
 - **Backup**: see Backup and restore below.
 - **Upgrades**: a new image or package version runs migrations on start, after an automatic database backup. See [upgrades.md](upgrades.md) for how stored content is kept readable.
 
@@ -373,15 +372,6 @@ Written and tested against Azurite (Microsoft's emulator), but not against a rea
 
 Built: `Dockerfile` and `compose.yaml` at the repository root. `/data` is a named volume; `/backups` is a bind mount of a host folder, so archives are ordinary host files that host tools (restic, the host's own backup agent) can reach, and removing the data volume doesn't remove the backups. The commands for backups, restore and upgrades are in [install-docker.md](install-docker.md).
 
-### Native
-
-Planned with the package (not built yet):
-
-- Data lives in `/var/lib/laman`, backups in `/var/backups/laman`, both owned by the service user with `0700`, archives `0600`.
-- `init` installs the systemd service. The scheduled job runs inside the server; operators who prefer the system scheduler set `BACKUP_SCHEDULE=off` and enable the bundled `laman-backup.timer` instead, which runs the same command (and still works if the server is down).
-- The host's existing backup agent, or restic, picks up `/var/backups/laman`.
-- Restore: `systemctl stop laman`, `laman restore <archive>` as the service user, `systemctl start laman`.
-
 ### Restore
 
 `laman restore <archive>` (a path, or the name of one in `BACKUP_DIR`):
@@ -397,7 +387,7 @@ Accounts, passwords and two-factor go back to how they were when the backup was 
 
 ### Point-in-time recovery (optional)
 
-Daily archives can lose up to a day of edits. Agencies that need better can run Litestream, which streams the WAL to S3-compatible storage continuously: as a sidecar container for Docker, or a second systemd service natively. It's documented, not bundled, so the default install stays one process.
+Daily archives can lose up to a day of edits. Agencies that need better can run Litestream, which streams the WAL to S3-compatible storage continuously: as a sidecar container beside Laman's. It's documented, not bundled, so the default install stays one process.
 
 ## Security
 
@@ -413,8 +403,8 @@ Daily archives can lose up to a day of edits. Agencies that need better can run 
 
 3. **Block model**: the block registry package, schemas for the existing Astro blocks, a renderer that turns a JSON tree into a page.
 4. **Building blocks and page templates**: as in `docs/rfc/astro.md`; templates become starting block trees.
-5. **Builder MVP**: database, auth, content, media, API, admin, the editor (select, reorder, inline edit, property panel), publish to static. Docker and native installs.
-6. **Complete builder**: history and restore, navigation editor, BM/EN side by side, Pagefind (built), scheduled publishing, backups (built: back up from the admin, restore from the CLI), invitations by email.
+5. **Builder MVP**: database, auth, content, media, API, admin, the editor (select, reorder, inline edit, property panel), publish to static. The Docker install.
+6. **Complete builder**: history and restore, navigation editor, Pagefind (built), scheduled publishing, backups (built: back up from the admin, restore from the CLI), invitations by email.
 
 ## Alternatives considered
 
@@ -426,11 +416,10 @@ A compiled Go server would ship as one small binary with few third-party depende
 - Embedding a JavaScript engine in Go (goja, QuickJS) to run Astro is unsupported, slow and fragile.
 - Rewriting the blocks as Go templates (templ, `html/template`) would make a third copy of every component, beside React and Astro, and it would drift from FTDS.
 
-Node is kept light instead: a short, fixed list of server dependencies (Fastify, Kysely, better-sqlite3, an argon2 library, sharp, Zod, the Astro runtime), the server bundled into one file at release, a distroless Docker image, `pnpm audit` and Renovate in CI, and possibly a Node single executable for native installs (native modules need testing first).
+Node is kept light instead: a short, fixed list of server dependencies (Fastify, Kysely, better-sqlite3, an argon2 library, sharp, Zod, the Astro runtime), the server bundled into one file at release, a distroless Docker image, `pnpm audit` and Renovate in CI.
 
 Revisit Go only if rendering leaves the server, for example if publishing moves to a separate build step or the editor renders blocks in the browser.
 
 ## Open questions
 
 - Whether the public server is part of the product or always left to a reverse proxy.
-- One site language at a time or BM and EN edited side by side from the start.

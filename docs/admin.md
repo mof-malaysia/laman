@@ -11,7 +11,7 @@ The next phase after the vertical slice. It covers the admin and the site-buildi
   - **Listing pages:** some pages, such as Berita or Tender, collect dated **entries** (articles, notices).
   - **Entries are pages too:** each is a child of its listing page, with its own URL, revisions, draft and publish.
   - **Same editor:** the listing page and every entry use the block editor. Each kind gets the blocks that suit it (screen 4).
-- **BM only in the UI.** The model keeps its `en` slot, but no screen shows it yet.
+- **BM only in the UI.** The model keeps its `en` slot, but no screen shows it: a site has one language, and a second is kept in view, not planned (`ROADMAP.md`).
 - **Templates and four new blocks:** image, contact, link list and FAQ. They exist so the templates (Utama, Perkhidmatan, Hubungi, Berita) can be real starting pages.
 - **Admin text is English** through `t()`, as it is now. Site content and the FTDS Astro labels stay in BM.
 

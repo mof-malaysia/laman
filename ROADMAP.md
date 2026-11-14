@@ -4,19 +4,11 @@
 
 ## Now (this quarter, in priority order)
 
-1. **BM and EN content edited side by side.** The last unbuilt editing item in the "Complete builder" phase: an officer can write a page in both languages, and visitors can read either.
-   - Done when: an officer can edit a page's EN title and blocks next to the BM ones in the editor; publishing writes the EN version at its own address with a language switch on the published page; the pre-publish checks run on both languages; `test/upgrade.test.ts` still boots and publishes the 1.0 fixture.
-   - Evidence: `docs/laman.md` § Constraints (Languages: BM and EN), § Phases 6 ("BM/EN side by side", not marked built) and § Open questions; `PRODUCT.md` § Capabilities ("EN as a second slot"); `locales` in `packages/blocks/src/content.ts`.
-
-2. **A 1.0 release an agency can install without cloning the repo.** The schema is already frozen as 1.0; the release itself doesn't exist yet.
+1. **A 1.0 release an agency can install without cloning the repo.** The schema is already frozen as 1.0; the release itself doesn't exist yet.
    - Done when: a `v1.0.0` tag and GitHub release exist; a versioned Docker image is published and `docs/install-docker.md` installs and upgrades from it rather than from `git clone`; the release's database is saved with `pnpm --filter @laman/server fixture`; package versions are no longer `0.0.0`; the release and patch policy is written down.
    - Evidence: `docs/install-docker.md` ("there's no published image yet"); `docs/upgrades.md` § Not in this plan (release packaging, image tags, SBOMs, patch policy) and § Saved databases ("`0001_baseline.sql` for 1.0"); no tags or releases on GitHub; `"version": "0.0.0"` in `package.json`.
 
-3. **Native install with systemd.** The second install path the RFC promises, for agencies that don't run Docker.
-   - Done when: `laman init` installs the systemd service; data lives in `/var/lib/laman` and backups in `/var/backups/laman` with the documented permissions; the bundled `laman-backup.timer` works with `BACKUP_SCHEDULE=off`; backup, restore and upgrade are documented for a native install the way `docs/install-docker.md` does for Docker.
-   - Evidence: `docs/laman.md` § Constraints (Install: Docker image and native), § Native ("Planned with the package (not built yet)") and § Phases 5.
-
-4. **A first-time officer can run the site with no handover.** Test the admin with officers who've never seen it, and fix what they trip on.
+2. **A first-time officer can run the site with no handover.** Test the admin with officers who've never seen it, and fix what they trip on.
    - Done when: three to five officers new to Laman have done walkthroughs A, B and D from `docs/admin-evaluation.md`; the findings are written up in `docs/`; posting an urgent announcement on a phone is timed against the 2-minute target; each blocking finding has an issue.
    - Evidence: `PRODUCT.md` § Evidence on Hand ("No user research, usability tests …"); `docs/project-context.md` § Suggested next steps 1 and § Gaps in this context; `docs/admin-evaluation.md` (closing list, step 8); `docs/journeys/publish-model.md` (2-minute phone target).
 
@@ -30,8 +22,10 @@
 
 ## Not doing
 
-From the docs, where they rule these out:
+From Irfan's decisions and the docs, where they rule these out:
 
+- **BM and EN site content (KIV).** A site has one default language, now and for the foreseeable future. No second-language slot, side-by-side BM/EN editing or language switcher on published sites. Kept in view, not planned. Decided by Irfan, 14 Nov 2026.
+- **Native (systemd) installs.** Laman installs as a container only (Docker image, `compose.yaml`). No `init` that installs a systemd unit, no bundled `laman-backup.timer`, no native install guide. Decided by Irfan, 14 Nov 2026.
 - An approval workflow engine: "No approval layer. Draft and published versions, with history." (`docs/laman.md` § Constraints). A lighter approval note is under Next.
 - Multi-tenancy, a shared cloud, or anything we operate (`docs/laman.md` § Constraints).
 - Git-based content, or a CMS such as Payload underneath (`docs/laman.md` § Constraints).
@@ -57,7 +51,5 @@ From the docs, where they rule these out:
 
 ## Questions for Irfan
 
-1. The order of "Now" is a guess (bilingual editing, then the release, then the native install, then user testing). Should the 1.0 release come before BM/EN side by side, so the pilot runs on a tagged build?
-2. Is BM and EN side by side still wanted for 1.0? `docs/laman.md` lists it as an open question, and I couldn't tell from the code how much of the EN slot the admin already edits.
-3. Is the native systemd install still a 1.0 requirement, or is Docker enough until an agency asks for native?
-4. Should each "Now" goal be split into issues labelled `ready` so `/pm` can propose work? There are no open issues today.
+1. The order of "Now" is a guess (the release, then user testing). Should user testing start on a pre-release build instead, so findings land in 1.0?
+2. Should each "Now" goal be split into issues labelled `ready` so `/pm` can propose work? There are no open issues today.
