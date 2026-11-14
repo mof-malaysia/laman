@@ -90,13 +90,13 @@ erDiagram
         text owner PK "a page id or a site document"
     }
     settings {
-        text key PK "e.g. navigation.draft, theme.published"
+        text key PK "e.g. navigation.draft, theme.published, security, offsite"
         text value "JSON: the site document"
         text updated_by
     }
     jobs {
         text id PK
-        text kind "publish, media.variants, backup, calendar.sync"
+        text kind "publish, media.variants, backup, backup.upload, backup.verify, calendar.sync"
         text payload "JSON"
         text status
         integer attempts
@@ -239,7 +239,7 @@ erDiagram
 
 ## site.db: Takwim
 
-A listing reads ICS calendars. Each occurrence a sync finds is written to an entry under the listing; `calendar_events` remembers which entry, and a hash of what it last wrote (docs/site-builder.md).
+A listing reads ICS calendars. Each occurrence a sync finds is written to an entry under the listing; `calendar_events` remembers which entry, and a hash of what it last wrote (docs/laman.md).
 
 ```mermaid
 erDiagram

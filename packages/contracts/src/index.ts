@@ -12,6 +12,7 @@ import {
   templateIds,
 } from "@fiscal-sb/blocks";
 import { z } from "zod";
+import { OffsiteStatus } from "./offsite.js";
 import { SiteDocName, savable } from "./site.js";
 
 export * from "./agents.js";
@@ -19,6 +20,7 @@ export * from "./api-tokens.js";
 export * from "./analytics.js";
 export * from "./auth.js";
 export * from "./calendar.js";
+export * from "./offsite.js";
 export * from "./preferences.js";
 export * from "./site.js";
 
@@ -116,7 +118,7 @@ export const DraftConflict = z.object({
 });
 export type DraftConflict = z.infer<typeof DraftConflict>;
 
-/** What the check before publishing looks at (`GET /pages/checks`): see docs/site-builder.md § Checks before publishing. */
+/** What the check before publishing looks at (`GET /pages/checks`): see docs/laman.md § Checks before publishing. */
 export const PageCheckCode = z.enum([
   "noHeading",
   "altMissing",
@@ -345,7 +347,7 @@ export const WaitingItem = z.discriminatedUnion("kind", [
 ]);
 export type WaitingItem = z.infer<typeof WaitingItem>;
 
-/** An archive in BACKUP_DIR. `file` is what `site-builder restore` takes. */
+/** An archive in BACKUP_DIR. `file` is what `laman restore` takes. */
 export const BackupArchive = z.object({
   file: z.string(),
   at: z.string(),
@@ -402,6 +404,15 @@ export const Summary = z.object({
     failed: z.object({ at: z.string(), error: z.string() }).nullable(),
     /** A backup is queued or running now. */
     running: z.boolean(),
+    /** The off-site copies, or null when they're off. */
+    offsite: OffsiteStatus.nullable(),
+    /**
+     * The disk BACKUP_DIR is on, in bytes, or null when it can't be read.
+     * `low`: under 10% free, or not room for two more of the newest full archive.
+     */
+    disk: z
+      .object({ free: z.number().int(), total: z.number().int(), low: z.boolean() })
+      .nullable(),
   }),
 });
 export type Summary = z.infer<typeof Summary>;

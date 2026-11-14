@@ -1,4 +1,4 @@
-# RFC: FTDS Site Builder
+# RFC: Laman
 
 Status: draft. Architecture only; no code yet.
 
@@ -85,7 +85,7 @@ flowchart TD
     blocks --> astro
   end
 
-  subgraph app["Site builder process (runtime)"]
+  subgraph app["Laman process (runtime)"]
     db[(Database<br/>SQLite + Kysely)]
     auth[Auth]
     content[Content]
@@ -268,7 +268,7 @@ The builder serves the published site itself, and that's the simple choice. A pr
 
 ```nginx
 location / {
-    root /var/lib/site-builder/public;
+    root /var/lib/laman/public;
     gzip_static on;
     brotli_static on;
     rewrite ^(/.+)/$ $1 permanent;            # /berita/ → /berita
@@ -289,13 +289,13 @@ data/
 ```
 
 - **Docker** (built): one image, one volume at `/data`, one port, with Compose and optional Caddy for HTTPS. See [install-docker.md](install-docker.md).
-- **Native**: `npx @ftds/site-builder init`, then a systemd unit that runs the server. Node LTS is the only prerequisite.
+- **Native**: `npx @ftds/laman init`, then a systemd unit that runs the server. Node LTS is the only prerequisite.
 - **Backup**: see Backup and restore below.
 - **Upgrades**: a new image or package version runs migrations on start, after an automatic database backup. See [upgrades.md](upgrades.md) for how stored content is kept readable.
 
 ## Backup and restore
 
-Built in `apps/server/src/backup.ts`. Backups run from the command line, every day inside the server, before every upgrade, and from the admin (**Back up now** in Settings → Backups, for Admins and up). Restore is command-line only: it replaces every account, and it needs the server stopped.
+Built in `apps/server/src/backup.ts`. Backups run from the command line, every day inside the server, before every upgrade, and from the admin (**Back up now** in Settings → Backups, for Admins and up), and each is copied off-site when that's set up (below). Restore is command-line only: it replaces every account, and it needs the server stopped.
 
 ### What gets backed up
 
@@ -308,7 +308,7 @@ Built in `apps/server/src/backup.ts`. Backups run from the command line, every d
 | `public/`         | No        | Rebuilt by the full publish a restore queues.                                                     |
 | Secrets           | No        | The environment (`SUPER_ADMIN_*`, `TRUST_PROXY`, …) is the operator's to keep.                    |
 
-An archive holds password hashes and two-factor secrets (sessions are stored only as hashes). It isn't encrypted: archives are `0600` in a `0700` folder, and the tool that copies them off the machine encrypts them (restic does).
+An archive holds password hashes and two-factor secrets (sessions are stored only as hashes). It isn't encrypted on the server: archives are `0600` in a `0700` folder. Off-site copies can be encrypted before they leave it (below).
 
 ### The one rule: never copy `site.db` while the server runs
 
@@ -316,20 +316,56 @@ SQLite in WAL mode keeps recent writes in `site.db-wal`. Copying `site.db` (or t
 
 ### The backup command
 
-`site-builder backup [--db-only] [--with-analytics]`, safe while the server runs:
+`laman backup [--db-only] [--with-analytics]`, safe while the server runs:
 
 1. `VACUUM INTO` a scratch folder in `DATA_DIR`, then `PRAGMA integrity_check` on the copy, and the stored-documents check ([upgrades.md](upgrades.md)), so a backup that couldn't be restored fails now rather than on the day it's needed.
 2. Hard-link the media folders the copy names beside it (a folder that's missing is listed, not fatal), and write `manifest.json`: builder version, last migration, time, counts, and every file's size and SHA-256.
-3. Pack it into `site-builder-<time>.tar.gz` (`-db.tar.gz` with `--db-only`), written under a temporary name and renamed once complete, in `BACKUP_DIR`.
+3. Pack it into `<site-name>-<time>.tar.gz` (`-db.tar.gz` with `--db-only`), written under a temporary name and renamed once complete, in `BACKUP_DIR`.
 4. Delete old archives: the newest of each of the last `BACKUP_KEEP_DAILY` days (7) and `BACKUP_KEEP_WEEKLY` weeks (4) are kept, by Malaysian date, full and database-only archives apart. Only files named like an archive are touched.
 
-`--db-only` is for frequent database backups on sites with a large media library; media then goes off-site with an incremental tool instead (below). `site-builder backups` lists the archives.
+`--db-only` is for frequent database backups on sites with a large media library; media then goes off-site with an incremental tool instead (below). `laman backups` lists the archives.
 
 The server runs the same code as a `backup` job every day at `BACKUP_SCHEDULE` (Malaysian time, `02:00` by default; `off` turns it off), and one missed while the server was down runs when it starts. Before an upgrade's migrations it writes a database-only archive of the database as it was ([upgrades.md](upgrades.md) § 2). The admin shows the last archive, a failure since, and warns when there's been none for 2 days or when `BACKUP_DIR` isn't set (backups then go to `DATA_DIR/backups`, on the site's own disk; the server also warns at boot in production).
 
-### Getting backups off the machine
+### Off-site copies
 
-A backup on the same disk as the site doesn't survive losing that disk. The builder writes archives to `BACKUP_DIR`; moving them elsewhere is the operator's job, with the tools their infrastructure already uses. The docs recommend restic (encrypted, deduplicated, to S3-compatible storage or another server) pointed at `BACKUP_DIR`.
+A backup on the same disk as the site doesn't survive losing that disk. Built in `apps/server/src/offsite/`: the builder also copies every archive it makes to S3-compatible storage (AWS S3, Google Cloud Storage, Cloudflare R2, Wasabi, DigitalOcean Spaces, MinIO or any other). Azure Blob Storage is parked for a later release (below). The super admin sets it up in **Settings → Backups → Off-site copies**; it applies to the next backup.
+
+- **A job of its own.** After each archive (daily, Back up now, and the database copy before an upgrade, once the server is up) a `backup.upload` job copies it. The local archive is never held up or failed by the storage; an upload is tried three times (5 s and 30 s apart), and a failed one shows in Settings, the dashboard and the header, and can be retried from Publishing. The copy is checked in the bucket by size and by the SHA-256 stored beside it.
+- **Folders for lifecycle rules.** Copies go to `<folder>/daily/`, `monthly/` (the first scheduled backup of each Malaysian month), `manual/` (Back up now) and `upgrade/`, so the storage can expire each at its own age.
+- **The builder doesn't delete off-site copies** unless **Delete old copies from the storage** is on (daily and manual after 30 days, monthly after 365, upgrade after 90, always keeping each folder's newest). The safer setup is keys that can upload, read and list but not delete, with the storage's own lifecycle rules doing the expiry: then someone who takes over the server can't wipe the copies too. **Test connection** says which kind of keys it was given. Object lock (S3 Object Lock, Google Cloud's bucket retention policies, R2 bucket locks) goes further and is worth turning on where it's offered.
+- **Optional encryption.** With **Encrypt before uploading**, archives are encrypted on the server (AES-256-GCM, key from the passphrase by scrypt) and uploaded as `….tar.gz.enc`, so the provider holds only ciphertext. Without the passphrase they can't be opened, by anyone: Settings asks for it twice, and for confirmation that it's kept somewhere other than the server, and shows a short fingerprint to tell passphrases apart. Changing it affects new copies only.
+- **Weekly check.** At 04:30, if the last check was a week ago, a `backup.verify` job downloads the newest full copy, decrypts it, and opens it as a restore would (`backup --verify`). **Check newest copy now** under Technical details runs it at once.
+- **Secrets.** The secret key and the passphrase are stored in `site.db` sealed with `BACKUP_SECRET_KEY` (AES-256-GCM), which the server needs before anything can be saved and which isn't in the database or the archives. They're never sent back to the browser, and the audit log records which fields changed, never their values. A restored site needs the same `BACKUP_SECRET_KEY`, or the secrets are entered again.
+
+| Provider             | Settings                                                                                                                                        |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Amazon S3            | Region (`ap-southeast-5` is Malaysia), bucket, access key ID and secret                                                                         |
+| Google Cloud Storage | Bucket, and an HMAC key's access ID and secret (Cloud Storage → Settings → Interoperability); the builder uses `https://storage.googleapis.com` |
+| Cloudflare R2        | Endpoint `https://<account-id>.r2.cloudflarestorage.com`, bucket, R2 API token's key ID and secret                                              |
+| Wasabi               | Region, bucket, keys                                                                                                                            |
+| DigitalOcean Spaces  | Region (the datacentre, `sgp1` is Singapore), bucket (the Space's name), and a Spaces access key and secret                                     |
+| MinIO                | Endpoint, bucket, keys (path-style addresses)                                                                                                   |
+| Other S3-compatible  | Endpoint, region if it needs one, bucket, keys, and path-style addresses if it has no bucket subdomains                                         |
+
+**Keys that can't delete.** On AWS, an IAM policy allowing `s3:PutObject`, `s3:GetObject`, `s3:AbortMultipartUpload` and `s3:ListBucket` on the bucket, and nothing else (multipart uploads are part of `PutObject`; aborting one only removes its unfinished parts). On Google Cloud, an HMAC key for a service account with Storage Object Creator and Storage Object Viewer on the bucket, not Storage Object Admin. On Spaces, a per-bucket access key with Read/Write/Delete can't drop delete, so rely on lifecycle rules and keep **Delete old copies** off. On R2, an API token with Object Read & Write cannot be limited further, so pair it with a bucket lock rule.
+
+**Lifecycle rules to set.** One rule per folder, expiring objects after 30 days in `daily/` and `manual/`, 365 in `monthly/` and 90 in `upgrade/` (with the folder prefix in front, e.g. `laman/daily/`). AWS and Wasabi: Management → Lifecycle rules. Spaces: through its S3 API, as the control panel has no lifecycle rules (`s3cmd setlifecycle` or `aws s3api put-bucket-lifecycle-configuration` with the Spaces endpoint). Google Cloud: the bucket's Lifecycle tab, a Delete rule per folder with an age and an object name prefix. R2: the bucket's Settings → Object lifecycle rules. MinIO: `mc ilm rule add --prefix daily/ --expire-days 30`.
+
+**Restoring from off-site.** On a server that still has its `site.db` and `BACKUP_SECRET_KEY`, `laman backups --remote` lists the copies and `laman fetch <file>` downloads one into `BACKUP_DIR`, decrypts it and checks it, ready for `laman restore <file>`. On a new server, download the copy with the provider's own tools (AWS CLI, `gcloud storage`, `rclone`, the console), then `BACKUP_PASSPHRASE=… laman decrypt <file>.enc` if it's encrypted. `restore` refuses an encrypted file and says to decrypt it first.
+
+Other tools (restic pointed at `BACKUP_DIR`, the host's backup agent) still work alongside, or instead. They're also the way to Azure Blob Storage for now: restic and rclone both write to it.
+
+#### Azure Blob Storage (parked)
+
+Written and tested against Azurite (Microsoft's emulator), but not against a real storage account, so it's switched off until a release can be. Azure doesn't speak S3, so it has its own client (`@azure/storage-blob`). Everything is still in the code, commented out and marked `Azure (parked)`. To bring it back:
+
+1. Put `"azure"` back in `OffsiteProvider` (`packages/contracts/src/offsite.ts`) with the container and storage-account messages beside it, and update the schema snapshot (`test/upgrade.test.ts -u`).
+2. Uncomment `azureStore` and its import in `apps/server/src/offsite/stores.ts`, and the Azure messages in `offsite/index.ts`.
+3. Re-add `@azure/storage-blob` to the catalog (`pnpm-workspace.yaml`, commented out there) and to `apps/server/package.json`.
+4. In the admin's `offsite-card.tsx`, add `"azure"` to `providers`, its endpoint example, and set `azure` from `value.provider` again. Its fields and BM/English messages are still there.
+5. Uncomment the Azurite tests in `test/offsite-stores.test.ts`, run them, then test against a real account: an account key, a SAS without delete (`rwcl`), and a lifecycle rule.
+6. Put Azure back in these docs: settings are the storage account name, container, and a SAS token (or the account key), with an endpoint only for a sovereign cloud or private endpoint; keys that can't delete are a container or account SAS with Read, Write, Create and List (`rwcl`); lifecycle rules are the storage account's Lifecycle management, with a `prefixMatch` per folder; immutability policies are its object lock; `azcopy` downloads a copy on a new server.
 
 ### Docker
 
@@ -339,14 +375,14 @@ Built: `Dockerfile` and `compose.yaml` at the repository root. `/data` is a name
 
 Planned with the package (not built yet):
 
-- Data lives in `/var/lib/ftds-site-builder`, backups in `/var/backups/ftds-site-builder`, both owned by the service user with `0700`, archives `0600`.
-- `init` installs the systemd service. The scheduled job runs inside the server; operators who prefer the system scheduler set `BACKUP_SCHEDULE=off` and enable the bundled `site-builder-backup.timer` instead, which runs the same command (and still works if the server is down).
-- The host's existing backup agent, or restic, picks up `/var/backups/ftds-site-builder`.
-- Restore: `systemctl stop ftds-site-builder`, `site-builder restore <archive>` as the service user, `systemctl start ftds-site-builder`.
+- Data lives in `/var/lib/laman`, backups in `/var/backups/laman`, both owned by the service user with `0700`, archives `0600`.
+- `init` installs the systemd service. The scheduled job runs inside the server; operators who prefer the system scheduler set `BACKUP_SCHEDULE=off` and enable the bundled `laman-backup.timer` instead, which runs the same command (and still works if the server is down).
+- The host's existing backup agent, or restic, picks up `/var/backups/laman`.
+- Restore: `systemctl stop laman`, `laman restore <archive>` as the service user, `systemctl start laman`.
 
 ### Restore
 
-`site-builder restore <archive>` (a path, or the name of one in `BACKUP_DIR`):
+`laman restore <archive>` (a path, or the name of one in `BACKUP_DIR`):
 
 1. Refuse to run while the server is running. The server keeps `DATA_DIR/server.lock` and touches it every 10 seconds, so this works across containers, and a lock left by a crash goes stale after 30.
 2. Unpack into a scratch folder in `DATA_DIR`: only plain files and folders, exactly the files the manifest lists, each matching its checksum, from a migration this build knows (an archive from a newer version is refused).
@@ -355,7 +391,7 @@ Planned with the package (not built yet):
 
 Accounts, passwords and two-factor go back to how they were when the backup was made. A failure at any step before 4 leaves the site untouched.
 
-`site-builder backup --verify <archive>` does steps 2 and 3 in a scratch folder without touching the site, so operators can test restores routinely.
+`laman backup --verify <archive>` does steps 2 and 3 in a scratch folder without touching the site, so operators can test restores routinely.
 
 ### Point-in-time recovery (optional)
 

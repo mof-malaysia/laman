@@ -95,8 +95,8 @@ The MCP server is at `<builder address>/mcp`. Add it to the agent as a remote (S
 **Codex.** On the officer's machine:
 
 ```sh
-codex mcp add site-builder --url https://builder.agensi.gov.my/mcp
-codex mcp login site-builder
+codex mcp add laman --url https://builder.agensi.gov.my/mcp
+codex mcp login laman
 ```
 
 `login` opens the consent screen and takes the answer on a localhost port, which the redirect rules allow on any port. Codex runs on the officer's machine, so a builder on the agency's network (or localhost, in development) works. Older Codex releases needed `experimental_use_rmcp_client = true` in `~/.codex/config.toml` for OAuth.

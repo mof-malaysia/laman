@@ -1,6 +1,6 @@
 /**
  * Calendar sources: ICS feeds a listing reads every half hour and turns into
- * event entries (docs/site-builder.md § Calendar sources).
+ * event entries (docs/laman.md § Calendar sources).
  */
 import { z } from "zod";
 

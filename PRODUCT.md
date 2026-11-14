@@ -2,7 +2,7 @@
 
 <!-- impeccable:product-schema 1 -->
 
-Source: `docs/project-context.md` (1 Nov 2026), `docs/site-builder.md`, `docs/admin.md` and the code on `feat/site-builder-slice`, confirmed by the owner on 2 Nov 2026. No research with officers or visitors has been done yet: lines marked **Assumption** need checking with real users before they decide anything.
+Source: `docs/project-context.md` (1 Nov 2026), `docs/laman.md`, `docs/admin.md` and the code on `feat/site-builder-slice`, confirmed by the owner on 2 Nov 2026. No research with officers or visitors has been done yet: lines marked **Assumption** need checking with real users before they decide anything.
 
 ## Platform
 
@@ -32,7 +32,7 @@ Success means a new officer can run the site without a handover, urgent notices 
 
 ## Positioning
 
-A self-hosted, single-tenant site builder in the spirit of Isomer and WordPress, where officers can only arrange approved FTDS blocks and pick preset variants. There is no free styling, no custom HTML and no plugins, so the design system's accessibility can't be routed around. One renderer draws the editor canvas, the preview and the published static site, so what the officer sees is what visitors get.
+A self-hosted, single-tenant website builder in the spirit of Isomer and WordPress, where officers can only arrange approved FTDS blocks and pick preset variants. There is no free styling, no custom HTML and no plugins, so the design system's accessibility can't be routed around. One renderer draws the editor canvas, the preview and the published static site, so what the officer sees is what visitors get.
 
 ## Operating Context
 
@@ -59,11 +59,11 @@ A self-hosted, single-tenant site builder in the spirit of Isomer and WordPress,
 
 - **FTDS v0.2.0** is the design language for both the admin and the published sites, installed through the shadcn registry. Missing pieces are built from FTDS tokens, never raw colours. Registry files stay as shipped.
 - Officers choose among approved blocks and preset variants only; each agency's identity comes through its site name, agency name and logo in site settings.
-- Product name in the admin: "Site Builder"; in the docs: "FTDS Site Builder".
+- Product name: "Laman", in the admin and the docs.
 
 ## Evidence on Hand
 
-- Product docs: `docs/site-builder.md` (architecture RFC), `docs/admin.md` (admin design), `docs/project-context.md` (users and stance), `docs/admin-evaluation.md`, `docs/briefs/`, `docs/journeys/`.
+- Product docs: `docs/laman.md` (architecture RFC), `docs/admin.md` (admin design), `docs/project-context.md` (users and stance), `docs/admin-evaluation.md`, `docs/briefs/`, `docs/journeys/`.
 - Templates with real starting content: Utama, Perkhidmatan, Hubungi, Berita (`packages/blocks/src/templates.ts`).
 - **No user research, usability tests, agency testimonials or adoption figures exist.** Future work must not invent them.
 

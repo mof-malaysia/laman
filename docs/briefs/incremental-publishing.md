@@ -1,6 +1,6 @@
 # Brief: incremental publishing
 
-2 Nov 2026. Makes publishing scale with what changed, not with the size of the site. Follows the publisher described in `docs/site-builder.md` (§ Publisher) and the publish log in `docs/briefs/publishing-outcome.md`.
+2 Nov 2026. Makes publishing scale with what changed, not with the size of the site. Follows the publisher described in `docs/laman.md` (§ Publisher) and the publish log in `docs/briefs/publishing-outcome.md`.
 
 ## Why
 
@@ -17,7 +17,7 @@ Incremental Static Regeneration renders on a visitor's request and caches the re
 | How to know what changed | Hash each address's render input. Same hash as last time: the file on disk is already right, skip it.                       |
 | Listing pagination       | Keep newest-first numbering and today's URLs. A new entry re-renders all of that listing's pages (~420 at 5,000 × 12/page). |
 | The publish log          | Lists only what was written, removed, redirected or failed, plus a count of pages left unchanged.                           |
-| Forcing a full rebuild   | `site-builder publish --full` on the CLI and a **Rebuild whole site** action in the admin.                                  |
+| Forcing a full rebuild   | `laman publish --full` on the CLI and a **Rebuild whole site** action in the admin.                                         |
 | Scale target             | A 5,000-entry listing. Publishing one entry finishes in a few seconds.                                                      |
 
 ## How it works
@@ -70,7 +70,7 @@ If a site grows well past the target (20,000+ entries) and building inputs becom
 - **`PublishLogEntry`** is unchanged: it simply has no rows for unchanged pages.
 - **Admin, publish log:** a line's details show "1,204 pages unchanged" under the list of what was written. A full rebuild's line says "Whole site rebuilt".
 - **Admin, Rebuild whole site:** on Publishing, in a second FTDS **Details** below the scheduling one ("Troubleshooting", closed by default), so editors don't reach for it as a normal publish. It asks first with an FTDS **AlertDialog**: it publishes nothing new, takes longer, and the site stays up throughout. It queues a `publish` job with `{ trigger: "manual", full: true }`.
-- **CLI:** `site-builder publish --full`. Plain `publish` becomes incremental.
+- **CLI:** `laman publish --full`. Plain `publish` becomes incremental.
 - All new strings through `t()` in `apps/admin/src/i18n/messages/en.ts`.
 
 ## Steps
@@ -114,7 +114,7 @@ If the fixed cost becomes the problem, the next step is to stop copying the fold
 
 ## Found along the way
 
-- A publish started from the CLI while the server's queue is also publishing would share `public.next`. That was true before this change too. Run `site-builder publish` with the server stopped, or use **Rebuild whole site** instead.
+- A publish started from the CLI while the server's queue is also publishing would share `public.next`. That was true before this change too. Run `laman publish` with the server stopped, or use **Rebuild whole site** instead.
 
 ## Out of scope
 

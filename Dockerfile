@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 #
-# The site builder as one image: the server, with the built renderer and
+# Laman as one image: the server, with the built renderer and
 # admin beside it. State lives in /data (a volume) and backups in /backups
 # (a separate mount). See docs/install-docker.md.
 #
@@ -31,9 +31,9 @@ ENV NODE_ENV=production \
 WORKDIR /app
 COPY --from=build /prod ./
 COPY --from=build /app/apps/admin/dist admin
-# `site-builder <command>`, the package's own bin, for `docker compose exec`.
+# `laman <command>`, the package's own bin, for `docker compose exec`.
 RUN chmod +x dist/cli.js \
- && ln -s /app/dist/cli.js /usr/local/bin/site-builder \
+ && ln -s /app/dist/cli.js /usr/local/bin/laman \
  && mkdir -p /data /backups \
  && chown node:node /data /backups \
  && chmod 0700 /data /backups

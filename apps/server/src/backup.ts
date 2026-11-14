@@ -1,6 +1,6 @@
 /**
- * Backups (docs/site-builder.md § Backup and restore). An archive is one
- * site-builder-<time>[-db].tar.gz in BACKUP_DIR holding a consistent copy
+ * Backups (docs/laman.md § Backup and restore). An archive is one
+ * <site-name>-<time>[-db].tar.gz in BACKUP_DIR holding a consistent copy
  * of site.db (made by SQLite, never by copying the file), the media folders
  * that copy uses, and a manifest with every file's checksum. Restore is
  * command-line only and refuses to run while the server does: it checks
@@ -18,12 +18,14 @@ import {
   rename,
   rm,
   stat,
+  statfs,
   utimes,
   writeFile,
 } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { hostname } from "node:os";
-import { basename, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
+import { slugify } from "@fiscal-sb/blocks";
 import SQLite from "better-sqlite3";
 import { sql } from "kysely";
 import * as tar from "tar";
@@ -39,8 +41,14 @@ import { filesIn } from "./manifest.js";
 
 const { version } = createRequire(import.meta.url)("../package.json") as { version: string };
 
-/** `site-builder-2026-11-03T02-00-00-000Z.tar.gz`, or `…-db.tar.gz` without media. */
-const ARCHIVE = /^site-builder-(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z)(-db)?\.tar\.gz$/;
+/**
+ * `perolehan-digital-2026-11-03T02-00-00-000Z.tar.gz`, or `…-db.tar.gz` without
+ * media: the site's name when the archive was made, then the time. Any such
+ * name counts, so archives from before a rename (or named `site-builder-` by
+ * older versions) are still listed, pruned and restored.
+ */
+const ARCHIVE =
+  /^[a-z0-9]+(?:-[a-z0-9]+)*?-(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z)(-db)?\.tar\.gz$/;
 const MANIFEST = "manifest.json";
 
 export type Manifest = {
@@ -75,11 +83,24 @@ export const retentionOf = (env: Env): Retention => ({
 const fileTime = (iso: string) => iso.replaceAll(/[:.]/g, "-");
 const isoTime = (stamp: string) => stamp.replace(/T(\d\d)-(\d\d)-(\d\d)-/, "T$1:$2:$3.");
 
-const archiveName = (at: string, dbOnly: boolean) =>
-  `site-builder-${fileTime(at)}${dbOnly ? "-db" : ""}.tar.gz`;
+const archiveName = (site: string, at: string, dbOnly: boolean) =>
+  `${site}-${fileTime(at)}${dbOnly ? "-db" : ""}.tar.gz`;
+
+/** The live site name, dashcased, for archive names; "laman" before there is one. */
+async function siteSlug(db: Parameters<typeof migrationState>[0]) {
+  const { rows } = await sql<{ name: string | null }>`
+    select json_extract(value, '$.identity.siteName') as name
+    from settings where key = 'settings.published'
+  `.execute(db);
+  return (
+    slugify(rows[0]?.name ?? "")
+      .slice(0, 40)
+      .replace(/-+$/, "") || "laman"
+  );
+}
 
 /** An archive's time and kind from its name; undefined for any other file. */
-function parseName(file: string) {
+export function parseName(file: string) {
   const m = ARCHIVE.exec(file);
   return m && { at: isoTime(m[1]!), dbOnly: Boolean(m[2]) };
 }
@@ -141,7 +162,28 @@ export async function pruneBackups(backupDir: string, keep: Retention) {
   return deleted;
 }
 
-async function sha256(file: string) {
+/**
+ * Free and total space on the disk holding `dir`, from the nearest folder
+ * that exists (BACKUP_DIR is made by the first backup). Low is under 10% free,
+ * or not room for two more archives the size of the newest.
+ */
+export async function diskOf(
+  dir: string,
+  newestBytes: number,
+): Promise<{ free: number; total: number; low: boolean } | null> {
+  for (let at = resolve(dir); ; at = dirname(at)) {
+    try {
+      const fs = await statfs(at);
+      const free = fs.bavail * fs.bsize;
+      const total = fs.blocks * fs.bsize;
+      return { free, total, low: free < total * 0.1 || free < newestBytes * 2 };
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT" || dirname(at) === at) return null;
+    }
+  }
+}
+
+export async function sha256(file: string) {
   const hash = createHash("sha256");
   for await (const chunk of createReadStream(file)) hash.update(chunk as Buffer);
   return hash.digest("hex");
@@ -192,6 +234,7 @@ export async function makeBackup(options: {
 
     const { db } = openSqlite<unknown>(join(work, "site.db"));
     let found: Pick<Manifest, "migration" | "counts" | "missing">;
+    let site = "laman";
     try {
       const { executed, unknown, pending } = await migrationState(db);
       // A copy from before an upgrade is checked by the restore that upgrades it.
@@ -218,6 +261,7 @@ export async function makeBackup(options: {
             if (existsSync(from)) await linkTree(from, join(work, folder, id));
             else missing.push(`${folder}/${id}`);
           }
+      site = await siteSlug(db).catch(() => "laman");
       found = {
         migration: executed.at(-1) ?? "",
         counts: { pages: await count("pages"), media: media.length, users: await count("users") },
@@ -247,7 +291,7 @@ export async function makeBackup(options: {
     await writeFile(join(work, MANIFEST), JSON.stringify(manifest, null, 2));
 
     await mkdir(backupDir, { recursive: true, mode: 0o700 });
-    const name = archiveName(manifest.createdAt, dbOnly);
+    const name = archiveName(site, manifest.createdAt, dbOnly);
     const partial = join(backupDir, `.${name}.partial`);
     await tar.c({ gzip: true, portable: true, cwd: work, file: partial }, [
       MANIFEST,
@@ -296,7 +340,7 @@ async function unpack(archive: string, into: string) {
     throw new Error(`${archive} is a backup format this version can't read`);
   if (!(manifest.migration in migrations))
     throw new Error(
-      `${archive} was made by a newer version of the site builder (${manifest.version}, migration ${manifest.migration}). Restore it with that version or later.`,
+      `${archive} was made by a newer version of Laman (${manifest.version}, migration ${manifest.migration}). Restore it with that version or later.`,
     );
   const present = (await filesIn(into)).filter((file) => file !== MANIFEST);
   const listed = Object.keys(manifest.files);
@@ -360,9 +404,7 @@ async function serverRunning(dataDir: string) {
  */
 export async function restoreBackup(archive: string, dataDir: string) {
   if (await serverRunning(dataDir))
-    throw new Error(
-      `The site builder is running on ${dataDir}. Stop it first, restore, then start it again.`,
-    );
+    throw new Error(`Laman is running on ${dataDir}. Stop it first, restore, then start it again.`);
   const work = await mkdtemp(join(dataDir, ".restore-"));
   try {
     const { manifest, db } = await unpack(resolve(archive), work);

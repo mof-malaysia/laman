@@ -1,6 +1,7 @@
 /**
  * A rendered page as a still picture: drawn at desktop width, scaled to fit,
- * in a browser frame showing its address. Nothing in it runs, scrolls or takes focus.
+ * in a browser frame showing its address, or on its own with `bare`. Nothing
+ * in it runs, scrolls or takes focus.
  */
 import { type ReactNode, useRef, useState } from "react";
 import { GlobeIcon } from "@/components/ui/icons/globe";
@@ -17,15 +18,19 @@ export function PageFrame({
   title,
   className,
   overlay,
+  bare = false,
 }: {
   /** A `/render/...` address. A new one redraws the picture. */
   src: string;
-  path: string;
+  /** Shown in the frame's address bar; unused when `bare`. */
+  path?: string;
   title: string;
   /** Sizes the frame: give it a height, or make it grow in a flex column. */
   className?: string;
   /** Drawn over the picture, such as a link that opens the full page. */
   overlay?: ReactNode;
+  /** The picture alone, without the browser frame's address bar. */
+  bare?: boolean;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const size = useElementSize(box);
@@ -40,17 +45,19 @@ export function PageFrame({
         className,
       )}
     >
-      <div className="border-otl-gray-200 bg-bg-washed flex h-8 shrink-0 items-center gap-2 border-b px-2.5">
-        <span className="flex gap-1" aria-hidden>
-          <span className="bg-bg-washed-active size-2 rounded-full" />
-          <span className="bg-bg-washed-active size-2 rounded-full" />
-          <span className="bg-bg-washed-active size-2 rounded-full" />
-        </span>
-        <span className="bg-bg-white text-txt-black-700 text-label-compact flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 py-0.5">
-          <GlobeIcon aria-hidden className="size-3.5 shrink-0" />
-          <span className="truncate font-mono">{path}</span>
-        </span>
-      </div>
+      {!bare && (
+        <div className="border-otl-gray-200 bg-bg-washed flex h-8 shrink-0 items-center gap-2 border-b px-2.5">
+          <span className="flex gap-1" aria-hidden>
+            <span className="bg-bg-washed-active size-2 rounded-full" />
+            <span className="bg-bg-washed-active size-2 rounded-full" />
+            <span className="bg-bg-washed-active size-2 rounded-full" />
+          </span>
+          <span className="bg-bg-white text-txt-black-700 text-label-compact flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 py-0.5">
+            <GlobeIcon aria-hidden className="size-3.5 shrink-0" />
+            <span className="truncate font-mono">{path}</span>
+          </span>
+        </div>
+      )}
       <div ref={box} className="relative min-h-0 flex-1 overflow-hidden">
         {loading && (
           <Spinner

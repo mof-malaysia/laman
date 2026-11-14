@@ -5,7 +5,7 @@ import { HttpError } from "./errors.js";
 
 export function multipartFile(filename: string, bytes: Buffer) {
   // Random, so no file's bytes happen to contain it.
-  const boundary = `----sitebuilder${randomBytes(12).toString("hex")}`;
+  const boundary = `----laman${randomBytes(12).toString("hex")}`;
   const name = filename.replace(/["\r\n]/g, "_");
   const payload = Buffer.concat([
     Buffer.from(

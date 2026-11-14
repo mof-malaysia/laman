@@ -3,7 +3,7 @@
  * (and a backup that's missing or failed) in the header, and the renderer and
  * version at the foot of the sidebar.
  */
-import { announcementShowing } from "@fiscal-sb/contracts";
+import { type Summary, announcementShowing } from "@fiscal-sb/contracts";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { StatusDot, type Tone } from "@/components/page-status";
@@ -13,7 +13,7 @@ import { t } from "@/i18n";
 import { clx } from "@/lib/ftds/utils";
 import { isActive } from "@/lib/api";
 import { useCan } from "@/lib/auth";
-import { backupHealth } from "@/lib/backups";
+import { backupHealth, backupTone } from "@/lib/backups";
 import { formatShortDate, useSummary } from "@/lib/pages";
 import { siteHref, useAnnouncementDoc, useWaiting } from "@/lib/publish";
 import { sessionLost } from "@/lib/session";
@@ -79,11 +79,10 @@ export function PublishState() {
         <Link
           to="/settings"
           search={{ section: "backups" }}
-          className="focus-ring hover:bg-bg-washed hidden rounded-md no-underline md:block"
+          // Shrinks and truncates before the header's other items get pushed over.
+          className="focus-ring hover:bg-bg-washed hidden min-w-0 rounded-md no-underline md:block"
         >
-          <Status tone={data.backup.failed ? "danger" : "warning"}>
-            {data.backup.failed ? t("status.backupFailed") : t("status.backupMissing")}
-          </Status>
+          <BackupStatus backup={data.backup} />
         </Link>
       )}
       {running && <Status tone="neutral">{t("status.publishing")}</Status>}
@@ -151,4 +150,18 @@ export function SiteInfo() {
       </div>
     </SidebarMenuItem>
   );
+}
+
+/** The backup problem worth the header's room: a failure first, then a missing one. */
+function BackupStatus({ backup }: { backup: Summary["backup"] }) {
+  const health = backupHealth(backup);
+  const label =
+    health === "failed"
+      ? "status.backupFailed"
+      : health === "offsiteFailed"
+        ? "status.offsiteFailed"
+        : health === "diskLow"
+          ? "status.diskLow"
+          : "status.backupMissing";
+  return <Status tone={backupTone(health)}>{t(label)}</Status>;
 }

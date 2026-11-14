@@ -6,17 +6,17 @@ Until now the builder has assumed one officer working alone, with no session (`d
 
 ## Decisions
 
-| Question                | Decision                                                                                                                                                             |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Sign-in                 | Username and password. No email addresses, no mail server                                                                                                            |
-| The first account       | A super admin, seeded from the environment on first boot only, who must change the password at first sign-in. After that it's managed in the admin                   |
-| New accounts            | An Admin (or the super admin) makes a one-time invite link with the role already chosen, and hands it over. The person picks their username and password             |
-| Two-factor              | TOTP (an authenticator app). The super admin turns on "Require two-factor" in Settings; everyone, the super admin included, then enrols at their next sign-in        |
-| Sessions                | A random token in an HttpOnly cookie, stored hashed in `site.db`. No JWTs. Signed out after 8 hours idle and 7 days in any case                                      |
-| Roles                   | Editor, Content Manager, Admin, and one super admin above them. Each includes everything the one below can do                                                        |
-| Review                  | No new workflow state. Editors save drafts; the Publishing screen's list of waiting changes, which gains "last edited by", is the Content Manager's queue            |
-| Lost password or device | An Admin makes a one-time reset link, or clears the person's two-factor so they enrol again. The super admin recovers from the server: `site-builder reset-password` |
-| Attribution             | Revisions, publishes, media and site document drafts record who made them, and an audit log records sign-ins, account changes and publishing                         |
+| Question                | Decision                                                                                                                                                      |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sign-in                 | Username and password. No email addresses, no mail server                                                                                                     |
+| The first account       | A super admin, seeded from the environment on first boot only, who must change the password at first sign-in. After that it's managed in the admin            |
+| New accounts            | An Admin (or the super admin) makes a one-time invite link with the role already chosen, and hands it over. The person picks their username and password      |
+| Two-factor              | TOTP (an authenticator app). The super admin turns on "Require two-factor" in Settings; everyone, the super admin included, then enrols at their next sign-in |
+| Sessions                | A random token in an HttpOnly cookie, stored hashed in `site.db`. No JWTs. Signed out after 8 hours idle and 7 days in any case                               |
+| Roles                   | Editor, Content Manager, Admin, and one super admin above them. Each includes everything the one below can do                                                 |
+| Review                  | No new workflow state. Editors save drafts; the Publishing screen's list of waiting changes, which gains "last edited by", is the Content Manager's queue     |
+| Lost password or device | An Admin makes a one-time reset link, or clears the person's two-factor so they enrol again. The super admin recovers from the server: `laman reset-password` |
+| Attribution             | Revisions, publishes, media and site document drafts record who made them, and an audit log records sign-ins, account changes and publishing                  |
 
 ## Roles
 
@@ -35,7 +35,7 @@ Until now the builder has assumed one officer working alone, with no session (`d
 | Invite people, change their role, make reset links, clear two-factor, disable accounts, sign people out; read the audit log |        |                 |   ✓   |      ✓      |
 | Turn "Require two-factor" on or off                                                                                         |        |                 |       |      ✓      |
 
-Restoring a backup isn't in the admin at all: it replaces every account, so it's done from the command line by whoever runs the server (`site-builder restore`, [site-builder.md](site-builder.md) § Restore).
+Restoring a backup isn't in the admin at all: it replaces every account, so it's done from the command line by whoever runs the server (`laman restore`, [laman.md](laman.md) § Restore).
 
 Rules around the table:
 
@@ -89,15 +89,15 @@ flowchart LR
 
 Invites and password resets are the same kind of link: 32 random bytes, stored hashed, used once.
 
-| Link   | Made by                                              | Lasts    | Opens                                                             |
-| ------ | ---------------------------------------------------- | -------- | ----------------------------------------------------------------- |
-| Invite | Admin, super admin                                   | 72 hours | `/admin/join#<token>`: pick a username, display name and password |
-| Reset  | Admin, super admin, or `site-builder reset-password` | 24 hours | `/admin/reset#<token>`: pick a new password                       |
+| Link   | Made by                                       | Lasts    | Opens                                                             |
+| ------ | --------------------------------------------- | -------- | ----------------------------------------------------------------- |
+| Invite | Admin, super admin                            | 72 hours | `/admin/join#<token>`: pick a username, display name and password |
+| Reset  | Admin, super admin, or `laman reset-password` | 24 hours | `/admin/reset#<token>`: pick a new password                       |
 
 - **The token travels in the URL fragment**, so it never reaches the server's or a proxy's access log, nor a `Referer`. The admin reads it and posts it.
 - **The admin shows the link once**, with a copy button, its expiry and who it's for; closing it before copying asks first. Pending invites can be listed and revoked, and invites that expired in the last 7 days stay on the list, to make again or remove.
 - **Using a reset link** ends the person's sessions. Two-factor stays as it was unless an Admin cleared it as well.
-- **The CLI covers the super admin:** `site-builder reset-password <username>` prints a reset link, and `site-builder clear-2fa <username>` clears two-factor. Both work on any account, for the operator on the server.
+- **The CLI covers the super admin:** `laman reset-password <username>` prints a reset link, and `laman clear-2fa <username>` clears two-factor. Both work on any account, for the operator on the server.
 
 ### Authorisation
 
@@ -219,5 +219,5 @@ The router (`apps/admin/src/router.tsx`) sends anyone without a finished sign-in
 
 - Signing in through the agency's directory (SAML, OIDC, LDAP). The permission table doesn't depend on how someone signed in, so it can be added later.
 - Passkeys (WebAuthn) as a second step.
-- Email for invites and resets, which `docs/site-builder.md` lists as optional SMTP.
+- Email for invites and resets, which `docs/laman.md` lists as optional SMTP.
 - Per-page permissions, e.g. an Editor limited to one section of the site.

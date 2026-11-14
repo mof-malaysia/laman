@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, statSync } from "node:fs";
-import { join, resolve, sep } from "node:path";
+import { basename, join, resolve, sep } from "node:path";
 import compress from "@fastify/compress";
 import cors from "@fastify/cors";
 import multipart from "@fastify/multipart";
@@ -23,9 +23,26 @@ import { type AnalyticsDb, openAnalyticsDatabase } from "./analytics/db.js";
 import { Collector } from "./analytics/collector.js";
 import { readDoc } from "./content/site.js";
 import { purgeDeleted } from "./content/history.js";
-import type { PublishPayload } from "@fiscal-sb/contracts";
+import type {
+  BackupPayload,
+  BackupUploadPayload,
+  OffsiteFolder,
+  PublishPayload,
+} from "@fiscal-sb/contracts";
 import { backupDirOf, listBackups, makeBackup, nextRun, retentionOf } from "./backup.js";
 import { runPublish } from "./content/publishing.js";
+import {
+  describeError,
+  folderFor,
+  pruneRemote,
+  readOffsite,
+  storeConfig,
+  storeFor,
+  uploadArchive,
+  verifyDue,
+  verifyRemote,
+} from "./offsite/index.js";
+import type { RemoteStore, StoreConfig } from "./offsite/stores.js";
 import { DAILY_REFRESH, showsEvents } from "./content/entries.js";
 import { MANIFEST_DIR } from "./manifest.js";
 import { ownPath } from "./paths.js";
@@ -68,6 +85,13 @@ declare module "fastify" {
 
 /** How often listings' calendar sources are read. */
 export const CALENDAR_SYNC_MS = 30 * 60_000;
+/** When, in Malaysia, the weekly check of the newest off-site copy may run: after the daily backup. */
+const OFFSITE_CHECK = "04:30";
+
+/** A storage service's error as the job's error, in words an ICT administrator can act on. */
+const inWords = (error: unknown): never => {
+  throw new Error(describeError(error), { cause: error });
+};
 
 export type AppOptions = {
   env: Env;
@@ -79,6 +103,10 @@ export type AppOptions = {
   runJobs?: boolean;
   /** How calendar feeds are fetched; tests pass their own instead of the network. */
   fetchFeed?: FeedFetcher;
+  /** Where off-site copies go; tests pass a store in memory instead of a bucket. */
+  offsiteStore?: (config: StoreConfig) => RemoteStore;
+  /** Waits between off-site upload tries; tests make them short. */
+  offsiteRetryDelays?: number[];
 };
 
 function logger(env: Env): FastifyServerOptions["logger"] {
@@ -153,11 +181,19 @@ export async function buildApp(options: AppOptions) {
       `BACKUP_DIR isn't set, so backups go to ${backupDir}, on the same disk as the site. Set it to a separate mount, and copy it off the machine.`,
     );
 
+  const secretKey = env.BACKUP_SECRET_KEY;
+  const makeStore = options.offsiteStore ?? storeFor;
+
   const databasePath = options.databasePath ?? join(dataDir, "site.db");
-  // An upgrade backs up the database first, beside the daily backups.
+  // An upgrade backs up the database first, beside the daily backups, and
+  // copies it off-site once the job queue is running.
+  const upgradeArchives: string[] = [];
   const db = await openDatabase(databasePath, undefined, {
-    beforeMigrate: (snapshot) =>
-      makeBackup({ dataDir, backupDir, keep, database: snapshot, dbOnly: true }),
+    beforeMigrate: async (snapshot) => {
+      const made = await makeBackup({ dataDir, backupDir, keep, database: snapshot, dbOnly: true });
+      upgradeArchives.push(basename(made.file));
+      return made;
+    },
   });
   await seedIfEmpty(db);
   await seedSuperAdmin(db, env);
@@ -249,11 +285,68 @@ export async function buildApp(options: AppOptions) {
     void sourcesDue(db, CALENDAR_SYNC_MS - 60_000)
       .then((due) => (due ? jobs.enqueueOnce("calendar.sync") : undefined))
       .catch((error: unknown) => app.log.error({ err: error }, "couldn't queue the calendar sync"));
-  jobs.handle("backup", async () => {
+  /** Queues an archive's off-site copy, when copies are on. A failure to queue never fails the backup. */
+  async function copyOffsite(file: string, folder: OffsiteFolder, trigger?: string) {
+    try {
+      if (!(await readOffsite(db)).enabled) return;
+      const payload: BackupUploadPayload = { file: basename(file), folder, trigger };
+      await jobs.enqueue("backup.upload", payload);
+    } catch (error) {
+      app.log.error({ err: error, file }, "couldn't queue the off-site copy");
+    }
+  }
+  jobs.handle("backup", async (payload) => {
+    const { trigger } = payload as BackupPayload;
     const backup = await makeBackup({ dataDir, backupDir, keep, database: databasePath });
     app.log.info({ file: backup.file, bytes: backup.bytes }, "backup made");
+    await copyOffsite(backup.file, await folderFor(db, trigger), trigger);
     return { bytes: backup.bytes, deleted: backup.deleted.length };
   });
+  /**
+   * An archive's copy off-site, and, when the builder tidies up the bucket
+   * itself, copies past their folder's age deleted after it.
+   */
+  jobs.handle("backup.upload", async (payload) => {
+    const { file, folder } = payload as BackupUploadPayload;
+    const stored = await readOffsite(db);
+    if (!stored.enabled) return { skipped: 1 } as Record<string, number>;
+    const store = makeStore(storeConfig(stored, secretKey));
+    const copy = await uploadArchive({
+      store,
+      stored,
+      secretKey,
+      backupDir,
+      file,
+      folder,
+      retryDelays: options.offsiteRetryDelays,
+    }).catch(inWords);
+    const deleted = stored.prune ? await pruneRemote(store, stored.prefix).catch(inWords) : [];
+    app.log.info({ key: copy.key, bytes: copy.bytes, deleted: deleted.length }, "copied off-site");
+    return { bytes: copy.bytes, deleted: deleted.length };
+  });
+  /** The weekly check: the newest copy downloaded and opened as a restore would. */
+  jobs.handle("backup.verify", async () => {
+    const stored = await readOffsite(db);
+    if (!stored.enabled) return { skipped: 1 } as Record<string, number>;
+    const checked = await verifyRemote({
+      store: makeStore(storeConfig(stored, secretKey)),
+      stored,
+      secretKey,
+      scratch: dataDir,
+    }).catch(inWords);
+    app.log.info(checked, "off-site copy checked");
+    return { bytes: checked.bytes };
+  });
+  const verifySoon = () =>
+    void readOffsite(db)
+      .then(async (stored) =>
+        stored.enabled && (await verifyDue(db))
+          ? jobs.enqueue("backup.verify", { trigger: "scheduled" })
+          : undefined,
+      )
+      .catch((error: unknown) =>
+        app.log.error({ err: error }, "couldn't queue the off-site check"),
+      );
   const analyticsDb = await openAnalyticsDatabase(
     options.analyticsPath ?? join(dataDir, "analytics.db"),
   );
@@ -270,6 +363,9 @@ export async function buildApp(options: AppOptions) {
   if (options.runJobs ?? true)
     app.addHook("onReady", async () => {
       if (schedule) await scheduleBackups(schedule);
+      for (const file of upgradeArchives.splice(0)) await copyOffsite(file, "upgrade", "upgrade");
+      // Once a day, a check of the newest off-site copy if the last was a week ago.
+      everyDayAt(OFFSITE_CHECK, verifySoon);
       everyDayAt(DAILY_REFRESH, publishDaily);
       const every = { current: setInterval(syncSoon, CALENDAR_SYNC_MS) as NodeJS.Timeout };
       every.current.unref();
@@ -319,7 +415,7 @@ export async function buildApp(options: AppOptions) {
     await builder.register(pageRoutes, { prefix: "/api" });
     await builder.register(jobRoutes, { prefix: "/api" });
     await builder.register(calendarRoutes, { prefix: "/api" });
-    await builder.register(backupRoutes, { prefix: "/api" });
+    await builder.register(backupRoutes, { prefix: "/api", secretKey, makeStore });
     const maxBytes = env.MEDIA_MAX_MB * 1024 * 1024;
     await builder.register(multipart, { limits: { fileSize: maxBytes + 1, files: 1 } });
     await builder.register(mediaRoutes, { prefix: "/api", dataDir, maxBytes });
@@ -401,7 +497,7 @@ export async function buildApp(options: AppOptions) {
   // A real 301 or 302 before a redirect's HTML page, and one form of each
   // page's address: links, the sitemap and canonical links write "/berita", so
   // "/berita/" is sent there (the static plugin below serves "/berita" from
-  // berita/index.html). docs/site-builder.md § Serving the site from a reverse proxy.
+  // berita/index.html). docs/laman.md § Serving the site from a reverse proxy.
   const redirects = redirectMap(publicDir);
   app.addHook("onRequest", async (request, reply) => {
     if (request.method !== "GET" && request.method !== "HEAD") return;

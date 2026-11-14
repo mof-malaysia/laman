@@ -1,6 +1,6 @@
 # Analytics
 
-Status: built. Companion to `docs/site-builder.md`.
+Status: built. Companion to `docs/laman.md`.
 
 ## Summary
 
@@ -93,7 +93,7 @@ Writes are buffered in memory and flushed every two seconds, or at 500 rows, in 
 
 **Retention**: rows older than the retention setting (default 395 days, 13 months, so a month can be compared with the same month a year before) are deleted by an hourly sweep in the collector, and on start. It's not a queued job, so it stays out of the publishing log. Reports read the raw tables; at government-site volumes (tens of thousands of views a day) SQLite answers a year's report in well under a second with the indexes on `time` and `(page_id, time)`.
 
-**Backups** cover `site.db` and media. `analytics.db` goes in only with `site-builder backup --with-analytics`, through `VACUUM INTO` like the site database; the daily backup leaves it out. Losing it loses figures, not content.
+**Backups** cover `site.db` and media. `analytics.db` goes in only with `laman backup --with-analytics`, through `VACUUM INTO` like the site database; the daily backup leaves it out. Losing it loses figures, not content.
 
 ## Settings
 

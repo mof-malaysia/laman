@@ -948,6 +948,152 @@ exports[`stored document schemas > navigation 1`] = `
 }
 `;
 
+exports[`stored document schemas > off-site check jobs 1`] = `
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "trigger": {
+      "type": "string",
+    },
+  },
+  "type": "object",
+}
+`;
+
+exports[`stored document schemas > off-site settings 1`] = `
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "accessKeyId": {
+      "maxLength": 256,
+      "type": "string",
+    },
+    "bucket": {
+      "anyOf": [
+        {
+          "const": "",
+          "type": "string",
+        },
+        {
+          "pattern": "^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$",
+          "type": "string",
+        },
+      ],
+    },
+    "enabled": {
+      "type": "boolean",
+    },
+    "encrypt": {
+      "type": "boolean",
+    },
+    "endpoint": {
+      "anyOf": [
+        {
+          "const": "",
+          "type": "string",
+        },
+        {
+          "format": "uri",
+          "type": "string",
+        },
+      ],
+    },
+    "passphrase": {
+      "type": [
+        "string",
+        "null",
+      ],
+    },
+    "passphraseFingerprint": {
+      "type": [
+        "string",
+        "null",
+      ],
+    },
+    "pathStyle": {
+      "type": "boolean",
+    },
+    "prefix": {
+      "maxLength": 200,
+      "pattern": "^([A-Za-z0-9._-]+(\\/[A-Za-z0-9._-]+)*)?$",
+      "type": "string",
+    },
+    "provider": {
+      "enum": [
+        "aws",
+        "gcs",
+        "r2",
+        "wasabi",
+        "spaces",
+        "minio",
+        "s3",
+      ],
+      "type": "string",
+    },
+    "prune": {
+      "type": "boolean",
+    },
+    "region": {
+      "pattern": "^([a-z0-9-]{2,40})?$",
+      "type": "string",
+    },
+    "secret": {
+      "type": [
+        "string",
+        "null",
+      ],
+    },
+  },
+  "required": [
+    "enabled",
+    "provider",
+    "endpoint",
+    "region",
+    "bucket",
+    "prefix",
+    "accessKeyId",
+    "pathStyle",
+    "prune",
+    "encrypt",
+    "secret",
+    "passphrase",
+    "passphraseFingerprint",
+  ],
+  "type": "object",
+}
+`;
+
+exports[`stored document schemas > off-site upload jobs 1`] = `
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "file": {
+      "type": "string",
+    },
+    "folder": {
+      "enum": [
+        "daily",
+        "monthly",
+        "manual",
+        "upgrade",
+      ],
+      "type": "string",
+    },
+    "trigger": {
+      "type": "string",
+    },
+  },
+  "required": [
+    "file",
+    "folder",
+  ],
+  "type": "object",
+}
+`;
+
 exports[`stored document schemas > page drafts, revisions 1`] = `
 {
   "$defs": {

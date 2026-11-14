@@ -19,7 +19,7 @@ coverage
 .DS_Store
 *.log
 
-# Site builder state (database, media, published site)
+# Laman state (database, media, published site)
 data/
 .impeccable/*
 

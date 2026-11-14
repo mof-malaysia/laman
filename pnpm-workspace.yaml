@@ -7,6 +7,10 @@ packages:
 catalog:
   "@astrojs/markdown-remark": "^7.3.5"
   "@astrojs/node": "^11.1.9"
+  "@aws-sdk/client-s3": "^3.1167.0"
+  "@aws-sdk/lib-storage": "^3.1167.0"
+  # Azure (parked): off-site copies to Azure Blob Storage (apps/server/src/offsite/stores.ts).
+  # "@azure/storage-blob": "^12.34.0"
   "@dnd-kit/core": "^6.3.1"
   "@dnd-kit/sortable": "^10.0.0"
   "@dnd-kit/utilities": "^3.2.2"
@@ -75,3 +79,8 @@ allowBuilds:
 
 minimumReleaseAgeExclude:
   - "@fastify/static@10.1.9"
+  - "@aws-sdk/client-s3@3.1167.0"
+  - "@aws-sdk/credential-provider-ini@3.973.30"
+  - "@aws-sdk/credential-provider-login@3.972.92"
+  - "@aws-sdk/credential-provider-node@3.972.97"
+  - "@aws-sdk/lib-storage@3.1167.0"

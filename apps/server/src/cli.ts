@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * site-builder <command>. The same code the server runs.
+ * laman <command>. The same code the server runs.
  *
  *   migrate   create or upgrade data/site.db (and add the starter home page)
  *   publish   rebuild data/public from the published revisions: only what
@@ -16,12 +16,21 @@
  *             write an archive to BACKUP_DIR now (safe while the server runs)
  *   backup --verify <archive>
  *             check an archive restores, without touching the site
- *   backups   list the archives in BACKUP_DIR
+ *   backups [--remote]
+ *             list the archives in BACKUP_DIR, or the copies off-site
+ *   fetch <archive>
+ *             download an off-site copy into BACKUP_DIR, decrypted, ready
+ *             to restore (needs site.db's off-site settings and
+ *             BACKUP_SECRET_KEY, or BACKUP_PASSPHRASE for encrypted copies)
+ *   decrypt <file.tar.gz.enc>
+ *             decrypt a copy downloaded some other way into BACKUP_DIR, with
+ *             BACKUP_PASSPHRASE
  *   restore <archive>
  *             put an archive back, with the server stopped; what it replaces
  *             is kept in DATA_DIR/before-restore-<time>/
  */
 import { existsSync } from "node:fs";
+import { mkdir } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { seedIfEmpty } from "./content/seed.js";
 import { audit } from "./auth/audit.js";
@@ -35,9 +44,19 @@ import {
   verifyBackup,
 } from "./backup.js";
 import { checkStoredDocuments, describeProblems } from "./db/documents.js";
-import { migrationState, openDatabase, openSqlite } from "./db/index.js";
+import { type Db, migrationState, openDatabase, openSqlite } from "./db/index.js";
+import type { Database } from "./db/schema.js";
 import { loadEnv } from "./env.js";
 import { publishSite } from "./publisher.js";
+import { ENCRYPTED, decryptFile, isEncrypted } from "./offsite/crypt.js";
+import {
+  fetchRemote,
+  listRemote,
+  passphraseOf,
+  readOffsite,
+  storeConfig,
+  storeFor,
+} from "./offsite/index.js";
 import { clearTwoFactor, makeLink } from "./routes/users.js";
 
 if (existsSync(".env")) process.loadEnvFile(".env");
@@ -50,7 +69,9 @@ if (command === "check") process.exit(await check(join(dataDir, "site.db")));
 const backupDir = backupDirOf(env);
 const backupCommands: Record<string, () => Promise<void>> = {
   backup: () => (flags.includes("--verify") ? verify() : backUp()),
-  backups: listArchives,
+  backups: () => (flags.includes("--remote") ? listRemoteArchives() : listArchives()),
+  fetch,
+  decrypt,
   restore,
 };
 if (command && command in backupCommands)
@@ -89,9 +110,7 @@ try {
     case "clear-2fa": {
       const user = flags[0] ? await userByUsername(db, flags[0].toLowerCase()) : undefined;
       if (!user) {
-        console.error(
-          `No account named ${flags[0] ?? "(none given)"}. "site-builder users" lists them.`,
-        );
+        console.error(`No account named ${flags[0] ?? "(none given)"}. "laman users" lists them.`);
         process.exitCode = 1;
         break;
       }
@@ -120,7 +139,7 @@ try {
     }
     default:
       console.error(
-        "Usage: site-builder <migrate|publish [--full]|check|users|reset-password <username>|clear-2fa <username>|backup [--db-only] [--with-analytics]|backup --verify <archive>|backups|restore <archive>>",
+        "Usage: laman <migrate|publish [--full]|check|users|reset-password <username>|clear-2fa <username>|backup [--db-only] [--with-analytics]|backup --verify <archive>|backups [--remote]|fetch <archive>|decrypt <file>|restore <archive>>",
       );
       process.exitCode = 2;
   }
@@ -139,7 +158,7 @@ async function check(path: string) {
     const { pending } = await migrationState(site);
     if (pending.length) {
       console.error(
-        `${path} has ${pending.length} migrations to run: start the server or run "site-builder migrate"`,
+        `${path} has ${pending.length} migrations to run: start the server or run "laman migrate"`,
       );
       return 1;
     }
@@ -188,7 +207,7 @@ async function listArchives() {
 /** The archive named on the command line: a path, or the name of one in BACKUP_DIR. */
 function archiveArg() {
   const archive = flags.find((flag) => !flag.startsWith("--"));
-  if (!archive) throw new Error(`Name the archive: "site-builder backups" lists them.`);
+  if (!archive) throw new Error(`Name the archive: "laman backups" lists them.`);
   return existsSync(archive) ? archive : join(backupDir, basename(archive));
 }
 
@@ -201,8 +220,75 @@ async function verify() {
 }
 
 async function restore() {
-  const { manifest, aside } = await restoreBackup(archiveArg(), dataDir);
+  const archive = archiveArg();
+  if (existsSync(archive) && (await isEncrypted(archive)))
+    throw new Error(
+      `${archive} is encrypted. Decrypt it first: BACKUP_PASSPHRASE=… laman decrypt ${basename(archive)}`,
+    );
+  const { manifest, aside } = await restoreBackup(archive, dataDir);
   console.warn(
     `Restored the backup from ${manifest.createdAt}. Everyone is signed out, and a full publish runs when the server starts.\nWhat it replaced is in ${aside}: delete it once you're happy.`,
   );
+}
+
+/** The off-site settings in site.db, read without migrating it, and a store made from them. */
+async function offsite() {
+  const path = join(dataDir, "site.db");
+  if (!existsSync(path))
+    throw new Error(
+      `No database at ${path}, so no off-site settings to read. Download the copy with the provider's own tools, then "laman decrypt" it if it ends in ${ENCRYPTED}.`,
+    );
+  const { db: site } = openSqlite<Database>(path);
+  try {
+    const stored = await readOffsite(site as Db);
+    if (!stored.enabled) throw new Error("Off-site copies aren't set up (Settings → Backups).");
+    return { stored, store: storeFor(storeConfig(stored, env.BACKUP_SECRET_KEY)) };
+  } finally {
+    await site.destroy();
+  }
+}
+
+async function listRemoteArchives() {
+  const { stored, store } = await offsite();
+  const list = await listRemote(store, stored.prefix);
+  if (!list.length) console.warn(`No copies in ${stored.bucket}`);
+  for (const copy of list)
+    console.warn(
+      `${copy.file.padEnd(52)} ${mb(copy.bytes).padStart(10)}  ${copy.folder.padEnd(8)}${copy.encrypted ? "  encrypted" : ""}${copy.dbOnly ? "  database only" : ""}`,
+    );
+}
+
+async function fetch() {
+  const name = flags.find((flag) => !flag.startsWith("--"));
+  if (!name) throw new Error(`Name the copy: "laman backups --remote" lists them.`);
+  const { stored, store } = await offsite();
+  const wanted = basename(name).replace(/\.enc$/, "");
+  const copy = (await listRemote(store, stored.prefix)).find((c) => c.file === wanted);
+  if (!copy)
+    throw new Error(`No copy named ${wanted} off-site: "laman backups --remote" lists them.`);
+  await mkdir(backupDir, { recursive: true, mode: 0o700 });
+  // The archive is checked in a scratch folder there: on a new server it may not exist yet.
+  await mkdir(dataDir, { recursive: true });
+  const file = await fetchRemote(store, copy, backupDir, () =>
+    passphraseOf(stored, env.BACKUP_SECRET_KEY, env.BACKUP_PASSPHRASE),
+  );
+  const manifest = await verifyBackup(file, dataDir);
+  console.warn(
+    `Fetched ${file}, made ${manifest.createdAt}, and checked it. Restore it with the server stopped:\n\n  laman restore ${basename(file)}\n`,
+  );
+}
+
+async function decrypt() {
+  const from = flags.find((flag) => !flag.startsWith("--"));
+  if (!from || !existsSync(from)) throw new Error("Name the encrypted file to decrypt.");
+  if (!env.BACKUP_PASSPHRASE)
+    throw new Error("Set BACKUP_PASSPHRASE to the passphrase it was encrypted with.");
+  await mkdir(backupDir, { recursive: true, mode: 0o700 });
+  // The archive is checked in a scratch folder there: on a new server it may not exist yet.
+  await mkdir(dataDir, { recursive: true });
+  const to = join(backupDir, basename(from).replace(/\.enc$/, ""));
+  if (to === resolve(from)) throw new Error(`${from} doesn't end in ${ENCRYPTED}`);
+  await decryptFile(from, to, env.BACKUP_PASSPHRASE);
+  const manifest = await verifyBackup(to, dataDir);
+  console.warn(`Decrypted to ${to}, made ${manifest.createdAt}, and checked it.`);
 }

@@ -18,7 +18,16 @@
       "dependsOn": ["^build"],
       "cache": false,
       "persistent": true,
-      "passThroughEnv": ["PORT", "HOST", "ADMIN_PORT", "SERVER_URL", "DATA_DIR", "LOG_LEVEL"]
+      "passThroughEnv": [
+        "PORT",
+        "HOST",
+        "ADMIN_PORT",
+        "SERVER_URL",
+        "DATA_DIR",
+        "LOG_LEVEL",
+        "BACKUP_DIR",
+        "BACKUP_SECRET_KEY"
+      ]
     }
   }
 }

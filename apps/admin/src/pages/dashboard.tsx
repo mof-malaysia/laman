@@ -42,7 +42,7 @@ import { Tag } from "@/components/ui/tag";
 import { type MessageKey, t } from "@/i18n";
 import { mediaQuery } from "@/lib/api";
 import { useCan } from "@/lib/auth";
-import { backupHealth } from "@/lib/backups";
+import { backupHealth, backupTone } from "@/lib/backups";
 import { clx } from "@/lib/ftds/utils";
 import { formatAgo, formatDateTime, previewHref, usePages, useSummary } from "@/lib/pages";
 import { hostOf, siteDocQuery, siteHref, useAnnouncementDoc } from "@/lib/publish";
@@ -568,12 +568,11 @@ function SiteThumbnail({
 }) {
   // A new publish gives it a new address, which redraws it.
   const src = live ? `/render/live?v=${lastDone?.id ?? ""}` : previewHref(home.id);
-  const url = summary.site.url;
   return (
     <figure className={clx(tile, "m-0 flex flex-col gap-3 p-3")}>
       <PageFrame
+        bare
         src={src}
-        path={url ? hostOf(url) : "/"}
         title={t("home.thumbnail.title")}
         className="aspect-[16/10]"
         overlay={
@@ -581,7 +580,7 @@ function SiteThumbnail({
             href={live ? siteHref(summary, "/") : previewHref(home.id)}
             target="_blank"
             rel="noopener"
-            className="focus-ring absolute inset-0 rounded-b-lg"
+            className="focus-ring absolute inset-0 rounded-lg"
           >
             <span className="sr-only">
               {live ? t("home.thumbnail.open") : t("home.thumbnail.openPreview")}
@@ -668,7 +667,7 @@ function Health({
             </span>
           ) : (
             <Link to="/settings" search={{ section: "backups" }} className="no-underline">
-              <Tag size="small" variant={backup === "failed" ? "danger" : "warning"}>
+              <Tag size="small" variant={backupTone(backup)}>
                 {t(`home.backup.${backup}`)}
               </Tag>
             </Link>

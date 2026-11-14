@@ -52,18 +52,18 @@ Media's `variants` and `previous` are written only by the server and aren't edit
 `checkStoredDocuments(db)` walks the list and strictly parses every row. It returns the failures (table, row id or key, Zod issue path and message), capped at a readable number, with a total count. It is read-only.
 
 - **At boot**, it runs only when migrations were applied, so an ordinary restart doesn't parse every revision.
-- **On demand**: `site-builder check` runs it at any time and exits non-zero on a failure. This is for operators and CI. `site-builder backup --verify` runs the same check on an archive.
+- **On demand**: `laman check` runs it at any time and exits non-zero on a failure. This is for operators and CI. `laman backup --verify` runs the same check on an archive.
 
 ### 2. Boot: snapshot, migrate, check, or put it back
 
 `openDatabase` changes from "migrate" to:
 
 1. Find the pending migrations. If there are none, open as now.
-2. If the database contains a migration this build doesn't know, stop with "This database was upgraded by a newer version of the site builder (migration `0014_…`). Run that version, or restore a backup made before it." Kysely already throws `corrupted migrations` here; this replaces it with a clear message.
+2. If the database contains a migration this build doesn't know, stop with "This database was upgraded by a newer version of Laman (migration `0014_…`). Run that version, or restore a backup made before it." Kysely already throws `corrupted migrations` here; this replaces it with a clear message.
 3. Fold the WAL into the file (`wal_checkpoint(TRUNCATE)`) and copy it to `DATA_DIR/upgrade/site-<from>-to-<to>.db`. Nothing else is writing yet, because the server isn't listening, so the copy is byte-identical to the database before the upgrade. A brand-new database gets no snapshot.
 4. Run the migrations, then the foreign-key check (as now), then `checkStoredDocuments`.
 5. If any of these fails, close the database, move the snapshot back over `site.db` (removing `-wal` and `-shm`), log what failed and exit with a non-zero code. The agency is left on the old version with its data as it was.
-6. If it passes, keep the newest snapshot only. Before migrating, the snapshot is also written to `BACKUP_DIR` as a database-only archive (`site-builder-<time>-db.tar.gz`), which stays under the backup retention; if that fails, nothing is migrated.
+6. If it passes, keep the newest snapshot only. Before migrating, the snapshot is also written to `BACKUP_DIR` as a database-only archive (`<site-name>-<time>-db.tar.gz`), which stays under the backup retention; if that fails, nothing is migrated.
 
 Kysely doesn't run SQLite migrations in a transaction, so the snapshot is also the only protection when a migration fails halfway. It doesn't wait on the backup feature: it's a few lines, and the backup command can reuse it later. `analytics.db` gets steps 1–5 for its own migrations, without the document check.
 
@@ -112,7 +112,7 @@ After 1.0, migrations are never squashed again.
 
 ## Build order
 
-All built: the list and `site-builder check`, strict reads, the boot path for both databases, `rewriteDocuments`, the schema-change test and the failing-upgrade test, the rule in AGENTS.md, the baseline (squashed twice before 1.0), and `scripts/fixture.ts` with its saved databases.
+All built: the list and `laman check`, strict reads, the boot path for both databases, `rewriteDocuments`, the schema-change test and the failing-upgrade test, the rule in AGENTS.md, the baseline (squashed twice before 1.0), and `scripts/fixture.ts` with its saved databases.
 
 ## Not in this plan
 

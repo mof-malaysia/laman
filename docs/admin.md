@@ -308,7 +308,7 @@ The screen is a `SplitPane`: the editor on the left, and on the right a live pre
   - "Hide the whole site from search engines"
   - Sitemap on or off
 - **Publishing:** the scheduled publish default, and the number of revisions to keep per page.
-- **About:** version, data folder, database size, and backups: the last one (when and how big), the daily time, the folder, a warning when the last one failed, when there's been none for 2 days, or when the folder is on the site's own disk, and **Back up now** (Admin and up). Restoring is command-line only.
+- **About:** version, data folder, database size, and backups: the last one (when and how big), the daily time, the folder, a warning when the last one failed, when there's been none for 2 days, or when the folder is on the site's own disk, and **Back up now** (Admin and up); when off-site copies are on, a second line on the last copy and the weekly check, a Copied column, and **Check newest copy now**. Below, for the super admin, **Off-site copies**: the storage service and its keys (write-only), Test connection, encryption with a passphrase, and whether the builder deletes old copies itself. Restoring is command-line only.
 
 Like navigation, site settings are drafted and go live at the next publish, so the preview and the published site never disagree mid-edit.
 

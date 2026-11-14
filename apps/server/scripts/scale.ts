@@ -19,7 +19,7 @@ import { publishSite } from "../src/publisher.js";
 import { signedInApp } from "../test/helpers.js";
 
 const count = Number(process.argv[2] ?? 5000);
-const dataDir = await mkdtemp(join(tmpdir(), "site-builder-scale-"));
+const dataDir = await mkdtemp(join(tmpdir(), "laman-scale-"));
 // Signed in as the first account, as the API is for everyone else.
 const app = await signedInApp({
   env: loadEnv({

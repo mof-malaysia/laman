@@ -1,15 +1,17 @@
 import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "@rstest/core";
 import sharp from "sharp";
 import * as tar from "tar";
 import {
+  diskOf,
   holdServerLock,
   listBackups,
   makeBackup,
   nextRun,
+  parseName,
   pruneBackups,
   restoreBackup,
   verifyBackup,
@@ -25,7 +27,7 @@ let backupDir: string;
 const keep = { daily: 7, weekly: 4 };
 
 beforeEach(async () => {
-  root = await mkdtemp(join(tmpdir(), "site-builder-backup-"));
+  root = await mkdtemp(join(tmpdir(), "laman-backup-"));
   dataDir = join(root, "data");
   backupDir = join(root, "backups");
 });
@@ -92,7 +94,7 @@ const editManifest = (edit: (manifest: Record<string, unknown>) => void) => asyn
 };
 
 const name = (at: Date, suffix = "") =>
-  `site-builder-${at.toISOString().replaceAll(/[:.]/g, "-")}${suffix}.tar.gz`;
+  `laman-${at.toISOString().replaceAll(/[:.]/g, "-")}${suffix}.tar.gz`;
 
 describe("backups", () => {
   it("restores the database and media as they were, and keeps what it replaced", async () => {
@@ -239,6 +241,39 @@ describe("backups", () => {
     expect(old.last.dbOnly).toBe(false);
     expect(old.stale).toBe(true);
     await app.close();
+  });
+
+  it("reads the backup disk's space, before the folder exists, and says when it's low", async () => {
+    const disk = await diskOf(join(backupDir, "not", "made", "yet"), 0);
+    expect(disk!.total).toBeGreaterThan(0);
+    expect(disk!.free).toBeGreaterThan(0);
+    expect(disk!.free).toBeLessThanOrEqual(disk!.total);
+    // Not room for two more archives the size of the newest.
+    expect((await diskOf(backupDir, disk!.free))!.low).toBe(true);
+
+    const app = await boot();
+    const status = (await app.inject({ method: "GET", url: "/api/summary" })).json().data.backup;
+    expect(status.disk).toMatchObject({ free: expect.any(Number), total: expect.any(Number) });
+    await app.close();
+  });
+
+  it("names archives after the site, and still knows ones named otherwise", async () => {
+    const { app, archive } = await backedUpSite();
+    await app.close();
+    expect(basename(archive)).toMatch(
+      /^[a-z0-9]+(-[a-z0-9]+)*-\d{4}-\d{2}-\d{2}T[\d-]+Z\.tar\.gz$/,
+    );
+    // Made before a rename, or by a version that called itself the site builder.
+    const at = "2026-11-03T02:00:00.000Z";
+    expect(parseName("site-builder-2026-11-03T02-00-00-000Z.tar.gz")).toEqual({
+      at,
+      dbOnly: false,
+    });
+    expect(parseName("perolehan-digital-2026-11-03T02-00-00-000Z-db.tar.gz")).toEqual({
+      at,
+      dbOnly: true,
+    });
+    expect(parseName("notes.txt")).toBeFalsy();
   });
 
   it("schedules the daily backup in Malaysian time", () => {

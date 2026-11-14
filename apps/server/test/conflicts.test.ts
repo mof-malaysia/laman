@@ -11,7 +11,7 @@ let app: App;
 let aminah: string;
 
 beforeAll(async () => {
-  dataDir = await mkdtemp(join(tmpdir(), "site-builder-conflicts-"));
+  dataDir = await mkdtemp(join(tmpdir(), "laman-conflicts-"));
   const env = loadEnv({
     NODE_ENV: "test",
     LOG_LEVEL: "silent",
