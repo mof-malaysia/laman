@@ -69,6 +69,19 @@ describe("block registry", () => {
     expect(fieldShown(spec("title"), {}, fields)).toBe(true);
   });
 
+  it("offers a field only on the page kinds it names, and reads a toggle's value", () => {
+    const fields = blockFields("pageIntro");
+    const spec = (name: string) => fields.find((f) => f.name === name)!;
+    expect(fieldShown(spec("search"), {}, fields, "listing")).toBe(true);
+    expect(fieldShown(spec("search"), {}, fields, "page")).toBe(false);
+    expect(fieldShown(spec("searchPlaceholder"), {}, fields, "listing")).toBe(false);
+    expect(fieldShown(spec("searchPlaceholder"), { search: true }, fields, "listing")).toBe(true);
+    expect(fieldShown(spec("searchPlaceholder"), { search: true }, fields, "page")).toBe(false);
+    expect(fieldShown(spec("title"), {}, fields, "page")).toBe(true);
+    // An example of site content, in BM: the admin shows it as is.
+    expect(spec("searchPlaceholder").placeholder).toBe("Contoh: belanjawan, cukai");
+  });
+
   it("parses heroes saved before layouts, as stacked on Paper", () => {
     const old = { id: "h1", type: "hero", props: { title: "Utama" } };
     expect(Block.parse(old).props).toMatchObject({ layout: "stacked", tone: "paper" });

@@ -1,0 +1,160 @@
+---
+import type { HTMLAttributes } from "astro/types";
+import { clx, uniqueId } from "@/lib/ftds/utils";
+import { input_box_class, input_cva, input_icon_cva } from "@/components/ui/input.variants";
+import { kbd_cva } from "@/components/ui/kbd.variants";
+import { label, resolveLang, type Lang } from "@/lib/ftds/i18n";
+import Button from "@/components/ui/button.astro";
+import SearchIcon from "@/components/ui/icons/search.astro";
+
+/**
+ * SiteSearch is the "search this site" box for agency sites and service
+ * landing pages: a labelled search field and one Search button inside a
+ * `<form role="search">`. It submits a GET request (`?q=…`) to `action`, so it
+ * works without JavaScript; a page script can take over from the form's
+ * `submit` or the field's `input` event. The Astro port of React SiteSearch,
+ * with the same props, and `params` for hidden inputs sent with the query.
+ *
+ * @example
+ * <SiteSearch action="/carian" placeholder="Contoh: cukai jalan" />
+ *
+ * <SiteSearch
+ *   action="/carian"
+ *   size="large"
+ *   labels={{ label: "Cari dalam berita" }}
+ *   params={{ koleksi: "Berita" }}
+ * />
+ */
+type Props = Omit<HTMLAttributes<"form">, "class" | "method"> & {
+  /** Where the form goes. Defaults to the current page. */
+  action?: string;
+  /** Field and button size, relative to density. `large` suits a hero. Defaults to `medium`. */
+  size?: "small" | "medium" | "large";
+  /** Name of the query parameter. Defaults to `q`. */
+  name?: string;
+  placeholder?: string;
+  /** The query to start with, e.g. the one in the address. */
+  defaultValue?: string;
+  /** Shows the label above the field instead of only to screen readers. */
+  showLabel?: boolean;
+  /** "/" focuses the field from anywhere on the page, with a key hint while it's empty. */
+  shortcut?: boolean;
+  /** The field's label and the button. Default "Cari dalam laman ini" and "Cari". */
+  labels?: { label?: string; submit?: string };
+  /** Sent with the query as hidden inputs; an array sends the name once per value. */
+  params?: Record<string, string | string[]>;
+  /** `id` for the field. Generated when unset. */
+  inputId?: string;
+  lang?: Lang;
+  class?: string;
+};
+
+const {
+  action,
+  size = "medium",
+  name = "q",
+  placeholder,
+  defaultValue,
+  showLabel = false,
+  shortcut = false,
+  labels = {},
+  params = {},
+  inputId = uniqueId("site-search"),
+  lang: langProp,
+  class: className,
+  ...props
+} = Astro.props;
+
+const lang = resolveLang(langProp, Astro.currentLocale);
+---
+
+<form
+  action={action}
+  method="get"
+  role="search"
+  class={clx("font-body flex w-full flex-col gap-2", className)}
+  data-ftds-site-search
+  data-shortcut={shortcut ? "" : undefined}
+  {...props}
+>
+  <label
+    for={inputId}
+    class={clx("text-txt-black-900 text-label-sm font-medium", !showLabel && "sr-only")}
+  >
+    {labels.label ?? label(lang, "siteSearchLabel")}
+  </label>
+  <div class="flex w-full gap-2">
+    {/* React SiteSearch's Input, InputIcon and Kbd, from the same classes */}
+    <div class={clx(input_box_class, "min-w-0 flex-1")}>
+      <div class="relative w-full">
+        <input
+          id={inputId}
+          type="search"
+          name={name}
+          value={defaultValue}
+          placeholder={placeholder ?? (shortcut ? " " : undefined)}
+          autocomplete="off"
+          data-has-left-icon="true"
+          data-has-right-icon={shortcut ? "true" : undefined}
+          class={clx(input_cva({ size }), "peer")}
+        />
+        <SearchIcon aria-hidden="true" class={input_icon_cva({ position: "left", size })} />
+        {
+          shortcut && (
+            // Only while the field is empty and unfocused: the key is a hint for getting there.
+            // `:placeholder-shown` needs a placeholder, hence the space when there's none.
+            <span
+              hidden
+              data-ftds-requires-js
+              aria-hidden="true"
+              class={clx(
+                input_icon_cva({ position: "right", size }),
+                "flex w-auto items-center max-sm:hidden peer-focus:hidden peer-not-placeholder-shown:hidden",
+              )}
+            >
+              <kbd class={kbd_cva()}>/</kbd>
+            </span>
+          )
+        }
+      </div>
+    </div>
+    <Button type="submit" size={size} class="shrink-0">
+      {labels.submit ?? label(lang, "siteSearchSubmit")}
+    </Button>
+  </div>
+  {
+    Object.entries(params).flatMap(([key, values]) =>
+      [values].flat().map((v) => <input type="hidden" name={key} value={v} />),
+    )
+  }
+</form>
+
+<script>
+  import { isEditable, onEach } from "@/lib/ftds/scripts";
+
+  // Shows the "/" hints (data-ftds-requires-js) once this script runs
+  onEach("[data-ftds-site-search]", () => {});
+
+  // One listener for every SiteSearch on the page
+  document.addEventListener("keydown", (event) => {
+    const target = event.target;
+    // Escape leaves the field when it is empty (a filled one is cleared by the browser)
+    if (event.key === "Escape") {
+      if (
+        target instanceof HTMLInputElement &&
+        !target.value &&
+        target.closest("[data-ftds-site-search]")
+      )
+        target.blur();
+      return;
+    }
+    if (event.key !== "/" || event.metaKey || event.ctrlKey || event.altKey) return;
+    if (isEditable(target)) return;
+    const field = document.querySelector<HTMLInputElement>(
+      "[data-ftds-site-search][data-shortcut] input[type=search]",
+    );
+    if (!field) return;
+    event.preventDefault();
+    field.focus();
+  });
+</script>

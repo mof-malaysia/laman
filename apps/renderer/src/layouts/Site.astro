@@ -9,6 +9,7 @@ import "@fontsource-variable/inter";
 import "@/styles/global.css";
 import { themeCss, type RenderInput, SEARCH_PATH } from "@fiscal-sb/blocks";
 import { longDate } from "@/blocks/date";
+import { filterValue, SEARCH_ENTRY } from "@/search/filters";
 import { featureIconComponents } from "@/blocks/icons";
 import AnnounceBar from "@/components/ui/announce-bar.astro";
 import Facebook from "@/components/ui/icons/facebook.astro";
@@ -79,15 +80,18 @@ const canonical = site.url ? site.url.replace(/\/$/, "") + input.path : undefine
 const description = page.description;
 
 /**
- * What site search files the page under: an entry by its listing and
- * category, any other page as "Halaman". Commas split Pagefind's values.
+ * What site search files the page under (search/filters.ts): an entry by its
+ * listing and category, and as an entry, so a listing's own search finds its
+ * entries but not itself; a listing by its title; any other page as "Halaman".
+ * One element each: Pagefind reads "a:x, b:y" in one attribute as a single
+ * value of `a`.
  */
-const plain = (value: string) => value.replaceAll(",", " ").trim();
 const collection = input.entry?.collection || (input.listing ? page.title : "Halaman");
 const searchFilters = [
-  `koleksi:${plain(collection)}`,
-  ...(input.entry?.category ? [`kategori:${plain(input.entry.category)}`] : []),
-].join(", ");
+  `koleksi:${filterValue(collection)}`,
+  ...(input.entry ? [`jenis:${SEARCH_ENTRY}`] : []),
+  ...(input.entry?.category ? [`kategori:${filterValue(input.entry.category)}`] : []),
+];
 ---
 
 <!doctype html>
@@ -163,7 +167,9 @@ const searchFilters = [
     <main id="main" tabindex="-1" data-pagefind-body={input.mode === "publish" ? "" : undefined}>
       {
         input.mode === "publish" && (
-          <div hidden data-pagefind-filter={searchFilters} data-pagefind-meta={input.entry ? `date:${longDate(input.entry.date)}` : undefined} />
+          <div hidden data-pagefind-meta={input.entry ? `date:${longDate(input.entry.date)}` : undefined}>
+            {searchFilters.map((filter) => <span data-pagefind-filter={filter} />)}
+          </div>
         )
       }
       <slot />

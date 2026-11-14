@@ -1452,6 +1452,30 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                         "type": "string",
                         "widget": "text",
                       },
+                      "search": {
+                        "default": false,
+                        "kinds": [
+                          "listing",
+                        ],
+                        "title": "Search this listing",
+                        "type": "boolean",
+                        "widget": "toggle",
+                      },
+                      "searchPlaceholder": {
+                        "kinds": [
+                          "listing",
+                        ],
+                        "maxLength": 60,
+                        "placeholder": "Contoh: belanjawan, cukai",
+                        "title": "Search hint",
+                        "type": "string",
+                        "when": {
+                          "search": [
+                            "true",
+                          ],
+                        },
+                        "widget": "text",
+                      },
                       "title": {
                         "inline": true,
                         "maxLength": 120,
@@ -1460,8 +1484,10 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                         "widget": "text",
                       },
                       "tone": {
-                        "default": "well",
+                        "default": "primary",
                         "enum": [
+                          "primary",
+                          "accent",
                           "well",
                           "paper",
                         ],
@@ -1495,6 +1521,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                       "title",
                       "tone",
                       "width",
+                      "search",
                     ],
                     "type": "object",
                   },
@@ -5434,6 +5461,30 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                         "type": "string",
                         "widget": "text",
                       },
+                      "search": {
+                        "default": false,
+                        "kinds": [
+                          "listing",
+                        ],
+                        "title": "Search this listing",
+                        "type": "boolean",
+                        "widget": "toggle",
+                      },
+                      "searchPlaceholder": {
+                        "kinds": [
+                          "listing",
+                        ],
+                        "maxLength": 60,
+                        "placeholder": "Contoh: belanjawan, cukai",
+                        "title": "Search hint",
+                        "type": "string",
+                        "when": {
+                          "search": [
+                            "true",
+                          ],
+                        },
+                        "widget": "text",
+                      },
                       "title": {
                         "inline": true,
                         "maxLength": 120,
@@ -5442,8 +5493,10 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                         "widget": "text",
                       },
                       "tone": {
-                        "default": "well",
+                        "default": "primary",
                         "enum": [
+                          "primary",
+                          "accent",
                           "well",
                           "paper",
                         ],
@@ -5477,6 +5530,7 @@ exports[`stored document schemas > page drafts, revisions 1`] = `
                       "title",
                       "tone",
                       "width",
+                      "search",
                     ],
                     "type": "object",
                   },

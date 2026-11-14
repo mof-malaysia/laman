@@ -61,6 +61,8 @@ const pager =
         </nav>
       )
     }
+    {/* A listing's own search shows its results in place of these (search/ListingSearch.astro). */}
+    <div class="contents" data-listing-entries>
     {
       items.length > 0 ? (
         p.style === "cards" ? (
@@ -80,6 +82,7 @@ const pager =
         </p>
       )
     }
+    </div>
     {
       listing?.rss && (
         <a href={listing.rss} class="text-txt-primary focus-ring text-body-sm flex w-fit items-center gap-1 rounded-xs underline">

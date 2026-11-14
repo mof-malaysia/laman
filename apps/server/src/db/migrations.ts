@@ -9,6 +9,7 @@
  */
 import { type Kysely, sql } from "kysely";
 import { type Migration, type MigrationProvider, Migrator } from "kysely/migration";
+import { rewriteDocuments } from "./documents.js";
 
 /** The development migrations the first baseline replaced (docs/upgrades.md § The baseline). */
 export const beforeBaseline = [
@@ -374,7 +375,36 @@ export const migrations: Record<string, Migration> = {
         .execute();
     },
   },
+  /**
+   * Page intro's default tone became the primary wash. Intros saved without a
+   * tone keep the Well they were drawn with, so no live page changes colour.
+   */
+  "0002_page_intro_tone": {
+    async up(db: Kysely<unknown>) {
+      await rewriteDocuments(db, ["page drafts", "revisions"], keepPageIntroTone);
+    },
+  },
 };
+
+/**
+ * Gives every Page intro block without a tone `tone: "well"`, wherever it
+ * sits in a page document. Plain JSON in and out (docs/upgrades.md § 4).
+ */
+export function keepPageIntroTone(doc: unknown): unknown {
+  if (Array.isArray(doc)) return doc.map(keepPageIntroTone);
+  if (!doc || typeof doc !== "object") return doc;
+  const node = Object.fromEntries(
+    Object.entries(doc).map(([key, value]) => [key, keepPageIntroTone(value)]),
+  ) as { type?: unknown; props?: unknown };
+  if (
+    node.type === "pageIntro" &&
+    node.props &&
+    typeof node.props === "object" &&
+    !("tone" in node.props)
+  )
+    node.props = { ...node.props, tone: "well" };
+  return node;
+}
 
 /** Runs `list` (site.db's by default) up to the latest. */
 export async function migrate(db: Kysely<unknown>, list: Record<string, Migration> = migrations) {

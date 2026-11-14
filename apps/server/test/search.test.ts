@@ -106,8 +106,39 @@ describe("site search", () => {
     expect(home).toMatch(/<main[^>]*data-pagefind-body/);
     expect(home).toContain('data-pagefind-filter="koleksi:Halaman"');
     const entry = await read("berita/notis-1/index.html");
-    expect(entry).toContain('data-pagefind-filter="koleksi:Berita, kategori:Tender"');
+    // Filed as an entry too, so the listing's own search finds its entries but not itself.
+    for (const filter of ["koleksi:Berita", "jenis:entri", "kategori:Tender"])
+      expect(entry).toContain(`<span data-pagefind-filter="${filter}">`);
+    const listingPage = await read("berita/index.html");
+    expect(listingPage).toContain('data-pagefind-filter="koleksi:Berita"');
+    expect(listingPage).not.toContain('data-pagefind-filter="jenis:');
     expect(entry).toMatch(/data-pagefind-meta="date:[^"]+"/);
+  });
+
+  it("gives a listing its own search when its Page intro asks for one", async () => {
+    const page = (await call("GET", `/api/pages/${listing.id}`)).json().data;
+    expect(await read("berita/index.html")).not.toContain("data-listing-search");
+    const blocks = page.draft.ms.blocks.map((b: { type: string; props: object }) =>
+      b.type === "pageIntro"
+        ? { ...b, props: { ...b.props, search: true, searchPlaceholder: "Contoh: tender" } }
+        : b,
+    );
+    const saved = await call("PUT", `/api/pages/${listing.id}/draft`, {
+      draft: { ...page.draft, ms: { ...page.draft.ms, blocks } },
+      base: page.draftVersion,
+    });
+    expect(saved.statusCode).toBe(200);
+    await call("POST", `/api/pages/${listing.id}/publish`);
+    await build();
+
+    const html = await read("berita/index.html");
+    // Without JavaScript: a form to the search page, filtered to this listing.
+    expect(html).toMatch(/<form action="\/carian" method="get" role="search"/);
+    expect(html).toContain('<input type="hidden" name="koleksi" value="Berita"');
+    expect(html).toContain('placeholder="Contoh: tender"');
+    expect(html).toContain("Cari dalam Berita");
+    // With it: the entries the results stand in for.
+    expect(html).toContain("data-listing-entries");
   });
 
   it("writes a /carian page that works without JavaScript and isn't indexed by search engines", async () => {
@@ -214,6 +245,8 @@ describe("site search", () => {
     expect(await read("index.html")).not.toContain('href="/carian"');
     expect(await exists("carian/index.html")).toBe(false);
     expect(await exists("pagefind/pagefind.js")).toBe(false);
+    // A listing's own search goes too: nothing would answer it.
+    expect(await read("berita/index.html")).not.toContain("data-listing-search");
 
     const doc = await search();
     expect(doc.previous).toMatchObject({ on: true });
@@ -221,6 +254,7 @@ describe("site search", () => {
     await publishSearch();
     expect(await exists("pagefind/pagefind.js")).toBe(true);
     expect(await read("index.html")).toContain('href="/carian"');
+    expect(await read("berita/index.html")).toContain("data-listing-search");
   });
 });
 

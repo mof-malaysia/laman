@@ -1653,6 +1653,8 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "editor.block.duplicate": "Salin blok",
   "editor.block.delete": "Padam blok",
   "editor.block.panel": "Buka dalam panel",
+  "editor.listingSearch.off": "Carian laman dimatikan, jadi pelawat tidak akan nampak kotak ini.",
+  "editor.listingSearch.turnOn": "Hidupkan di Carian",
   "editor.embeds.allowed": "Apa yang dibenarkan di laman ini",
   "editor.embeds.none": "Belum ada. Admin membenarkan benaman di Tetapan.",
   "editor.embeds.missing":

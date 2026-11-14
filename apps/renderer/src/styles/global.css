@@ -54,7 +54,7 @@
   --txt-primary: var(--txt-accent);
 }
 
-/* The hero's Accent wash: FTDS's primary tone with its wash swapped. */
+/* The Accent wash tone (Hero, Page intro; blocks/tone.ts): FTDS's primary tone with its wash swapped. */
 .accent-wash {
   --bg-primary-50: var(--bg-accent-50);
 }

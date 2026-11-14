@@ -1647,6 +1647,8 @@ export const en = {
   "editor.block.duplicate": "Duplicate block",
   "editor.block.delete": "Delete block",
   "editor.block.panel": "Open in the panel",
+  "editor.listingSearch.off": "Site search is off, so visitors won't see this box.",
+  "editor.listingSearch.turnOn": "Turn it on in Search",
   "editor.embeds.allowed": "What this site allows",
   "editor.embeds.none": "Nothing yet. An Admin allows embeds in Settings.",
   "editor.embeds.missing": "Service not listed? Ask an Admin to allow it.",

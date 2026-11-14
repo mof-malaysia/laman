@@ -33,7 +33,7 @@ import { prose } from "./blocks/prose.js";
 import { serviceHighlights } from "./blocks/service-highlights.js";
 import { statsBand } from "./blocks/stats-band.js";
 import { steps } from "./blocks/steps.js";
-import { fieldsOf, type FieldSpec } from "./fields.js";
+import { fieldsOf, type FieldSpec, type PageKind } from "./fields.js";
 
 export const blocks = [
   hero,
@@ -133,7 +133,7 @@ export function blockFields(type: BlockType): FieldSpec[] {
   return fields;
 }
 
-export type PageKind = "page" | "listing" | "entry";
+export type { PageKind };
 
 /** The block types a kind of page may use: the palette offers these, the API rejects the rest. */
 export const blocksFor = (kind: PageKind): BlockType[] =>

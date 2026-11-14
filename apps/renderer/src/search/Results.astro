@@ -1,0 +1,28 @@
+---
+/**
+ * Where search results go, for `resultList` (pagefind.ts): a status line read
+ * out as it changes, the list, "Tunjuk lagi", and one result to copy and fill.
+ * The search page and a listing's own search both draw theirs with it.
+ */
+import Button from "@/components/ui/button.astro";
+import Link from "@/components/ui/link.astro";
+import Tag from "@/components/ui/tag.astro";
+
+type Props = { hidden?: boolean };
+---
+
+<div class="flex flex-col gap-6" hidden={Astro.props.hidden} data-search-region>
+  <p class="text-body-md text-txt-black-900 m-0 font-medium" role="status" aria-live="polite" data-search-status></p>
+  <ol class="m-0 flex list-none flex-col gap-6 p-0" data-search-results></ol>
+  <div hidden data-search-more>
+    <Button variant="default-outline" size="medium">Tunjuk lagi</Button>
+  </div>
+  <template data-search-result>
+    <li class="flex flex-col gap-1 data-pinned:border-otl-primary-200 data-pinned:bg-bg-primary-50 data-pinned:rounded-md data-pinned:border data-pinned:p-4">
+      <Tag variant="primary" size="small" class="self-start" data-pin>Disyorkan</Tag>
+      <h2 class="text-body-lg m-0 font-semibold"><Link href="/" primary underline="hover" data-title /></h2>
+      <p class="text-body-sm text-txt-black-500 m-0" data-date></p>
+      <p class="text-body-md text-txt-black-700 m-0 [&_mark]:bg-bg-warning-100 [&_mark]:text-txt-black-900" data-excerpt></p>
+    </li>
+  </template>
+</div>
