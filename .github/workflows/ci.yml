@@ -1,0 +1,32 @@
+# Runs the same gate as the pre-commit hook, plus the build, on every pull
+# request and on main: format check, then lint, type checks, tests and build.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# A newer push to the same branch or PR cancels the run it supersedes.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      # The MinIO off-site test runs only when OFFSITE_TEST_S3 is set; it's left unset here.
+      - run: pnpm verify --output-logs=errors-only
