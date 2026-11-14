@@ -328,6 +328,20 @@ describe("theme", () => {
     expect(bad.statusCode).toBe(400);
   });
 
+  it("shows every place the colours go on a sample page", async () => {
+    const sample = await call("POST", "/render/theme-sample", {
+      theme: { preset: "teal", accent: "#cb2043" },
+    });
+    expect(sample.statusCode).toBe(200);
+    expect(sample.body).toContain("--_accent-brand:203 32 67;");
+    // Its made-up events, and the buttons, links and tags in their states.
+    expect(sample.body).toContain("Taklimat pembekal baharu");
+    expect(sample.body).toContain('id="contoh-keadaan"');
+    expect(sample.body).toContain('name="robots" content="noindex"');
+    // Nothing was saved.
+    expect((await call("GET", "/api/theme")).json().data.changed).toBe(false);
+  });
+
   it("previews an unsaved theme without saving it", async () => {
     const preview = await call("POST", `/render/pages/${(await home()).id}/site`, {
       theme: { preset: "maroon" },

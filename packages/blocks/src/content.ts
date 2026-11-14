@@ -430,6 +430,8 @@ export type RenderInput = {
   breadcrumb?: { label: string; href?: string }[];
   /** The published site's 404 page (NOT_FOUND_FILE): FTDS StatusPage in the site layout, instead of blocks. */
   notFound?: true;
+  /** The Colours screen's sample page (`themeSample`): adds the buttons, links and tags in each of their states. */
+  specimen?: true;
 };
 
 /** The published site's page for addresses it doesn't have, at its root. */

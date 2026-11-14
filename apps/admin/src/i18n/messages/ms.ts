@@ -986,6 +986,10 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "theme.check.explain":
     "Pautan dan butang di atas putih. AA memerlukan {min} : 1 atau lebih, supaya teks mudah dibaca oleh mereka yang kurang penglihatan.",
   "theme.editor": "Warna",
+  "theme.preview.sampleCaption": "Setiap tempat warna anda muncul, pada halaman contoh.",
+  "theme.preview.of": "Pratonton",
+  "theme.preview.sample": "Laman contoh",
+  "theme.preview.site": "Laman anda",
   "theme.preview.caption": "Halaman utama dengan warna ini.",
   "theme.review.title": "Terbitkan warna laman?",
   "theme.review.description": "Setiap halaman di laman bertukar warna serentak.",

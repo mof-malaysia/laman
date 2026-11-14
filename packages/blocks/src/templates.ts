@@ -27,6 +27,9 @@ function block<T extends BlockType>(type: T, props: Record<string, unknown> = {}
   return { ...fresh, props: { ...fresh.props, ...props } } as Block;
 }
 
+/** For the colour sample (`theme-sample.ts`), which starts its blocks the same way. */
+export { block as presetBlock };
+
 export const templates = {
   blank: {
     name: "Blank",

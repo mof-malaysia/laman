@@ -17,6 +17,7 @@ export function LivePreview({
   regions,
   focus,
   caption,
+  actions,
   frame: given,
   onLoad,
   onSwap,
@@ -30,6 +31,8 @@ export function LivePreview({
   /** The part of the page being edited (a child of its body, such as "header"): the rest is greyed out. */
   focus?: string;
   caption: ReactNode;
+  /** Controls beside the caption, such as which page to preview. */
+  actions?: ReactNode;
   /** The frame, for an editor that also reaches into the page (opening a dropdown, scrolling). */
   frame?: RefObject<HTMLIFrameElement | null>;
   onLoad?: () => void;
@@ -104,10 +107,13 @@ export function LivePreview({
   const scale = width ? Math.min(1, width / PAGE_WIDTH) : 1;
   return (
     <div className="flex h-full flex-col">
-      <p className="text-body-sm text-txt-black-700 border-otl-gray-200 bg-bg-white flex items-start gap-2 border-b px-4 py-2.5">
-        <EyeShowIcon className="text-txt-black-500 mt-0.5 size-4 shrink-0" aria-hidden />
-        {caption}
-      </p>
+      <div className="border-otl-gray-200 bg-bg-white flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5">
+        <p className="text-body-sm text-txt-black-700 flex items-start gap-2">
+          <EyeShowIcon className="text-txt-black-500 mt-0.5 size-4 shrink-0" aria-hidden />
+          {caption}
+        </p>
+        {actions}
+      </div>
       <div ref={box} className="bg-bg-washed min-h-0 flex-1 overflow-hidden">
         {first && (
           // oxlint-disable-next-line react/iframe-missing-sandbox -- our own renderer, same origin

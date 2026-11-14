@@ -208,6 +208,9 @@ export const siteApi = {
     unsaved: { navigation?: Navigation; announcement?: Announcement; theme?: ThemeChoice },
     signal?: AbortSignal,
   ) => api.post(`render/pages/${pageId}/site`, { json: unsaved, ...(signal && { signal }) }).text(),
+  /** The Colours screen's sample page, with these colours. */
+  renderThemeSample: (theme: ThemeChoice, signal?: AbortSignal) =>
+    api.post("render/theme-sample", { json: { theme }, ...(signal && { signal }) }).text(),
   announcement: () => data<AnnouncementDoc>(api.get("api/announcement")),
   saveAnnouncement: (draft: Announcement) => saveDoc<AnnouncementDoc>("announcement", draft),
   discardAnnouncement: () => discardDoc<AnnouncementDoc>("announcement"),

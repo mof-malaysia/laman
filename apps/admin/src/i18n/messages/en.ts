@@ -980,6 +980,10 @@ export const en = {
   "theme.check.explain":
     "Links and buttons on white. AA needs {min} : 1 or more, so text stays readable for people with low vision.",
   "theme.editor": "Colours",
+  "theme.preview.sampleCaption": "Every place your colours show, on a sample page.",
+  "theme.preview.of": "Preview",
+  "theme.preview.sample": "Sample site",
+  "theme.preview.site": "Your site",
   "theme.preview.caption": "The home page with these colours.",
   "theme.review.title": "Publish site colours?",
   "theme.review.description": "Every page on the site changes colour at once.",

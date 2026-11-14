@@ -12,6 +12,7 @@ import {
   Locale,
   PageContent,
   templateById,
+  themeSample,
 } from "@fiscal-sb/blocks";
 import { Announcement, Navigation, PageTemplate, ThemeChoice } from "@fiscal-sb/contracts";
 import type { FastifyPluginAsync, FastifyReply } from "fastify";
@@ -186,6 +187,33 @@ export const renderRoutes: FastifyPluginAsync<{ publicDir: string }> = async (
         }),
       );
       return sendHtml(reply, html);
+    },
+  );
+
+  // The Colours screen's sample: a made-up page of the site's own blocks, with the draft or
+  // unsaved colours, so every place the main colour and the accent show can be seen.
+  app.post<{ Body: { theme?: z.infer<typeof ThemeChoice> } }>(
+    "/theme-sample",
+    {
+      config: { access: "signedIn" },
+      schema: { hide: true, body: z.object({ theme: ThemeChoice.optional() }) },
+    },
+    async (request, reply) => {
+      const { theme } = request.body;
+      const { content, upcoming } = themeSample();
+      const input = await renderInputFor(db, {
+        pageId: "",
+        kind: "page",
+        path: "/",
+        doc: { ms: content },
+        mode: "preview",
+        scope: "draft",
+        noindex: true,
+        upcoming,
+        specimen: true,
+        ...(theme && { unsaved: { theme } }),
+      });
+      return sendHtml(reply, await renderHtml(input));
     },
   );
 

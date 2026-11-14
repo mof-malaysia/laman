@@ -12,8 +12,10 @@ import {
   rampFrom,
   rampSteps,
   rgbToHex,
+  PageContent,
   themeCss,
   themeOf,
+  themeSample,
   themePresets,
 } from "../src/index.js";
 
@@ -97,5 +99,18 @@ describe("site colours", () => {
     expect(accentTooClose([37, 99, 235], [59, 130, 246])).toBe(true);
     expect(accentTooClose([4, 77, 121], [203, 32, 67])).toBe(false);
     expect(accentTooClose([80, 80, 80], [90, 90, 90])).toBe(true);
+  });
+
+  it("builds a sample page the schemas accept, with events from today on", () => {
+    const now = Date.parse("2026-11-14T02:00:00Z");
+    const { content, upcoming } = themeSample(now);
+    expect(PageContent.safeParse(content).success).toBe(true);
+    expect(content.blocks.map((b) => b.type)).toContain("upcomingEvents");
+    const events = Object.values(upcoming)[0]!;
+    expect(events.today).toBe("2026-11-14");
+    expect(events.items[0]!.event!.start.slice(0, 10)).toBe("2026-11-14");
+    // Late at night in Malaysia, today is still today.
+    const late = Object.values(themeSample(Date.parse("2026-11-14T15:30:00Z")).upcoming)[0]!;
+    expect(late.items[0]!.event!.start.slice(0, 10)).toBe(late.today);
   });
 });

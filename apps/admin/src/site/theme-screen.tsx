@@ -39,6 +39,8 @@ import { StarIcon } from "@/components/ui/icons/star";
 import { WarningCircleIcon } from "@/components/ui/icons/warning-circle";
 import { SwitchSetting } from "@/components/switch-setting";
 import { Tag } from "@/components/ui/tag";
+import { Toggle } from "@/components/ui/toggle";
+import { ToggleGroup } from "@/components/ui/toggle-group";
 import { type MessageKey, t } from "@/i18n";
 import { siteApi } from "@/lib/api";
 import { useMediaQuery } from "@/lib/ftds/hooks/use-media-query";
@@ -604,14 +606,37 @@ function ContrastCheck({ ramp, seedStep }: { ramp: Ramp; seedStep: RampStep | nu
   );
 }
 
-/** The home page with the unsaved colours, swapped in as the officer chooses. */
+type PreviewOf = "sample" | "site";
+
+/**
+ * The unsaved colours, swapped in as the officer chooses, on one of two pages:
+ * the sample, made of the site's blocks so every place each colour shows is
+ * there, or the site's own home page.
+ */
 function Preview({ choice }: { choice: ThemeChoice }) {
+  const [of, setOf] = useState<PreviewOf>("sample");
   return (
     <LivePreview
-      render={(pageId, signal) => siteApi.renderWithSite(pageId, { theme: choice }, signal)}
+      // Another page: load it whole, then swap in only the colours as they change.
+      key={of}
+      render={(pageId, signal) =>
+        of === "sample"
+          ? siteApi.renderThemeSample(choice, signal)
+          : siteApi.renderWithSite(pageId, { theme: choice }, signal)
+      }
       renderKey={JSON.stringify(choice)}
       regions={["#site-theme"]}
-      caption={t("theme.preview.caption")}
+      caption={t(of === "sample" ? "theme.preview.sampleCaption" : "theme.preview.caption")}
+      actions={
+        <ToggleGroup
+          value={[of]}
+          aria-label={t("theme.preview.of")}
+          onValueChange={(v) => v[0] && setOf(v[0] as PreviewOf)}
+        >
+          <Toggle value="sample">{t("theme.preview.sample")}</Toggle>
+          <Toggle value="site">{t("theme.preview.site")}</Toggle>
+        </ToggleGroup>
+      }
     />
   );
 }

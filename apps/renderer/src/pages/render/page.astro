@@ -8,6 +8,7 @@ import { longDate } from "@/blocks/date";
 import { whenLabel, whereLabel } from "@/blocks/events";
 import PageIntro from "@/components/blocks/page-intro.astro";
 import StatusPage from "@/components/blocks/status-page.astro";
+import ThemeSpecimen from "@/blocks/ThemeSpecimen.astro";
 import Site from "@/layouts/Site.astro";
 import SearchPage from "@/search/SearchPage.astro";
 
@@ -46,4 +47,5 @@ if (!input) return new Response(null, { status: 404 });
       <Block block={block} input={input} />
     ))
   }
+  {input.specimen && <ThemeSpecimen />}
 </Site>

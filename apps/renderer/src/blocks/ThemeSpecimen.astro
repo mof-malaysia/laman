@@ -1,0 +1,46 @@
+---
+/**
+ * The colour sample's buttons, links and tags, with hover and focus drawn at
+ * rest (`specimen` in the render input). Not a block: no page can use it.
+ */
+import Button from "@/components/ui/button.astro";
+import Link from "@/components/ui/link.astro";
+import Section from "@/components/ui/section.astro";
+import Tag from "@/components/ui/tag.astro";
+
+// Copies of FTDS 0.2.2's states, written out so Tailwind generates them: primary-fill's
+// hover (button.variants.ts), and the focus-ring outline (ftds.css). Link hover is
+// link.variants.ts's `hover:decoration-2`. Check them on an FTDS upgrade.
+const hover = "bg-bg-primary-700";
+const focus = "outline-2 outline-offset-2 outline-solid";
+const row = "flex flex-wrap items-center gap-3";
+const label = "text-label-sm text-txt-black-500 w-full";
+---
+
+<Section tone="well" title="Butang, pautan dan label" titleId="contoh-keadaan">
+  <div class="flex flex-col gap-8">
+    <div class={row}>
+      <p class={label}>Butang</p>
+      <Button href="/" variant="primary-fill">Biasa</Button>
+      <Button href="/" variant="primary-fill" class={hover}>Ditunjuk</Button>
+      <Button href="/" variant="primary-fill" class={focus}>Difokus</Button>
+      <Button href="/" variant="primary-outline">Garis</Button>
+      <Button href="/" variant="primary-ghost">Tanpa latar</Button>
+      <Button href="/" variant="default-outline">Kelabu</Button>
+    </div>
+    <div class={row}>
+      <p class={label}>Pautan</p>
+      <Link href="/" primary>Pautan dalam teks</Link>
+      <Link href="/" primary class="decoration-2">Pautan ditunjuk</Link>
+      <Link href="/" primary class={focus}>Pautan difokus</Link>
+    </div>
+    <div class={row}>
+      <p class={label}>Label</p>
+      <Tag variant="primary">Utama</Tag>
+      <Tag variant="default">Biasa</Tag>
+      <Tag variant="success">Berjaya</Tag>
+      <Tag variant="warning">Amaran</Tag>
+      <Tag variant="danger">Masalah</Tag>
+    </div>
+  </div>
+</Section>
