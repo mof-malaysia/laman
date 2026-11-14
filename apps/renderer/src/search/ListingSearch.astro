@@ -1,0 +1,104 @@
+---
+/**
+ * A listing's own search, in its Page intro (docs/laman.md § Site search).
+ * Without JavaScript it's a form to the search page, filtered to this
+ * listing (and its category on a category page). With it, the script below
+ * searches the published Pagefind index as visitors type, for this
+ * listing's entries only, and shows the results in place of the Entry list,
+ * with the query in the address. The canvas draws the box but doesn't search.
+ */
+import { SEARCH_INDEX_DIR, SEARCH_PATH, type Locale } from "@fiscal-sb/blocks";
+import SiteSearch from "@/components/ui/site-search.astro";
+import { filterValue } from "./filters";
+import Results from "./Results.astro";
+
+type Props = {
+  /** The listing's title: the collection its entries are filed under. */
+  collection: string;
+  /** The category this page of the listing shows, if any. */
+  category?: string | undefined;
+  placeholder?: string | undefined;
+  lang: Locale;
+};
+const { collection, category, placeholder, lang } = Astro.props;
+const koleksi = filterValue(collection);
+const kategori = category && filterValue(category);
+---
+
+<div
+  data-listing-search
+  data-index={`/${SEARCH_INDEX_DIR}/pagefind.js`}
+  data-koleksi={koleksi}
+  data-kategori={kategori}
+>
+  <SiteSearch
+    action={SEARCH_PATH}
+    size="large"
+    labels={{ label: `Cari dalam ${collection}` }}
+    placeholder={placeholder}
+    params={kategori ? { koleksi, kategori } : { koleksi }}
+    lang={lang}
+  />
+  <Results hidden />
+</div>
+
+<script>
+  import { SEARCH_ENTRY } from "./filters";
+  import { loadPagefind, resultList } from "./pagefind";
+
+  const searchRoot = document.querySelector<HTMLElement>("[data-listing-search]");
+  // The Entry list's entries and pager, which the results stand in for.
+  const listed = document.querySelector<HTMLElement>("[data-listing-entries]");
+  // On the canvas, or on a listing without an Entry list, the form goes to the search page.
+  if (searchRoot && listed && document.documentElement.dataset.ftdsMode !== "edit") setUp(searchRoot, listed);
+
+  function setUp(root: HTMLElement, entries: HTMLElement) {
+    const form = root.querySelector("form")!;
+    const field = form.elements.namedItem("q") as HTMLInputElement;
+    const region = root.querySelector<HTMLElement>("[data-search-region]")!;
+    entries.before(region);
+    const results = resultList(region);
+    const { koleksi, kategori } = root.dataset;
+    const filters = {
+      koleksi: { any: [koleksi!] },
+      jenis: { any: [SEARCH_ENTRY] },
+      ...(kategori && { kategori: { any: [kategori] } }),
+    };
+
+    /** Shows the results for what the field says, or the entries again when it's empty. */
+    async function run() {
+      const q = field.value.trim();
+      const address = new URL(location.href);
+      if (q) address.searchParams.set("q", q);
+      else address.searchParams.delete("q");
+      history.replaceState(null, "", address);
+      const id = results.start();
+      region.hidden = !q;
+      entries.hidden = Boolean(q);
+      if (!q) return;
+      try {
+        const search = await (await loadPagefind(root.dataset.index!)).search(q, { filters });
+        if (search) await results.show(id, search.results, q);
+      } catch {
+        results.fail(id);
+      }
+    }
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    field.addEventListener("input", () => {
+      clearTimeout(timer);
+      timer = setTimeout(run, 250);
+    });
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      clearTimeout(timer);
+      void run();
+    });
+
+    const q = new URLSearchParams(location.search).get("q");
+    if (q) {
+      field.value = q;
+      void run();
+    }
+  }
+</script>

@@ -43,7 +43,25 @@ const column = (b: { props: { width?: "page" | "article" | "wide" } }) => column
 ---
 
 {block.type === "hero" && <Hero block={block} edit={edit} media={media} />}
-{block.type === "pageIntro" && <PageIntro block={block} edit={edit} lang={lang} breadcrumb={breadcrumb} />}
+{
+  block.type === "pageIntro" && (
+    <PageIntro
+      block={block}
+      edit={edit}
+      lang={lang}
+      breadcrumb={breadcrumb}
+      // A listing's own search, when site search is on to answer it
+      search={
+        block.props.search && listing && site.search
+          ? {
+              collection: input.page.title,
+              category: listing.categories.find((c) => c.slug === listing.category)?.name,
+            }
+          : undefined
+      }
+    />
+  )
+}
 {block.type === "prose" && <Prose block={block} width={column(block)} edit={edit} />}
 {block.type === "image" && <Image block={block} edit={edit} media={media} />}
 {block.type === "featureGrid" && <FeatureGrid block={block} edit={edit} lang={lang} />}

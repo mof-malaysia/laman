@@ -36,7 +36,7 @@ export const hero = defineBlock({
       { when: { layout: ["stacked"] } },
     ).default("start"),
     mediaPosition: field.mediaPosition({ layout: ["split"] }),
-    tone: field.tone(["paper", "well", "primary"]),
+    tone: field.tone(["paper", "well", "primary", "accent"]),
   }),
   defaults: {
     title: "Tajuk halaman",

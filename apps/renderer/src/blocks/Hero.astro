@@ -5,6 +5,7 @@
  * the canvas shows where the picture goes. The picture is the page's largest
  * paint, so it loads eagerly at high priority.
  */
+import { bandTone } from "./tone";
 import type { BlockOf, MediaInfo } from "@fiscal-sb/blocks";
 import Hero from "@/components/blocks/hero.astro";
 import Tag from "@/components/ui/tag.astro";
@@ -27,7 +28,7 @@ const sizes = p.layout === "image" ? "100vw" : "(min-width: 1024px) 50vw, 100vw"
   layout={p.layout}
   align={p.align}
   mediaPosition={p.mediaPosition}
-  tone={p.tone}
+  {...bandTone(p.tone)}
   primaryAction={action(p.primaryAction)}
   secondaryAction={action(p.secondaryAction)}
 >

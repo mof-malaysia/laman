@@ -34,7 +34,8 @@ export const registryMs: Record<string, string> = {
   Background: "Latar",
   Paper: "Kertas",
   Well: "Kelabu",
-  "Primary wash": "Biru lembut",
+  "Primary wash": "Warna utama lembut",
+  "Accent wash": "Warna aksen lembut",
 
   // Page intro
   "Page intro": "Pengenalan halaman",
@@ -337,6 +338,8 @@ export const registryMs: Record<string, string> = {
   "12": "12",
   "24": "24",
   "Show the category filter": "Tunjukkan penapis kategori",
+  "Search this listing": "Carian dalam senarai ini",
+  "Search hint": "Petunjuk carian",
   "Show the summary": "Tunjukkan ringkasan",
   "Show the date": "Tunjukkan tarikh",
   "Text when there are no entries yet": "Teks apabila belum ada entri",

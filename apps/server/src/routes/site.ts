@@ -376,7 +376,7 @@ export const siteRoutes: FastifyPluginAsync = async (app) => {
       schema: {
         summary: "Save the theme draft",
         description:
-          "A preset or one colour. The server makes the primary ramp from it, darkening the steps links, buttons and focus rings use until they meet WCAG AA, and stores both.",
+          "A preset or one colour, and optionally an accent colour. The server makes the primary ramp from it, darkening the steps links, buttons and focus rings use until they meet WCAG AA, makes the accent's ramp the same way (refusing an accent wash that primary links can't be read on), and stores them.",
         tags: ["site"],
         body: SaveThemeBody,
         response: { 200: envelope(ThemeDoc) },

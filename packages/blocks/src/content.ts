@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { EmbedRules } from "./blocks/embed.js";
 import type { featureIcons } from "./blocks/feature-grid.js";
 import { Block } from "./registry.js";
-import type { Ramp } from "./theme.js";
+import type { Accent, Ramp } from "./theme.js";
 
 export const locales = ["ms", "en"] as const;
 export const Locale = z.enum(locales);
@@ -250,8 +250,8 @@ export type SiteContext = {
   embeds: EmbedRules;
   /** Count visitors: the layout writes the analytics beacon into pages it publishes. */
   analytics?: boolean;
-  /** The site's colours: FTDS Blue unless the agency chose its own. */
-  theme: { primary: Ramp };
+  /** The site's colours: FTDS Blue unless the agency chose its own, and an accent if it has one. */
+  theme: { primary: Ramp; accent?: Accent };
 };
 
 /** A media file as the renderer needs it: where it is, its alt text and its sizes. */
@@ -430,6 +430,8 @@ export type RenderInput = {
   breadcrumb?: { label: string; href?: string }[];
   /** The published site's 404 page (NOT_FOUND_FILE): FTDS StatusPage in the site layout, instead of blocks. */
   notFound?: true;
+  /** The Colours screen's sample page (`themeSample`): adds the buttons, links and tags in each of their states. */
+  specimen?: true;
 };
 
 /** The published site's page for addresses it doesn't have, at its root. */

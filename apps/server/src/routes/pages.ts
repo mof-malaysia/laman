@@ -179,7 +179,7 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
       schema: {
         summary: "Save a page's draft",
         description:
-          "The draft is validated against the block registry. A redirect may not point at the page itself or at a page that redirects, and a page that others redirect to can't redirect. With `base`, a draft someone else saved since is never overwritten: 409 `draft_conflict` says who and when, and the refused draft is kept in the page's history.",
+          "The draft is validated against the block registry. A redirect may not point at the page itself or at a page that redirects, and a page that others redirect to can't redirect. With `base`, a draft someone else saved since is never overwritten: 409 `draft_conflict` says who and when, and the refused draft is kept in the page's history. An entry's event that came from a calendar sync (`event.source`) can't be changed or given a source: 409 `event_synced`.",
         tags: ["pages"],
         params: PageParams,
         body: SaveDraftBody,
@@ -187,7 +187,9 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (request) => ({
-      data: await saveDraft(db, request.params.id, request.body.draft, request.body.base),
+      data: await saveDraft(db, request.params.id, request.body.draft, request.body.base, {
+        keepSyncedEvent: true,
+      }),
     }),
   );
 

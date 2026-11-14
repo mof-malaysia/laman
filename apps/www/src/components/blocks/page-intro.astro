@@ -14,10 +14,15 @@ import { band_cva, container_cva, meta_row_class } from "@/components/ui/section
  * category, reading time). The Hero is for the home page and campaign pages;
  * this is its quieter counterpart.
  *
- * Slots: `eyebrow`, `title`, `description`, `meta` (replaces the `meta`
- * items; each child gets a dot before it), `actions` (beside the title on
- * desktop) and `media` (an image under the text, e.g. an article's lead
- * photo).
+ * `tone` sets the band: Well (default), Paper, or `primary`, the primary
+ * wash, which carries the site's colour onto inner pages. As on the Hero,
+ * it's a wash, never a solid primary band (One Blue Rule).
+ *
+ * Slots: `eyebrow`, `title`, `description`, `search` (under the
+ * description, e.g. a SiteSearch over a collection's items), `meta`
+ * (replaces the `meta` items; each child gets a dot before it), `actions`
+ * (beside the title on desktop) and `media` (an image under the text, e.g.
+ * an article's lead photo).
  *
  * @example
  * <PageIntro
@@ -36,8 +41,8 @@ type Props = Omit<HTMLAttributes<"section">, "class" | "title"> & {
   description?: string;
   /** Facts in a row under the description, e.g. `["31 Oktober 2026", "5 minit bacaan"]`. */
   meta?: string[];
-  /** Band: Well (default) or Paper. */
-  tone?: "well" | "paper";
+  /** Band: Well (default), Paper, or `primary`, the primary wash. */
+  tone?: "well" | "paper" | "primary";
   /** `"article"` narrows the text to a reading column. Defaults to `"wide"`. */
   width?: "wide" | "article";
   lang?: Lang;
@@ -74,7 +79,7 @@ const hasMeta = meta.length > 0 || slots.has("meta");
   >
     {breadcrumb?.length ? <Breadcrumb items={breadcrumb} lang={lang} /> : null}
     <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between lg:gap-12">
-      <div class="flex max-w-[760px] flex-col items-start gap-4">
+      <div class="flex w-full max-w-[760px] flex-col items-start gap-4">
         <slot name="eyebrow">
           {eyebrow && <Tag variant="primary" size="medium">{eyebrow}</Tag>}
         </slot>
@@ -89,6 +94,13 @@ const hasMeta = meta.length > 0 || slots.has("meta");
             <p class="text-txt-black-700 text-body-lg max-w-[65ch]">
               <slot name="description">{description}</slot>
             </p>
+          )
+        }
+        {
+          slots.has("search") && (
+            <div class="w-full pt-2">
+              <slot name="search" />
+            </div>
           )
         }
         {

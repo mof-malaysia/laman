@@ -35,7 +35,7 @@ Each tool declares a permission, like routes do; `tools/list` shows only the one
 
 ### Discovery (signed in)
 
-`whoami`, `get_site_summary`, `list_block_types`, `get_block_schema(type)`, `list_templates(kind)`, `list_pages`, `get_page(id)`, `list_entries(listingId)`, `list_revisions(pageId)`, `check_pages`, `preview_page(id)`, `get_settings`, `get_announcement`, `list_media`, `get_media(id)`, `get_analytics` (summary or breakdown), `get_navigation`, `check_navigation`, `get_search`, `get_theme`, `list_theme_presets`, `preview_theme` (a preset or a colour).
+`whoami`, `get_site_summary`, `list_block_types`, `get_block_schema(type)`, `list_templates(kind)`, `list_pages`, `get_page(id)`, `list_entries(listingId)`, `list_revisions(pageId)`, `get_revision(pageId, revisionId)`, `list_deleted_pages`, `get_listing(id)`, `check_pages`, `preview_page(id)`, `get_settings`, `get_announcement`, `list_media` (`deleted: true` for Recently deleted), `get_media(id)`, `get_analytics` (summary or breakdown), `get_navigation`, `check_navigation`, `get_search`, `get_theme`, `list_theme_presets`, `preview_theme` (a main colour, an accent, or both; what isn't given is the current draft's).
 
 ### Drafting (`content.edit`)
 
@@ -47,7 +47,7 @@ Each tool declares a permission, like routes do; `tools/list` shows only the one
 | Footer     | `add_footer_column`, `update_footer_column`, `add_footer_link`                                                                                                                                             |
 | Navigation | `update_navigation_item`, `move_navigation_item`, `remove_navigation_item`, `replace_navigation`                                                                                                           |
 | Search     | `set_search_options(on?, filters?)`, `add_search_pin(terms, pageId)`, `update_search_pin`, `remove_search_pin`                                                                                             |
-| Colours    | `set_theme` with a preset or the agency's colour (the server makes the ramp, as the admin does)                                                                                                            |
+| Colours    | `set_theme` with a preset or the agency's colour, an accent (`null` takes it away), or both; what isn't given stays (the server makes the ramps, as the admin does)                                        |
 | Site       | `update_settings` (section by section), `update_announcement`, `discard_draft` (settings, navigation, announcement, search or colours)                                                                     |
 | Media      | `start_upload(alt…)` for a one-time upload link, `upload_media(filename, data, alt…)` with the file base64-encoded, `update_media(id, alt, caption, credit)`                                               |
 
@@ -68,23 +68,23 @@ curl -sS -F "file=@/path/to/photo.jpg" https://builder.agensi.gov.my/mcp/uploads
 
 ### Publishing (`content.publish`)
 
-`list_waiting` (signed in), `publish_page`, `schedule_publish(runAt, pageIds?, docs?)`, `cancel_scheduled_publish`, `unpublish_page`, `publish_settings`, `publish_navigation`, `publish_announcement`, `publish_search`, `publish_theme`, `replace_media`, `revert_media_file`.
+`list_waiting` (signed in), `publish_page`, `schedule_publish(runAt, pageIds?, docs?)`, `cancel_scheduled_publish`, `unpublish_page`, `publish_settings`, `publish_navigation`, `publish_announcement`, `publish_search`, `publish_theme`, `replace_media`, `revert_media_file`, `list_calendar_sources(listingId)`, `accept_calendar_drop(sourceId)`, `sync_calendars`. Adding, changing and removing calendar sources stays in the builder, for Admins.
 
-`delete_page`, `delete_media` and `restore_media` take `content.edit` like their routes, which ask for `content.publish` themselves when the page or file is live. `delete_page` only reports what a delete would touch until it's called again with `confirmed: true`.
+`delete_page`, `restore_page`, `delete_media` and `restore_media` take `content.edit` like their routes, which ask for `content.publish` themselves when the page or file is live. `delete_page` only reports what a delete would touch until it's called again with `confirmed: true`.
 
-Tools that take something off the site or out of reach (`unpublish_page`, `delete_page`, `delete_media`, `undo_publish`, `discard_draft`, `discard_page_changes`) carry MCP's `destructiveHint`, so clients ask the officer before running them.
+Tools that take something off the site or out of reach (`unpublish_page`, `delete_page`, `delete_media`, `accept_calendar_drop`, `undo_publish`, `discard_draft`, `discard_page_changes`) carry MCP's `destructiveHint`, so clients ask the officer before running them.
 
 ### Site machinery (`site.manage`)
 
-`retry_job`, `undo_publish`, `rebuild_site`; and, for anyone signed in, `list_jobs` and `get_job`.
+`update_embeds(services?, hosts?)` (what the Embed block may frame, saved in the settings draft), `retry_job`, `undo_publish`, `rebuild_site`; and, for anyone signed in, `list_jobs` and `get_job`.
 
 ### Never
 
 Sign-in, passwords, two-factor, invites, roles, reset links, anything under `users.manage` or `security.manage`, backups, preferences.
 
-### Resources and prompts
+### Resources and prompts (planned)
 
-Resources: the block catalogue, an FTDS content guide (tone, BM by default, heading order) and the page tree. Prompts: "build a page from a brief", "audit the site for accessibility". Content an agent reads back is data; the content guide says so.
+Not built yet: the server offers only tools. Planned resources: the block catalogue, an FTDS content guide (tone, BM by default, heading order) and the page tree. Planned prompts: "build a page from a brief", "audit the site for accessibility". Content an agent reads back is data; the content guide says so.
 
 ## Connecting an agent
 

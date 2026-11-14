@@ -4,19 +4,19 @@
  * a script that answers it from the Pagefind index. Pinned results
  * (carian/pins.json) come first when the query is one of their words. Without
  * JavaScript the page says so and offers the site's main sections instead.
- * Results and filters are copies of the templates below, filled with text,
- * so the FTDS components draw them and nothing from the index becomes HTML
- * but Pagefind's own highlighted excerpt.
+ * Results and filters are copies of templates, filled with text, so the FTDS
+ * components draw them and nothing from the index becomes HTML but Pagefind's
+ * own highlighted excerpt (pagefind.ts). With the filter tickboxes off, a
+ * collection and category in the address still narrow it: a listing's own
+ * search sends them when it can't search in place.
  */
 import { type RenderInput, SEARCH_INDEX_DIR, SEARCH_PATH } from "@fiscal-sb/blocks";
 import PageIntro from "@/components/blocks/page-intro.astro";
 import Button from "@/components/ui/button.astro";
-import { button_cva } from "@/components/ui/button.variants";
-import { clx } from "@/lib/ftds/utils";
 import Link from "@/components/ui/link.astro";
 import Search from "@/components/ui/icons/search.astro";
-import Tag from "@/components/ui/tag.astro";
 import { container_cva } from "@/components/ui/section.variants";
+import Results from "./Results.astro";
 
 type Props = { input: RenderInput };
 const { input } = Astro.props;
@@ -44,18 +44,10 @@ const sections = input.site.nav.flatMap((item) => (item.href ? [{ label: item.la
           autocomplete="off"
           class="border-otl-control bg-bg-white text-txt-black-900 focus-visible:ring-fr-primary focus-visible:border-otl-primary-300 text-body-md h-(--ctl-h-md) w-full min-w-0 rounded-md border px-3 outline-none focus-visible:ring"
         />
-        {/* Not FTDS Button: it writes type="button" before the props, so a type="submit"
-            passed to it is the second attribute, which browsers ignore. */}
-        <button
-          type="submit"
-          class={clx(
-            button_cva({ variant: "primary-fill", size: "medium" }),
-            "[&_svg]:size-5 [&_svg]:shrink-0 [&_svg]:stroke-[1.5px]",
-          )}
-        >
+        <Button type="submit" variant="primary-fill" size="medium">
           <Search aria-hidden="true" />
           Cari
-        </button>
+        </Button>
       </div>
     </div>
     <fieldset class="m-0 hidden flex-col gap-3 border-0 p-0" data-search-filter-set>
@@ -83,22 +75,7 @@ const sections = input.site.nav.flatMap((item) => (item.href ? [{ label: item.la
     </div>
   </noscript>
 
-  <div class="flex flex-col gap-6">
-    <p class="text-body-md text-txt-black-900 m-0 font-medium" role="status" aria-live="polite" data-search-status></p>
-    <ol class="m-0 flex list-none flex-col gap-6 p-0" data-search-results></ol>
-    <div hidden data-search-more>
-      <Button variant="default-outline" size="medium">Tunjuk lagi</Button>
-    </div>
-  </div>
-
-  <template data-search-result>
-    <li class="flex flex-col gap-1 data-pinned:border-otl-primary-200 data-pinned:bg-bg-primary-50 data-pinned:rounded-md data-pinned:border data-pinned:p-4">
-      <Tag variant="primary" size="small" class="self-start" data-pin>Disyorkan</Tag>
-      <h2 class="text-body-lg m-0 font-semibold"><Link href="/" primary underline="hover" data-title /></h2>
-      <p class="text-body-sm text-txt-black-500 m-0" data-date></p>
-      <p class="text-body-md text-txt-black-700 m-0 [&_mark]:bg-bg-warning-100 [&_mark]:text-txt-black-900" data-excerpt></p>
-    </li>
-  </template>
+  <Results />
   <template data-search-group>
     <div class="flex flex-col gap-2">
       <p class="text-body-sm text-txt-black-500 m-0" data-label></p>
@@ -113,46 +90,38 @@ const sections = input.site.nav.flatMap((item) => (item.href ? [{ label: item.la
 </div>
 
 <script>
-  type Data = { url: string; excerpt: string; meta: { title?: string; date?: string } };
-  type Pagefind = {
-    options: (o: Record<string, unknown>) => Promise<void>;
-    filters: () => Promise<Record<string, Record<string, number>>>;
-    search: (
-      q: string,
-      o?: { filters?: Record<string, { any: string[] }> },
-    ) => Promise<{ results: { data: () => Promise<Data> }[] } | null>;
-  };
-  type Pin = { url: string; title: string; excerpt?: string };
+  import { loadPagefind, type Pagefind, type Pin, resultList } from "./pagefind";
+
 
   const root = document.querySelector<HTMLElement>("[data-search]")!;
   const form = root.querySelector<HTMLFormElement>("[data-search-form]")!;
   const field = form.elements.namedItem("q") as HTMLInputElement;
-  const status = root.querySelector<HTMLElement>("[data-search-status]")!;
-  const list = root.querySelector<HTMLElement>("[data-search-results]")!;
-  const more = root.querySelector<HTMLElement>("[data-search-more]")!;
   const filterSet = root.querySelector<HTMLElement>("[data-search-filter-set]")!;
   const filterList = root.querySelector<HTMLElement>("[data-search-filter-list]")!;
+  const results = resultList(root);
   const copy = (name: string) =>
     (root.querySelector<HTMLTemplateElement>(`[data-search-${name}]`)!.content.firstElementChild as HTMLElement).cloneNode(
       true,
     ) as HTMLElement;
-  const PAGE = 10;
   const groups = { koleksi: "Koleksi", kategori: "Kategori" };
 
-  /** The index and the pinned results, fetched together and once. */
-  let loading: Promise<{ pagefind: Pagefind; pins: Record<string, Pin> }> | undefined;
-  const load = () =>
-    (loading ??= Promise.all([
-      import(/* @vite-ignore */ root.dataset.index!).then(async (pagefind: Pagefind) => {
-        await pagefind.options({ excerptLength: 30 });
-        return pagefind;
-      }),
-      fetch(root.dataset.pins!)
-        .then((r) => (r.ok ? r.json() : {}))
-        .catch(() => ({})),
-    ]).then(([pagefind, pins]) => ({ pagefind, pins })));
+  /** The pinned results, fetched once; none when they can't be. */
+  let pinsLoading: Promise<Record<string, Pin>> | undefined;
+  const pins = () =>
+    (pinsLoading ??= fetch(root.dataset.pins!)
+      .then((r) => (r.ok ? r.json() : {}))
+      .catch(() => ({})));
+
+  /** With the tickboxes off, the collection and category the address names. */
+  const fromAddress = Object.fromEntries(
+    Object.keys(groups).flatMap((key) => {
+      const values = new URLSearchParams(location.search).getAll(key);
+      return values.length ? [[key, values]] : [];
+    }),
+  );
 
   const chosen = () => {
+    if (!("filters" in root.dataset)) return fromAddress;
     const out: Record<string, string[]> = {};
     for (const box of filterList.querySelectorAll<HTMLInputElement>("input:checked"))
       (out[box.name] ??= []).push(box.value);
@@ -188,68 +157,24 @@ const sections = input.site.nav.flatMap((item) => (item.href ? [{ label: item.la
     }
   }
 
-  function item({ url, title, excerpt, date }: Pin & { date?: string }, pinned: boolean) {
-    const li = copy("result");
-    li.toggleAttribute("data-pinned", pinned);
-    if (!pinned) li.querySelector("[data-pin]")!.remove();
-    const link = li.querySelector<HTMLAnchorElement>("[data-title]")!;
-    link.href = url;
-    link.textContent = title || url;
-    const when = li.querySelector<HTMLElement>("[data-date]")!;
-    // The publisher wrote it as BM readers write dates.
-    if (date) when.textContent = date;
-    else when.remove();
-    const text = li.querySelector<HTMLElement>("[data-excerpt]")!;
-    // Pagefind's excerpt is the page's text, escaped, with <mark> around the matches.
-    if (excerpt && !pinned) text.innerHTML = excerpt;
-    else if (excerpt) text.textContent = excerpt;
-    else text.remove();
-    return li;
-  }
-
-  let results: { data: () => Promise<Data> }[] = [];
-  let shown = 0;
-  let pinnedUrl: string | undefined;
-  async function showMore() {
-    const next = results.slice(shown, shown + PAGE);
-    for (const d of await Promise.all(next.map((r) => r.data()))) {
-      const url = d.url.replace(/\/$/, "") || "/";
-      if (url !== pinnedUrl)
-        list.append(item({ url, title: d.meta.title ?? "", excerpt: d.excerpt, date: d.meta.date }, false));
-    }
-    shown += next.length;
-    more.hidden = shown >= results.length;
-  }
-  more.querySelector("button")!.addEventListener("click", async () => {
-    const first = list.children.length;
-    await showMore();
-    list.children[first]?.querySelector("a")?.focus();
-  });
-
   /** Searches for what the form says; `push` puts the query and filters in the address. */
   async function run(push: boolean) {
     const q = field.value.trim();
-    list.replaceChildren();
-    more.hidden = true;
-    results = [];
-    shown = 0;
-    pinnedUrl = undefined;
+    const id = results.start(q ? "Mencari…" : "");
     if (!q) {
-      status.textContent = "";
       if (push) history.replaceState(null, "", form.action);
       return;
     }
-    status.textContent = "Mencari…";
-    let loaded;
+    let pagefind: Pagefind;
+    let pinned: Record<string, Pin>;
     try {
-      loaded = await load();
+      [pagefind, pinned] = await Promise.all([loadPagefind(root.dataset.index!), pins()]);
     } catch {
-      loading = undefined;
-      status.textContent = "Carian tidak dapat dimuatkan sekarang. Cuba sebentar lagi.";
+      results.fail(id);
       return;
     }
     // The first search builds the tickboxes from the address; every one after reads them.
-    await buildFilters(loaded.pagefind, new URLSearchParams(location.search));
+    await buildFilters(pagefind, new URLSearchParams(location.search));
     const filters = chosen();
     if (push) {
       const params = new URLSearchParams({ q });
@@ -257,19 +182,9 @@ const sections = input.site.nav.flatMap((item) => (item.href ? [{ label: item.la
       history.replaceState(null, "", `${form.action}?${params}`);
     }
     const filter = Object.fromEntries(Object.entries(filters).map(([k, v]) => [k, { any: v }]));
-    const search = await loaded.pagefind.search(q, Object.keys(filter).length ? { filters: filter } : {});
-    if (!search || field.value.trim() !== q) return;
-    results = search.results;
-    const pin = Object.keys(filters).length ? undefined : loaded.pins[q.toLowerCase()];
-    if (pin) {
-      pinnedUrl = pin.url;
-      list.append(item(pin, true));
-    }
-    await showMore();
-    const total = results.length || (pin ? 1 : 0);
-    status.textContent = total
-      ? `${total} hasil untuk “${q}”`
-      : `Tiada hasil untuk “${q}”. Cuba perkataan lain, atau semak ejaannya.`;
+    const search = await pagefind.search(q, Object.keys(filter).length ? { filters: filter } : {});
+    if (!search) return;
+    await results.show(id, search.results, q, Object.keys(filters).length ? undefined : pinned[q.toLowerCase()]);
   }
 
   form.addEventListener("submit", (event) => {

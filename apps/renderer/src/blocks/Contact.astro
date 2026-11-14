@@ -51,7 +51,7 @@ const empty = !channels.length && !offices.length;
       </TextColumn>
     )
   ) : (
-    <ContactLocations width={width} channels={channels} offices={offices} lang={lang}>
+    <ContactLocations class="accent-icons" width={width} channels={channels} offices={offices} lang={lang}>
       {(p.title || edit) && (
         <Field slot="title" name="title" edit={edit} placeholder="Tajuk">
           {p.title}

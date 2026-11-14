@@ -8,6 +8,8 @@ import { featureIconSections } from "@/lib/feature-icons";
 import {
   type Block,
   type FieldSpec,
+  type PageKind,
+  type SiteFeature,
   type RichText,
   Block as BlockSchema,
   blockDefinition,
@@ -63,9 +65,13 @@ type PropertyPanelProps = {
   onRemove: () => void;
   /** Shown above the fields: a way to what the block uses that's set up elsewhere. */
   intro?: ReactNode;
+  /** The page's kind: some fields are offered only on some kinds. */
+  kind: PageKind;
+  /** Site features that are off, each with a note saying where to turn it on: fields that need one are locked. */
+  off?: Off;
 };
 
-export function PropertyPanel({ block, onChange, onRemove, intro }: PropertyPanelProps) {
+export function PropertyPanel({ block, onChange, onRemove, intro, kind, off }: PropertyPanelProps) {
   const definition = blockDefinition(block.type);
   const issues = issuesOf(block);
   const set = (path: string[], value: unknown) =>
@@ -76,7 +82,7 @@ export function PropertyPanel({ block, onChange, onRemove, intro }: PropertyPane
   return (
     <div className="flex flex-col">
       {intro}
-      {fieldGroups(fields.filter((f) => fieldShown(f, block.props, fields))).map(
+      {fieldGroups(fields.filter((f) => fieldShown(f, block.props, fields, kind))).map(
         ([group, list]) => (
           <details
             key={group}
@@ -98,6 +104,7 @@ export function PropertyPanel({ block, onChange, onRemove, intro }: PropertyPane
                 path={[]}
                 issues={issues}
                 set={set}
+                off={off}
               />
             </div>
           </details>
@@ -141,10 +148,13 @@ type FieldsProps = {
   path: string[];
   issues: Issues;
   set: (path: string[], value: unknown) => void;
+  off?: Off | undefined;
 };
 
+type Off = Partial<Record<SiteFeature, ReactNode>>;
+
 /** The fields that show for `value`: hidden ones keep what they hold, so switching back loses nothing. */
-function Fields({ fields, siblings = fields, value, path, issues, set }: FieldsProps) {
+function Fields({ fields, siblings = fields, value, path, issues, set, off }: FieldsProps) {
   return (
     <div className="flex flex-col gap-4">
       {fields
@@ -157,8 +167,10 @@ function Fields({ fields, siblings = fields, value, path, issues, set }: FieldsP
               path={[...path, field.name]}
               issues={issues}
               set={set}
+              disabled={Boolean(field.needs && off?.[field.needs])}
             />
-            {field.help && <p className="text-body-sm text-txt-black-700">{field.help}</p>}
+            {(field.needs && off?.[field.needs]) ??
+              (field.help && <p className="text-body-sm text-txt-black-700">{field.help}</p>)}
           </div>
         ))}
     </div>
@@ -171,9 +183,11 @@ type FieldEditorProps = {
   path: string[];
   issues: Issues;
   set: (path: string[], value: unknown) => void;
+  /** Shown but not editable: a toggle whose site feature is off (see `off`). */
+  disabled?: boolean;
 };
 
-function FieldEditor({ field, value: parent, path, issues, set }: FieldEditorProps) {
+function FieldEditor({ field, value: parent, path, issues, set, disabled }: FieldEditorProps) {
   const id = useId();
   const value = getAt(parent, [field.name]);
   const error = issues.get(path.join("."));
@@ -191,6 +205,7 @@ function FieldEditor({ field, value: parent, path, issues, set }: FieldEditorPro
               value={(value as string | undefined) ?? ""}
               onChange={(e) => setText(e.target.value)}
               maxLength={field.maxLength}
+              placeholder={field.placeholder}
             />
           ) : (
             <TextArea
@@ -263,9 +278,13 @@ function FieldEditor({ field, value: parent, path, issues, set }: FieldEditorPro
 
     case "toggle":
       return (
-        <Field name={path.join(".")}>
+        <Field name={path.join(".")} disabled={disabled}>
           <FieldItem>
-            <Checkbox checked={Boolean(value)} onCheckedChange={(checked) => set(path, checked)} />
+            <Checkbox
+              checked={Boolean(value)}
+              disabled={disabled}
+              onCheckedChange={(checked) => set(path, checked)}
+            />
             <FieldLabel>{field.title}</FieldLabel>
           </FieldItem>
         </Field>

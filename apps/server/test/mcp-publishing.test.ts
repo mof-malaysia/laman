@@ -169,6 +169,78 @@ describe("media", () => {
   });
 });
 
+describe("history, listings, calendars and embeds", () => {
+  // Their own connections, so these calls don't use up the shared ones' rate limits.
+  const own = new Map<Role, string>();
+  const as = async (role: Role) => {
+    if (!own.has(role)) own.set(role, (await connect((await officer(role)).cookie)).access_token);
+    return own.get(role)!;
+  };
+  const call = async (role: Role, name: string, args?: object) =>
+    helpers.use(await as(role), name, args);
+
+  it("brings back a deleted page, and finds deleted files", async () => {
+    const page = await call("editor", "create_page", { title: "Borang Lama" });
+    await call("editor", "delete_page", { id: page.id, confirmed: true });
+    const deleted = await call("editor", "list_deleted_pages");
+    expect(deleted.map((p: { id: string }) => p.id)).toContain(page.id);
+    expect((await call("editor", "restore_page", { id: page.id })).id).toBe(page.id);
+
+    const media = await call("editor", "upload_media", {
+      filename: "lama.png",
+      data: (await png("#0000ff")).toString("base64"),
+      alt: "Lama",
+    });
+    await call("editor", "delete_media", { id: media.id });
+    const list = await call("editor", "list_media", { deleted: true });
+    expect(list.items.map((m: { id: string }) => m.id)).toContain(media.id);
+  });
+
+  it("reads one revision", async () => {
+    const page = await call("contentManager", "create_page", { title: "Sejarah" });
+    await call("contentManager", "publish_page", { id: page.id });
+    const revision = (await call("contentManager", "list_revisions", { pageId: page.id }))[0];
+    const detail = await call("contentManager", "get_revision", {
+      pageId: page.id,
+      revisionId: revision.id,
+    });
+    expect(detail.id).toBe(revision.id);
+  });
+
+  it("changes one listing setting without resetting the others", async () => {
+    const page = await call("editor", "create_page", { title: "Takwim" });
+    await call("editor", "make_listing", { id: page.id });
+    await call("editor", "update_listing", {
+      id: page.id,
+      locations: [{ slug: "putrajaya", name: "Putrajaya" }],
+      sort: "eventStart",
+    });
+    await call("editor", "update_listing", { id: page.id, rss: false });
+    expect((await call("editor", "get_listing", { id: page.id })).settings).toMatchObject({
+      locations: [{ slug: "putrajaya" }],
+      sort: "eventStart",
+      rss: false,
+    });
+  });
+
+  it("lists a listing's calendars and syncs them, for roles that publish", async () => {
+    const page = await call("contentManager", "create_page", { title: "Acara" });
+    await call("contentManager", "make_listing", { id: page.id });
+    expect(await call("contentManager", "list_calendar_sources", { listingId: page.id })).toEqual(
+      [],
+    );
+    expect((await call("contentManager", "sync_calendars")).kind).toBe("calendar.sync");
+    expect((await listed("editor")).has("sync_calendars")).toBe(false);
+  });
+
+  it("lets only Admins change what pages may embed", async () => {
+    const saved = await call("admin", "update_embeds", { hosts: ["peta.agensi.gov.my"] });
+    expect(saved.draft.embeds).toEqual({ services: [], hosts: ["peta.agensi.gov.my"] });
+    expect((await listed("editor")).has("update_embeds")).toBe(false);
+    await call("admin", "discard_draft", { document: "settings" });
+  });
+});
+
 describe("the publishing machinery", () => {
   it("undoes a publish and rebuilds the site, for Admins", async () => {
     const page = await use("admin", "create_page", { title: "Pengumuman" });

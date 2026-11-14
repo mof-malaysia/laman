@@ -30,37 +30,63 @@ type Meta = {
   optionLabels?: Record<string, string>;
   /** What a media field accepts: images, documents, or any file in the library. */
   mediaKind?: MediaKind;
-  /** What a page field offers: any page, or listing pages only. */
+  /** What a page field offers: any page, or listing pages only (not where the field is offered: see `kinds`). */
   pageKind?: "any" | "listing";
   /** Shown only when each named sibling field holds one of its values; see `panel`. */
   when?: When;
+  /** Offered only on these kinds of page; see `panel`. */
+  kinds?: readonly PageKind[];
+  /** A site feature it needs: locked, with a note, while that's off; see `panel`. */
+  needs?: SiteFeature;
   /** One line under the field in the property panel. */
   help?: string;
+  /** An example in the empty field: site content, so in the site's language, never translated. */
+  placeholder?: string;
 };
+
+/** What a page is: an ordinary page, a listing of entries, or an entry under one. */
+export type PageKind = "page" | "listing" | "entry";
 
 export type MediaKind = "image" | "document" | "any";
 
-/** Sibling field name to the values it must hold for a field to show, e.g. `{ layout: ["split"] }`. */
+/** A site-wide feature a field can need, set up outside the page. */
+export type SiteFeature = "siteSearch";
+
+/**
+ * Sibling field name to the values it must hold for a field to show, e.g.
+ * `{ layout: ["split"] }`; a toggle's values are "true" and "false".
+ */
 export type When = Record<string, readonly string[]>;
 
 const meta = (m: Meta) => m;
 
 /**
  * Adds panel behaviour to a field: `when` hides it unless its siblings hold
- * the given values (hidden fields keep their values, and the renderer ignores
- * them), `help` adds a line under it. Wrap the field before `.optional()` or
- * `.default()`.
+ * the given values, `kinds` unless the page is one of those kinds (hidden
+ * fields keep their values, and the renderer ignores them), `needs` locks a
+ * toggle while that site feature is off (the panel says why), `help` adds a
+ * line under it. Wrap the field before `.optional()` or `.default()`.
  */
-export const panel = <T extends z.ZodType>(schema: T, extra: { when?: When; help?: string }): T =>
-  schema.meta({ ...(schema.meta() as Meta), ...extra }) as T;
+export const panel = <T extends z.ZodType>(
+  schema: T,
+  extra: { when?: When; kinds?: readonly PageKind[]; needs?: SiteFeature; help?: string },
+): T => schema.meta({ ...(schema.meta() as Meta), ...extra }) as T;
 
-/** Whether a field shows, given its siblings' values (or their defaults). */
-export function fieldShown(spec: FieldSpec, siblings: unknown, specs: FieldSpec[]): boolean {
+/** Whether a field shows, given its siblings' values (or their defaults) and the page's kind. */
+export function fieldShown(
+  spec: FieldSpec,
+  siblings: unknown,
+  specs: FieldSpec[],
+  kind?: PageKind,
+): boolean {
+  if (spec.kinds && kind && !spec.kinds.includes(kind)) return false;
   if (!spec.when) return true;
   const values = (siblings ?? {}) as Record<string, unknown>;
   return Object.entries(spec.when).every(([name, allowed]) => {
     const value = values[name] ?? specs.find((s) => s.name === name)?.defaultValue;
-    return typeof value === "string" && allowed.includes(value);
+    return (
+      (typeof value === "string" || typeof value === "boolean") && allowed.includes(String(value))
+    );
   });
 }
 
@@ -73,18 +99,25 @@ export const Href = z
   .max(500)
   .regex(/^(\/|#|https?:\/\/|mailto:|$)/, "Start the link with /, #, https:// or mailto:");
 
-type Tone = "paper" | "well" | "primary";
-const toneLabels: Record<Tone, string> = { paper: "Paper", well: "Well", primary: "Primary wash" };
+type Tone = "paper" | "well" | "primary" | "accent";
+const toneLabels: Record<Tone, string> = {
+  paper: "Paper",
+  well: "Well",
+  primary: "Primary wash",
+  accent: "Accent wash",
+};
 
 type Columns = "2" | "3" | "4";
 const columnLabels: Record<Columns, string> = { "2": "Two", "3": "Three", "4": "Four" };
 
 export const field = {
-  text: (title: string, options: { max?: number; inline?: boolean } = {}) =>
+  text: (title: string, options: { max?: number; inline?: boolean; placeholder?: string } = {}) =>
     z
       .string()
       .max(options.max ?? 160)
-      .meta(meta({ title, widget: "text", inline: options.inline })),
+      .meta(
+        meta({ title, widget: "text", inline: options.inline, placeholder: options.placeholder }),
+      ),
 
   textarea: (title: string, options: { max?: number; inline?: boolean } = {}) =>
     z
@@ -107,7 +140,8 @@ export const field = {
 
   /**
    * The band behind a block, from the FTDS tones it takes; the first is the
-   * default. "primary" is the primary wash, never a solid band.
+   * default. "primary" is the primary wash, never a solid band; "accent" is the
+   * accent's wash, or primary's on a site without an accent.
    */
   tone: <const T extends readonly [Tone, ...Tone[]] = readonly ["paper", "well"]>(
     tones: T = ["paper", "well"] as unknown as T,
@@ -232,7 +266,10 @@ export type FieldSpec = {
   mediaKind?: MediaKind;
   pageKind?: "any" | "listing";
   when?: When;
+  kinds?: readonly PageKind[];
+  needs?: SiteFeature;
   help?: string;
+  placeholder?: string;
   /** The schema's default, which `when` reads when the sibling is unset. */
   defaultValue?: unknown;
 };
@@ -246,7 +283,10 @@ type JsonSchema = {
   mediaKind?: MediaKind;
   pageKind?: "any" | "listing";
   when?: When;
+  kinds?: readonly PageKind[];
+  needs?: SiteFeature;
   help?: string;
+  placeholder?: string;
   default?: unknown;
   enum?: string[];
   properties?: Record<string, JsonSchema>;
@@ -272,7 +312,10 @@ function specsOf(object: JsonSchema): FieldSpec[] {
     if (s.mediaKind) spec.mediaKind = s.mediaKind;
     if (s.pageKind) spec.pageKind = s.pageKind;
     if (s.when) spec.when = s.when;
+    if (s.kinds) spec.kinds = s.kinds;
+    if (s.needs) spec.needs = s.needs;
     if (s.help) spec.help = s.help;
+    if (s.placeholder) spec.placeholder = s.placeholder;
     if (s.default !== undefined) spec.defaultValue = s.default;
     if (s.enum)
       spec.options = s.enum.map((value) => ({ value, label: s.optionLabels?.[value] ?? value }));

@@ -10,23 +10,22 @@ import {
   blocks,
   blockTypes,
   blocksFor,
-  hexToRgb,
   Locale,
+  accentFrom,
   rampFor,
-  rgbToHex,
   templateById,
   templateIds,
   templateKind,
   themePresets,
   type ThemePreset,
 } from "@fiscal-sb/blocks";
-import { Breakdown, Id, type Navigation, permissionsOf } from "@fiscal-sb/contracts";
+import { Breakdown, Id, type Navigation, permissionsOf, type ThemeDoc } from "@fiscal-sb/contracts";
 import { allows } from "../auth/guard.js";
 import { jsonSchemaOf } from "../validation.js";
 import { z } from "zod";
 import type { User } from "../auth/users.js";
 import { draftingTools } from "./drafting.js";
-import { describeRamp, rampHex, ThemeInput } from "./theme.js";
+import { choiceFrom, describeAccent, describeRamp, rampHex, ThemeInput } from "./theme.js";
 import { publishingTools } from "./publishing.js";
 import { none, reading, type Tool, ToolError } from "./tool.js";
 
@@ -198,6 +197,33 @@ const readingTools: Tool[] = [
     run: ({ api }, { pageId }) => api.get(`/api/pages/${pageId}/revisions`),
   }),
   reading({
+    name: "get_revision",
+    title: "Get a revision",
+    description:
+      "One revision from list_revisions, with its whole content, to see what it held before restore_revision_to_draft.",
+    input: z.object({ pageId: Id, revisionId: Id }),
+    target: ({ pageId }) => pageId,
+    run: ({ api }, { pageId, revisionId }) =>
+      api.get(`/api/pages/${pageId}/revisions/${revisionId}`),
+  }),
+  reading({
+    name: "list_deleted_pages",
+    title: "List deleted pages",
+    description:
+      "Pages in Recently deleted, which restore_page can bring back for 30 days after they were deleted.",
+    input: none,
+    run: ({ api }) => api.get("/api/trash"),
+  }),
+  reading({
+    name: "get_listing",
+    title: "Get a listing's settings",
+    description:
+      "A listing page's settings, as update_listing changes them: entry categories, event locations, the order of its entries (publishAt or eventStart), entries' addresses, the blocks new entries start with, and its RSS feed.",
+    input: z.object({ id: Id }),
+    target: ({ id }) => id,
+    run: ({ api }, { id }) => api.get(`/api/pages/${id}/listing`),
+  }),
+  reading({
     name: "check_pages",
     title: "Check pages",
     description:
@@ -225,7 +251,7 @@ const readingTools: Tool[] = [
     name: "get_settings",
     title: "Get site settings",
     description:
-      "Site settings, draft and live: the site and agency name, logo and favicon, contact details, social links, the alpha/beta phase banner, search-engine options, publishing and analytics.",
+      "Site settings, draft and live: the site and agency name, logo and favicon, contact details, social links, the alpha/beta phase banner, search-engine options, publishing, analytics, and what pages may embed (embeds).",
     input: none,
     run: ({ api }) => api.get("/api/settings"),
   }),
@@ -268,7 +294,7 @@ const readingTools: Tool[] = [
     name: "get_theme",
     title: "Get site colours",
     description:
-      "The site's colours, draft and live: a preset or a custom colour, and the primary ramp it makes.",
+      "The site's colours, draft and live: a preset or a custom colour and the primary ramp it makes, and the accent (a second colour for decoration only) if there is one.",
     input: none,
     run: ({ api }) => api.get("/api/theme"),
   }),
@@ -291,14 +317,17 @@ const readingTools: Tool[] = [
     name: "preview_theme",
     title: "Preview site colours",
     description:
-      "The primary ramp a preset or a custom colour would make, without saving it: each step as hex, whether it passes the WCAG 2.2 AA contrast FTDS needs, and the contrast of the steps used for text, hover and focus.",
+      "What set_theme would make, without saving it. The main colour's ramp (from preset or colour, else the current draft's) as hex, whether it passes the WCAG 2.2 AA contrast FTDS needs, and the contrast of the steps used for text, hover and focus. With an accent, its ramp too: whether main-colour links read on its wash (a save is refused if not) and whether it's too like the main colour to stand apart.",
     input: ThemeInput,
-    run: async (_ctx, { preset, colour }) => {
-      if (!preset && !colour) throw new ToolError("invalid_input", "Give a preset or a colour.");
-      const { ramp, seedStep } = colour ? rampFor("custom", colour) : rampFor(preset!);
+    run: async ({ api }, input) => {
+      // The draft fills in a part that isn't given.
+      const { draft } = (await api.get("/api/theme")) as ThemeDoc;
+      const choice = choiceFrom(draft, input);
+      const { ramp, seedStep } = rampFor(choice.preset, choice.seed);
       return {
-        ...(colour ? { colour: rgbToHex(hexToRgb(colour)) } : { preset }),
+        ...(choice.preset === "custom" ? { colour: choice.seed } : { preset: choice.preset }),
         ...describeRamp(ramp, seedStep),
+        ...(choice.accent && { accent: describeAccent(ramp, accentFrom(choice.accent)) }),
       };
     },
   }),
@@ -315,6 +344,10 @@ const readingTools: Tool[] = [
         .boolean()
         .optional()
         .describe("Only images with no alt text that aren't decorative."),
+      deleted: z
+        .boolean()
+        .optional()
+        .describe("Only files in Recently deleted, which restore_media brings back."),
       page: z.number().int().min(1).optional(),
       pageSize: z.number().int().min(1).max(200).optional(),
     }),

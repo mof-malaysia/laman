@@ -42,6 +42,10 @@ export async function renderInputFor(
     month?: string;
     /** A publish's shared reads, so each address doesn't load the site again. */
     loads?: Loads;
+    /** A page that isn't stored (the colour sample): its upcoming events, given instead of read. */
+    upcoming?: RenderInput["upcoming"];
+    /** The colour sample: the buttons, links and tags in their states after the blocks. */
+    specimen?: true;
   },
 ): Promise<RenderInput> {
   const rest = options;
@@ -52,7 +56,7 @@ export async function renderInputFor(
     siteContext(db, rest.scope, rest.path, rest.siteUrl, rest.unsaved, rest.loads),
     mediaInfo(db, [content, doc.entry]),
     latestRender(db, doc, rest.scope, rest.loads),
-    upcomingRender(db, doc, rest.scope, rest.loads),
+    rest.upcoming ?? upcomingRender(db, doc, rest.scope, rest.loads),
     content.blocks.some((b) => b.type === "pageIntro")
       ? breadcrumbOf(db, { id: rest.pageId }, content.title, rest.loads)
       : undefined,
@@ -83,5 +87,6 @@ export async function renderInputFor(
     ...(Object.keys(latest).length && { latest }),
     ...(Object.keys(upcoming).length && { upcoming }),
     ...(breadcrumb && { breadcrumb }),
+    ...(rest.specimen && { specimen: true }),
   };
 }

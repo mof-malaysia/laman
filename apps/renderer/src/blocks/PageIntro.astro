@@ -1,8 +1,13 @@
 ---
-/** The opening of an inner page, in FTDS PageIntro, with the page's breadcrumb. */
+/**
+ * The opening of an inner page, in FTDS PageIntro, with the page's breadcrumb,
+ * and on a listing, its own search when the block asks for it.
+ */
+import { bandTone } from "./tone";
 import type { BlockOf, Locale } from "@fiscal-sb/blocks";
 import PageIntro from "@/components/blocks/page-intro.astro";
 import Tag from "@/components/ui/tag.astro";
+import ListingSearch from "@/search/ListingSearch.astro";
 import Field from "./Field.astro";
 
 type Props = {
@@ -10,12 +15,19 @@ type Props = {
   edit: boolean;
   lang: Locale;
   breadcrumb?: { label: string; href?: string }[] | undefined;
+  /** A listing's search: its title, and the category this page shows. */
+  search?: { collection: string; category?: string | undefined } | undefined;
 };
-const { block, edit, lang, breadcrumb } = Astro.props;
+const { block, edit, lang, breadcrumb, search } = Astro.props;
 const p = block.props;
 ---
 
-<PageIntro breadcrumb={breadcrumb} tone={p.tone} width={p.width} lang={lang}>
+<PageIntro
+  breadcrumb={breadcrumb}
+  {...bandTone(p.tone)}
+  width={p.width}
+  lang={lang}
+>
   {
     (edit || p.eyebrow) && (
       <Tag slot="eyebrow" variant="primary" size="medium">
@@ -29,6 +41,17 @@ const p = block.props;
       <Field slot="description" name="description" edit={edit} placeholder="Description">
         {p.description}
       </Field>
+    )
+  }
+  {
+    search && (
+      <ListingSearch
+        slot="search"
+        collection={search.collection}
+        category={search.category}
+        placeholder={p.searchPlaceholder}
+        lang={lang}
+      />
     )
   }
 </PageIntro>

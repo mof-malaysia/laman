@@ -11,6 +11,9 @@ const env = loadEnv();
 const releaseLock = await holdServerLock(env.DATA_DIR);
 const app = await buildApp({ env });
 app.addHook("onClose", releaseLock);
+if (!process.env.SITE_URL && env.SITE_URL) {
+  app.log.info({ siteUrl: env.SITE_URL }, "SITE_URL not set: using this server's address");
+}
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.once(signal, () => {

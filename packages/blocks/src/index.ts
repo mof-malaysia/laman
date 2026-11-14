@@ -20,3 +20,4 @@ export { blockIcons } from "./define.js";
 export type { BlockDefinition, BlockGroup, BlockIcon } from "./define.js";
 export * from "./templates.js";
 export * from "./theme.js";
+export * from "./theme-sample.js";

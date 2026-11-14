@@ -73,8 +73,9 @@ import { EmptyPanel } from "./empty-panel";
 import { PagePanel } from "./page-panel";
 import { CalendarSourcesCta } from "@/pages/site/calendar-sources";
 import { PropertyPanel } from "./property-panel";
+import { SearchOffNote } from "./search-off";
 import { type SaveState, PublishControl } from "@/components/publish-control";
-import type { LiveState } from "@/lib/publish";
+import { type LiveState, useSearchDoc } from "@/lib/publish";
 import { editorReducer, initialState } from "./state";
 import { useNow } from "@/lib/use-now";
 
@@ -290,6 +291,7 @@ function Editor({ page, onReload }: { page: Page; onReload: () => Promise<void> 
   const checks = usePageChecks(page.id);
   const stopped = stops(checks.data);
   const canPublish = useCan("content.publish");
+  const searchDoc = useSearchDoc();
   // What the checks found, on hand while editing; open on arrival from the publish list.
   // Open while the address says so, as the publish list's link does: closing it
   // drops `?checks`, so a reload or Back doesn't bring it back.
@@ -612,6 +614,8 @@ function Editor({ page, onReload }: { page: Page; onReload: () => Promise<void> 
     <PropertyPanel
       key={selected.id}
       block={selected}
+      kind={page.kind}
+      off={searchDoc.data?.draft.on === false ? { siteSearch: <SearchOffNote /> } : undefined}
       onChange={(props, key) =>
         dispatch({ type: "setProps", id: selected.id, props, source: "panel", key })
       }

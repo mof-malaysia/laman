@@ -6,7 +6,7 @@ import { button_cva } from "@/components/ui/button.variants";
 
 /**
  * Button in the FTDS theme. With `href` it renders a link styled as a button;
- * without, a `<button type="button">`. Icons in the slot are sized to the
+ * without, a `<button>`, `type="button"` unless `type` says otherwise. Icons in the slot are sized to the
  * button, as ButtonIcon does in React.
  *
  * @example
@@ -39,8 +39,13 @@ const icon_class = [
 ];
 
 // The rest of a destructured union isn't narrowed by `href`; without it,
-// these are the <button> branch's attributes
-const buttonProps = props as Omit<HTMLAttributes<"button">, "class">;
+// these are the <button> branch's attributes. `type` is taken out so it's
+// written once: browsers keep the first of two, so a fixed type="button"
+// before the spread ignored type="submit".
+const { type: buttonType = "button", ...buttonProps } = props as Omit<
+  HTMLAttributes<"button">,
+  "class"
+>;
 
 const classes = clx(button_cva({ variant, size, iconOnly }), icon_class, className);
 ---
@@ -51,7 +56,7 @@ const classes = clx(button_cva({ variant, size, iconOnly }), icon_class, classNa
       <slot />
     </a>
   ) : (
-    <button type="button" class={classes} {...buttonProps}>
+    <button type={buttonType} class={classes} {...buttonProps}>
       <slot />
     </button>
   )
