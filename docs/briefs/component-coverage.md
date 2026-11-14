@@ -60,7 +60,7 @@ Masthead, Navbar and NavbarMenu, AnnounceBar, SiteFooter, Skiplink, PhaseBanner,
 | **Carousel**                   | Slides                                                | Rejected in `PRODUCT.md` (autoplay carousels) | **Never**                             |
 | **CookieBanner**               | Cookie consent                                        | Published sites set no cookies                | Not needed                            |
 | **ThemeSwitch/Script**         | Dark mode                                             | Published sites are light only                | Not yet                               |
-| **LanguageSwitcher**           | BM / EN                                               | Needed when BM/EN ships                       | With BM/EN                            |
+| **LanguageSwitcher**           | BM / EN                                               | A site has one language (BM/EN is KIV)        | Not needed                            |
 | **Separator**, core **Footer** | Rule; minimal footer                                  | Covered by Section and SiteFooter             | Not needed                            |
 
 ## Ties to the hero plan

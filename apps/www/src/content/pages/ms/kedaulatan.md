@@ -44,7 +44,7 @@ Tiada lesen yang tamat, tiada pelayan kami untuk dihubungi, tiada akaun untuk di
 
 Setiap blok ialah komponen FTDS, sistem reka bentuk Malaysia, jadi setiap laman web Laman berkongsi tipografi, warna, fokus papan kekunci dan susun atur yang sama, yang direka untuk kebolehcapaian.
 
-- **Bahasa Melayu dahulu,** dengan bahasa Inggeris sebagai bahasa kedua.
+- **Dalam Bahasa Melayu,** daripada kandungan hingga label terbina dalam.
 - **Identiti agensi, bukan tema bebas.** Pilih nama, logo dan warna utama anda. Laman menjana tona warna itu dan memastikan kontrasnya memenuhi WCAG AA.
 
 ## Kawalan: di tangan pegawai
