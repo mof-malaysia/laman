@@ -4,7 +4,10 @@
 # admin beside it. State lives in /data (a volume) and backups in /backups
 # (a separate mount). See docs/install-docker.md.
 #
-#   docker compose up -d --build
+# Installs pull the published image (ghcr.io/mof-malaysia/laman); to build
+# this one from a checkout:
+#
+#   docker compose -f compose.yaml -f compose.build.yaml up -d --build
 
 # Node 24.7 or later: the passwords use its built-in argon2 (.nvmrc, engines).
 FROM node:24-bookworm-slim AS build
