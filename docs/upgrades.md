@@ -116,5 +116,5 @@ All built: the list and `laman check`, strict reads, the boot path for both data
 
 ## Not in this plan
 
-- Release packaging, image tags, SBOMs and the patch-release policy.
+- Release packaging, image tags, SBOMs and the patch-release policy: see [releases.md](releases.md).
 - Per-document versions for import and export. If that's ever wanted, the pure functions from section 4 become each step's upgrader, run on the imported document.
