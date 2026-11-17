@@ -13,13 +13,13 @@
 import {
   type Block,
   type ListingSettings,
-  type PageDocument,
   addDays,
   dayOf,
   newBlock,
   templateById,
 } from "@laman/blocks";
-import type { Announcement, Me, PageSummary, SiteSettings } from "@laman/contracts";
+import type { Announcement, Me, SiteSettings } from "@laman/contracts";
+import { connect } from "./api.js";
 
 const base = process.env.DEMO_URL ?? "http://127.0.0.1:3020";
 const username = process.env.DEMO_USER ?? "demo";
@@ -27,48 +27,16 @@ const password = process.env.DEMO_PASS;
 const newPassword = process.env.DEMO_NEW_PASS;
 if (!password || !newPassword) throw new Error("Set DEMO_PASS and DEMO_NEW_PASS.");
 
-let cookie = "";
-async function call<T = Record<string, unknown>>(method: string, path: string, body?: object) {
-  const response = await fetch(base + path, {
-    method,
-    headers: { cookie, ...(body && { "content-type": "application/json" }) },
-    ...(body && { body: JSON.stringify(body) }),
-  });
-  const set = response.headers.getSetCookie();
-  if (set.length) cookie = set.map((c) => c.split(";")[0]).join("; ");
-  if (response.status >= 400)
-    throw new Error(`${method} ${path}: ${response.status} ${await response.text()}`);
-  return (response.status === 204 ? undefined : ((await response.json()) as { data: T }).data) as T;
-}
+const { call, signIn, change, publish, pages, createPage, site } = await connect(base);
 
 // Sign in, changing the first password if the server still asks for it; a
 // second run signs in with the new one.
 let me: Me;
 try {
-  me = await call<Me>("POST", "/api/auth/sign-in", { username, password });
+  me = await signIn(username, password);
   if (me.stage === "password") await call("POST", "/api/auth/password", { password: newPassword });
 } catch {
-  me = await call<Me>("POST", "/api/auth/sign-in", { username, password: newPassword });
-}
-
-const page = (id: string) =>
-  call<{ draft: PageDocument; draftVersion: string }>("GET", `/api/pages/${id}`);
-async function change(id: string, edit: (draft: PageDocument) => PageDocument) {
-  const { draft, draftVersion } = await page(id);
-  await call("PUT", `/api/pages/${id}/draft`, { draft: edit(draft), base: draftVersion });
-}
-const publish = (id: string) => call("POST", `/api/pages/${id}/publish`);
-async function site<T>(name: string, edit: (draft: T) => T) {
-  const { draft, version } = await call<{ draft: T; version: string }>("GET", `/api/${name}`);
-  await call("PUT", `/api/${name}`, { draft: edit(draft), base: version });
-  await call("POST", `/api/${name}/publish`);
-}
-const pages = await call<PageSummary[]>("GET", "/api/pages");
-const bySlug = (slug: string) => pages.find((p) => p.slug === slug)?.id;
-async function create(title: string, slug: string, template?: string) {
-  return (
-    bySlug(slug) ?? (await call<{ id: string }>("POST", "/api/pages", { title, slug, template })).id
-  );
+  me = await signIn(username, newPassword);
 }
 
 await site<SiteSettings>("settings", (d) => ({
@@ -89,14 +57,14 @@ await site<SiteSettings>("settings", (d) => ({
 }));
 
 // The home page from the Utama template; services and contact from theirs.
-const home = pages.find((p) => p.parentId === null)!.id;
+const home = (await pages()).find((p) => p.parentId === null)!.id;
 // Fields the template leaves empty, filled in so the canvas shows no empty-field placeholders.
 const filled: Partial<Record<Block["type"], Record<string, string>>> = {
   hero: { footnote: "Perkhidmatan dalam talian dibuka 24 jam sehari." },
   serviceHighlights: { description: "Urusan yang paling kerap dibuat oleh orang ramai." },
 };
 // The Takwim: a calendar of the agency's events, by team and location, dated from today.
-const takwim = await create("Takwim", "takwim", "takwim");
+const takwim = await createPage("Takwim", "takwim", "takwim");
 const { settings: takwimSettings } = await call<{ settings: ListingSettings }>(
   "GET",
   `/api/pages/${takwim}/listing`,
@@ -242,12 +210,12 @@ const upcoming = {
 homeBlocks.splice(homeBlocks.length - 1, 0, upcoming);
 await change(home, (d) => ({ ...d, ms: { ...d.ms, blocks: homeBlocks } }));
 await publish(home);
-await publish(await create("Perkhidmatan", "perkhidmatan", "perkhidmatan"));
-const contact = await create("Hubungi kami", "hubungi", "hubungi");
+await publish(await createPage("Perkhidmatan", "perkhidmatan", "perkhidmatan"));
+const contact = await createPage("Hubungi kami", "hubungi", "hubungi");
 await publish(contact);
 
 // Notices, with one entry: the office closure the announcement points at.
-const notis = await create("Notis", "notis", "pengumuman");
+const notis = await createPage("Notis", "notis", "pengumuman");
 await publish(notis);
 const { items: entries } = await call<{ items: { id: string; slug: string }[] }>(
   "GET",
@@ -279,7 +247,7 @@ await site<Announcement>("announcement", (d) => ({
 }));
 
 // A draft with what the checks before publishing catch: no h1, a "klik sini" link.
-const draft = await create("Notis banjir", "notis-banjir");
+const draft = await createPage("Notis banjir", "notis-banjir");
 await change(draft, (d) => ({
   ...d,
   ms: {
