@@ -22,6 +22,13 @@ services:
       # Only a proxy reaches the container (Caddy, or one on this machine
       # through the loopback port), from a Docker private address.
       TRUST_PROXY: ${TRUST_PROXY:-uniquelocal}
+      # The bundled media store below. Its keys come from .env and go to both.
+      MEDIA_STORE_ENDPOINT: http://rustfs:9000
+      MEDIA_STORE_ACCESS_KEY_ID: ${MEDIA_STORE_ACCESS_KEY_ID:?Set MEDIA_STORE_ACCESS_KEY_ID in .env}
+      MEDIA_STORE_SECRET_ACCESS_KEY: ${MEDIA_STORE_SECRET_ACCESS_KEY:?Set MEDIA_STORE_SECRET_ACCESS_KEY in .env}
+    depends_on:
+      rustfs:
+        condition: service_healthy
     volumes:
       - data:/data
       # A folder on the host, not a volume: host backup tools (restic) can reach
@@ -30,6 +37,24 @@ services:
     ports:
       # Only this machine: a proxy on the host forwards to it.
       - ${BIND_ADDRESS:-127.0.0.1}:${HTTP_PORT:-8080}:8080
+
+  # The media library's store: S3-compatible, on the Compose network only, so
+  # neither of its buckets is reachable from outside. The builder serves the
+  # published files at /media/*. docs/install-docker.md § Media storage.
+  rustfs:
+    image: rustfs/rustfs:1.0.5
+    restart: unless-stopped
+    environment:
+      RUSTFS_ACCESS_KEY: ${MEDIA_STORE_ACCESS_KEY_ID:?Set MEDIA_STORE_ACCESS_KEY_ID in .env}
+      RUSTFS_SECRET_KEY: ${MEDIA_STORE_SECRET_ACCESS_KEY:?Set MEDIA_STORE_SECRET_ACCESS_KEY in .env}
+    volumes:
+      - media:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9000/health"]
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 5
 
   # Optional: HTTPS on 80 and 443 for SITE_URL's host, with a certificate from Let's Encrypt.
   caddy:
@@ -49,4 +74,5 @@ services:
 
 volumes:
   data:
+  media:
   caddy:

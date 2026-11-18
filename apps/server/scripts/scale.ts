@@ -59,9 +59,11 @@ try {
   const home = (await call("GET", "/api/pages"))[0];
   await publishPages(app.db, [...ids, listing.id, home.id]);
 
-  const publish = () => publishSite({ db: app.db, dataDir, siteUrl: "https://agensi.gov.my" });
+  const media = await app.mediaStorage.current();
+  const publish = () =>
+    publishSite({ db: app.db, dataDir, media, siteUrl: "https://agensi.gov.my" });
   await timed("Full publish", () =>
-    publishSite({ db: app.db, dataDir, siteUrl: "https://agensi.gov.my", full: true }),
+    publishSite({ db: app.db, dataDir, media, siteUrl: "https://agensi.gov.my", full: true }),
   );
   await timed("Nothing changed", publish);
 

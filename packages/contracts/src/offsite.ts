@@ -49,7 +49,7 @@ export const needsRegion = (provider: OffsiteProvider) =>
   provider === "aws" || provider === "wasabi" || provider === "spaces" || provider === "s3";
 
 /** S3 bucket and Azure container names: lowercase letters, numbers, dots and hyphens. */
-const BucketName = z
+export const BucketName = z
   .string()
   .trim()
   .regex(
@@ -72,16 +72,19 @@ const Prefix = z
       ),
   );
 
+/** A service's address; "" for AWS, Wasabi and Azure, whose address follows from the rest. */
+export const StorageEndpoint = z.union([z.literal(""), z.url({ protocol: /^https?$/ })]);
+/** "" where the provider doesn't need one (R2 is always "auto"). */
+export const StorageRegion = z
+  .string()
+  .trim()
+  .regex(/^([a-z0-9-]{2,40})?$/, "Use a region like ap-southeast-1");
+
 const fields = {
   enabled: z.boolean(),
   provider: OffsiteProvider,
-  /** The service's address; "" for AWS, Wasabi and Azure, whose address follows from the rest. */
-  endpoint: z.union([z.literal(""), z.url({ protocol: /^https?$/ })]),
-  /** "" where the provider doesn't need one (R2 is always "auto"). */
-  region: z
-    .string()
-    .trim()
-    .regex(/^([a-z0-9-]{2,40})?$/, "Use a region like ap-southeast-1"),
+  endpoint: StorageEndpoint,
+  region: StorageRegion,
   /** The bucket, or the Azure container. */
   bucket: z.union([z.literal(""), BucketName]),
   prefix: Prefix,

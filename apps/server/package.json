@@ -11,14 +11,15 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "dev": "tsx watch --clear-screen=false src/index.ts",
+    "dev": "tsx scripts/rustfs.ts && tsx watch --clear-screen=false src/index.ts",
     "start": "node dist/index.js",
     "check-types": "tsc --noEmit",
     "lint": "oxlint",
     "test": "rstest run",
     "cli": "tsx src/cli.ts",
     "scale": "tsx scripts/scale.ts",
-    "fixture": "tsx scripts/fixture.ts"
+    "fixture": "tsx scripts/fixture.ts",
+    "rustfs": "tsx scripts/rustfs.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "catalog:",

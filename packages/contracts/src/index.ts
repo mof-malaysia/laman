@@ -21,6 +21,7 @@ export * from "./analytics.js";
 export * from "./auth.js";
 export * from "./calendar.js";
 export * from "./offsite.js";
+export * from "./media-storage.js";
 export * from "./preferences.js";
 export * from "./site.js";
 

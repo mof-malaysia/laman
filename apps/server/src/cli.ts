@@ -3,8 +3,9 @@
  * laman <command>. The same code the server runs.
  *
  *   migrate   create or upgrade data/site.db (and add the starter home page)
- *   publish   rebuild data/public from the published revisions: only what
- *             changed since the last publish, or everything with --full
+ *   publish   rebuild data/public from the published revisions, and the
+ *             media store's published bucket: only what changed since the
+ *             last publish, or everything with --full
  *   check     parse every stored document against this version's schemas,
  *             without changing anything
  *   users     list the accounts
@@ -27,7 +28,8 @@
  *             BACKUP_PASSPHRASE
  *   restore <archive>
  *             put an archive back, with the server stopped; what it replaces
- *             is kept in DATA_DIR/before-restore-<time>/
+ *             is kept in DATA_DIR/before-restore-<time>/. Lists any media the
+ *             restored database names that the media store doesn't have
  */
 import { existsSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
@@ -47,6 +49,7 @@ import { checkStoredDocuments, describeProblems } from "./db/documents.js";
 import { type Db, migrationState, openDatabase, openSqlite } from "./db/index.js";
 import type { Database } from "./db/schema.js";
 import { loadEnv } from "./env.js";
+import { mediaStoreOf } from "./media-store/index.js";
 import { publishSite } from "./publisher.js";
 import { ENCRYPTED, decryptFile, isEncrypted } from "./offsite/crypt.js";
 import {
@@ -94,7 +97,8 @@ try {
       break;
     case "publish": {
       const full = flags.includes("--full");
-      const { counts } = await publishSite({ db, dataDir, siteUrl: env.SITE_URL, full });
+      const media = await mediaStoreOf(db, env);
+      const { counts } = await publishSite({ db, dataDir, media, siteUrl: env.SITE_URL, full });
       console.warn(
         `Published ${counts.pages} pages to ${join(dataDir, "public")}: ${counts.written} addresses written, ${counts.unchanged} unchanged`,
       );
@@ -188,10 +192,11 @@ async function backUp() {
     keep: retentionOf(env),
     dbOnly: flags.includes("--db-only"),
     withAnalytics: flags.includes("--with-analytics"),
+    media: (copy) => mediaStoreOf(copy, env),
   });
   console.warn(`Backed up to ${made.file} (${mb(made.bytes)})`);
-  for (const folder of made.manifest.missing)
-    console.warn(`  Not on disk, so not backed up: ${folder}`);
+  for (const file of made.manifest.missing)
+    console.warn(`  Named by the database but not in the media store: ${file}`);
   if (made.deleted.length) console.warn(`Deleted ${made.deleted.length} older backups`);
 }
 
@@ -225,10 +230,18 @@ async function restore() {
     throw new Error(
       `${archive} is encrypted. Decrypt it first: BACKUP_PASSPHRASE=… laman decrypt ${basename(archive)}`,
     );
-  const { manifest, aside } = await restoreBackup(archive, dataDir);
+  const { manifest, aside, missing } = await restoreBackup(archive, dataDir, (restored) =>
+    mediaStoreOf(restored, env),
+  );
   console.warn(
     `Restored the backup from ${manifest.createdAt}. Everyone is signed out, and a full publish runs when the server starts.\nWhat it replaced is in ${aside}: delete it once you're happy.`,
   );
+  if (missing?.length) {
+    console.warn(
+      `\n${missing.length} media ${missing.length === 1 ? "file" : "files"} the restored database names aren't in the media store. Put them back from the off-site media copy or the bucket's old versions (docs/install-docker.md § Restore):`,
+    );
+    for (const file of missing) console.warn(`  ${file}`);
+  }
 }
 
 /** The off-site settings in site.db, read without migrating it, and a store made from them. */

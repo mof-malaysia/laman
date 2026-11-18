@@ -555,18 +555,18 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "settings.backups.help.failed.q": "Sandaran gagal.",
   "settings.backups.help.failed.a":
     "Sandaran tempatan menunjukkan ralat terakhir. Biasanya cakera penuh atau folder tidak boleh ditulis oleh pelayan. Betulkan, kemudian pilih Sandarkan sekarang.",
-  "settings.backups.help.types.q": "Pangkalan data & media, atau pangkalan data?",
+  "settings.backups.help.types.q": "Pangkalan data, atau pangkalan data sebelum naik taraf?",
   "settings.backups.help.types.a":
-    "Pangkalan data & media memulihkan kedua-duanya. Pangkalan data jauh lebih kecil, dan memulihkannya tidak mengubah media.",
+    "Setiap sandaran ialah pangkalan data. Media disimpan dalam storan media: lihat Tetapan → Storan media. Sebelum naik taraf, pangkalan data disandarkan sekali lagi secara berasingan.",
   "settings.backups.help.space.q": "Berapa banyak ruang cakera diperlukan?",
   "settings.backups.help.space.a":
-    "Kira-kira sepuluh sandaran pangkalan data & media, setiap satu lebih kurang saiz pustaka media. Tiada had, jadi pantau ruang kosong.",
+    "Sandaran hanya mengandungi pangkalan data, jadi saiznya kecil. Media berada dalam storan media, bukan dalam sandaran. Tiada had, jadi pantau ruang kosong.",
   "settings.backups.help.schedule.q": "Bagaimana menukar masa atau bilangan yang disimpan?",
   "settings.backups.help.schedule.a":
     "Tetapkan BACKUP_SCHEDULE (HH:MM waktu Malaysia, atau off), BACKUP_KEEP_DAILY dan BACKUP_KEEP_WEEKLY pada pelayan, kemudian mulakan semula.",
   "settings.backups.help.excluded.q": "Apa yang tidak disandarkan?",
   "settings.backups.help.excluded.a":
-    "Laman yang diterbitkan, yang dibina semula daripada pangkalan data, dan analitik, kecuali disandarkan dengan --with-analytics.",
+    "Media, yang disimpan oleh storan media (disalin ke luar tapak selepas setiap sandaran pada storan terbina); laman yang diterbitkan, yang dibina semula daripada pangkalan data; dan analitik, kecuali disandarkan dengan --with-analytics.",
   "settings.backups.help.passphrase.q": "Bagaimana jika frasa laluan awan hilang?",
   "settings.backups.help.passphrase.a":
     "Salinan yang disulitkan tidak boleh dibuka tanpanya, oleh sesiapa pun. Tetapkan yang baharu; hanya salinan baharu menggunakannya.",
@@ -589,7 +589,7 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
     "{free} kosong. Kosongkan ruang atau pindahkan BACKUP_DIR ke cakera yang lebih besar.",
   "settings.backups.confirm.title": "Sandarkan sekarang?",
   "settings.backups.confirm.description":
-    "Ini menyimpan pangkalan data dan media ke folder sandaran. Laman kekal dalam talian.",
+    "Ini menyimpan pangkalan data ke folder sandaran. Laman kekal dalam talian.",
   "settings.backups.confirm.cloud": "Ia juga dimuat naik ke storan awan.",
   "settings.backups.backedUp": "Sandaran dibuat",
   "settings.backups.couldntStart": "Sandaran tidak dapat dimulakan",
@@ -612,8 +612,8 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "settings.backups.details.type": "Jenis",
   "settings.backups.details.size": "Saiz",
   "settings.backups.details.file": "Fail",
-  "settings.backups.details.full": "Pangkalan data & media",
-  "settings.backups.details.dbOnly": "Pangkalan data",
+  "settings.backups.details.full": "Pangkalan data",
+  "settings.backups.details.dbOnly": "Pangkalan data, sebelum naik taraf",
   "settings.backups.details.restore":
     "Untuk memulihkan, hentikan pelayan dan jalankan ini (langkah dalam docs/install-docker.md):",
   "settings.backups.offsiteFailed": "Salinan luar tapak gagal",
@@ -706,6 +706,63 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "settings.offsite.prune": "Padam salinan lama daripada storan",
   "settings.offsite.pruneHint":
     "Harian dan manual selepas 30 hari, bulanan selepas setahun, naik taraf selepas 90 hari. Memerlukan kunci yang boleh memadam; peraturan kitar hayat lebih selamat.",
+
+  "settings.storage": "Storan media",
+  "settings.storage.description":
+    "Tempat fail pustaka media disimpan. Setiap baldi adalah persendirian: pegawai membuka fail melalui pautan yang tamat tempoh dalam beberapa minit.",
+  "settings.storage.loadFailed":
+    "Storan media tidak dapat dimuatkan. Muat semula halaman untuk mencuba lagi.",
+  "settings.storage.inUse": "Digunakan",
+  "settings.storage.bundled": "Storan terbina, pada pelayan ini",
+  "settings.storage.own": "Storan sendiri: {provider}",
+  "settings.storage.files": "Fail",
+  "settings.storage.filesCount": "{live} dalam pustaka, {deleted} dalam Baru dipadam",
+  "settings.storage.ownHint":
+    "Pelawat mendapatkan fail yang diterbitkan daripada alamat di atas. Hidupkan versi pada baldi, supaya fail yang dipadam atau diganti boleh didapatkan semula: panduan pemasangan ada peraturan kitar hayatnya.",
+  "settings.storage.bundledCopied":
+    "Media disalin ke storan sandaran awan selepas setiap sandaran, hanya fail baharu dihantar.",
+  "settings.storage.noCopy": "Media tiada salinan di luar pelayan ini",
+  "settings.storage.noCopyHint":
+    "Sandaran hanya mengandungi pangkalan data. Hidupkan Sandaran awan, dan media disalin ke sana selepas setiap sandaran.",
+  "settings.storage.openBackups": "Buka Sandaran",
+  "settings.storage.locked": "Dikunci: pustaka mempunyai {count} fail",
+  "settings.storage.locked.one": "Dikunci: pustaka mempunyai 1 fail",
+  "settings.storage.lockedHint":
+    "Laman tidak pernah menyalin fail dari satu storan ke storan lain, jadi storan hanya boleh ditukar semasa pustaka media kosong. Fail dalam Baru dipadam tidak dikira.",
+  "settings.storage.lockedOwnHint":
+    "Kunci dan alamat fail yang diterbitkan masih boleh ditukar. Untuk menggunakan baldi lain atau kembali ke storan terbina, padam setiap fail dalam pustaka media dahulu; fail dalam Baru dipadam tidak dikira.",
+  "settings.storage.noKeyHint":
+    "Ia mengunci kunci rahsia. Tetapkannya pada pelayan dan mulakan semula pembina untuk menggunakan storan sendiri.",
+  "settings.storage.useOwn": "Guna storan sendiri",
+  "settings.storage.change": "Tukar storan",
+  "settings.storage.changeKeys": "Tukar kunci atau alamat",
+  "settings.storage.remove": "Kembali ke storan terbina",
+  "settings.storage.remove.title": "Kembali ke storan terbina?",
+  "settings.storage.remove.body":
+    "Muat naik baharu disimpan dalam storan pada pelayan ini. Tiada apa-apa dipadam daripada baldi anda.",
+  "settings.storage.purge": "{count} fail dalam Baru dipadam akan dipadam terus",
+  "settings.storage.purge.one": "1 fail dalam Baru dipadam akan dipadam terus",
+  "settings.storage.purgeHint":
+    "Fail itu kekal dalam storan lama, jadi tidak boleh dikembalikan selepas ini.",
+  "settings.storage.confirm.title": "Tukar storan media?",
+  "settings.storage.confirm.body": "Muat naik baharu disimpan dalam storan yang anda sediakan.",
+  "settings.storage.confirm": "Tukar storan",
+  "settings.storage.privateBucket": "Baldi persendirian",
+  "settings.storage.privateHint": "Muat naik, salinan kecilnya dan fail yang diganti.",
+  "settings.storage.publishedBucket": "Baldi terbitan",
+  "settings.storage.publishedHint":
+    "Salinan fail yang digunakan oleh halaman langsung, dibuat setiap kali diterbitkan.",
+  "settings.storage.publicUrl": "Alamat fail yang diterbitkan",
+  "settings.storage.publicUrlHint":
+    "CDN anda yang boleh mencapai baldi terbitan, atau alamat baldi itu sendiri jika ia boleh dibaca umum. Halaman yang diterbitkan memaut ke sini.",
+  "settings.storage.secretHint":
+    "Kunci ini mesti boleh membaca, menulis, menyenaraikan dan memadam.",
+  "settings.storage.keyNote":
+    "Kunci rahsia dikunci dengan BACKUP_SECRET_KEY. Laman yang dipulihkan memerlukan BACKUP_SECRET_KEY yang sama untuk mencapai storan ini: simpan salinannya di luar pelayan ini.",
+  "settings.storage.testFirst": "Uji sambungan dahulu: ia mesti lulus sebelum disimpan.",
+  "settings.storage.testOk": "Bersambung ke kedua-dua baldi. Tetapan ini boleh disimpan.",
+  "settings.storage.testFailedPrivate": "Baldi persendirian gagal. {error}",
+  "settings.storage.testFailedPublished": "Baldi terbitan gagal. {error}",
 
   "nav.target": "Menuju ke",
   "nav.target.url": "Laman web lain",
@@ -2415,6 +2472,8 @@ export const ms: Record<Exclude<Key, `${string}.one`>, string> & Partial<Record<
   "audit.action.backupRestored": "Memulihkan sandaran",
   "audit.action.offsiteChanged": "Menukar tetapan salinan luar tapak",
   "audit.action.offsiteTested": "Menguji sambungan luar tapak",
+  "audit.action.mediaStorageChanged": "Menukar storan media",
+  "audit.action.mediaStorageTested": "Menguji sambungan storan media",
   "audit.action.calendarSourceChanged": "Mengubah sumber kalendar",
   "audit.action.calendarSynced": "Penyegerakan kalendar mengubah acara",
   "audit.action.agentConnected": "Menyambungkan ejen",

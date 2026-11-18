@@ -54,6 +54,9 @@ import type {
   Summary,
   UnpublishPageBody,
   UpdateMediaBody,
+  MediaStorage,
+  MediaStorageSave,
+  MediaStorageTestResult,
   OffsiteSettings,
   OffsiteSettingsSave,
   OffsiteTestResult,
@@ -184,6 +187,12 @@ export const siteApi = {
     data<OffsiteTestResult>(api.post("api/backups/offsite/test", { json: body })),
   /** Queues a check of the newest off-site copy. */
   verifyOffsite: () => data<Job>(api.post("api/backups/offsite/verify")),
+  mediaStorage: () => data<MediaStorage>(api.get("api/media-storage")),
+  saveMediaStorage: (body: MediaStorageSave) =>
+    data<MediaStorage>(api.put("api/media-storage", { json: body })),
+  testMediaStorage: (body: MediaStorageSave) =>
+    data<MediaStorageTestResult>(api.post("api/media-storage/test", { json: body })),
+  removeMediaStorage: () => data<MediaStorage>(api.delete("api/media-storage")),
   publish: (body: PublishSiteBody = {}) =>
     data<PublishSiteResult>(api.post("api/publish", { json: body })),
   /** Puts back what was live before a finished publish. */

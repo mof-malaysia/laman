@@ -286,28 +286,40 @@ Redirects made in the admin are in `redirects.json` beside the site, as `{ "/old
 ```
 data/
   site.db        SQLite (WAL)
-  media/         originals and resized variants
-  public/        the published site
+  public/        the published site's pages, search index and assets (no media)
 ```
 
-- **Docker** (built): one image, one volume at `/data`, one port, with Compose and optional Caddy for HTTPS. See [install-docker.md](install-docker.md).
+- **Docker** (built): one image, one volume at `/data`, one port, with Compose and optional Caddy for HTTPS, and RustFS beside it for media. See [install-docker.md](install-docker.md).
 - **Backup**: see Backup and restore below.
 - **Upgrades**: a new image or package version runs migrations on start, after an automatic database backup. See [upgrades.md](upgrades.md) for how stored content is kept readable.
 
+### Media storage
+
+The media library lives in S3-compatible object storage only, never on the server's disk (`apps/server/src/media-store/`). Nothing about media is written under `DATA_DIR`.
+
+- **The bundled store.** `compose.yaml` runs RustFS (pinned to an exact version) with its own volume, on the Compose network only. Its address and keys are the only media environment variables: `MEDIA_STORE_ENDPOINT` (`http://rustfs:9000`), `MEDIA_STORE_ACCESS_KEY_ID` and `MEDIA_STORE_SECRET_ACCESS_KEY`, which `compose.yaml` gives RustFS too. Its buckets are fixed, `laman-media` and `laman-published`, and made on boot when missing. Development and the tests use the same image as a container of their own (`apps/server/scripts/rustfs.ts`, on `127.0.0.1:9900`), started by `pnpm dev` and `pnpm test`.
+- **Or the agency's own provider**, set up by the super admin in **Settings → Media storage**: a provider from those off-site copies support, a private bucket, a published bucket, the published files' address (a CDN or the bucket's own), and keys that can read, write, list and delete. **Test connection** writes, reads, lists and deletes a small file in each bucket, with the off-site copies' plain errors, and a setup is saved only once it passes. The secret is sealed with `BACKUP_SECRET_KEY` in the `mediaStorage` settings row, so a restore brings the setup back, but only with the same key; without it the library can't be reached and the server says why.
+- **Locked once the library has files.** A setup can be saved or removed (back to the bundled store) only while the library has no live files (409 `media_storage_locked`); files in Recently deleted don't count, and are purged first, so they can't be put back. Laman never copies media between stores. The keys and the published files' address of the same buckets can change at any time.
+- **Every bucket private.** Uploads, their WebP sizes, replacements and the file before each replace go to the private bucket (`media/<id>/…`, `previous/<id>/…`). The admin, the canvas and previews open them through presigned links that last 30 minutes, signed from the start of a five-minute window so the browser can cache them. On the bundled store, which browsers can't reach, the builder passes those links through at `/media-store/…` to signed-in officers only; RustFS checks the signature and the expiry. On an agency's own provider they go straight to it, and the admin's CSP allows images from its address.
+- **Publishing** copies the files live pages use to the published bucket at the same keys, only when they changed since the last publish (the manifest keeps each object's ETag), and removes those no live page uses once the new pages are live. On the bundled store the builder serves `/media/*` from the published bucket, so a file no live page uses can't be fetched by anyone; on an agency's own provider, published pages link to `<published files' address>/media/<id>/<file>`, a CDN with origin access to the bucket (or a public-read bucket), and `/media/*` redirects there. Published pages never carry presigned links: they would expire, and the site must keep working with the builder off.
+- **Media from before the media store** (`DATA_DIR/media`, `media-previous`) is put in the store once at boot, the folders renamed `….moved-<time>` beside it to delete later, and a full publish queued.
+
 ## Backup and restore
 
-Built in `apps/server/src/backup.ts`. Backups run from the command line, every day inside the server, before every upgrade, and from the admin (**Back up now** in Settings → Backups, for Admins and up), and each is copied off-site when that's set up (below). Restore is command-line only: it replaces every account, and it needs the server stopped.
+Built in `apps/server/src/backup.ts`. An archive is the database; media is in the media storage (above), which is protected beside the archives. Backups run from the command line, every day inside the server, before every upgrade, and from the admin (**Back up now** in Settings → Backups, for Admins and up), and each is copied off-site when that's set up (below). Restore is command-line only: it replaces every account, and it needs the server stopped.
 
 ### What gets backed up
 
-| Path              | Backed up | Why                                                                                               |
-| ----------------- | --------- | ------------------------------------------------------------------------------------------------- |
-| `site.db`         | Yes       | All content, users, history and settings.                                                         |
-| `media/`          | Yes       | The folders the database names: originals and their WebP sizes, so a restore needs no rebuilding. |
-| `media-previous/` | Yes       | The file before each replace, so "Put back the previous file" still works after a restore.        |
-| `analytics.db`    | On demand | Only with `--with-analytics`: figures, not content (`docs/analytics.md`).                         |
-| `public/`         | No        | Rebuilt by the full publish a restore queues.                                                     |
-| Secrets           | No        | The environment (`SUPER_ADMIN_*`, `TRUST_PROXY`, …) is the operator's to keep.                    |
+| What                | In the archive | Why                                                                                                                                                                                                                  |
+| ------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `site.db`           | Yes            | All content, users, history and settings, including the media storage setup.                                                                                                                                         |
+| `analytics.db`      | On demand      | Only with `--with-analytics`: figures, not content (`docs/analytics.md`).                                                                                                                                            |
+| Media, bundled      | No             | RustFS's volume is on the same disk, so after each backup's off-site copy the private bucket is copied to `<folder>/media/` in the off-site bucket, sending only new files. Without off-site copies, Settings warns. |
+| Media, own provider | No             | The bucket's own versioning (or replication) protects it; the install guide gives the lifecycle rule.                                                                                                                |
+| `public/`           | No             | Rebuilt, with the published bucket, by the full publish a restore queues.                                                                                                                                            |
+| Secrets             | No             | The environment (`SUPER_ADMIN_*`, `BACKUP_SECRET_KEY`, `MEDIA_STORE_*`, …) is the operator's to keep.                                                                                                                |
+
+Old and deleted versions of media must be kept at least as long as the oldest backup a restore could use: about 35 days for local archives (`BACKUP_KEEP_WEEKLY` weeks), and as long as the monthly off-site copies (365 days) where those are kept. Every backup's manifest lists the media its database names that the store doesn't have (`missing`).
 
 An archive holds password hashes and two-factor secrets (sessions are stored only as hashes). It isn't encrypted on the server: archives are `0600` in a `0700` folder. Off-site copies can be encrypted before they leave it (below).
 
@@ -320,11 +332,11 @@ SQLite in WAL mode keeps recent writes in `site.db-wal`. Copying `site.db` (or t
 `laman backup [--db-only] [--with-analytics]`, safe while the server runs:
 
 1. `VACUUM INTO` a scratch folder in `DATA_DIR`, then `PRAGMA integrity_check` on the copy, and the stored-documents check ([upgrades.md](upgrades.md)), so a backup that couldn't be restored fails now rather than on the day it's needed.
-2. Hard-link the media folders the copy names beside it (a folder that's missing is listed, not fatal), and write `manifest.json`: builder version, last migration, time, counts, and every file's size and SHA-256.
+2. Check the copy against the media store: what it names that the store doesn't have is listed as `missing`, not fatal. Write `manifest.json`: builder version, last migration, time, counts, `missing`, and every file's size and SHA-256.
 3. Pack it into `<site-name>-<time>.tar.gz` (`-db.tar.gz` with `--db-only`), written under a temporary name and renamed once complete, in `BACKUP_DIR`.
 4. Delete old archives: the newest of each of the last `BACKUP_KEEP_DAILY` days (7) and `BACKUP_KEEP_WEEKLY` weeks (4) are kept, by Malaysian date, full and database-only archives apart. Only files named like an archive are touched.
 
-`--db-only` is for frequent database backups on sites with a large media library; media then goes off-site with an incremental tool instead (below). `laman backups` lists the archives.
+`--db-only` skips the media check, as the copy before an upgrade does. `laman backups` lists the archives.
 
 The server runs the same code as a `backup` job every day at `BACKUP_SCHEDULE` (Malaysian time, `02:00` by default; `off` turns it off), and one missed while the server was down runs when it starts. Before an upgrade's migrations it writes a database-only archive of the database as it was ([upgrades.md](upgrades.md) § 2). The admin shows the last archive, a failure since, and warns when there's been none for 2 days or when `BACKUP_DIR` isn't set (backups then go to `DATA_DIR/backups`, on the site's own disk; the server also warns at boot in production).
 
@@ -378,8 +390,8 @@ Built: `Dockerfile` and `compose.yaml` at the repository root. `/data` is a name
 
 1. Refuse to run while the server is running. The server keeps `DATA_DIR/server.lock` and touches it every 10 seconds, so this works across containers, and a lock left by a crash goes stale after 30.
 2. Unpack into a scratch folder in `DATA_DIR`: only plain files and folders, exactly the files the manifest lists, each matching its checksum, from a migration this build knows (an archive from a newer version is refused).
-3. Open the unpacked database, which runs this build's migrations and the stored-documents check. Sign everyone out, queue a full publish (so `public/` matches), and record the restore in the audit log.
-4. Only then move the current `site.db`, `media/` and `media-previous/` (and `analytics.db` when the archive has it) into `DATA_DIR/before-restore-<time>/`, not deleted, and move the restored ones in. A database-only archive leaves media as it is.
+3. Open the unpacked database, which runs this build's migrations and the stored-documents check. Check it against the media store it names (the bundled one, or its own provider's, opened with `BACKUP_SECRET_KEY`), and list every file it names that the store doesn't have. An archive from before the media store has its `media/` folders put in the store first. Sign everyone out, queue a full publish (so `public/` and the published bucket match), and record the restore in the audit log.
+4. Only then move the current `site.db` (and `analytics.db` when the archive has it) into `DATA_DIR/before-restore-<time>/`, not deleted, and move the restored ones in. Media in the store is never changed by a restore: missing files come back from the off-site media copy or the bucket's old versions.
 
 Accounts, passwords and two-factor go back to how they were when the backup was made. A failure at any step before 4 leaves the site untouched.
 

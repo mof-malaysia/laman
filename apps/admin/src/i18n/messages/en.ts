@@ -556,18 +556,18 @@ export const en = {
   "settings.backups.help.failed.q": "A backup failed.",
   "settings.backups.help.failed.a":
     "Local backup shows the last error. It's usually a full disk or a folder the server can't write to. Fix it, then choose Back up now.",
-  "settings.backups.help.types.q": "Database & media, or database?",
+  "settings.backups.help.types.q": "Database, or database before an upgrade?",
   "settings.backups.help.types.a":
-    "Database & media restores both. Database is much smaller, and restoring it leaves media as it is.",
+    "Every backup is the database. Media is kept in the media storage: see Settings → Media storage. Before an upgrade, the database is backed up again on its own.",
   "settings.backups.help.space.q": "How much disk space do backups need?",
   "settings.backups.help.space.a":
-    "About ten database & media backups, each roughly the size of the media library. There's no limit, so keep an eye on free space.",
+    "Backups hold the database only, so they're small. Media is in the media storage, not in backups. There's no limit, so keep an eye on free space.",
   "settings.backups.help.schedule.q": "How do I change the time or how many are kept?",
   "settings.backups.help.schedule.a":
     "Set BACKUP_SCHEDULE (HH:MM Malaysian time, or off), BACKUP_KEEP_DAILY and BACKUP_KEEP_WEEKLY on the server, then restart it.",
   "settings.backups.help.excluded.q": "What isn't backed up?",
   "settings.backups.help.excluded.a":
-    "The published site, which is rebuilt from the database, and analytics, unless backed up with --with-analytics.",
+    "Media, which the media storage keeps (copied off-site after each backup on the bundled storage); the published site, which is rebuilt from the database; and analytics, unless backed up with --with-analytics.",
   "settings.backups.help.passphrase.q": "What if the cloud passphrase is lost?",
   "settings.backups.help.passphrase.a":
     "Encrypted copies can't be opened without it, by anyone. Set a new one; only new copies use it.",
@@ -589,7 +589,7 @@ export const en = {
   "settings.backups.diskLowHint": "{free} free. Free up space or move BACKUP_DIR to a bigger disk.",
   "settings.backups.confirm.title": "Back up now?",
   "settings.backups.confirm.description":
-    "This saves the database and media to the backup folder. The site stays online.",
+    "This saves the database to the backup folder. The site stays online.",
   "settings.backups.confirm.cloud": "It's also uploaded to cloud storage.",
   "settings.backups.backedUp": "Backup made",
   "settings.backups.couldntStart": "Couldn't start a backup",
@@ -612,8 +612,8 @@ export const en = {
   "settings.backups.details.type": "Type",
   "settings.backups.details.size": "Size",
   "settings.backups.details.file": "File",
-  "settings.backups.details.full": "Database & media",
-  "settings.backups.details.dbOnly": "Database",
+  "settings.backups.details.full": "Database",
+  "settings.backups.details.dbOnly": "Database, before an upgrade",
   "settings.backups.details.restore":
     "To restore, stop the server and run this (steps in docs/install-docker.md):",
   "settings.backups.offsiteFailed": "Off-site copy failed",
@@ -703,6 +703,61 @@ export const en = {
   "settings.offsite.prune": "Delete old copies from the storage",
   "settings.offsite.pruneHint":
     "Daily and manual after 30 days, monthly after a year, upgrade after 90 days. Needs keys that can delete; lifecycle rules are safer.",
+
+  "settings.storage": "Media storage",
+  "settings.storage.description":
+    "Where the media library's files are kept. Every bucket is private: officers open files through links that expire in minutes.",
+  "settings.storage.loadFailed":
+    "The media storage couldn't be loaded. Refresh the page to try again.",
+  "settings.storage.inUse": "In use",
+  "settings.storage.bundled": "Bundled storage, on this server",
+  "settings.storage.own": "Your own storage: {provider}",
+  "settings.storage.files": "Files",
+  "settings.storage.filesCount": "{live} in the library, {deleted} in Recently deleted",
+  "settings.storage.ownHint":
+    "Visitors get published files from the address above. Turn on the buckets' versioning, so a deleted or replaced file can be got back: the install guide has the lifecycle rule.",
+  "settings.storage.bundledCopied":
+    "Media is copied to the cloud backup storage after each backup, sending only new files.",
+  "settings.storage.noCopy": "Media has no copy off this server",
+  "settings.storage.noCopyHint":
+    "Backups hold the database only. Turn on Cloud backup, and media is copied there after each backup.",
+  "settings.storage.openBackups": "Open Backups",
+  "settings.storage.locked": "Locked: the library has {count} files",
+  "settings.storage.locked.one": "Locked: the library has 1 file",
+  "settings.storage.lockedHint":
+    "Laman never copies files from one storage to another, so the storage can change only while the media library is empty. Files in Recently deleted don't count.",
+  "settings.storage.lockedOwnHint":
+    "The keys and the published files' address can still change. To use other buckets or go back to bundled storage, delete every file in the media library first; files in Recently deleted don't count.",
+  "settings.storage.noKeyHint":
+    "It seals the secret key. Set it on the server and restart the builder to use your own storage.",
+  "settings.storage.useOwn": "Use your own storage",
+  "settings.storage.change": "Change storage",
+  "settings.storage.changeKeys": "Change keys or address",
+  "settings.storage.remove": "Go back to bundled storage",
+  "settings.storage.remove.title": "Go back to bundled storage?",
+  "settings.storage.remove.body":
+    "New uploads go to the storage on this server. Nothing is deleted from your buckets.",
+  "settings.storage.purge": "{count} files in Recently deleted will be deleted for good",
+  "settings.storage.purge.one": "1 file in Recently deleted will be deleted for good",
+  "settings.storage.purgeHint":
+    "They stay in the old storage, so they can't be put back afterwards.",
+  "settings.storage.confirm.title": "Change the media storage?",
+  "settings.storage.confirm.body": "New uploads go to the storage you've set up.",
+  "settings.storage.confirm": "Change storage",
+  "settings.storage.privateBucket": "Private bucket",
+  "settings.storage.privateHint": "Uploads, their smaller copies and replaced files.",
+  "settings.storage.publishedBucket": "Published bucket",
+  "settings.storage.publishedHint": "Copies of the files live pages use, made at each publish.",
+  "settings.storage.publicUrl": "Published files' address",
+  "settings.storage.publicUrlHint":
+    "Your CDN with access to the published bucket, or the bucket's own address if it's public-read. Published pages link here.",
+  "settings.storage.secretHint": "These keys must be able to read, write, list and delete.",
+  "settings.storage.keyNote":
+    "The secret key is sealed with BACKUP_SECRET_KEY. A restored site needs the same BACKUP_SECRET_KEY to reach this storage: keep a copy outside this server.",
+  "settings.storage.testFirst": "Test the connection first: it must pass before saving.",
+  "settings.storage.testOk": "Connected to both buckets. These settings can be saved.",
+  "settings.storage.testFailedPrivate": "The private bucket failed. {error}",
+  "settings.storage.testFailedPublished": "The published bucket failed. {error}",
 
   "nav.target": "Goes to",
   "nav.target.url": "Another website",
@@ -2391,6 +2446,8 @@ export const en = {
   "audit.action.backupRestored": "Restored a backup",
   "audit.action.offsiteChanged": "Changed the off-site copy settings",
   "audit.action.offsiteTested": "Tested the off-site connection",
+  "audit.action.mediaStorageChanged": "Changed the media storage",
+  "audit.action.mediaStorageTested": "Tested a media storage connection",
   "audit.action.calendarSourceChanged": "Changed a calendar source",
   "audit.action.calendarSynced": "Calendar sync changed events",
   "audit.action.agentConnected": "Connected an agent",

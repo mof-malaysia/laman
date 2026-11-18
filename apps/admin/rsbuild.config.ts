@@ -36,6 +36,7 @@ export default defineConfig({
           "/render",
           "/_astro",
           "/media",
+          "/media-store",
           "/healthz",
           "/docs",
           "/openapi.json",

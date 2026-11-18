@@ -1,16 +1,18 @@
 /**
- * The media library. Each file lives in DATA_DIR/media/<id>/: the original
- * (original.<ext>) and, for raster images, narrower WebP copies made by a
- * job (w<width>.webp). Pages refer to files by id, so replacing a file
- * updates every use; the file before it waits in DATA_DIR/media-previous/<id>/
- * (outside what the publisher copies) so it can be put back. A usage index,
- * rewritten on every save, says who uses what. Deleting moves a file to
- * Recently deleted; it is purged after TRASH_DAYS unless a page's history
- * still refers to it.
+ * The media library. Each file lives in the media store's private bucket
+ * under media/<id>/: the original (original.<ext>) and, for raster images,
+ * narrower WebP copies made by a job (w<width>.webp). Pages refer to files by
+ * id, so replacing a file updates every use; the file before it waits under
+ * previous/<id>/ so it can be put back. A usage index, rewritten on every
+ * save, says who uses what. Deleting moves a file to Recently deleted; it is
+ * purged after TRASH_DAYS unless a page's history still refers to it.
+ *
+ * Files are addressed as `/media/<id>/<file>?v=…` everywhere they're stored
+ * or rendered; `MediaAddress` turns that into a link a reader can open: a
+ * presigned link for the admin, the canvas and previews, the published
+ * address for a publish.
  */
 import { randomUUID } from "node:crypto";
-import { mkdir, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
-import { join } from "node:path";
 import { type MediaInfo, type PageDocument, mediaIdsOf } from "@laman/blocks";
 import type { Media, MediaDetail, MediaKind, MediaList, WaitingItem } from "@laman/contracts";
 import type { ExpressionBuilder, Selectable } from "kysely";
@@ -21,6 +23,7 @@ import { HttpError } from "../errors.js";
 import { TRASH_DAYS } from "./history.js";
 import { Tree } from "./tree.js";
 import { actingUser } from "../auth/acting.js";
+import { type MediaStore, deletePrefix, movePrefix } from "../media-store/index.js";
 
 /** Widths of the copies made for srcset; only those narrower than the original. */
 export const VARIANT_WIDTHS = [480, 960, 1600] as const;
@@ -117,11 +120,11 @@ export function svgProblem(svg: string): string | undefined {
   return undefined;
 }
 
-/** The library's folders in DATA_DIR: each file's own, and the one before its last replace. */
-export const MEDIA_DIR = "media";
-export const PREVIOUS_DIR = "media-previous";
-const dirOf = (dataDir: string, id: string) => join(dataDir, MEDIA_DIR, id);
-const previousDirOf = (dataDir: string, id: string) => join(dataDir, PREVIOUS_DIR, id);
+/** Where a file's objects are in the private bucket: its own, and the one before its last replace. */
+export const MEDIA_PREFIX = "media/";
+export const PREVIOUS_PREFIX = "previous/";
+const folderOf = (id: string) => `${MEDIA_PREFIX}${id}/`;
+const previousFolderOf = (id: string) => `${PREVIOUS_PREFIX}${id}/`;
 /**
  * A file's address. A replaced file keeps its name, so its addresses carry
  * when it was replaced: browsers (the admin's and visitors') then fetch the
@@ -131,16 +134,65 @@ const urlOf = (id: string, file: string, replacedAt?: string | null) =>
   `/media/${id}/${file}${replacedAt ? `?v=${Date.parse(replacedAt).toString(36)}` : ""}`;
 const variantFile = (width: number) => `w${width}.webp`;
 
+/** Turns a file's address into a link its reader can open. */
+export type MediaAddress = (path: string) => string;
+
+const ADDRESS = /^\/media\/([0-9a-f-]{36})\/([\w.-]+)(?:\?v=([0-9a-z]+))?$/;
+
+/** A presigned link to the file at `path` in the private bucket: for the admin, the canvas and previews. */
+export const privateLinks =
+  (store: MediaStore): MediaAddress =>
+  (path) => {
+    const match = ADDRESS.exec(path);
+    if (!match) return path;
+    const [, id, file, version] = match;
+    const since = version ? new Date(Number.parseInt(version, 36)) : undefined;
+    return store.link("private", `${MEDIA_PREFIX}${id}/${file}`, since);
+  };
+
+/** The published address of the file at `path`: for a publish. */
+export const publicLinks =
+  (store: MediaStore): MediaAddress =>
+  (path) =>
+    ADDRESS.test(path) ? store.publicLink(path) : path;
+
+/**
+ * `value` with every file address in it turned into a link by `address`: a
+ * render input just before rendering, wherever its media came from (blocks,
+ * the logo, entry covers).
+ */
+export function addressed<T>(value: T, address: MediaAddress): T {
+  const walk = (v: unknown): unknown => {
+    if (typeof v === "string") return v.startsWith("/media/") ? address(v) : v;
+    if (Array.isArray(v)) return v.map(walk);
+    if (v && typeof v === "object")
+      return Object.fromEntries(Object.entries(v).map(([k, inner]) => [k, walk(inner)]));
+    return v;
+  };
+  return walk(value) as T;
+}
+
+/** The object keys of a file's original, and of the one before its last replace. */
+const originalKey = (id: string, ext: string) => `${folderOf(id)}original.${ext}`;
+const previousKey = (id: string, ext: string) => `${previousFolderOf(id)}original.${ext}`;
+/** A link to the file before the last replace: never published, so only ever presigned. */
+const previousUrl = (
+  store: MediaStore,
+  id: string,
+  previous: { ext: string; replaced_at: string },
+) => store.link("private", previousKey(id, previous.ext), new Date(previous.replaced_at));
+
 /**
  * A row as the API shows it. `live` is when the last publish was queued: a
  * file replaced after it, that something uses, isn't on the live site yet.
  */
 function toMedia(
   row: Selectable<MediaTable> & { used_by?: number | string | null },
-  live?: string | null,
+  live: string | null | undefined,
+  address: MediaAddress,
 ): Media {
   const variants = JSON.parse(row.variants) as number[];
-  const original = urlOf(row.id, `original.${row.ext}`, row.replaced_at);
+  const original = address(urlOf(row.id, `original.${row.ext}`, row.replaced_at));
   const thumb = variants.find((w) => w >= THUMBNAIL_WIDTH) ?? variants.at(-1);
   return {
     id: row.id,
@@ -157,7 +209,7 @@ function toMedia(
     variants,
     status: row.status,
     url: original,
-    thumbnailUrl: thumb ? urlOf(row.id, variantFile(thumb), row.replaced_at) : original,
+    thumbnailUrl: thumb ? address(urlOf(row.id, variantFile(thumb), row.replaced_at)) : original,
     usedBy: Number(row.used_by ?? 0),
     notLive: Boolean(
       row.replaced_at && Number(row.used_by ?? 0) && (!live || row.replaced_at > live),
@@ -188,6 +240,7 @@ const usedBy = (eb: ExpressionBuilder<Database, "media">) =>
 
 export async function listMedia(
   db: Db,
+  store: MediaStore,
   query: {
     search?: string | undefined;
     kind?: MediaKind | undefined;
@@ -247,7 +300,7 @@ export async function listMedia(
     lastPublishAt(db),
   ]);
   return {
-    items: rows.map((row) => toMedia(row, live)),
+    items: rows.map((row) => toMedia(row, live, privateLinks(store))),
     total: Number(total.n),
     needsAlt: Number(counts.needsAlt ?? 0),
     deleted: Number(counts.deleted ?? 0),
@@ -255,7 +308,7 @@ export async function listMedia(
   };
 }
 
-export async function getMedia(db: Db, id: string): Promise<MediaDetail> {
+export async function getMedia(db: Db, store: MediaStore, id: string): Promise<MediaDetail> {
   const row = await db
     .selectFrom("media")
     .selectAll("media")
@@ -289,11 +342,12 @@ export async function getMedia(db: Db, id: string): Promise<MediaDetail> {
     ? (JSON.parse(row.previous) as {
         filename: string;
         type: string;
+        ext: string;
         replaced_at: string;
       })
     : null;
   return {
-    ...toMedia(row, live),
+    ...toMedia(row, live, privateLinks(store)),
     usedOn: pages.map((p) => ({
       id: p.id,
       title: (JSON.parse(p.draft) as PageDocument).ms.title,
@@ -306,8 +360,7 @@ export async function getMedia(db: Db, id: string): Promise<MediaDetail> {
           filename: previous.filename,
           kind: previous.type === "application/pdf" ? ("document" as const) : ("image" as const),
           replacedAt: previous.replaced_at,
-          // Outside what the publisher copies, so the admin reads it through the API.
-          url: `/api/media/${row.id}/previous/file?v=${Date.parse(previous.replaced_at).toString(36)}`,
+          url: previousUrl(store, row.id, previous),
         }
       : null,
   };
@@ -391,7 +444,7 @@ function check(upload: Upload, maxBytes: number) {
 }
 
 /** Checks and stores a file; raster images then wait for their variants. */
-async function store(dataDir: string, id: string, upload: Upload, maxBytes: number) {
+async function storeUpload(media: MediaStore, id: string, upload: Upload, maxBytes: number) {
   const detected = check(upload, maxBytes);
   if (detected.ext === "svg") {
     const problem = svgProblem(upload.bytes.toString("utf8"));
@@ -406,22 +459,20 @@ async function store(dataDir: string, id: string, upload: Upload, maxBytes: numb
   // Photos carry EXIF (where it was taken, the camera's owner): the original
   // is published too, so it's rewritten without it, upright.
   const bytes = raster ? await withoutMetadata(upload.bytes) : upload.bytes;
-  const dir = dirOf(dataDir, id);
-  await rm(dir, { recursive: true, force: true });
-  await mkdir(dir, { recursive: true });
-  await writeFile(join(dir, `original.${detected.ext}`), bytes);
+  // A new id, or one whose objects a replace just moved aside: nothing to clear first.
+  await media.put("private", originalKey(id, detected.ext), bytes, detected.type);
   const size = detected.kind === "image" ? await dimensions(bytes) : { width: null, height: null };
   return { ...detected, bytes, raster, ...size };
 }
 
 export async function createMedia(
   db: Db,
-  dataDir: string,
+  media: MediaStore,
   upload: Upload,
   maxBytes: number,
 ): Promise<{ media: MediaDetail; needsVariants: boolean }> {
   const id = randomUUID();
-  const file = await store(dataDir, id, upload, maxBytes);
+  const file = await storeUpload(media, id, upload, maxBytes);
   const time = now();
   await db
     .insertInto("media")
@@ -439,7 +490,7 @@ export async function createMedia(
       updated_at: time,
     })
     .execute();
-  return { media: await getMedia(db, id), needsVariants: file.raster };
+  return { media: await getMedia(db, media, id), needsVariants: file.raster };
 }
 
 /** The row fields a replace changes, kept so the file before it can be put back. */
@@ -462,7 +513,7 @@ const FILE_FIELDS = [
  */
 export async function replaceMedia(
   db: Db,
-  dataDir: string,
+  media: MediaStore,
   id: string,
   upload: Upload,
   maxBytes: number,
@@ -471,11 +522,9 @@ export async function replaceMedia(
   if (!row) throw notFound();
   check(upload, maxBytes);
   const time = now();
-  const previousDir = previousDirOf(dataDir, id);
-  await rm(previousDir, { recursive: true, force: true });
-  await mkdir(join(dataDir, PREVIOUS_DIR), { recursive: true });
-  await rename(dirOf(dataDir, id), previousDir).catch(() => undefined);
-  const file = await store(dataDir, id, upload, maxBytes);
+  await deletePrefix(media, "private", previousFolderOf(id));
+  await movePrefix(media, "private", folderOf(id), previousFolderOf(id));
+  const file = await storeUpload(media, id, upload, maxBytes);
   await db
     .updateTable("media")
     .set({
@@ -497,11 +546,11 @@ export async function replaceMedia(
     })
     .where("id", "=", id)
     .execute();
-  return { media: await getMedia(db, id), needsVariants: file.raster };
+  return { media: await getMedia(db, media, id), needsVariants: file.raster };
 }
 
-/** The file before the last replace, for the admin to show before putting it back. */
-export async function previousFile(db: Db, dataDir: string, id: string) {
+/** A link to the file before the last replace, for the admin to show before putting it back. */
+export async function previousLink(db: Db, media: MediaStore, id: string) {
   const row = await db
     .selectFrom("media")
     .select("previous")
@@ -509,15 +558,11 @@ export async function previousFile(db: Db, dataDir: string, id: string) {
     .executeTakeFirst();
   if (!row?.previous)
     throw new HttpError(404, "no_previous_file", "This file hasn't been replaced");
-  const previous = JSON.parse(row.previous) as { ext: string; type: string };
-  return {
-    path: join(previousDirOf(dataDir, id), `original.${previous.ext}`),
-    type: previous.type,
-  };
+  return previousUrl(media, id, JSON.parse(row.previous) as { ext: string; replaced_at: string });
 }
 
 /** Puts back the file before the last replace; the one it replaces becomes the previous, so this can be undone too. */
-export async function restorePrevious(db: Db, dataDir: string, id: string) {
+export async function restorePrevious(db: Db, media: MediaStore, id: string) {
   const row = await db.selectFrom("media").selectAll().where("id", "=", id).executeTakeFirst();
   if (!row) throw notFound();
   if (!row.previous)
@@ -527,13 +572,11 @@ export async function restorePrevious(db: Db, dataDir: string, id: string) {
       "This file hasn't been replaced, so there is nothing to put back",
     );
   const previous = JSON.parse(row.previous) as Record<(typeof FILE_FIELDS)[number], never>;
-  const dir = dirOf(dataDir, id);
-  const previousDir = previousDirOf(dataDir, id);
-  const swap = `${previousDir}.swap`;
-  await rm(swap, { recursive: true, force: true });
-  await rename(dir, swap);
-  await rename(previousDir, dir);
-  await rename(swap, previousDir);
+  const swap = `swap/${id}/`;
+  await deletePrefix(media, "private", swap);
+  await movePrefix(media, "private", folderOf(id), swap);
+  await movePrefix(media, "private", previousFolderOf(id), folderOf(id));
+  await movePrefix(media, "private", swap, previousFolderOf(id));
   const time = now();
   await db
     .updateTable("media")
@@ -548,28 +591,28 @@ export async function restorePrevious(db: Db, dataDir: string, id: string) {
     })
     .where("id", "=", id)
     .execute();
-  return getMedia(db, id);
+  return getMedia(db, media, id);
 }
 
 /** The variants job: WebP copies at each width narrower than the original. */
-export async function makeVariants(db: Db, dataDir: string, id: string) {
+export async function makeVariants(db: Db, media: MediaStore, id: string) {
   const row = await db.selectFrom("media").selectAll().where("id", "=", id).executeTakeFirst();
   if (!row) return { variants: 0 };
   const { default: sharp } = await import("sharp");
-  const dir = dirOf(dataDir, id);
   try {
-    const original = join(dir, `original.${row.ext}`);
+    const original = await media.read("private", originalKey(id, row.ext));
     const widths = VARIANT_WIDTHS.filter((w) => !row.width || w < row.width);
     // An image narrower than every width still gets one copy at its own size.
     if (!widths.length && row.width) widths.push(row.width as (typeof VARIANT_WIDTHS)[number]);
     let bytes = 0;
     for (const width of widths) {
-      const info = await sharp(original)
+      const copy = await sharp(original)
         .rotate()
         .resize({ width, withoutEnlargement: true })
         .webp({ quality: 80 })
-        .toFile(join(dir, variantFile(width)));
-      bytes += info.size;
+        .toBuffer();
+      await media.put("private", `${folderOf(id)}${variantFile(width)}`, copy, "image/webp");
+      bytes += copy.length;
     }
     await db
       .updateTable("media")
@@ -585,6 +628,7 @@ export async function makeVariants(db: Db, dataDir: string, id: string) {
 
 export async function updateMedia(
   db: Db,
+  media: MediaStore,
   id: string,
   input: {
     alt?: string | undefined;
@@ -604,12 +648,12 @@ export async function updateMedia(
     .where("id", "=", id)
     .executeTakeFirst();
   if (result.numUpdatedRows === 0n) throw notFound();
-  return getMedia(db, id);
+  return getMedia(db, media, id);
 }
 
 /** Moves a file nobody uses to Recently deleted; a file in use says where. */
-export async function deleteMedia(db: Db, id: string) {
-  const media = await getMedia(db, id);
+export async function deleteMedia(db: Db, store: MediaStore, id: string) {
+  const media = await getMedia(db, store, id);
   if (media.usedOn.length || media.usedBySettings) {
     const names = media.usedOn.map((p) =>
       p.deleted ? `${p.title} (in Recently deleted)` : p.title,
@@ -623,18 +667,18 @@ export async function deleteMedia(db: Db, id: string) {
   }
   if (media.deletedAt) return media;
   await db.updateTable("media").set({ deleted_at: now() }).where("id", "=", id).execute();
-  return getMedia(db, id);
+  return getMedia(db, store, id);
 }
 
 /** Brings a file back from Recently deleted. */
-export async function restoreMedia(db: Db, id: string) {
+export async function restoreMedia(db: Db, store: MediaStore, id: string) {
   const result = await db
     .updateTable("media")
     .set({ deleted_at: null })
     .where("id", "=", id)
     .executeTakeFirst();
   if (result.numUpdatedRows === 0n) throw notFound();
-  return getMedia(db, id);
+  return getMedia(db, store, id);
 }
 
 /**
@@ -642,7 +686,7 @@ export async function restoreMedia(db: Db, id: string) {
  * earlier version of a page still refers to: restoring that version would
  * otherwise show a missing image.
  */
-export async function purgeDeletedMedia(db: Db, dataDir: string) {
+export async function purgeDeletedMedia(db: Db, store: MediaStore) {
   const cutoff = new Date(Date.now() - TRASH_DAYS * 86_400_000).toISOString();
   const old = await db.selectFrom("media").select("id").where("deleted_at", "<", cutoff).execute();
   for (const { id } of old) {
@@ -652,11 +696,31 @@ export async function purgeDeletedMedia(db: Db, dataDir: string) {
       .where("content", "like", `%${id}%`)
       .limit(1)
       .executeTakeFirst();
-    if (inHistory) continue;
-    await db.deleteFrom("media").where("id", "=", id).execute();
-    await rm(dirOf(dataDir, id), { recursive: true, force: true });
-    await rm(previousDirOf(dataDir, id), { recursive: true, force: true });
+    if (!inHistory) await purgeFile(db, store, id);
   }
+}
+
+/** A file gone for good: its row, and its objects in the private bucket. */
+async function purgeFile(db: Db, store: MediaStore | null, id: string) {
+  await db.deleteFrom("media").where("id", "=", id).execute();
+  if (!store) return;
+  await deletePrefix(store, "private", folderOf(id));
+  await deletePrefix(store, "private", previousFolderOf(id));
+}
+
+/**
+ * Empties Recently deleted now, history or not: before the media storage
+ * changes, since the files stay behind in the old store. They can't be put
+ * back after this. With no store (its setup can't be opened), only the rows go.
+ */
+export async function purgeAllDeleted(db: Db, store: MediaStore | null) {
+  const deleted = await db
+    .selectFrom("media")
+    .select("id")
+    .where("deleted_at", "is not", null)
+    .execute();
+  for (const { id } of deleted) await purgeFile(db, store, id);
+  return deleted.length;
 }
 
 /** Rewrites the usage index for one owner from the values it holds. */
@@ -716,7 +780,7 @@ export async function mediaInfo(db: Db, values: unknown[]): Promise<Record<strin
     .execute();
   return Object.fromEntries(
     rows.map((row) => {
-      const media = toMedia(row);
+      const media = toMedia(row, null, (path) => path);
       const variants = media.variants.map((width) => ({
         url: urlOf(row.id, variantFile(width), row.replaced_at),
         width,
@@ -759,12 +823,36 @@ export async function mediaTotals(db: Db) {
   };
 }
 
-/** The media folders of `ids`, for the publisher to copy. */
-export async function mediaFolders(dataDir: string, ids: Set<string>) {
-  const root = join(dataDir, MEDIA_DIR);
-  const present = await readdir(root).catch(() => [] as string[]);
-  const out: string[] = [];
-  for (const id of present)
-    if (ids.has(id) && (await stat(join(root, id))).isDirectory()) out.push(join(root, id));
-  return out;
+/** The objects of the files in `ids`, for the publisher to copy to the published bucket. */
+export async function mediaObjects(store: MediaStore, ids: Set<string>) {
+  if (!ids.size) return [];
+  return (await store.list("private", MEDIA_PREFIX)).filter((object) =>
+    ids.has(object.key.slice(MEDIA_PREFIX.length).split("/")[0] ?? ""),
+  );
+}
+
+/**
+ * What the database names that the store doesn't have: `media/<id>` for a
+ * file, `previous/<id>` for the one before its last replace. For backups and
+ * restores, as the backup manifest's `missing`.
+ */
+export async function missingMedia(
+  db: Pick<Db, "selectFrom">,
+  store: MediaStore,
+): Promise<string[]> {
+  const rows = await db.selectFrom("media").select(["id", "previous", "ext"]).execute();
+  if (!rows.length) return [];
+  const listed = await Promise.all([
+    store.list("private", MEDIA_PREFIX),
+    store.list("private", PREVIOUS_PREFIX),
+  ]);
+  const keys = new Set(listed.flat().map((o) => o.key));
+  const missing: string[] = [];
+  for (const row of rows) {
+    if (!keys.has(originalKey(row.id, row.ext))) missing.push(`${MEDIA_PREFIX}${row.id}`);
+    const previous = row.previous && (JSON.parse(row.previous) as { ext: string });
+    if (previous && !keys.has(previousKey(row.id, previous.ext)))
+      missing.push(`${PREVIOUS_PREFIX}${row.id}`);
+  }
+  return missing;
 }

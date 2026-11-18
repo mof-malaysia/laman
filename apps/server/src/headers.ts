@@ -3,8 +3,10 @@
  * media library, docs) and the published site get what suits each.
  *
  * SVG is the one file type that can carry script, and the builder serves it
- * from its own origin (the media library, and the published copies), so any
- * SVG response is sandboxed: opened directly, nothing in it runs.
+ * from its own origin (the bundled media store's files, private and
+ * published), so any SVG response is sandboxed: opened directly, nothing in
+ * it runs. An agency's own media storage is another origin: the admin's
+ * images may come from there, through presigned links.
  */
 import type { FastifyInstance } from "fastify";
 import { builderPath, decodedPath, docsPath } from "./paths.js";
@@ -19,28 +21,30 @@ const framing = "frame-ancestors 'self'; base-uri 'self'; object-src 'none'; for
  * search preview's Pagefind. Styles may be inline: React sets style
  * attributes, and the canvas carries the site's colours and the editor's overlay.
  */
-const builderPolicy = [
-  "default-src 'self'",
-  "script-src 'self' 'wasm-unsafe-eval'",
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
-  "font-src 'self' data:",
-  "connect-src 'self'",
-  "frame-src 'self'",
-  framing,
-].join("; ");
+const builderPolicy = (media: string | null) =>
+  [
+    "default-src 'self'",
+    "script-src 'self' 'wasm-unsafe-eval'",
+    "style-src 'self' 'unsafe-inline'",
+    `img-src 'self' data: blob:${media ? ` ${media}` : ""}`,
+    "font-src 'self' data:",
+    "connect-src 'self'",
+    "frame-src 'self'",
+    framing,
+  ].join("; ");
 /** The API reference (Scalar) runs an inline script of its own: only the framing rules. */
 const docsPolicy = framing;
 const sitePolicy = "base-uri 'self'; object-src 'none'";
 
 /** The policy for a response: SVG anywhere is sandboxed; then by where it is. */
-function policyFor(path: string, type: string) {
+function policyFor(path: string, type: string, media: string | null) {
   if (type.startsWith("image/svg+xml")) return svgPolicy;
   if (docsPath.test(path)) return docsPolicy;
-  return builderPath.test(path) ? builderPolicy : sitePolicy;
+  return builderPath.test(path) ? builderPolicy(media) : sitePolicy;
 }
 
-export function useSecurityHeaders(app: FastifyInstance) {
+/** `mediaOrigin`: where the admin's presigned media links point, when that isn't the builder. */
+export function useSecurityHeaders(app: FastifyInstance, mediaOrigin: () => string | null) {
   app.addHook("onSend", async (request, reply) => {
     // As the guard reads it, so no spelling of a builder path gets the site's policy.
     const path = decodedPath(request.url);
@@ -48,7 +52,7 @@ export function useSecurityHeaders(app: FastifyInstance) {
     reply.header("x-content-type-options", "nosniff");
     reply.header(
       "content-security-policy",
-      policyFor(path, String(reply.getHeader("content-type") ?? "")),
+      policyFor(path, String(reply.getHeader("content-type") ?? ""), mediaOrigin()),
     );
     reply.header("referrer-policy", builder ? "same-origin" : "strict-origin-when-cross-origin");
     if (builder) reply.header("x-frame-options", "SAMEORIGIN");

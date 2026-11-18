@@ -26,7 +26,10 @@
         "DATA_DIR",
         "LOG_LEVEL",
         "BACKUP_DIR",
-        "BACKUP_SECRET_KEY"
+        "BACKUP_SECRET_KEY",
+        "MEDIA_STORE_ENDPOINT",
+        "MEDIA_STORE_ACCESS_KEY_ID",
+        "MEDIA_STORE_SECRET_ACCESS_KEY"
       ]
     }
   }

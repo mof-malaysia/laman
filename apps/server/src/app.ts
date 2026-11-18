@@ -1,6 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, statSync } from "node:fs";
+import { rename, rm } from "node:fs/promises";
 import { basename, join, resolve, sep } from "node:path";
+import { Readable } from "node:stream";
+import type { ReadableStream as WebReadableStream } from "node:stream/web";
 import compress from "@fastify/compress";
 import cors from "@fastify/cors";
 import multipart from "@fastify/multipart";
@@ -11,7 +14,7 @@ import { NOT_FOUND_FILE } from "@laman/blocks";
 import Fastify, { type FastifyReply, type FastifyServerOptions } from "fastify";
 import { makeVariants, purgeDeletedMedia } from "./content/media.js";
 import { seedIfEmpty } from "./content/seed.js";
-import { type Db, openDatabase } from "./db/index.js";
+import { type Db, now, openDatabase } from "./db/index.js";
 import type { Env } from "./env.js";
 import { errorHandler, notFoundHandler } from "./errors.js";
 import { Jobs } from "./jobs.js";
@@ -29,7 +32,24 @@ import type {
   OffsiteFolder,
   PublishPayload,
 } from "@laman/contracts";
-import { backupDirOf, listBackups, makeBackup, nextRun, retentionOf } from "./backup.js";
+import {
+  backupDirOf,
+  fileTime,
+  importMediaFolders,
+  listBackups,
+  makeBackup,
+  nextRun,
+  retentionOf,
+} from "./backup.js";
+import {
+  type Bucket,
+  MediaStorage,
+  PASSED,
+  bundledConfig,
+  type MediaStore,
+  STORE_PATH,
+} from "./media-store/index.js";
+import { mirrorMedia } from "./offsite/mirror.js";
 import { runPublish } from "./content/publishing.js";
 import {
   describeError,
@@ -65,6 +85,7 @@ import { calendarRoutes } from "./routes/calendar.js";
 import { mcpRoutes } from "./routes/mcp.js";
 import { oauthRoutes } from "./routes/oauth.js";
 import { mediaRoutes } from "./routes/media.js";
+import { mediaStorageRoutes } from "./routes/media-storage.js";
 import { pageRoutes } from "./routes/pages.js";
 import { renderRoutes } from "./routes/render.js";
 import { preferenceRoutes } from "./routes/preferences.js";
@@ -80,6 +101,8 @@ declare module "fastify" {
     analytics: { db: AnalyticsDb; collector: Collector };
     /** BUILDER_URL: the address agents sign in against, when it's set. */
     builderUrl: string | undefined;
+    /** Where the media library is: the bundled store, or the agency's own provider. */
+    mediaStorage: MediaStorage;
   }
 }
 
@@ -107,6 +130,8 @@ export type AppOptions = {
   offsiteStore?: (config: StoreConfig) => RemoteStore;
   /** Waits between off-site upload tries; tests make them short. */
   offsiteRetryDelays?: number[];
+  /** The bundled store's buckets: tests use their own. Installs always use laman-media and laman-published. */
+  mediaBuckets?: Record<Bucket, string>;
 };
 
 function logger(env: Env): FastifyServerOptions["logger"] {
@@ -148,6 +173,25 @@ function fileUnder(root: string, file: string) {
   const full = resolve(root, file);
   return full.startsWith(root + sep) && existsSync(full) && statSync(full).isFile();
 }
+
+/** An object from the store as the response: its status, headers and body. */
+const sendObject = async (
+  reply: FastifyReply,
+  store: MediaStore,
+  bucket: Bucket,
+  key: string,
+  headers: Record<string, string | string[] | undefined>,
+) => {
+  const object = await store.open(bucket, key, {
+    range: headers.range as string | undefined,
+    ifNoneMatch: headers["if-none-match"] as string | undefined,
+  });
+  if (!object) return notFoundHandler(reply.request, reply);
+  return reply
+    .status(object.status)
+    .headers(object.headers)
+    .send(object.body ?? "");
+};
 
 export async function buildApp(options: AppOptions) {
   const { env } = options;
@@ -195,18 +239,48 @@ export async function buildApp(options: AppOptions) {
       return made;
     },
   });
+  const mediaStorage = new MediaStorage(db, bundledConfig(env, options.mediaBuckets), secretKey);
+  // The bundled store's buckets, made on the first boot.
+  await mediaStorage.bundled.ensureBuckets().catch((error: unknown) => {
+    throw new Error(
+      `The bundled media store at ${env.MEDIA_STORE_ENDPOINT} can't be reached or refused the keys (MEDIA_STORE_ACCESS_KEY_ID, MEDIA_STORE_SECRET_ACCESS_KEY): ${describeError(error)}`,
+      { cause: error },
+    );
+  });
+  /** The store in use, or null when its setup can't be opened (logged; media requests say why). */
+  const media = await mediaStorage.current().catch((error: unknown) => {
+    app.log.error({ err: error }, "the media storage can't be opened");
+    return null;
+  });
   await seedIfEmpty(db);
   await seedSuperAdmin(db, env);
   await purgeSessions(db);
   await purgeConnections(db);
   await pruneAudit(db);
   await purgeDeleted(db);
-  await purgeDeletedMedia(db, dataDir);
+  if (media) await purgeDeletedMedia(db, media);
   const jobs = new Jobs(db, app.log);
+  // Media kept in DATA_DIR before the media store: put in the store once, then set aside.
+  const localMedia = ["media", "media-previous"].filter((folder) =>
+    existsSync(join(dataDir, folder)),
+  );
+  if (media && localMedia.length) {
+    const sent = await importMediaFolders(dataDir, media);
+    const at = fileTime(now());
+    for (const folder of localMedia)
+      await rename(join(dataDir, folder), join(dataDir, `${folder}.moved-${at}`));
+    // Published copies from then too: the published bucket has them now.
+    await rm(join(publicDir, "media"), { recursive: true, force: true });
+    app.log.warn(
+      { sent, folders: localMedia },
+      "media moved from DATA_DIR to the media store; the old folders are kept beside it, renamed, to delete once the site looks right",
+    );
+    await jobs.enqueue("publish", { trigger: "rebuild", full: true });
+  }
   jobs.handle("publish", async (payload, job) => {
     const result = await runPublish(
       db,
-      { dataDir, siteUrl: env.SITE_URL },
+      { dataDir, media: await mediaStorage.current(), siteUrl: env.SITE_URL },
       job.id,
       payload as PublishPayload,
     );
@@ -215,7 +289,7 @@ export async function buildApp(options: AppOptions) {
   });
   jobs.handle("media.variants", async (payload) => {
     const { id } = payload as { id: string };
-    return makeVariants(db, dataDir, id);
+    return makeVariants(db, await mediaStorage.current(), id);
   });
   /** Timers that run something every day at a time in Malaysia, cleared on close. */
   const timers: { current?: NodeJS.Timeout }[] = [];
@@ -297,7 +371,13 @@ export async function buildApp(options: AppOptions) {
   }
   jobs.handle("backup", async (payload) => {
     const { trigger } = payload as BackupPayload;
-    const backup = await makeBackup({ dataDir, backupDir, keep, database: databasePath });
+    const backup = await makeBackup({
+      dataDir,
+      backupDir,
+      keep,
+      database: databasePath,
+      media: () => mediaStorage.current(),
+    });
     app.log.info({ file: backup.file, bytes: backup.bytes }, "backup made");
     await copyOffsite(backup.file, await folderFor(db, trigger), trigger);
     return { bytes: backup.bytes, deleted: backup.deleted.length };
@@ -322,7 +402,18 @@ export async function buildApp(options: AppOptions) {
     }).catch(inWords);
     const deleted = stored.prune ? await pruneRemote(store, stored.prefix).catch(inWords) : [];
     app.log.info({ key: copy.key, bytes: copy.bytes, deleted: deleted.length }, "copied off-site");
-    return { bytes: copy.bytes, deleted: deleted.length };
+    // The bundled store is on this server's disk: its media goes off-site after each backup.
+    const library = await mediaStorage.current();
+    const mirrored =
+      library.kind === "bundled" && folder !== "upgrade"
+        ? await mirrorMedia(library, store, stored.prefix).catch(inWords)
+        : null;
+    if (mirrored) app.log.info(mirrored, "media copied off-site");
+    return {
+      bytes: copy.bytes,
+      deleted: deleted.length,
+      ...(mirrored && { mediaSent: mirrored.sent, mediaBytes: mirrored.bytes }),
+    };
   });
   /** The weekly check: the newest copy downloaded and opened as a restore would. */
   jobs.handle("backup.verify", async () => {
@@ -359,6 +450,7 @@ export async function buildApp(options: AppOptions) {
   app.decorate("db", db);
   app.decorate("builderUrl", env.BUILDER_URL);
   app.decorate("jobs", jobs);
+  app.decorate("mediaStorage", mediaStorage);
   app.decorate("analytics", { db: analyticsDb, collector });
   if (options.runJobs ?? true)
     app.addHook("onReady", async () => {
@@ -385,7 +477,7 @@ export async function buildApp(options: AppOptions) {
   useZod(app);
   app.setErrorHandler(errorHandler);
   useGuard(app, db);
-  useSecurityHeaders(app);
+  useSecurityHeaders(app, () => mediaStorage.linkOrigin);
   app.addHook("onSend", async (request, reply) => {
     reply.header("x-request-id", request.id);
   });
@@ -418,7 +510,8 @@ export async function buildApp(options: AppOptions) {
     await builder.register(backupRoutes, { prefix: "/api", secretKey, makeStore });
     const maxBytes = env.MEDIA_MAX_MB * 1024 * 1024;
     await builder.register(multipart, { limits: { fileSize: maxBytes + 1, files: 1 } });
-    await builder.register(mediaRoutes, { prefix: "/api", dataDir, maxBytes });
+    await builder.register(mediaRoutes, { prefix: "/api", maxBytes });
+    await builder.register(mediaStorageRoutes, { prefix: "/api" });
     await builder.register(siteRoutes, { prefix: "/api" });
     await builder.register(preferenceRoutes, { prefix: "/api" });
     await builder.register(summaryRoutes, {
@@ -448,17 +541,11 @@ export async function buildApp(options: AppOptions) {
   });
   await app.register(collectRoutes);
 
-  // The renderer's CSS, fonts and scripts, and media files: the published
-  // copies first, which is what visitors' pages were built with, then the
-  // builder's own, for the canvas and preview.
-  const mediaDir = join(dataDir, "media");
-  mkdirSync(mediaDir, { recursive: true });
-  const publicMedia = join(publicDir, "media");
+  // The renderer's CSS, fonts and scripts: the published copies first, which
+  // is what visitors' pages were built with, then the builder's own, for the
+  // canvas and preview.
   const builderAssets = join(rendererClientDir, "_astro");
   const publicAssets = join(publicDir, "_astro");
-
-  // Each with its own file server: `preCompressed` is per registration, and
-  // the media library has no .br or .gz copies to look for.
 
   // A published page names the CSS and scripts of the renderer that built
   // it; after an upgrade the builder's own have new names, so the page keeps
@@ -480,19 +567,60 @@ export async function buildApp(options: AppOptions) {
     );
   });
 
-  // The whole library for a signed-in officer (the canvas and preview);
-  // for anyone else, only the files published pages use.
-  await app.register(async (media) => {
-    await media.register(fastifyStatic, { root: publicMedia, serve: false, setHeaders });
-    media.get<{ Params: { "*": string } }>(
-      "/media/*",
-      { config: { access: "public" }, schema: { hide: true } },
-      (request, reply) => {
-        const signedIn = request.auth?.session.stage === "full";
-        return reply.sendFile(request.params["*"], signedIn ? mediaDir : publicMedia);
-      },
-    );
-  });
+  // Published media: files live pages use, from the published bucket. On the
+  // bundled store the builder serves them, so neither bucket is reachable
+  // from outside; an agency's own provider has its own address (a CDN).
+  app.get<{ Params: { "*": string } }>(
+    "/media/*",
+    { config: { access: "public" }, schema: { hide: true } },
+    async (request, reply) => {
+      const store = await mediaStorage.current();
+      const path = `/media/${request.params["*"]}`;
+      if (store.kind === "own") return reply.redirect(store.publicLink(path), 302);
+      reply.header("cache-control", "no-cache");
+      return sendObject(reply, store, "published", path.slice(1), request.headers);
+    },
+  );
+
+  // The bundled store's presigned links, passed through as they are: the
+  // store checks the signature and its expiry. Only its private bucket, and
+  // only for a signed-in officer (the admin, the canvas and previews).
+  app.get<{ Params: { "*": string } }>(
+    `${STORE_PATH}/*`,
+    { config: { access: "signedIn" }, schema: { hide: true } },
+    async (request, reply) => {
+      const store = await mediaStorage.current();
+      const path = request.url.slice(STORE_PATH.length);
+      if (store.kind !== "bundled" || !path.startsWith(`/${store.buckets.private}/`))
+        return notFoundHandler(request, reply);
+      const forward: Record<string, string> = {};
+      for (const header of ["range", "if-none-match"] as const) {
+        const value = request.headers[header];
+        if (typeof value === "string") forward[header] = value;
+      }
+      const response = await fetch(new URL(path, env.MEDIA_STORE_ENDPOINT), { headers: forward });
+      for (const header of PASSED) {
+        const value = response.headers.get(header);
+        if (value) reply.header(header, value);
+      }
+      // Each link is its own address and works for minutes: the browser may keep it that long.
+      reply.header("cache-control", "private, max-age=300");
+      reply.status(response.status);
+      if (!response.ok || !response.body) {
+        await response.body?.cancel();
+        if (response.status === 304) return reply.send();
+        // The store's XML error isn't for officers: an expired or wrong link is just refused.
+        return reply
+          .type("text/plain; charset=utf-8")
+          .send(
+            response.status === 403
+              ? "This link has expired. Open the file again from the media library.\n"
+              : "",
+          );
+      }
+      return reply.send(Readable.fromWeb(response.body as WebReadableStream));
+    },
+  );
 
   // A real 301 or 302 before a redirect's HTML page, and one form of each
   // page's address: links, the sitemap and canonical links write "/berita", so

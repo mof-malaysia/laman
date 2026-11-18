@@ -1,5 +1,4 @@
 /** The media library: upload, list, describe, replace (and undo it), delete and restore files. */
-import { createReadStream } from "node:fs";
 import type { FastifyPluginAsync } from "fastify";
 import type { z } from "zod";
 import {
@@ -15,7 +14,7 @@ import {
   deleteMedia,
   getMedia,
   listMedia,
-  previousFile,
+  previousLink,
   purgeDeletedMedia,
   replaceMedia,
   restoreMedia,
@@ -26,11 +25,9 @@ import { readUpload } from "../multipart.js";
 
 type Params = z.infer<typeof MediaParams>;
 
-export const mediaRoutes: FastifyPluginAsync<{ dataDir: string; maxBytes: number }> = async (
-  app,
-  { dataDir, maxBytes },
-) => {
+export const mediaRoutes: FastifyPluginAsync<{ maxBytes: number }> = async (app, { maxBytes }) => {
   const { db, jobs } = app;
+  const store = () => app.mediaStorage.current();
   const multipart = {
     summary: "",
     tags: ["media"],
@@ -51,8 +48,8 @@ export const mediaRoutes: FastifyPluginAsync<{ dataDir: string; maxBytes: number
       },
     },
     async (request) => {
-      if (request.query.deleted) await purgeDeletedMedia(db, dataDir);
-      return { data: await listMedia(db, request.query) };
+      if (request.query.deleted) await purgeDeletedMedia(db, await store());
+      return { data: await listMedia(db, await store(), request.query) };
     },
   );
 
@@ -71,7 +68,7 @@ export const mediaRoutes: FastifyPluginAsync<{ dataDir: string; maxBytes: number
     async (request, reply) => {
       const { media, needsVariants } = await createMedia(
         db,
-        dataDir,
+        await store(),
         await readUpload(request),
         maxBytes,
       );
@@ -91,7 +88,7 @@ export const mediaRoutes: FastifyPluginAsync<{ dataDir: string; maxBytes: number
         response: { 200: envelope(MediaDetail) },
       },
     },
-    async (request) => ({ data: await getMedia(db, request.params.id) }),
+    async (request) => ({ data: await getMedia(db, await store(), request.params.id) }),
   );
 
   app.patch<{ Params: Params; Body: UpdateMediaBody }>(
@@ -106,7 +103,9 @@ export const mediaRoutes: FastifyPluginAsync<{ dataDir: string; maxBytes: number
         response: { 200: envelope(MediaDetail) },
       },
     },
-    async (request) => ({ data: await updateMedia(db, request.params.id, request.body) }),
+    async (request) => ({
+      data: await updateMedia(db, await store(), request.params.id, request.body),
+    }),
   );
 
   app.put<{ Params: Params }>(
@@ -125,7 +124,7 @@ export const mediaRoutes: FastifyPluginAsync<{ dataDir: string; maxBytes: number
     async (request) => {
       const { media, needsVariants } = await replaceMedia(
         db,
-        dataDir,
+        await store(),
         request.params.id,
         await readUpload(request),
         maxBytes,
@@ -142,18 +141,15 @@ export const mediaRoutes: FastifyPluginAsync<{ dataDir: string; maxBytes: number
       schema: {
         summary: "The file before the last replace",
         description:
-          "For the admin to show before putting it back; it isn't on the published site.",
+          "For the admin to show before putting it back; it isn't on the published site. Redirects to a link that works for a few minutes.",
         tags: ["media"],
         params: MediaParams,
       },
     },
-    async (request, reply) => {
-      const file = await previousFile(db, dataDir, request.params.id);
-      return reply
-        .type(file.type)
-        .header("cache-control", "private, max-age=3600")
-        .send(createReadStream(file.path));
-    },
+    async (request, reply) =>
+      reply
+        .header("cache-control", "no-store")
+        .redirect(await previousLink(db, await store(), request.params.id), 302),
   );
 
   app.post<{ Params: Params }>(
@@ -168,7 +164,7 @@ export const mediaRoutes: FastifyPluginAsync<{ dataDir: string; maxBytes: number
         response: { 200: envelope(MediaDetail) },
       },
     },
-    async (request) => ({ data: await restorePrevious(db, dataDir, request.params.id) }),
+    async (request) => ({ data: await restorePrevious(db, await store(), request.params.id) }),
   );
 
   app.delete<{ Params: Params }>(
@@ -184,7 +180,7 @@ export const mediaRoutes: FastifyPluginAsync<{ dataDir: string; maxBytes: number
         response: { 200: envelope(MediaDetail) },
       },
     },
-    async (request) => ({ data: await deleteMedia(db, request.params.id) }),
+    async (request) => ({ data: await deleteMedia(db, await store(), request.params.id) }),
   );
 
   app.post<{ Params: Params }>(
@@ -198,6 +194,6 @@ export const mediaRoutes: FastifyPluginAsync<{ dataDir: string; maxBytes: number
         response: { 200: envelope(MediaDetail) },
       },
     },
-    async (request) => ({ data: await restoreMedia(db, request.params.id) }),
+    async (request) => ({ data: await restoreMedia(db, await store(), request.params.id) }),
   );
 };

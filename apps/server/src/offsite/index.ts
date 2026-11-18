@@ -165,7 +165,7 @@ export function passphraseOf(
   );
 }
 
-const joinKey = (...parts: string[]) => parts.filter(Boolean).join("/");
+export const joinKey = (...parts: string[]) => parts.filter(Boolean).join("/");
 
 /** Where an archive's copy goes: `<prefix>/<folder>/<file>[.enc]`. */
 export const remoteKey = (

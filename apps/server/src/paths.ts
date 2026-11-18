@@ -11,8 +11,12 @@ const under = (names: string[]) =>
 
 /** The API reference (Scalar) and the document it reads. */
 const docs = ["docs", "openapi.json"];
-/** Behind a session: the API, the canvas, the media library and the API reference. */
-const signedIn = ["api", "render", "media", ...docs];
+/**
+ * Behind a session: the API, the canvas, the media library (`/media`, whose
+ * route lets anyone have the published files, and `/media-store`, the bundled
+ * store's presigned links passed through) and the API reference.
+ */
+const signedIn = ["api", "render", "media", "media-store", ...docs];
 
 /** Builder paths that need a session; everything else is the published site. */
 export const guardedPath = under(signedIn);

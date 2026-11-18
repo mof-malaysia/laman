@@ -5,14 +5,38 @@ import { type AppOptions, buildApp } from "../src/app.js";
 import { hashPassword } from "../src/auth/password.js";
 import { hashToken, newToken } from "../src/auth/tokens.js";
 import { now } from "../src/db/index.js";
+import { DEV_MEDIA_STORE } from "../src/env.js";
+import { bundledSetup, s3MediaStore } from "../src/media-store/index.js";
 
 export type App = Awaited<ReturnType<typeof buildApp>>;
 
 export const SUPER_ADMIN = { username: "pentadbir", password: "kata laluan ujian yang panjang" };
 
+/**
+ * The tests' own buckets in the dev media store (scripts/rustfs.ts, started
+ * by test/global-setup.ts), apart from the ones `pnpm dev` uses.
+ */
+export const TEST_BUCKETS = { private: "laman-test-media", published: "laman-test-published" };
+
+/** The bundled store with the tests' buckets, made when missing: for tests that don't boot the app. */
+export async function testMediaStore(buckets = TEST_BUCKETS) {
+  const store = s3MediaStore(
+    "bundled",
+    bundledSetup({
+      endpoint: DEV_MEDIA_STORE.MEDIA_STORE_ENDPOINT,
+      accessKeyId: DEV_MEDIA_STORE.MEDIA_STORE_ACCESS_KEY_ID,
+      secret: DEV_MEDIA_STORE.MEDIA_STORE_SECRET_ACCESS_KEY,
+      buckets,
+    }),
+  );
+  await store.ensureBuckets();
+  return store;
+}
+
 /** The app with a super admin seeded from the environment, as a first boot makes it. */
 export const testApp = (options: AppOptions) =>
   buildApp({
+    mediaBuckets: TEST_BUCKETS,
     ...options,
     env: {
       ...options.env,

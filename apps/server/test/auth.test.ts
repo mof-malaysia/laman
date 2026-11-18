@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from "@rstest/core";
 import { buildApp } from "../src/app.js";
 import { codeFor, stepAt } from "../src/auth/totp.js";
 import { loadEnv } from "../src/env.js";
-import { type App, SUPER_ADMIN, sessionCookie, testApp } from "./helpers.js";
+import { type App, SUPER_ADMIN, TEST_BUCKETS, sessionCookie, testApp } from "./helpers.js";
 import { localDay } from "../src/analytics/db.js";
 
 let dataDir: string;
@@ -256,7 +256,12 @@ describe("signing in", () => {
 
   it("refuses to start without a super admin to seed", async () => {
     await expect(
-      buildApp({ env: env(), databasePath: ":memory:", runJobs: false }),
+      buildApp({
+        env: env(),
+        databasePath: ":memory:",
+        runJobs: false,
+        mediaBuckets: TEST_BUCKETS,
+      }),
     ).rejects.toThrow(/no super admin yet/);
   });
 });

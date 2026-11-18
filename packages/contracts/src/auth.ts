@@ -211,6 +211,10 @@ export const AuditAction = z.enum([
   "offsiteChanged",
   /** Test connection was run against the off-site storage. */
   "offsiteTested",
+  /** The super admin set up, changed or removed the agency's own media storage: never a secret. */
+  "mediaStorageChanged",
+  /** Test connection was run against a media storage setup. */
+  "mediaStorageTested",
   /** An admin added, changed or removed a listing's calendar source. */
   "calendarSourceChanged",
   /** A calendar sync changed what's live: who is null, the counts are in the detail. */

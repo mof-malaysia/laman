@@ -1,11 +1,13 @@
 /**
  * Backups (docs/laman.md § Backup and restore). An archive is one
  * <site-name>-<time>[-db].tar.gz in BACKUP_DIR holding a consistent copy
- * of site.db (made by SQLite, never by copying the file), the media folders
- * that copy uses, and a manifest with every file's checksum. Restore is
- * command-line only and refuses to run while the server does: it checks
- * and upgrades the archive's database beside the live one, and only then
- * swaps it in, keeping what it replaced.
+ * of site.db (made by SQLite, never by copying the file) and a manifest with
+ * every file's checksum. Media isn't in it: the media store keeps it, mirrored
+ * off-site (the bundled store) or protected by the bucket's own versioning
+ * (an agency's own provider). The manifest lists media the database names
+ * that the store doesn't have. Restore is command-line only and refuses to
+ * run while the server does: it checks and upgrades the archive's database
+ * beside the live one, and only then swaps it in, keeping what it replaced.
  */
 import { createHash } from "node:crypto";
 import { createReadStream, existsSync } from "node:fs";
@@ -30,12 +32,13 @@ import SQLite from "better-sqlite3";
 import { sql } from "kysely";
 import * as tar from "tar";
 import { audit } from "./auth/audit.js";
-import { MEDIA_DIR, PREVIOUS_DIR } from "./content/media.js";
+import { MEDIA_PREFIX, PREVIOUS_PREFIX, detectType, missingMedia } from "./content/media.js";
+import { inPool } from "./files.js";
 import { checkStoredDocuments, describeProblems } from "./db/documents.js";
-import { migrationState, now, openDatabase, openSqlite } from "./db/index.js";
+import { type Db, migrationState, now, openDatabase, openSqlite } from "./db/index.js";
 import { migrations } from "./db/migrations.js";
 import type { Env } from "./env.js";
-import { linkTree } from "./files.js";
+import type { MediaStore } from "./media-store/index.js";
 import { queueJob } from "./jobs.js";
 import { filesIn } from "./manifest.js";
 
@@ -58,11 +61,11 @@ export type Manifest = {
   /** The database's last migration: a build that doesn't know it can't restore it. */
   migration: string;
   createdAt: string;
-  /** Only the database: media is backed up some other way. */
+  /** A copy of the database taken before an upgrade, or asked for with --db-only: no media check. */
   dbOnly: boolean;
   analytics: boolean;
   counts: { pages: number; media: number; users: number };
-  /** Media folders the database names that weren't on disk. */
+  /** Media the database names that the media store doesn't have (`media/<id>`, `previous/<id>`). */
   missing: string[];
   files: Record<string, { bytes: number; sha256: string }>;
 };
@@ -80,7 +83,7 @@ export const retentionOf = (env: Env): Retention => ({
 });
 
 /** A time as it goes in a file name, and back: no colons or dots. */
-const fileTime = (iso: string) => iso.replaceAll(/[:.]/g, "-");
+export const fileTime = (iso: string) => iso.replaceAll(/[:.]/g, "-");
 const isoTime = (stamp: string) => stamp.replace(/T(\d\d)-(\d\d)-(\d\d)-/, "T$1:$2:$3.");
 
 const archiveName = (site: string, at: string, dbOnly: boolean) =>
@@ -221,10 +224,11 @@ export async function makeBackup(options: {
   dbOnly?: boolean;
   withAnalytics?: boolean;
   keep: Retention;
+  /** Opens the media store the copy names, to list what the database names that it doesn't have. */
+  media?: ((db: Db) => Promise<MediaStore>) | undefined;
 }) {
   const { dataDir, backupDir, dbOnly = false, withAnalytics = false } = options;
   const database = options.database ?? join(dataDir, "site.db");
-  // Beside the media, so its files can be hard-linked rather than copied.
   const work = await mkdtemp(join(dataDir, ".backup-"));
   try {
     copyDatabase(database, join(work, "site.db"));
@@ -250,21 +254,17 @@ export async function makeBackup(options: {
           (await sql<{ n: number }>`select count(*) as n from ${sql.table(table)}`.execute(db))
             .rows[0]!.n,
         );
-      const { rows: media } = await sql<{ id: string; previous: string | null }>`
-        select id, previous from media
-      `.execute(db);
-      const missing: string[] = [];
-      if (!dbOnly)
-        for (const { id, previous } of media)
-          for (const folder of previous ? [MEDIA_DIR, PREVIOUS_DIR] : [MEDIA_DIR]) {
-            const from = join(dataDir, folder, id);
-            if (existsSync(from)) await linkTree(from, join(work, folder, id));
-            else missing.push(`${folder}/${id}`);
-          }
+      const copy = db as unknown as Db;
+      const missing =
+        !dbOnly && options.media ? await missingMedia(copy, await options.media(copy)) : [];
       site = await siteSlug(db).catch(() => "laman");
       found = {
         migration: executed.at(-1) ?? "",
-        counts: { pages: await count("pages"), media: media.length, users: await count("users") },
+        counts: {
+          pages: await count("pages"),
+          media: await count("media"),
+          users: await count("users"),
+        },
         missing,
       };
     } finally {
@@ -395,20 +395,62 @@ async function serverRunning(dataDir: string) {
   return Boolean(lock && Date.now() - lock.mtimeMs < LOCK_BEAT_MS * 3);
 }
 
+/** The media folders archives held before the media store: put in the store by a restore. */
+const OLD_MEDIA_FOLDERS = [
+  ["media", MEDIA_PREFIX],
+  ["media-previous", PREVIOUS_PREFIX],
+] as const;
+
 /**
- * Replaces the site's database (and media, unless the archive is
- * database-only) with `archive`'s. Everything is checked and upgraded
- * before anything is replaced; what was replaced moves to
- * DATA_DIR/before-restore-<time>/. Everyone is signed out, and a full
- * publish is queued so the site matches the restored content.
+ * Puts files from folders laid out as the media library once was on disk
+ * (`media/<id>/<file>`, `media-previous/<id>/<file>`) into the store's private
+ * bucket, where it doesn't have them already. For archives made before the
+ * media store, and a DATA_DIR from then. Returns how many were sent.
  */
-export async function restoreBackup(archive: string, dataDir: string) {
+export async function importMediaFolders(root: string, store: MediaStore) {
+  let sent = 0;
+  for (const [folder, prefix] of OLD_MEDIA_FOLDERS) {
+    const dir = join(root, folder);
+    if (!existsSync(dir)) continue;
+    const have = new Set((await store.list("private", prefix)).map((o) => o.key));
+    const files = (await filesIn(dir)).filter((file) => !have.has(`${prefix}${file}`));
+    await inPool(files, async (file) => {
+      const bytes = await readFile(join(dir, file));
+      // WebP sizes are detected too; anything unknown is stored as bytes.
+      const type = detectType(bytes)?.type ?? "application/octet-stream";
+      await store.put("private", `${prefix}${file}`, bytes, type);
+      sent++;
+    });
+  }
+  return sent;
+}
+
+/**
+ * Replaces the site's database with `archive`'s. Everything is checked and
+ * upgraded before anything is replaced; what was replaced moves to
+ * DATA_DIR/before-restore-<time>/. Everyone is signed out, and a full
+ * publish is queued so the site matches the restored content. The restored
+ * database is then checked against its media store (`mediaStore` opens the
+ * one it names): `missing` lists the files it names that the store doesn't
+ * have. An archive from before the media store has its media put in the store.
+ */
+export async function restoreBackup(
+  archive: string,
+  dataDir: string,
+  mediaStore?: (db: Db) => Promise<MediaStore>,
+) {
   if (await serverRunning(dataDir))
     throw new Error(`Laman is running on ${dataDir}. Stop it first, restore, then start it again.`);
   const work = await mkdtemp(join(dataDir, ".restore-"));
   try {
     const { manifest, db } = await unpack(resolve(archive), work);
+    let missing: string[] | null = null;
     try {
+      if (mediaStore) {
+        const store = await mediaStore(db);
+        await importMediaFolders(work, store);
+        missing = await missingMedia(db, store);
+      }
       await db.deleteFrom("sessions").execute();
       await queueJob(db, "publish", { trigger: "restore", full: true });
       await audit(db, {
@@ -424,7 +466,6 @@ export async function restoreBackup(archive: string, dataDir: string) {
 
     const replaced = [
       ...withSidecars("site.db"),
-      ...(manifest.dbOnly ? [] : [MEDIA_DIR, PREVIOUS_DIR]),
       ...(manifest.analytics ? withSidecars("analytics.db") : []),
     ];
     const aside = join(dataDir, `before-restore-${fileTime(now())}`);
@@ -446,10 +487,7 @@ export async function restoreBackup(archive: string, dataDir: string) {
       }
       throw error;
     }
-    if (!manifest.dbOnly)
-      for (const folder of [MEDIA_DIR, PREVIOUS_DIR])
-        await mkdir(join(dataDir, folder), { recursive: true });
-    return { manifest, aside };
+    return { manifest, aside, missing };
   } finally {
     await rm(work, { recursive: true, force: true });
   }
