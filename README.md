@@ -8,11 +8,12 @@ A self-hosted website builder for agency sites, built on FTDS. Editors arrange a
 
 ## Install on a server
 
-With Docker Compose, from this repository:
+With Docker Compose, from the published image `ghcr.io/mof-malaysia/laman`. Download `compose.yaml` and `.env.example` from the [release](https://github.com/mof-malaysia/laman/releases) you're installing, then:
 
 ```sh
-cp .env.example .env    # then fill it in
-docker compose --profile https up -d --build
+cp .env.example .env    # then fill it in, with LAMAN_VERSION set to that release
+docker compose --profile https pull
+docker compose --profile https up -d
 ```
 
 That's the builder and Caddy for HTTPS; without `--profile https` it listens on `127.0.0.1:8080` for your own proxy. The full guide, with backups, restore and upgrades, is [docs/install-docker.md](docs/install-docker.md).
