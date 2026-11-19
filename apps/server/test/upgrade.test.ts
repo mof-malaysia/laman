@@ -21,6 +21,7 @@ import {
   squashed,
 } from "../src/db/migrations.js";
 import { publishSite } from "../src/publisher.js";
+import { testMediaStore } from "./helpers.js";
 import { openAnalyticsDatabase } from "../src/analytics/db.js";
 import { since, summary } from "../src/analytics/reports.js";
 
@@ -183,9 +184,11 @@ describe("saved release databases", () => {
             eb.or([eb("kind", "!=", "entry"), eb("publish_at", "<=", new Date().toISOString())]),
           )
           .executeTakeFirstOrThrow();
+        const media = await testMediaStore();
         const { counts } = await publishSite({
           db,
           dataDir: dir,
+          media,
           siteUrl: "https://agensi.gov.my",
           full: true,
         });

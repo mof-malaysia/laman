@@ -32,7 +32,7 @@ import { apiError, siteApi } from "@/lib/api";
 import { ProviderLogo } from "./provider-logos";
 
 // Azure (parked): "azure" after "s3". See docs/laman.md § Off-site copies.
-const providers: OffsiteProvider[] = ["aws", "gcs", "r2", "wasabi", "spaces", "minio", "s3"];
+export const providers: OffsiteProvider[] = ["aws", "gcs", "r2", "wasabi", "spaces", "minio", "s3"];
 
 type Fields = Omit<OffsiteSettingsSave, "secret" | "passphrase">;
 
@@ -458,7 +458,7 @@ function OffsiteForm({
   );
 }
 
-const endpointExample: Partial<Record<OffsiteProvider, string>> = {
+export const endpointExample: Partial<Record<OffsiteProvider, string>> = {
   r2: "https://<account-id>.r2.cloudflarestorage.com",
   minio: "https://minio.agensi.gov.my",
   s3: "https://s3.example.com",
@@ -466,13 +466,18 @@ const endpointExample: Partial<Record<OffsiteProvider, string>> = {
 };
 
 /** The region example and its hint, for providers whose regions aren't AWS-style names. */
-const defaultRegion = { example: "ap-southeast-5", hint: "settings.offsite.regionHint" } as const;
-const regionExample: Partial<Record<OffsiteProvider, { example: string; hint: MessageKey }>> = {
+export const defaultRegion = {
+  example: "ap-southeast-5",
+  hint: "settings.offsite.regionHint",
+} as const;
+export const regionExample: Partial<
+  Record<OffsiteProvider, { example: string; hint: MessageKey }>
+> = {
   spaces: { example: "sgp1", hint: "settings.offsite.regionHint.spaces" },
 };
 
 /** Where to find the endpoint, for the providers where the example isn't enough. */
-const endpointHint: Partial<Record<OffsiteProvider, MessageKey>> = {
+export const endpointHint: Partial<Record<OffsiteProvider, MessageKey>> = {
   r2: "settings.offsite.endpoint.r2",
   // Azure (parked): azure: "settings.offsite.endpoint.azure",
 };

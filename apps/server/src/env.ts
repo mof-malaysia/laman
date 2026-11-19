@@ -10,7 +10,7 @@ const EnvSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
   CORS_ORIGIN: z.string().optional(),
-  /** Holds all state: site.db, media/ and the published site in public/. */
+  /** Holds the databases and the published site's pages in public/. Media is in the media store. */
   DATA_DIR: z.string().default("./data"),
   /**
    * Where backup archives go. Defaults to DATA_DIR/backups, on the site's own
@@ -51,6 +51,17 @@ const EnvSchema = z.object({
    * defaults to this server's own address (see `loadEnv`).
    */
   SITE_URL: z.url().optional(),
+  /**
+   * The bundled media store (RustFS in compose.yaml): its address and the keys
+   * compose.yaml gives it too. Its buckets are fixed, `laman-media` and
+   * `laman-published`, and made on boot when missing. An agency's own
+   * provider is set up in Settings → Media storage instead. In development
+   * and tests they default to the container `pnpm dev` starts
+   * (scripts/rustfs.ts); in production the keys are required.
+   */
+  MEDIA_STORE_ENDPOINT: z.url({ protocol: /^https?$/ }).optional(),
+  MEDIA_STORE_ACCESS_KEY_ID: z.string().min(3, "Use at least 3 characters").optional(),
+  MEDIA_STORE_SECRET_ACCESS_KEY: z.string().min(8, "Use at least 8 characters").optional(),
   /** Largest file the media library accepts, in megabytes. */
   MEDIA_MAX_MB: z.coerce.number().positive().max(200).default(10),
   /**
@@ -77,15 +88,46 @@ const EnvSchema = z.object({
   SUPER_ADMIN_PASSWORD: z.string().min(12, "Use at least 12 characters").optional(),
 });
 
-export type Env = z.infer<typeof EnvSchema>;
+export type Env = z.infer<typeof EnvSchema> & {
+  MEDIA_STORE_ENDPOINT: string;
+  MEDIA_STORE_ACCESS_KEY_ID: string;
+  MEDIA_STORE_SECRET_ACCESS_KEY: string;
+};
+
+/** The container `pnpm dev` and the tests use (scripts/rustfs.ts): on this machine only. */
+export const DEV_MEDIA_STORE = {
+  MEDIA_STORE_ENDPOINT: "http://127.0.0.1:9900",
+  MEDIA_STORE_ACCESS_KEY_ID: "laman-dev",
+  MEDIA_STORE_SECRET_ACCESS_KEY: "laman-dev-secret",
+} as const;
 
 export function loadEnv(source: Record<string, string | undefined> = process.env): Env {
   const result = EnvSchema.safeParse(source);
-  if (result.success) return withDevSiteUrl(result.data);
-  const lines = result.error.issues.map(
-    (issue) => `  ${issue.path.join(".") || "env"}: ${issue.message}`,
-  );
-  throw new Error(`Invalid environment variables:\n${lines.join("\n")}`);
+  const lines = result.success
+    ? []
+    : result.error.issues.map((issue) => `  ${issue.path.join(".") || "env"}: ${issue.message}`);
+  if (result.success && result.data.NODE_ENV === "production")
+    for (const name of ["MEDIA_STORE_ACCESS_KEY_ID", "MEDIA_STORE_SECRET_ACCESS_KEY"] as const)
+      if (!result.data[name])
+        lines.push(`  ${name}: Required: the bundled media store's key (compose.yaml)`);
+  if (!result.success || lines.length)
+    throw new Error(`Invalid environment variables:\n${lines.join("\n")}`);
+  return withDevSiteUrl(withMediaStore(result.data));
+}
+
+/** The bundled store's address and keys: in production compose.yaml's, otherwise the dev container's. */
+function withMediaStore(env: z.infer<typeof EnvSchema>): Env {
+  const dev = env.NODE_ENV !== "production";
+  return {
+    ...env,
+    MEDIA_STORE_ENDPOINT:
+      env.MEDIA_STORE_ENDPOINT ??
+      (dev ? DEV_MEDIA_STORE.MEDIA_STORE_ENDPOINT : "http://rustfs:9000"),
+    MEDIA_STORE_ACCESS_KEY_ID:
+      env.MEDIA_STORE_ACCESS_KEY_ID ?? DEV_MEDIA_STORE.MEDIA_STORE_ACCESS_KEY_ID,
+    MEDIA_STORE_SECRET_ACCESS_KEY:
+      env.MEDIA_STORE_SECRET_ACCESS_KEY ?? DEV_MEDIA_STORE.MEDIA_STORE_SECRET_ACCESS_KEY,
+  };
 }
 
 /**

@@ -12,6 +12,7 @@ import {
   BackupUploadPayload,
   BackupVerifyPayload,
   Id,
+  MediaStorageStored,
   Navigation,
   OffsiteStored,
   PublishPayload,
@@ -89,6 +90,15 @@ export const storedDocuments: StoredDocument[] = [
     column: "value",
     where: settingsRows(["offsite"]),
     schema: OffsiteStored,
+  },
+  // The agency's own media storage, with its secret sealed (media-store/index.ts).
+  {
+    name: "media storage",
+    table: "settings",
+    key: "key",
+    column: "value",
+    where: settingsRows(["mediaStorage"]),
+    schema: MediaStorageStored,
   },
   // Finished publishes keep their payload too: undo reads its swaps.
   {

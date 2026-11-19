@@ -75,6 +75,8 @@ const actionGroups = {
   backupRestored: "site",
   offsiteChanged: "site",
   offsiteTested: "site",
+  mediaStorageChanged: "site",
+  mediaStorageTested: "site",
   calendarSourceChanged: "site",
   calendarSynced: "site",
   agentConnected: "agents",

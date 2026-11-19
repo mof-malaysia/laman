@@ -104,7 +104,7 @@ export async function undoPublish(db: Db, jobs: Jobs, jobId: string): Promise<Un
 
 export async function runPublish(
   db: Db,
-  options: { dataDir: string; siteUrl?: string | undefined },
+  options: Omit<Parameters<typeof publishSite>[0], "db" | "full">,
   jobId: string,
   payload: PublishPayload,
 ) {

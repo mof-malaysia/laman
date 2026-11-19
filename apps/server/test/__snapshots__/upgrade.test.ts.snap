@@ -253,6 +253,75 @@ exports[`stored document schemas > media jobs 1`] = `
 }
 `;
 
+exports[`stored document schemas > media storage 1`] = `
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "accessKeyId": {
+      "maxLength": 256,
+      "minLength": 1,
+      "type": "string",
+    },
+    "endpoint": {
+      "anyOf": [
+        {
+          "const": "",
+          "type": "string",
+        },
+        {
+          "format": "uri",
+          "type": "string",
+        },
+      ],
+    },
+    "pathStyle": {
+      "type": "boolean",
+    },
+    "privateBucket": {
+      "pattern": "^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$",
+      "type": "string",
+    },
+    "provider": {
+      "enum": [
+        "aws",
+        "gcs",
+        "r2",
+        "wasabi",
+        "spaces",
+        "minio",
+        "s3",
+      ],
+      "type": "string",
+    },
+    "publicUrl": {},
+    "publishedBucket": {
+      "pattern": "^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$",
+      "type": "string",
+    },
+    "region": {
+      "pattern": "^([a-z0-9-]{2,40})?$",
+      "type": "string",
+    },
+    "secret": {
+      "type": "string",
+    },
+  },
+  "required": [
+    "provider",
+    "endpoint",
+    "region",
+    "pathStyle",
+    "privateBucket",
+    "publishedBucket",
+    "publicUrl",
+    "accessKeyId",
+    "secret",
+  ],
+  "type": "object",
+}
+`;
+
 exports[`stored document schemas > navigation 1`] = `
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",

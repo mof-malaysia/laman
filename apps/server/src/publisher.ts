@@ -1,7 +1,9 @@
 /**
  * Writes the published site: every published revision through the renderer,
- * the redirects, the media they use, the renderer's assets, a sitemap and the
- * search index with its /carian page, into public.next, then swaps it into place. A failed build leaves the live site untouched.
+ * the redirects, the renderer's assets, a sitemap and the search index with
+ * its /carian page, into public.next, then swaps it into place. A failed
+ * build leaves the live site untouched. The media live pages use is copied
+ * to the media store's published bucket, never into the folder.
  * A page that fails to render doesn't stop the rest: it keeps its live copy
  * (or, new, stays off the site) and the log says which block broke it.
  *
@@ -11,10 +13,10 @@
  * folder's manifest. `full` ignores the manifest and writes everything.
  */
 import { existsSync } from "node:fs";
-import { copyFile, mkdir, readFile, rename, rm, rmdir, stat, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, rename, rm, rmdir, writeFile } from "node:fs/promises";
 import { promisify } from "node:util";
 import { brotliCompress, constants, gzip } from "node:zlib";
-import { basename, dirname, join } from "node:path";
+import { dirname, join } from "node:path";
 import {
   NOT_FOUND_FILE,
   type RenderInput,
@@ -25,7 +27,7 @@ import {
   mediaIdsOf,
 } from "@laman/blocks";
 import type { PublishLogEntry } from "@laman/contracts";
-import { mediaFolders } from "./content/media.js";
+import { MEDIA_PREFIX, addressed, mediaObjects, publicLinks } from "./content/media.js";
 import { publishedPages } from "./content/pages.js";
 import { type LiveRedirect, liveRedirects } from "./content/redirects.js";
 import { rssFeed } from "./content/entries.js";
@@ -34,6 +36,7 @@ import { renderInputFor } from "./content/render-input.js";
 import { readDoc, siteContext } from "./content/site.js";
 import type { Db } from "./db/index.js";
 import { inPool, linkTree } from "./files.js";
+import type { MediaStore } from "./media-store/index.js";
 import {
   MANIFEST_DIR,
   MANIFEST_FILE,
@@ -49,6 +52,8 @@ import { SEARCH_PINS_FILE, buildSearchIndex, pagefindVersion, pinnedResults } fr
 export type PublishOptions = {
   db: Db;
   dataDir: string;
+  /** Where the media library is: live pages' files are copied to its published bucket. */
+  media: MediaStore;
   siteUrl?: string | undefined;
   /** Write every file, ignoring what the last publish left. */
   full?: boolean | undefined;
@@ -148,7 +153,7 @@ function redirectPage({ target }: LiveRedirect) {
 `;
 }
 
-export async function publishSite({ db, dataDir, siteUrl, full = false }: PublishOptions) {
+export async function publishSite({ db, dataDir, media, siteUrl, full = false }: PublishOptions) {
   const live = join(dataDir, "public");
   const next = join(dataDir, "public.next");
   const old = join(dataDir, "public.old");
@@ -163,6 +168,8 @@ export async function publishSite({ db, dataDir, siteUrl, full = false }: Publis
     });
   await mkdir(next, { recursive: true });
   const previous = base?.outputs ?? {};
+  /** Published media: links to the published bucket's files, as visitors reach them. */
+  const toPublic = publicLinks(media);
   const outputs: Record<string, string> = {};
   /** Text files written this publish, compressed together before the swap. */
   const written = new Set<string>();
@@ -202,15 +209,18 @@ export async function publishSite({ db, dataDir, siteUrl, full = false }: Publis
     title: string,
     kind: Pick<RenderInput, "searchPage" | "notFound">,
   ) => {
-    const input: RenderInput = {
-      mode: "publish",
-      locale: "ms",
-      path,
-      page: { title, blocks: [] },
-      site: await siteContext(db, "published", path, siteUrl, {}, loads),
-      noindex: true,
-      ...kind,
-    };
+    const input: RenderInput = addressed(
+      {
+        mode: "publish",
+        locale: "ms",
+        path,
+        page: { title, blocks: [] },
+        site: await siteContext(db, "published", path, siteUrl, {}, loads),
+        noindex: true,
+        ...kind,
+      },
+      toPublic,
+    );
     return put(file, fingerprint(build, canonicalJson(input)), (dest) =>
       renderHtml(input).then((html) => writeFile(dest, html)),
     );
@@ -231,18 +241,21 @@ export async function publishSite({ db, dataDir, siteUrl, full = false }: Publis
     path: string,
     extra: { listingPage?: number; category?: string; location?: string; month?: string } = {},
   ) => {
-    const input = await renderInputFor(db, {
-      pageId: page.id,
-      kind: page.kind,
-      path,
-      doc: page.content,
-      mode: "publish",
-      scope: "published",
-      siteUrl,
-      noindex: settings.search.hideSite || (page.content.seo?.noindex ?? false),
-      loads,
-      ...extra,
-    });
+    const input = addressed(
+      await renderInputFor(db, {
+        pageId: page.id,
+        kind: page.kind,
+        path,
+        doc: page.content,
+        mode: "publish",
+        scope: "published",
+        siteUrl,
+        noindex: settings.search.hideSite || (page.content.seo?.noindex ?? false),
+        loads,
+        ...extra,
+      }),
+      toPublic,
+    );
     const entry = { pageId: page.id, path, title: page.content.ms.title };
     const file = pageFile(path);
     try {
@@ -335,15 +348,15 @@ export async function publishSite({ db, dataDir, siteUrl, full = false }: Publis
     await put(file, fingerprint(build, file), (dest) =>
       copyFile(fileIn(rendererClientDir, file), dest),
     );
-  // Only the files published pages use; a file is copied again when it changes on disk.
-  for (const folder of await mediaFolders(dataDir, used))
-    for (const file of await filesIn(folder)) {
-      const source = fileIn(folder, file);
-      const { size, mtimeMs } = await stat(source);
-      await put(`media/${basename(folder)}/${file}`, `${size}:${mtimeMs}`, (dest) =>
-        copyFile(source, dest),
-      );
-    }
+  // Only the files published pages use, to the published bucket at the same
+  // keys; a file is copied again when it changes in the private one.
+  let mediaCopied = 0;
+  await inPool(await mediaObjects(media, used), async (object) => {
+    outputs[object.key] = object.etag;
+    if (previous[object.key] === object.etag) return;
+    await media.copy("private", object.key, "published", object.key);
+    mediaCopied++;
+  });
 
   if (search.on) {
     await putSystemPage(SEARCH_PATH, pageFile(SEARCH_PATH), "Carian", {
@@ -395,8 +408,14 @@ export async function publishSite({ db, dataDir, siteUrl, full = false }: Publis
   }
 
   // What the last publish wrote and this one didn't: gone from the site.
+  /** Published media no live page uses now: removed from the bucket once the new pages are live. */
+  const unusedMedia: string[] = [];
   for (const file of Object.keys(previous)) {
     if (file in outputs || kept.has(file)) continue;
+    if (file.startsWith(MEDIA_PREFIX)) {
+      unusedMedia.push(file);
+      continue;
+    }
     const dest = fileIn(next, file);
     await removeWithCopies(dest);
     await pruneEmpty(next, dirname(dest));
@@ -413,11 +432,14 @@ export async function publishSite({ db, dataDir, siteUrl, full = false }: Publis
   });
   await rename(next, live);
   await rm(old, { recursive: true, force: true });
+  await media.delete("published", unusedMedia);
   return {
     counts: {
       pages: rendered.length,
       redirects: redirects.length,
       media: used.size,
+      mediaCopied,
+      mediaRemoved: unusedMedia.length,
       written: log.filter((e) => e.outcome === "written").length,
       failed: log.filter((e) => e.outcome === "failed").length,
       unchanged,

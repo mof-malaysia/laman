@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type { Readable } from "node:stream";
 import { afterEach, beforeEach, describe, expect, it } from "@rstest/core";
 import { listBackups, verifyBackup } from "../src/backup.js";
 import { loadEnv } from "../src/env.js";
@@ -15,7 +16,7 @@ import {
 } from "../src/offsite/crypt.js";
 import { listRemote, malaysianMonthStart, pruneRemote } from "../src/offsite/index.js";
 import type { RemoteStore, StoreConfig } from "../src/offsite/stores.js";
-import { type App, signedInApp } from "./helpers.js";
+import { type App, multipartFile, signedInApp } from "./helpers.js";
 
 const SECRET_KEY = "a test key that is long enough to seal secrets";
 const PASSPHRASE = "kuda kepang makan durian";
@@ -34,6 +35,18 @@ class MemoryStore implements RemoteStore {
   async putText(key: string, text: string) {
     if (this.failPut) throw Object.assign(new Error("denied"), { name: "AccessDenied" });
     this.objects.set(key, { data: Buffer.from(text), sha256: null, at: new Date().toISOString() });
+  }
+  streamed = 0;
+  async putStream(key: string, body: Readable) {
+    this.streamed++;
+    if (this.failPut) throw Object.assign(new Error("denied"), { name: "AccessDenied" });
+    const chunks: Buffer[] = [];
+    for await (const chunk of body) chunks.push(chunk as Buffer);
+    this.objects.set(key, {
+      data: Buffer.concat(chunks),
+      sha256: null,
+      at: new Date().toISOString(),
+    });
   }
   async head(key: string) {
     const object = this.objects.get(key);
@@ -64,6 +77,11 @@ afterEach(async () => {
   await rm(root, { recursive: true, force: true });
 });
 
+const OFFSITE_BUCKETS = {
+  private: "laman-test-offsite-media",
+  published: "laman-test-offsite-published",
+};
+
 const boot = (env: Record<string, string> = { BACKUP_SECRET_KEY: SECRET_KEY }, role?: "editor") =>
   signedInApp(
     {
@@ -76,6 +94,8 @@ const boot = (env: Record<string, string> = { BACKUP_SECRET_KEY: SECRET_KEY }, r
         ...env,
       }),
       runJobs: false,
+      // Its own buckets, so the media copied off-site is only this file's.
+      mediaBuckets: OFFSITE_BUCKETS,
       offsiteStore: (config) => {
         store.configs.push(config);
         return store;
@@ -257,6 +277,31 @@ describe("off-site copies", () => {
     }
     const folders = [...store.objects.keys()].map((key) => key.split("/")[0]).toSorted();
     expect(folders).toEqual(["daily", "monthly"]);
+    await app.close();
+  });
+
+  it("carry the bundled store's media, sending only what's new", async () => {
+    const app = await boot();
+    await save(app, settings());
+    const upload = await app.inject({
+      method: "POST",
+      url: "/api/media",
+      ...multipartFile("surat.pdf", Buffer.from("%PDF-1.7\n%%EOF")),
+    });
+    const { id } = upload.json().data as { id: string };
+    await app.inject({ method: "POST", url: "/api/backups" });
+    await work(app);
+    const key = `agensi/media/media/${id}/original.pdf`;
+    expect(store.objects.get(key)?.data.toString()).toBe("%PDF-1.7\n%%EOF");
+    // The archive is only the database, in its own folder beside the media.
+    const archives = await listRemote(store, "agensi");
+    expect(archives).toHaveLength(1);
+    expect(store.streamed).toBe(1);
+
+    await app.inject({ method: "POST", url: "/api/backups" });
+    await work(app);
+    expect(await listRemote(store, "agensi")).toHaveLength(2);
+    expect(store.streamed).toBe(1);
     await app.close();
   });
 

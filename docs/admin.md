@@ -370,10 +370,10 @@ Like navigation, site settings are drafted and go live at the next publish, so t
   - `entry-list` (listing pages only): style, entries per page, category filter, summary, date, empty-state text
   - `latest-entries` (ordinary pages only): the listing, a count, the style, an optional category, a "See all" link
 - **Media:**
-  - A `media` table and files under `DATA_DIR/media`
+  - A `media` table and files in the media store's private bucket ([laman.md](laman.md) § Media storage)
   - Upload with type and size checks, plus a sharp job for variants
   - A usage index, updated on every draft save, that powers "Used on" and blocked delete
-  - The publisher copies the media that is used
+  - The publisher copies the media that is used to the published bucket
 - **Navigation and settings:** each has a draft and a published copy, like pages (`settings.draft` and `settings.published`), validated by Zod schemas in `packages/contracts`.
   - The navigation schema has three parts:
     - **navbar:** links and dropdowns, each dropdown with `layout`, `columns`, links or groups, an optional feature and an optional footer link

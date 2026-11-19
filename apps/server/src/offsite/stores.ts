@@ -31,6 +31,8 @@ export interface RemoteStore {
   put(key: string, file: string, sha256: string): Promise<void>;
   /** A small object from memory: Test connection's. */
   putText(key: string, text: string): Promise<void>;
+  /** An object from a stream: the media mirror's copies, as they come out of the media store. */
+  putStream(key: string, body: Readable, type: string): Promise<void>;
   /** Its size and the SHA-256 it was uploaded with, or null when there's no such object. */
   head(key: string): Promise<{ bytes: number; sha256: string | null } | null>;
   /** Every object under `prefix`. */
@@ -63,7 +65,7 @@ export function storeFor(config: StoreConfig): RemoteStore {
 }
 
 /** The S3 address each provider uses, and whether it wants path-style requests. */
-function s3Address(config: StoreConfig) {
+export function s3Address(config: Omit<StoreConfig, "bucket">) {
   switch (config.provider) {
     case "aws":
       return { endpoint: undefined, region: config.region, pathStyle: false };
@@ -97,9 +99,10 @@ function s3Address(config: StoreConfig) {
   }
 }
 
-function s3Store(config: StoreConfig): RemoteStore {
+/** An S3 client for a provider, set up the way every service Laman talks to accepts. */
+export function s3Client(config: Omit<StoreConfig, "bucket">) {
   const address = s3Address(config);
-  const client = new S3Client({
+  return new S3Client({
     region: address.region,
     endpoint: address.endpoint,
     forcePathStyle: address.pathStyle,
@@ -110,6 +113,10 @@ function s3Store(config: StoreConfig): RemoteStore {
     requestHandler: { requestTimeout: TIMEOUT_MS, connectionTimeout: 15_000 },
     maxAttempts: 3,
   });
+}
+
+function s3Store(config: StoreConfig): RemoteStore {
+  const client = s3Client(config);
   const Bucket = config.bucket;
   return {
     async put(key, file, sha256) {
@@ -136,6 +143,15 @@ function s3Store(config: StoreConfig): RemoteStore {
           ContentType: "text/plain; charset=utf-8",
         }),
       );
+    },
+    async putStream(key, body, type) {
+      await new Upload({
+        client,
+        params: { Bucket, Key: key, Body: body, ContentType: type },
+        partSize: PART_BYTES,
+        queueSize: PARALLEL,
+        leavePartsOnError: false,
+      }).done();
     },
     async head(key) {
       try {

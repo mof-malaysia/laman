@@ -1,11 +1,14 @@
-import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "@rstest/core";
 import sharp from "sharp";
-import { type App, multipartFile, signedInApp } from "./helpers.js";
+import { type App, TEST_BUCKETS, multipartFile, signedInApp } from "./helpers.js";
 import { detectType, svgProblem } from "../src/content/media.js";
-import { loadEnv } from "../src/env.js";
+import { DEV_MEDIA_STORE, loadEnv } from "../src/env.js";
+import { LINK_SECONDS, STORE_PATH, type Bucket } from "../src/media-store/index.js";
+import { presignGet } from "../src/media-store/presign.js";
 
 let dataDir: string;
 let app: App;
@@ -34,6 +37,12 @@ const png = (width: number) =>
   sharp({ create: { width, height: 400, channels: 3, background: "#1f6feb" } })
     .png()
     .toBuffer();
+
+/** An object in the test media store, or null. */
+const stored = async (bucket: Bucket, key: string) => {
+  const store = await app.mediaStorage.current();
+  return store.read(bucket, key).catch(() => null);
+};
 
 const work = async () => {
   app.jobs.poke();
@@ -140,27 +149,43 @@ describe("media", () => {
     expect(del.statusCode).toBe(409);
     expect(del.json().error.code).toBe("media_in_use");
 
+    // The canvas shows drafts' files through links that expire, never the published address.
     const canvas = await app.inject({ method: "GET", url: `/render/pages/${home.id}?mode=edit` });
-    expect(canvas.body).toContain(`/media/${id}/w`);
+    expect(canvas.body).toContain(`${STORE_PATH}/${TEST_BUCKETS.private}/media/${id}/w`);
+    expect(canvas.body).toContain("X-Amz-Signature=");
     expect(canvas.body).toContain('alt="Logo agensi"');
     expect(canvas.body).toContain("Kredit: JPA");
 
     await app.inject({ method: "POST", url: `/api/pages/${home.id}/publish` });
     await work();
-    await access(join(dataDir, "public", "media", id, "original.png"));
+    // In the published bucket, not in public/, and linked as /media/ with no signature.
+    expect(await stored("published", `media/${id}/original.png`)).not.toBeNull();
+    expect(existsSync(join(dataDir, "public", "media"))).toBe(false);
     const html = await readFile(join(dataDir, "public", "index.html"), "utf8");
     expect(html).toContain(`srcset="/media/${id}/w`);
+    expect(html).not.toContain("X-Amz-");
 
     // A visitor (no session) gets the published copy, and nothing unpublished.
     const visitor = { cookie: "" };
     const seen = await app.inject({ url: `/media/${id}/original.png`, headers: visitor });
     expect(seen.statusCode).toBe(200);
-    // A file only in the library.
-    await mkdir(join(dataDir, "media", "unpublished"), { recursive: true });
-    await writeFile(join(dataDir, "media", "unpublished", "original.png"), await png(100));
-    const unpublishedUrl = "/media/unpublished/original.png";
+    expect(seen.headers["content-type"]).toBe("image/png");
+    expect(
+      (
+        await app.inject({
+          url: `/media/${id}/original.png`,
+          headers: { ...visitor, "if-none-match": String(seen.headers.etag) },
+        })
+      ).statusCode,
+    ).toBe(304);
+    // A file only in the library: not through /media/*, even signed in; its presigned link only signed in.
+    const other = (await upload("draf.png", await png(100))).json().data;
+    const unpublishedUrl = `/media/${other.id}/original.png`;
     expect((await app.inject({ url: unpublishedUrl, headers: visitor })).statusCode).toBe(404);
-    expect((await app.inject({ url: unpublishedUrl })).statusCode).toBe(200);
+    expect((await app.inject({ url: unpublishedUrl })).statusCode).toBe(404);
+    expect((await app.inject({ url: other.url })).statusCode).toBe(200);
+    expect((await app.inject({ url: other.url, headers: visitor })).statusCode).toBe(401);
+    await app.inject({ method: "DELETE", url: `/api/media/${other.id}` });
     expect(
       (await app.inject({ url: `/media/../site.db`, headers: visitor })).statusCode,
     ).toBeGreaterThanOrEqual(400);
@@ -180,9 +205,9 @@ describe("media", () => {
     const library = (await app.inject({ method: "GET", url: "/api/media" })).json().data;
     expect(library.items.some((m: { id: string }) => m.id === id)).toBe(false);
     const trash = (await app.inject({ method: "GET", url: "/api/media?deleted=true" })).json().data;
-    expect(trash.items.map((m: { id: string }) => m.id)).toEqual([id]);
-    expect(trash.deleted).toBe(1);
-    await access(join(dataDir, "media", id));
+    expect(trash.items[0].id).toBe(id);
+    expect(trash.deleted).toBe(2);
+    expect(await stored("private", `media/${id}/original.pdf`)).not.toBeNull();
 
     const back = await app.inject({ method: "POST", url: `/api/media/${id}/restore` });
     expect(back.json().data.deletedAt).toBeNull();
@@ -229,9 +254,11 @@ describe("media", () => {
       previous: { filename: "logo.png" },
     });
     // The live site keeps the old file until the next publish.
-    expect(
-      (await readFile(join(dataDir, "public", "media", used.id, "original.png"))).length,
-    ).not.toBe((await readFile(join(dataDir, "media", used.id, "original.png"))).length);
+    const key = `media/${used.id}/original.png`;
+    expect((await stored("published", key))?.length).not.toBe(
+      (await stored("private", key))?.length,
+    );
+    expect(await stored("private", `previous/${used.id}/original.png`)).not.toBeNull();
     const waiting = (await app.inject({ method: "GET", url: "/api/publish/preview" })).json().data;
     expect(waiting.items).toContainEqual(
       expect.objectContaining({ kind: "media", id: used.id, filename: "logo-baru.png" }),
@@ -240,6 +267,10 @@ describe("media", () => {
     const before = await app.inject({ method: "GET", url: replaced.previous.url });
     expect(before.statusCode).toBe(200);
     expect(before.headers["content-type"]).toBe("image/png");
+    // The API's own address for it sends the browser to such a link.
+    const redirect = await app.inject({ url: `/api/media/${used.id}/previous/file` });
+    expect(redirect.statusCode).toBe(302);
+    expect(redirect.headers.location).toContain(`/previous/${used.id}/original.png?`);
 
     const undone = await app.inject({ method: "POST", url: `/api/media/${used.id}/previous` });
     expect(undone.json().data).toMatchObject({
@@ -253,6 +284,7 @@ describe("media", () => {
     await work();
     const live = (await app.inject({ method: "GET", url: `/api/media/${used.id}` })).json().data;
     expect(live.notLive).toBe(false);
+    expect((await stored("published", key))?.length).toBe((await stored("private", key))?.length);
   });
 
   it("keeps counting a page in Recently deleted as a use", async () => {
@@ -298,8 +330,44 @@ describe("media", () => {
       .toBuffer();
     expect((await sharp(photo).metadata()).exif).toBeDefined();
     const { id } = (await upload("lokasi.jpg", photo)).json().data;
-    const stored = await readFile(join(dataDir, "media", id, "original.jpg"));
-    expect((await sharp(stored).metadata()).exif).toBeUndefined();
+    const original = await stored("private", `media/${id}/original.jpg`);
+    expect((await sharp(original!).metadata()).exif).toBeUndefined();
     await app.inject({ method: "DELETE", url: `/api/media/${id}` });
+  });
+
+  it("opens private files only through links that expire", async () => {
+    const { id, url } = (await upload("sulit.pdf", Buffer.from("%PDF-1.7\n%%EOF"))).json().data;
+    expect(url).toContain(`${STORE_PATH}/${TEST_BUCKETS.private}/media/${id}/original.pdf?`);
+    expect(url).toContain(`X-Amz-Expires=${LINK_SECONDS}`);
+    expect((await app.inject({ url })).statusCode).toBe(200);
+    // The same file, signed long enough ago that the link has run out.
+    const old = presignGet(
+      {
+        endpoint: DEV_MEDIA_STORE.MEDIA_STORE_ENDPOINT,
+        region: "us-east-1",
+        pathStyle: true,
+        accessKeyId: DEV_MEDIA_STORE.MEDIA_STORE_ACCESS_KEY_ID,
+        secret: DEV_MEDIA_STORE.MEDIA_STORE_SECRET_ACCESS_KEY,
+      },
+      TEST_BUCKETS.private,
+      `media/${id}/original.pdf`,
+      LINK_SECONDS,
+      new Date(Date.now() - (LINK_SECONDS + 60) * 1000),
+    );
+    const expired = await app.inject({
+      url: STORE_PATH + new URL(old).pathname + new URL(old).search,
+    });
+    expect(expired.statusCode).toBe(403);
+    expect(expired.body).toContain("expired");
+    // Only the private bucket passes through: never the published one or anything else.
+    const published = url.replace(`/${TEST_BUCKETS.private}/`, `/${TEST_BUCKETS.published}/`);
+    expect((await app.inject({ url: published })).statusCode).toBe(404);
+    await app.inject({ method: "DELETE", url: `/api/media/${id}` });
+  });
+
+  it("writes no media under DATA_DIR", async () => {
+    await work();
+    const all = await readdir(dataDir, { recursive: true });
+    expect(all.filter((file) => /\.(png|jpe?g|webp|svg|pdf)$/.test(file))).toEqual([]);
   });
 });

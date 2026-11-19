@@ -1,7 +1,8 @@
 /**
  * The canvas and preview: a page's draft rendered by the renderer. `edit`
  * adds the data-ftds-block / data-ftds-field hooks the editor uses. Also the
- * live home page, as visitors see it, for the dashboard's thumbnail.
+ * live home page, as visitors see it, for the dashboard's thumbnail. Media
+ * shows through presigned links: drafts use files that aren't published.
  */
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -24,6 +25,7 @@ import { getPage } from "../content/pages.js";
 import { renderInputFor } from "../content/render-input.js";
 import type { SiteDraft } from "../content/site.js";
 import { HttpError } from "../errors.js";
+import { addressed, privateLinks } from "../content/media.js";
 import { renderHtml } from "../render.js";
 
 const DraftMode = z.enum(["edit", "preview"]);
@@ -53,6 +55,9 @@ export const renderRoutes: FastifyPluginAsync<{ publicDir: string }> = async (
   { publicDir },
 ) => {
   const { db } = app;
+  /** A draft's HTML, its media opened through links that last minutes. */
+  const render = async (input: Parameters<typeof renderHtml>[0]) =>
+    renderHtml(addressed(input, privateLinks(await app.mediaStorage.current())));
 
   // The published home page, under /render so the admin reaches it on every
   // setup (in development its proxy doesn't pass the site's root through).
@@ -78,7 +83,7 @@ export const renderRoutes: FastifyPluginAsync<{ publicDir: string }> = async (
     async (request, reply) => {
       const page = await getPage(db, request.params.id);
       const { mode, locale } = request.query;
-      const html = await renderHtml(
+      const html = await render(
         await renderInputFor(db, {
           pageId: page.id,
           kind: page.kind,
@@ -114,7 +119,7 @@ export const renderRoutes: FastifyPluginAsync<{ publicDir: string }> = async (
         scope: "draft",
         noindex: true,
       });
-      const html = await renderHtml(
+      const html = await render(
         listing
           ? {
               ...input,
@@ -141,7 +146,7 @@ export const renderRoutes: FastifyPluginAsync<{ publicDir: string }> = async (
     async (request, reply) => {
       const page = await getPage(db, request.params.id);
       const { mode, locale, entry } = request.body;
-      const html = await renderHtml(
+      const html = await render(
         await renderInputFor(db, {
           pageId: page.id,
           kind: page.kind,
@@ -175,7 +180,7 @@ export const renderRoutes: FastifyPluginAsync<{ publicDir: string }> = async (
     },
     async (request, reply) => {
       const page = await getPage(db, request.params.id);
-      const html = await renderHtml(
+      const html = await render(
         await renderInputFor(db, {
           pageId: page.id,
           kind: page.kind,
@@ -213,7 +218,7 @@ export const renderRoutes: FastifyPluginAsync<{ publicDir: string }> = async (
         specimen: true,
         ...(theme && { unsaved: { theme } }),
       });
-      return sendHtml(reply, await renderHtml(input));
+      return sendHtml(reply, await render(input));
     },
   );
 
@@ -253,7 +258,7 @@ export const renderRoutes: FastifyPluginAsync<{ publicDir: string }> = async (
           },
         }),
       }));
-      const html = await renderHtml(
+      const html = await render(
         template.listing
           ? {
               ...input,

@@ -144,7 +144,7 @@ export type MediaTable = {
   deleted_at: string | null;
   /** When the file was last replaced, to say whether the live site has it yet. */
   replaced_at: string | null;
-  /** JSON: the file before the last replace (its row fields), kept in DATA_DIR/media-previous/<id>/. */
+  /** JSON: the file before the last replace (its row fields); its objects are under previous/<id>/ in the media store. */
   previous: string | null;
   created_at: string;
   updated_at: string;

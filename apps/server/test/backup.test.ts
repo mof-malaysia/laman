@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -19,7 +20,7 @@ import {
 import { openDatabase } from "../src/db/index.js";
 import { migrations } from "../src/db/migrations.js";
 import { loadEnv } from "../src/env.js";
-import { type App, multipartFile, signedInApp } from "./helpers.js";
+import { type App, multipartFile, signedInApp, testMediaStore } from "./helpers.js";
 
 let root: string;
 let dataDir: string;
@@ -97,7 +98,7 @@ const name = (at: Date, suffix = "") =>
   `laman-${at.toISOString().replaceAll(/[:.]/g, "-")}${suffix}.tar.gz`;
 
 describe("backups", () => {
-  it("restores the database and media as they were, and keeps what it replaced", async () => {
+  it("restores the database as it was, keeps what it replaced, and lists media the store lacks", async () => {
     const { app, mediaId, archive } = await backedUpSite();
     const summary = (await app.inject({ method: "GET", url: "/api/summary" })).json().data.backup;
     expect(summary).toMatchObject({ running: false, failed: null, sameDisk: false });
@@ -105,14 +106,25 @@ describe("backups", () => {
     await newPage(app, "Selepas");
     await app.close();
 
+    // The archive holds the database only: the media is in the store.
+    const manifest = await verifyBackup(archive, root);
+    expect(Object.keys(manifest.files)).toEqual(["site.db"]);
+    expect(manifest).toMatchObject({ missing: [], counts: { media: 1 } });
+
     // Not under a running server.
     const release = await holdServerLock(dataDir);
     await expect(restoreBackup(archive, dataDir)).rejects.toThrow(/running/);
     await release();
 
-    const { aside } = await restoreBackup(archive, dataDir);
+    // The store lost the file since: the restore says so.
+    const store = await testMediaStore();
+    const original = await store.read("private", `media/${mediaId}/original.png`);
+    await store.delete("private", [`media/${mediaId}/original.png`]);
+    const { aside, missing } = await restoreBackup(archive, dataDir, async () => store);
     expect(existsSync(join(aside, "site.db"))).toBe(true);
-    expect(existsSync(join(dataDir, "media", mediaId, "original.png"))).toBe(true);
+    expect(missing).toEqual([`media/${mediaId}`]);
+    expect(existsSync(join(dataDir, "media"))).toBe(false);
+    await store.put("private", `media/${mediaId}/original.png`, original, "image/png");
 
     const db = await openDatabase(join(dataDir, "site.db"));
     try {
@@ -138,6 +150,30 @@ describe("backups", () => {
     } finally {
       await db.destroy();
     }
+  });
+
+  it("puts the media of an archive from before the media store in the store", async () => {
+    const { app, mediaId, archive } = await backedUpSite();
+    await app.close();
+    const store = await testMediaStore();
+    const key = `media/${mediaId}/original.png`;
+    const bytes = await store.read("private", key);
+    await store.delete("private", [key]);
+    // As archives were made then: the media folders beside the database, in the manifest.
+    const old = await tampered(archive, async (dir) => {
+      await mkdir(join(dir, "media", mediaId), { recursive: true });
+      await writeFile(join(dir, "media", mediaId, "original.png"), bytes);
+      await editManifest((m) => {
+        (m.files as Record<string, unknown>)[`media/${mediaId}/original.png`] = {
+          bytes: bytes.length,
+          sha256: createHash("sha256").update(bytes).digest("hex"),
+        };
+      })(dir);
+    });
+    const { missing } = await restoreBackup(old, dataDir, async () => store);
+    expect(missing).toEqual([]);
+    expect((await store.read("private", key)).equals(bytes)).toBe(true);
+    expect(existsSync(join(dataDir, "media"))).toBe(false);
   });
 
   it("refuses an archive that's damaged, from a newer version, or not a backup", async () => {

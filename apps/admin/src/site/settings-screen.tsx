@@ -51,6 +51,7 @@ import { ClockIcon } from "@/components/ui/icons/clock";
 import { DesktopIcon } from "@/components/ui/icons/desktop";
 import { EyeShowIcon } from "@/components/ui/icons/eye-show";
 import { FolderIcon } from "@/components/ui/icons/folder";
+import { LockIcon } from "@/components/ui/icons/lock";
 import { GlobeIcon } from "@/components/ui/icons/globe";
 import { GovtOfficeIcon } from "@/components/ui/icons/govt-office";
 import { GridIcon } from "@/components/ui/icons/grid";
@@ -88,6 +89,7 @@ import { useSummary } from "@/lib/pages";
 import { SwitchSetting } from "@/components/switch-setting";
 import { MediaField } from "@/editor/media-field";
 import { BackupsSection } from "./backups-section";
+import { MediaStorageSection } from "./media-storage-section";
 import { embedLogos } from "./embed-logos";
 import { formatBytes } from "@/media/format";
 import { Screen } from "@/components/screen";
@@ -111,6 +113,7 @@ export const settingsSections = [
   "language",
   "security",
   "backups",
+  "storage",
   "about",
 ] as const;
 export type SettingsSectionId = (typeof settingsSections)[number];
@@ -138,6 +141,7 @@ const panels: Record<
   language: LanguageSection,
   security: SecuritySection,
   backups: BackupsSection,
+  storage: MediaStorageSection,
   about: About,
 };
 
@@ -154,6 +158,7 @@ const sectionLabels: Record<SettingsSectionId, MessageKey> = {
   language: "settings.language",
   security: "settings.security",
   backups: "settings.backups",
+  storage: "settings.storage",
   about: "settings.about",
 };
 
@@ -171,6 +176,7 @@ const sectionIcons: Record<SettingsSectionId, ReactNode> = {
   language: <GlobeIcon />,
   security: <CheckShieldIcon />,
   backups: <FolderIcon />,
+  storage: <LockIcon />,
   about: <SettingIcon />,
 };
 
@@ -215,7 +221,7 @@ function Applies({ section }: { section: SettingsSectionId }) {
 export function SettingsScreen() {
   const canSecure = useCan("security.manage");
   const shown = settingsSections.filter(
-    (id) => pageOf(id) === id && (id !== "security" || canSecure),
+    (id) => pageOf(id) === id && ((id !== "security" && id !== "storage") || canSecure),
   );
   const { section: asked = "identity" } = useSearch({ strict: false }) as {
     section?: SettingsSectionId;
