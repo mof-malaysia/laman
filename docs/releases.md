@@ -69,7 +69,7 @@ LAMAN_VERSION=1.0.0
 
 ## Upgrading and going back
 
-- **Upgrading.** Read the release notes, change `LAMAN_VERSION`, then `docker compose pull && docker compose up -d` ([install-docker.md](install-docker.md) § 6). The new version backs up the database, migrates it and checks every stored document before it listens; if anything fails it puts the database back and exits.
+- **Upgrading.** Read the release notes, change `LAMAN_VERSION`, then `docker compose pull && docker compose up -d` ([install-docker.md](install-docker.md) § 7). The new version backs up the database, migrates it and checks every stored document before it listens; if anything fails it puts the database back and exits.
 - **Skipping versions.** Any 1.x upgrades directly to any later 1.x. Migrations are append-only and run in order, and every release's saved database is booted by every later build (`test/upgrade.test.ts`), so there is no "upgrade through 1.3 first".
 - **Going back.** Set `LAMAN_VERSION` to the previous version. If the newer version ran no migration, that's all. If it did, the older version refuses to open the database ("upgraded by a newer version of Laman"): restore the database-only archive the upgrade wrote to `BACKUP_DIR` just before migrating (`laman restore <archive>`, server stopped). Edits made since the upgrade are lost, so go back soon or not at all.
 - **Majors** say in their release notes what has to be done by hand, and are the only releases that may need it.

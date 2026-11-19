@@ -1,14 +1,19 @@
-# Laman with Docker Compose. Settings go in .env beside this file
-# (copy .env.example). See docs/install-docker.md.
+# Laman with Docker Compose, from the published image. Settings go in .env
+# beside this file (copy .env.example), including LAMAN_VERSION, the version
+# to run. See docs/install-docker.md.
 #
-#   docker compose up -d --build                  # behind your own HTTPS proxy
-#   docker compose --profile https up -d --build  # with Caddy, which gets the certificate itself
+#   docker compose pull && docker compose up -d     # behind your own HTTPS proxy
+#   docker compose --profile https pull && docker compose --profile https up -d
+#                                                   # with Caddy, which gets the certificate itself
+#
+# Contributors can build the image from this repository instead with
+# compose.build.yaml (see the file).
 name: laman
 
 services:
   laman:
-    build: .
-    image: laman
+    # An exact version (1.0.0, 1.0.0-beta.1), set in .env. Upgrading is changing it.
+    image: ghcr.io/mof-malaysia/laman:${LAMAN_VERSION:?Set LAMAN_VERSION in .env to the version to run, e.g. 1.0.0}
     restart: unless-stopped
     # Signals reach the server, so a stop finishes the running job and the backup lock is cleared.
     init: true
